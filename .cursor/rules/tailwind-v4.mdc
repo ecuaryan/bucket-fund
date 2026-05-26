@@ -1,0 +1,46 @@
+---
+description: Tailwind v4 syntax for this project (no v3 patterns)
+alwaysApply: true
+---
+
+# Tailwind CSS v4 in this project
+
+This project uses Tailwind **v4** with the `@tailwindcss/vite` plugin.
+The setup is CSS-first. Do NOT generate Tailwind v3 patterns.
+
+## Do
+
+- Configure Tailwind via `src/index.css` only:
+
+```css
+@import "tailwindcss";
+
+/* Custom tokens (optional) */
+@theme {
+  --color-brand: oklch(0.72 0.18 155);
+  --font-display: "Inter", sans-serif;
+}
+```
+
+- Register the plugin in `vite.config.ts`:
+
+```ts
+import tailwindcss from "@tailwindcss/vite";
+plugins: [react(), tailwindcss()];
+```
+
+- Use the standard utility class API on JSX (`<div className="p-4 text-emerald-600" />`).
+
+## Don't
+
+- Don't create `tailwind.config.ts` / `tailwind.config.js`. v4 ignores it.
+- Don't write `@tailwind base; @tailwind components; @tailwind utilities;`.
+  Use `@import "tailwindcss";` instead.
+- Don't add a `postcss.config.*` file. v4 uses the Vite plugin directly.
+- Don't add `@apply` in shared component CSS unless inside a `@layer`
+  block in `src/index.css` — colocated `className` is the preferred style.
+- Don't `npm install tailwindcss@3` or `autoprefixer` / `postcss` as Tailwind deps.
+
+## Reference
+
+- v4 docs: https://tailwindcss.com/docs/installation/using-vite
