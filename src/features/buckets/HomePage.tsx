@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
   type FormEvent,
   type KeyboardEvent,
@@ -17,6 +18,7 @@ import {
 import type { Database } from '@/types/database'
 import MoveMoneyDialog from '@/features/buckets/MoveMoneyDialog'
 import BucketActionsMenu from '@/features/buckets/BucketActionsMenu'
+import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -41,7 +43,10 @@ export default function HomePage() {
   const [actionError, setActionError] = useState<string | null>(null)
 
   const member = auth.status === 'signedIn' ? auth.member : null
+  const accessToken =
+    auth.status === 'signedIn' ? auth.session.access_token : null
   const familyId = member?.family_id ?? null
+  const memberId = member?.id ?? null
 
   const loadData = useCallback(async () => {
     setLoadError(null)
@@ -84,54 +89,41 @@ export default function HomePage() {
     void loadData()
   }, [familyId, loadData])
 
-  // Realtime: any bucket or account change in the family triggers a
-  // reload. We could splice deltas in directly for less network, but
-  // a fetch is < 50ms and we get correct ordering for free.
-  useEffect(() => {
-    if (!familyId) return
-    const channel = supabase
-      .channel(`family:${familyId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'buckets',
-          filter: `family_id=eq.${familyId}`,
-        },
-        () => {
-          void loadData()
-        },
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'accounts',
-          filter: `family_id=eq.${familyId}`,
-        },
-        () => {
-          void loadData()
-        },
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'member_bucket_order',
-          filter: member ? `member_id=eq.${member.id}` : undefined,
-        },
-        () => {
-          void loadData()
-        },
-      )
-      .subscribe()
-    return () => {
-      void supabase.removeChannel(channel)
+  const realtimeSpecs = useMemo(() => {
+    if (!familyId) return []
+    const specs = [
+      {
+        event: '*' as const,
+        table: 'buckets',
+        filter: `family_id=eq.${familyId}`,
+      },
+      {
+        event: '*' as const,
+        table: 'accounts',
+        filter: `family_id=eq.${familyId}`,
+      },
+      {
+        event: 'INSERT' as const,
+        table: 'transactions',
+        filter: `family_id=eq.${familyId}`,
+      },
+    ]
+    if (memberId) {
+      specs.push({
+        event: '*' as const,
+        table: 'member_bucket_order',
+        filter: `member_id=eq.${memberId}`,
+      })
     }
-  }, [familyId, member?.id, loadData])
+    return specs
+  }, [familyId, memberId])
+
+  usePostgresChanges(
+    accessToken,
+    familyId ? `home:${familyId}` : null,
+    realtimeSpecs,
+    loadData,
+  )
 
   function startRename(id: string, currentName: string) {
     setRenameValue(currentName)

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import { useAuth } from '@/lib/auth'
 import type { Database } from '@/types/database'
 
@@ -70,6 +71,8 @@ export default function HistoryPage() {
   const [loadingMore, setLoadingMore] = useState(false)
 
   const member = auth.status === 'signedIn' ? auth.member : null
+  const accessToken =
+    auth.status === 'signedIn' ? auth.session.access_token : null
   const familyId = member?.family_id ?? null
 
   // PostgREST embedded resources: alias:table!fk_column(cols). Two FKs
@@ -173,30 +176,20 @@ export default function HistoryPage() {
     void loadBuckets()
   }, [familyId, loadBuckets])
 
-  // Realtime: any new transaction in this family refreshes the head
-  // of the list. Older paginated rows are preserved by refreshHead's
-  // merge logic.
-  useEffect(() => {
-    if (!familyId) return
-    const channel = supabase
-      .channel(`history:${familyId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'transactions',
-          filter: `family_id=eq.${familyId}`,
-        },
-        () => {
-          void refreshHead()
-        },
-      )
-      .subscribe()
-    return () => {
-      void supabase.removeChannel(channel)
-    }
-  }, [familyId, refreshHead])
+  usePostgresChanges(
+    accessToken,
+    familyId ? `history:${familyId}` : null,
+    familyId
+      ? [
+          {
+            event: 'INSERT',
+            table: 'transactions',
+            filter: `family_id=eq.${familyId}`,
+          },
+        ]
+      : [],
+    refreshHead,
+  )
 
   const grouped = useMemo(() => groupByDay(rows ?? []), [rows])
 
