@@ -150,43 +150,53 @@ export default function MoveMoneyDialog({
         </header>
 
         <form onSubmit={onSubmit} className="space-y-4">
-          <div className="relative space-y-3">
-            <Picker
-              label="From"
-              value={fromKey}
-              onChange={setFromKey}
-              endpoints={endpoints}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setFromKey(toKey)
-                setToKey(fromKey)
-              }}
-              aria-label="Swap From and To"
-              title="Swap From and To"
-              className="absolute left-1/2 top-1/2 z-10 -tranzinc-x-1/2 -tranzinc-y-1/2 rounded-full border border-zinc-700 bg-zinc-800 p-2 text-zinc-300 shadow-md transition hover:bg-zinc-700 hover:text-zinc-300 focus:outline focus:outline-2 focus:outline-emerald-400"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-                className="h-4 w-4"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.22 4.22a.75.75 0 0 1 1.06 0l3 3a.75.75 0 0 1-1.06 1.06L6.5 6.56V14a.75.75 0 0 1-1.5 0V6.56L3.28 8.28a.75.75 0 1 1-1.06-1.06l3-3Zm9.5 11.5a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 1 1 1.06-1.06l1.72 1.72V6a.75.75 0 0 1 1.5 0v7.38l1.72-1.72a.75.75 0 1 1 1.06 1.06l-3 3Z"
-                  clipRule="evenodd"
+          <div className="rounded-xl bg-zinc-950 p-3 ring-1 ring-inset ring-zinc-700">
+            <div className="flex items-stretch gap-2">
+              <div className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-3">
+                <span className="text-sm font-medium text-zinc-400">From</span>
+                <Picker
+                  label="From"
+                  value={fromKey}
+                  onChange={setFromKey}
+                  endpoints={endpoints}
+                  embedded
+                  hideLabel
                 />
-              </svg>
-            </button>
-            <Picker
-              label="To"
-              value={toKey}
-              onChange={setToKey}
-              endpoints={endpoints}
-            />
+                <span className="text-sm font-medium text-zinc-400">To</span>
+                <Picker
+                  label="To"
+                  value={toKey}
+                  onChange={setToKey}
+                  endpoints={endpoints}
+                  embedded
+                  hideLabel
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setFromKey(toKey)
+                  setToKey(fromKey)
+                }}
+                aria-label="Swap From and To"
+                title="Swap From and To"
+                className="shrink-0 self-center rounded-lg p-2 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 focus:outline focus:outline-2 focus:outline-emerald-400"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                  className="h-5 w-5"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.22 4.22a.75.75 0 0 1 1.06 0l3 3a.75.75 0 0 1-1.06 1.06L6.5 6.56V14a.75.75 0 0 1-1.5 0V6.56L3.28 8.28a.75.75 0 1 1-1.06-1.06l3-3Zm9.5 11.5a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 1 1 1.06-1.06l1.72 1.72V6a.75.75 0 0 1 1.5 0v7.38l1.72-1.72a.75.75 0 1 1 1.06 1.06l-3 3Z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <label className="block">
@@ -277,21 +287,32 @@ function Picker({
   value,
   onChange,
   endpoints,
+  embedded = false,
+  hideLabel = false,
 }: {
   label: string
   value: string
   onChange: (next: string) => void
   endpoints: Endpoint[]
+  embedded?: boolean
+  hideLabel?: boolean
 }) {
   return (
-    <label className="block">
-      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400">
-        {label}
-      </span>
+    <label className="block min-w-0">
+      {!hideLabel && (
+        <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400">
+          {label}
+        </span>
+      )}
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
+        aria-label={hideLabel ? label : undefined}
+        className={
+          embedded
+            ? 'w-full rounded-lg border-0 bg-zinc-900 px-2 py-2 text-sm text-zinc-300 focus:outline focus:outline-2 focus:outline-emerald-400'
+            : 'w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400'
+        }
       >
         {endpoints.map((e) => {
           const key = endpointKey(e.id)
