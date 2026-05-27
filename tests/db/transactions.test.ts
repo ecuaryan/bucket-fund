@@ -4,6 +4,7 @@ import {
   createAdminFamily,
   insertBucket,
   moveMoney,
+  sendMoney,
   serviceClient,
   setBucketAllocation,
   userClient,
@@ -119,6 +120,43 @@ describe('RLS: transaction history visibility', () => {
 
     expect(error).toBeNull()
     expect(data).toEqual([])
+  })
+
+  it('member sees admin send to child', async () => {
+    const family = await createAdminFamily('tx-member-admin-send')
+    const member = await addMember(family.familyId, 'member', 'Jamie')
+    const child = await addMember(family.familyId, 'child', 'Alex')
+    const svc = serviceClient()
+
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 100,
+    })
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const txId = await sendMoney(admin, {
+      toMemberId: child.memberId,
+      amount: 30,
+      note: 'allowance',
+    })
+
+    const memberClient = await userClient(member.email, member.password)
+    const { data, error } = await memberClient
+      .from('transactions')
+      .select('id, type, from_member_id, to_member_id')
+      .eq('id', txId)
+      .single()
+
+    expect(error).toBeNull()
+    expect(data).toMatchObject({
+      id: txId,
+      type: 'send',
+      from_member_id: family.adminMemberId,
+      to_member_id: child.memberId,
+    })
   })
 
   it('admin sees all family transactions', async () => {
