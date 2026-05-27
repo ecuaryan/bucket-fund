@@ -1,15 +1,14 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { markRequireFreshSignIn } from '@/lib/freshSignIn'
 import { isHumanAuthEmail } from '@/lib/passwordReset'
 import { supabase } from '@/lib/supabase'
 
 export default function ResetPasswordPage() {
+  const formRef = useRef<HTMLFormElement>(null)
   const [ready, setReady] = useState(false)
   const [checking, setChecking] = useState(true)
   const [accountEmail, setAccountEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -50,9 +49,21 @@ export default function ResetPasswordPage() {
     }
   }, [])
 
-  async function onSubmit(e: FormEvent) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError(null)
+
+    const form = e.currentTarget
+    const emailInput = form.elements.namedItem('username') as HTMLInputElement | null
+    const passwordInput = form.elements.namedItem('password') as HTMLInputElement | null
+    const confirmInput = form.elements.namedItem(
+      'password_confirm',
+    ) as HTMLInputElement | null
+
+    const email = emailInput?.value.trim() ?? ''
+    const password = passwordInput?.value ?? ''
+    const confirm = confirmInput?.value ?? ''
+
     if (password.length < 8) {
       setError('Password must be at least 8 characters.')
       return
@@ -70,7 +81,7 @@ export default function ResetPasswordPage() {
       const { error: refreshError } = await supabase.auth.refreshSession()
       if (refreshError) throw refreshError
 
-      const savedEmail = accountEmail
+      const savedEmail = email || accountEmail
       markRequireFreshSignIn()
       await supabase.auth.signOut()
 
@@ -113,6 +124,7 @@ export default function ResetPasswordPage() {
   return (
     <AuthShell title="Choose a new password" subtitle="Admin email account">
       <form
+        ref={formRef}
         key={accountEmail || 'reset'}
         onSubmit={onSubmit}
         method="post"
@@ -124,13 +136,12 @@ export default function ResetPasswordPage() {
           <input
             type="email"
             name="username"
-            id="reset-email"
-            autoComplete="username email"
-            inputMode="email"
-            value={accountEmail}
-            onChange={(e) => setAccountEmail(e.target.value)}
+            id="username"
+            autoComplete="username"
+            defaultValue={accountEmail}
+            readOnly
             required
-            className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
+            className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-400 ring-1 ring-inset ring-zinc-700"
           />
         </label>
         <label className="block">
@@ -140,11 +151,8 @@ export default function ResetPasswordPage() {
           <input
             type="password"
             name="password"
-            id="reset-password"
+            id="new-password"
             autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onInput={(e) => setPassword(e.currentTarget.value)}
             minLength={8}
             required
             className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
@@ -157,11 +165,8 @@ export default function ResetPasswordPage() {
           <input
             type="password"
             name="password_confirm"
+            id="confirm-password"
             autoComplete="new-password"
-            id="reset-password-confirm"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            onInput={(e) => setConfirm(e.currentTarget.value)}
             minLength={8}
             required
             className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
