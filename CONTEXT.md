@@ -121,9 +121,10 @@ Every dollar lives in exactly one place — either in a named bucket or in someo
 ---
 
 ### Transaction History
-- Every member can view a full log of their own sends, receives, and bucket moves
+- **Admin and member** see all `bucket_move` entries on family-pool and adult-owned
+  buckets (each other's moves included). Children's bucket moves stay hidden.
+- **Child** sees only moves involving their own buckets, plus sends they're part of.
 - Each entry shows: amount, counterparty or bucket name, timestamp, optional note
-- Admin can view family-level transaction history
 
 ---
 
