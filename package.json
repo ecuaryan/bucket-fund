@@ -9,6 +9,16 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:db": "vitest run --config vitest.db.config.ts",
+    "test:all": "npm test && npm run test:db",
+    "check": "npm run lint && npm test && npm run build",
+    "check:full": "npm run lint && npm run test:all && npm run build",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:status": "supabase status",
+    "db:reset": "supabase db reset",
+    "db:types": "supabase gen types typescript --local > src/types/database.ts",
+    "env:local": "node scripts/supabase-env.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

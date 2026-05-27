@@ -61,12 +61,13 @@ Use the `@/` alias for absolute imports from `src/`.
 
 ## Testing
 
-- Run **`npm test`** before pushing. CI runs lint, test, and build on every PR.
-- **Phase A (now):** Vitest unit tests for pure logic in `src/lib/` (cash
-  accounts, auth helpers). No real Supabase or Teller in unit tests.
-- **Phase B (planned):** Local Supabase in CI — RLS matrix (admin / member /
-  child, two families) and `move_money` / invariant RPCs. Highest security ROI.
-- **Phase C (later):** A few Playwright smoke paths (sign-in, reset password, PIN).
+- **`npm test`** — unit tests (fast, no Docker).
+- **`npm run test:db`** — RLS tests (needs `npm run db:start` locally).
+- **`npm run check:full`** — lint + all tests + build before a big merge.
+- Add cases in **`tests/db/rls.test.ts`** when changing policies; colocate unit
+  tests as `src/**/*.test.ts`.
+- **Phase C (later):** Playwright smoke (sign-in, reset, PIN); `move_money` RPC
+  tests in `tests/db/`.
 
 ## Update this file
 

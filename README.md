@@ -27,17 +27,31 @@ entry points.
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in Supabase + Teller values
-npm run dev
+cp .env.example .env.local
+npm run db:start          # first time: Docker + local Supabase (~1 min)
+eval "$(npm run env:local)" && npm run dev   # Vite on :5173 against local API
 ```
 
-### Supabase local dev
+**Fast loop (recommended):** leave `supabase start` running in one terminal;
+use another for `npm run dev`. After pulling SQL changes: `npm run db:reset`.
+
+| Command | Purpose |
+| ------- | ------- |
+| `npm run db:start` | Local Postgres + Auth + Studio (port 54323) |
+| `npm run db:stop` | Stop local stack |
+| `npm run db:reset` | Re-apply all migrations (+ optional `seed.sql`) |
+| `npm run db:types` | Regenerate `src/types/database.ts` from local DB |
+| `npm run env:local` | Print `export …` for local API URL and keys |
+| `npm run test:db` | RLS tests against local Supabase |
+| `npm run test:all` | Unit + database tests |
+| `npm run check:full` | Lint + all tests + production build |
+
+Point `.env.local` at local Supabase (run `eval "$(npm run env:local)"` once per
+shell, or paste `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` from
+`npm run db:status`). Edge Function secrets stay in `supabase/functions/.env`.
 
 ```bash
-npx supabase start                                       # boots local DB + studio
-npx supabase migration up                                # applies migrations
-npx supabase functions serve teller-webhook              # local Edge Function
-npx supabase gen types typescript --local > src/types/database.ts
+npx supabase functions serve    # all Edge Functions (separate terminal)
 ```
 
 ## Scripts
@@ -54,14 +68,15 @@ npx supabase gen types typescript --local > src/types/database.ts
 ## CI and deployments
 
 Every push to `main` and every pull request runs
-[`.github/workflows/ci.yml`](./.github/workflows/ci.yml): **lint → test → build**.
+[`.github/workflows/ci.yml`](./.github/workflows/ci.yml):
 
-**Block broken deploys:** In GitHub → **Settings → Branches** → branch protection
-for `main`, enable **Require status checks to pass** and select the **CI** check
-(`lint, test, build`). Vercel production should deploy only from `main`, so merges
-that fail CI never reach production.
+- **lint, unit test, build** — Vitest on `src/lib/`, production build
+- **database RLS tests** — local Supabase in GitHub Actions; tenant isolation +
+  admin / member / child bucket policies
 
-Planned next: Supabase RLS / RPC tests in CI (Phase B in AGENTS.md).
+**Block broken deploys:** GitHub → **Settings → Branches** → `main` → require status
+checks: **`lint, unit test, build`** and **`database RLS tests`**. Vercel should
+deploy only from `main`.
 
 ## Project layout
 

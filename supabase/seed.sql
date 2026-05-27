@@ -1,0 +1,2 @@
+-- Optional local dev fixtures (not used by CI — tests seed their own data).
+-- Add INSERT statements here for a standing demo family if you want.
