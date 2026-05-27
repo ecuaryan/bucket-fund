@@ -28,7 +28,9 @@ export default function FamilyLoginPage() {
   const from = (location.state as LocationState)?.from ?? '/'
 
   const [roster, setRoster] = useState<ValidateJoinResult | null>(null)
-  const [loadError, setLoadError] = useState<string | null>(null)
+  /** Shown only after the user submits a code (not on silent stale-device cleanup). */
+  const [bindError, setBindError] = useState<string | null>(null)
+  const [restoreNotice, setRestoreNotice] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   const [codeInput, setCodeInput] = useState('')
@@ -40,25 +42,33 @@ export default function FamilyLoginPage() {
   const [pinError, setPinError] = useState<string | null>(null)
 
   const refreshRoster = useCallback(async (code: string) => {
-    setLoadError(null)
-    const result = await validateJoinCode(code)
-    bindFamily(result.familyId, code)
+    const trimmed = code.trim()
+    if (!trimmed) throw new Error('Enter your family join code.')
+    const result = await validateJoinCode(trimmed)
+    bindFamily(result.familyId, trimmed)
     setRoster(result)
+    setRestoreNotice(null)
     return result
   }, [])
 
   useEffect(() => {
     let cancelled = false
-    const storedCode = getBoundJoinCode()
+    const storedCode = getBoundJoinCode()?.trim()
     if (!storedCode) {
       setLoading(false)
       return
     }
 
     void refreshRoster(storedCode)
-      .catch((e) => {
+      .catch(() => {
         if (!cancelled) {
-          setLoadError(e instanceof Error ? e.message : 'Could not load family')
+          // Stale or rotated code on this device — don't flash "Invalid join
+          // code" before the user has a chance to type a new one.
+          clearBoundFamily()
+          setRoster(null)
+          setRestoreNotice(
+            'This device needs to be linked again. Enter your family code from Admin.',
+          )
         }
       })
       .finally(() => {
@@ -76,13 +86,16 @@ export default function FamilyLoginPage() {
 
   async function onBindCode(e: FormEvent) {
     e.preventDefault()
-    setLoadError(null)
+    setBindError(null)
+    setRestoreNotice(null)
     setBinding(true)
     try {
       await refreshRoster(codeInput)
       setCodeInput('')
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Invalid code')
+      setBindError(
+        err instanceof Error ? err.message : 'That code did not work.',
+      )
     } finally {
       setBinding(false)
     }
@@ -116,6 +129,8 @@ export default function FamilyLoginPage() {
     setRoster(null)
     setSelected(null)
     setPin('')
+    setBindError(null)
+    setRestoreNotice(null)
   }
 
   if (selected) {
@@ -182,9 +197,14 @@ export default function FamilyLoginPage() {
             autoCapitalize="characters"
             className="block w-full rounded-lg border-0 bg-zinc-950 px-3 py-3 text-center text-lg font-mono tracking-widest text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
           />
-          {loadError && (
+          {restoreNotice && (
+            <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-200 ring-1 ring-amber-500/30">
+              {restoreNotice}
+            </p>
+          )}
+          {bindError && (
             <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30">
-              {loadError}
+              {bindError}
             </p>
           )}
           <button
@@ -204,11 +224,6 @@ export default function FamilyLoginPage() {
 
   return (
     <AuthShell title={roster.familyName} subtitle="Who's signing in?">
-      {loadError && (
-        <p className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30">
-          {loadError}
-        </p>
-      )}
       {pinMembers.length === 0 ? (
         <p className="text-sm text-zinc-400">
           No one has a PIN yet. Ask your admin to add members and set PINs.
