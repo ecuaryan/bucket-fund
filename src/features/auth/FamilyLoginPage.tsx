@@ -15,7 +15,7 @@ import {
 } from '@/lib/familyDevice'
 import PinInput from '@/components/ui/PinInput'
 import {
-  pinLogin,
+  exchangePinForSession,
   validateJoinCode,
   type JoinMember,
   type ValidateJoinResult,
@@ -115,12 +115,17 @@ export default function FamilyLoginPage() {
     }
 
     setSubmitting(true)
+    setPinError(null)
     try {
-      await pinLogin({ familyId, memberId: selected.id, pin })
+      const tokens = await exchangePinForSession({
+        familyId,
+        memberId: selected.id,
+        pin,
+      })
+      await auth.signInWithSession(tokens)
     } catch (err) {
       setPinError(err instanceof Error ? err.message : 'Sign-in failed')
       setPin('')
-    } finally {
       setSubmitting(false)
     }
   }
@@ -132,6 +137,14 @@ export default function FamilyLoginPage() {
     setPin('')
     setBindError(null)
     setRestoreNotice(null)
+  }
+
+  if (selected && submitting) {
+    return (
+      <AuthShell title={selected.name} subtitle="Signing you in…">
+        <p className="text-center text-sm text-zinc-500">One moment</p>
+      </AuthShell>
+    )
   }
 
   if (selected) {
@@ -158,10 +171,10 @@ export default function FamilyLoginPage() {
           )}
           <button
             type="submit"
-            disabled={submitting || pin.length !== 4}
+            disabled={pin.length !== 4}
             className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black disabled:opacity-50"
           >
-            {submitting ? 'Signing in…' : 'Sign in'}
+            Sign in
           </button>
           <button
             type="button"

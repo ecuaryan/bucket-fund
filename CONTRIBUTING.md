@@ -88,6 +88,10 @@ Local Supabase env: `source scripts/env-local.sh` (see [README.md](./README.md))
 
 ## Deploying backend changes
 
+> **TODO:** Automate hosted Supabase deploys on merge to `main` (migrations +
+> Edge Functions). See [README.md § Production deploy automation](./README.md#production-deploy-automation-reliability).
+> Until that ships, production DB/schema can lag the frontend.
+
 - **Frontend:** merges to `main` → Vercel (after checks, if configured).
 - **SQL migrations:** after merging migration files to `main`, run against the **hosted**
   project (not automatic from CI today):

@@ -147,6 +147,24 @@ High-level snapshot of what exists on `main` today. Product truth lives in
 
 ## TODO
 
+### Production deploy automation (reliability)
+
+Hosted Supabase is **not** deployed when `main` merges — only the Vercel frontend
+is. Migrations and Edge Functions still require manual CLI from a linked machine
+(`npx supabase db push`, `supabase functions deploy`). That gap caused production
+outages when the app shipped before the DB (e.g. missing `get_available_balance`).
+
+- [ ] **CI/CD: apply SQL migrations to the hosted project on merge to `main`**
+      (GitHub Actions + `supabase db push` with project access token / DB password
+      in repo secrets; fail the workflow if push fails).
+- [ ] **CI/CD: deploy Edge Functions on merge** (or on path changes under
+      `supabase/functions/`) with secrets from GitHub / Supabase dashboard.
+- [ ] Document one-time secret setup and make “backend deploy” a required check
+      alongside lint / db tests / e2e (or a single `deploy-production` job after merge).
+
+Until then, after any PR that adds files under `supabase/migrations/`, run
+`npx supabase db push` against the hosted project before relying on production.
+
 ### Before connecting real Teller data
 
 These items are SECURITY-CRITICAL before any real user, real bank, or real

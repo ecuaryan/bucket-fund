@@ -1,5 +1,3 @@
-import { clearLocalAuthSession } from '@/lib/authStorage'
-import { setPendingPinSession } from '@/lib/pendingPinSession'
 import { supabase, supabaseUrl } from '@/lib/supabase'
 import { withTimeout } from '@/lib/timeout'
 
@@ -60,25 +58,18 @@ export async function validateJoinCode(code: string): Promise<ValidateJoinResult
   })
 }
 
-export async function pinLogin(input: {
+export type PinSessionTokens = {
+  access_token: string
+  refresh_token: string
+}
+
+/** Validates PIN via Edge Function; caller applies tokens with `signInWithSession`. */
+export async function exchangePinForSession(input: {
   familyId: string
   memberId: string
   pin: string
-}): Promise<void> {
-  const data = await postFunction<{
-    access_token: string
-    refresh_token: string
-  }>('pin-login', input)
-
-  // setSession in-tab can hang when a stale session holds the auth lock
-  // (refresh in progress, another tab, etc.). Clear storage and reload so
-  // AuthProvider applies the new session on a clean client.
-  clearLocalAuthSession()
-  setPendingPinSession({
-    access_token: data.access_token,
-    refresh_token: data.refresh_token,
-  })
-  window.location.reload()
+}): Promise<PinSessionTokens> {
+  return postFunction<PinSessionTokens>('pin-login', input)
 }
 
 export async function createMember(input: {

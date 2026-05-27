@@ -9,7 +9,6 @@ import {
 } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { clearLocalAuthSession } from '@/lib/authStorage'
-import { takePendingPinSession } from '@/lib/pendingPinSession'
 import { isPasswordRecoverySession } from '@/lib/recoverySession'
 import { supabase } from '@/lib/supabase'
 import { withTimeout } from '@/lib/timeout'
@@ -79,24 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true
 
     void (async () => {
-      const pending = takePendingPinSession()
-      if (pending) {
-        clearLocalAuthSession()
-        try {
-          const { error } = await withTimeout(
-            supabase.auth.setSession(pending),
-            20_000,
-            'Sign-in timed out. Close other BucketFund tabs and try again.',
-          )
-          if (error) {
-            console.error('pending PIN setSession', error)
-          }
-        } catch (err) {
-          console.error('pending PIN setSession', err)
-        }
-      }
-
-      if (!active) return
       const { data } = await supabase.auth.getSession()
       if (!active) return
       await applySession(data.session)
@@ -142,10 +123,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithSession = useCallback(
     async (tokens: { access_token: string; refresh_token: string }) => {
-      const { error } = await supabase.auth.setSession(tokens)
+      clearLocalAuthSession()
+      try {
+        await withTimeout(
+          supabase.auth.signOut({ scope: 'local' }),
+          5_000,
+          'Sign-out timed out',
+        )
+      } catch {
+        // Best effort — stale refresh may already be cleared.
+      }
+
+      const { data, error } = await withTimeout(
+        supabase.auth.setSession(tokens),
+        20_000,
+        'Sign-in timed out. Close other BucketFund tabs and try again.',
+      )
       if (error) throw error
+      if (!data.session) {
+        throw new Error('Sign-in did not return a session.')
+      }
+      await applySession(data.session)
     },
-    [],
+    [applySession],
   )
 
   const signOut = useCallback(async () => {
