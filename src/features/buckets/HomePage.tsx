@@ -136,7 +136,7 @@ export default function HomePage() {
         </p>
         <p className="mt-1 text-xs opacity-70">
           {accounts.length === 0
-            ? 'No linked bank accounts yet — link one in Admin once that screen exists.'
+            ? 'No linked bank accounts yet — link one from the Admin tab.'
             : `Across ${accounts.length} linked account${accounts.length === 1 ? '' : 's'}`}
         </p>
       </section>

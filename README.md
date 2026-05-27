@@ -89,13 +89,68 @@ production-ready as shipped.
       multi-family fixture.
 - [ ] Implement `auth_family_id()` correctly and confirm it cannot be
       shadowed via a temp table or custom JWT claim.
-- [ ] Implement Teller webhook signature verification in
+- [x] Implement Teller webhook signature verification in
       `supabase/functions/teller-webhook/index.ts` and reject unsigned
       payloads with 401 before parsing the body.
 - [ ] Implement the server-side invariant calculation in
       `supabase/functions/check-invariant/index.ts` and wire its
       `violation_amount > 0` output to an admin-visible alert via
       Supabase Realtime.
+- [ ] **Rotate the Teller application certificate + private key.** The
+      current values were pasted into a chat session during scaffolding
+      and should be considered compromised before any production use.
+      To rotate: in the Teller dashboard go to Certificates → revoke
+      the current cert → generate a new one → update both
+      `supabase/functions/.env` and the deployed Edge Function secrets.
+      To turn the downloaded PEM files into the single-line `\n`-escaped
+      value that fits in a `.env` file, run:
+
+      ```bash
+      awk 'BEGIN{ORS="\\n"} {print}' /path/to/certificate.pem
+      awk 'BEGIN{ORS="\\n"} {print}' /path/to/private_key.pem
+      ```
+
+      Wrap each result in double quotes when pasting it as the value.
+      After updating `supabase/functions/.env`, push to Supabase with:
+
+      ```bash
+      npx supabase secrets set --env-file ./supabase/functions/.env
+      ```
+
+### Teller environments
+
+Set both `VITE_TELLER_ENVIRONMENT` (in `.env.local`) and
+`TELLER_ENVIRONMENT` (in `supabase/functions/.env`, plus push via
+`npx supabase secrets set --env-file ./supabase/functions/.env`) to
+match. Three valid values:
+
+- `sandbox` — fully synthetic data, no real banks. Use during dev.
+  All sandbox institutions accept `password` as the password; the
+  username controls which scenario you get (see table below). mTLS
+  certs are still sent but ignored by the sandbox.
+- `development` — real bank logins, free up to ~100 active
+  enrollments per app. Use this for v1 launch and personal use.
+- `production` — real bank logins, paid per-enrollment. Required
+  only if you charge customers per linked account.
+
+The Teller API base URL is identical across environments — only the
+Connect widget UX and the access-token-bound data scope differ.
+
+#### Sandbox test credentials
+
+In `sandbox` mode, password is always `password`. The username
+controls which flow you exercise:
+
+| Username       | Behavior                                                                           |
+| -------------- | ---------------------------------------------------------------------------------- |
+| `username`     | Happy path — immediate successful enrollment.                                      |
+| `otp`          | OTP MFA flow. The correct code is `0000`.                                          |
+| `challenge`    | Knowledge-based MFA. The answer is `blue`.                                         |
+| `disconnected` | Enrolls successfully, then disconnects on the first API call (tests the webhook). |
+| `account_locked`, `credentials_invalid`, etc. | Use any `enrollment.disconnected.*` reason as the username to simulate that disconnection state. |
+| `verify.microdeposit` | Tests the `Verify Account Details via Microdeposit` flow. |
+
+Full list and behavior matrix: <https://teller.io/docs/guides/sandbox>
 
 ### Other follow-ups
 

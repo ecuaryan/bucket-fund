@@ -380,6 +380,22 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Per-function configuration. JWT verification is enabled by default;
+# webhooks called by third parties (which don't have a Supabase JWT)
+# must opt out. teller-enroll keeps JWT verification ON because it
+# needs to identify the calling user.
+[functions.teller-enroll]
+verify_jwt = true
+
+[functions.teller-disconnect]
+verify_jwt = true
+
+[functions.teller-webhook]
+verify_jwt = false
+
+[functions.check-invariant]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

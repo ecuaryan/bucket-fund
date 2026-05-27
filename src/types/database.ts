@@ -51,6 +51,7 @@ export type Database = {
           last_synced_at: string | null
           owner_member_id: string | null
           teller_account_id: string
+          teller_enrollment_id: string | null
         }
         Insert: {
           account_name?: string | null
@@ -63,6 +64,7 @@ export type Database = {
           last_synced_at?: string | null
           owner_member_id?: string | null
           teller_account_id: string
+          teller_enrollment_id?: string | null
         }
         Update: {
           account_name?: string | null
@@ -75,6 +77,7 @@ export type Database = {
           last_synced_at?: string | null
           owner_member_id?: string | null
           teller_account_id?: string
+          teller_enrollment_id?: string | null
         }
         Relationships: [
           {
@@ -89,6 +92,13 @@ export type Database = {
             columns: ["owner_member_id"]
             isOneToOne: false
             referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_teller_enrollment_id_fkey"
+            columns: ["teller_enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "teller_enrollments"
             referencedColumns: ["id"]
           },
         ]
@@ -190,6 +200,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "family_members_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teller_enrollments: {
+        Row: {
+          access_token: string
+          created_at: string
+          enrollment_id: string
+          family_id: string
+          id: string
+          institution_id: string | null
+          institution_name: string | null
+          last_synced_at: string | null
+          status: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          enrollment_id: string
+          family_id: string
+          id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          last_synced_at?: string | null
+          status?: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          enrollment_id?: string
+          family_id?: string
+          id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          last_synced_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teller_enrollments_family_id_fkey"
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "families"
