@@ -54,6 +54,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   })
 
   const applySession = useCallback(async (session: Session | null) => {
+    // Sync the JWT into Realtime so RLS-filtered subscriptions can
+    // identify the user. supabase-js auto-syncs on most versions but
+    // a regression in 2.54.x silently dropped events; calling this
+    // explicitly is harmless and makes the behavior version-proof.
+    await supabase.realtime.setAuth(session?.access_token ?? null)
     if (!session) {
       setState({ status: 'signedOut', session: null, member: null })
       return

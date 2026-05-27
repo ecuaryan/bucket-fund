@@ -379,6 +379,15 @@ export type Database = {
       auth_family_id: { Args: never; Returns: string }
       auth_member_id: { Args: never; Returns: string }
       auth_role: { Args: never; Returns: string }
+      move_money: {
+        Args: {
+          p_amount: number
+          p_from_bucket_id: string
+          p_note?: string
+          p_to_bucket_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

@@ -1,7 +1,9 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
+import { sumCashBalance } from '@/lib/accounts'
 import type { Database } from '@/types/database'
+import MoveMoneyDialog from '@/features/buckets/MoveMoneyDialog'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -19,41 +21,70 @@ export default function HomePage() {
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   const [newBucketName, setNewBucketName] = useState('')
+  const [moveBucketId, setMoveBucketId] = useState<string | null>(null)
 
   const member = auth.status === 'signedIn' ? auth.member : null
+  const familyId = member?.family_id ?? null
+
+  const loadData = useCallback(async () => {
+    setLoadError(null)
+    const [bucketsRes, accountsRes] = await Promise.all([
+      supabase.from('buckets').select('*').order('created_at'),
+      supabase.from('accounts').select('*'),
+    ])
+    if (bucketsRes.error) {
+      setLoadError(bucketsRes.error.message)
+      return
+    }
+    if (accountsRes.error) {
+      setLoadError(accountsRes.error.message)
+      return
+    }
+    setBuckets(bucketsRes.data ?? [])
+    setAccounts(accountsRes.data ?? [])
+  }, [])
 
   useEffect(() => {
-    if (!member) return
-
-    let active = true
-
-    async function loadData() {
-      setLoadError(null)
-      const [bucketsRes, accountsRes] = await Promise.all([
-        supabase.from('buckets').select('*').order('created_at'),
-        supabase.from('accounts').select('*'),
-      ])
-
-      if (!active) return
-
-      if (bucketsRes.error) {
-        setLoadError(bucketsRes.error.message)
-        return
-      }
-      if (accountsRes.error) {
-        setLoadError(accountsRes.error.message)
-        return
-      }
-      setBuckets(bucketsRes.data ?? [])
-      setAccounts(accountsRes.data ?? [])
-    }
-
+    if (!familyId) return
     void loadData()
+  }, [familyId, loadData])
 
+  // Realtime: any bucket or account change in the family triggers a
+  // reload. We could splice deltas in directly for less network, but
+  // a fetch is < 50ms and we get correct ordering for free.
+  useEffect(() => {
+    if (!familyId) return
+    const channel = supabase
+      .channel(`family:${familyId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'buckets',
+          filter: `family_id=eq.${familyId}`,
+        },
+        () => {
+          void loadData()
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'accounts',
+          filter: `family_id=eq.${familyId}`,
+        },
+        () => {
+          void loadData()
+        },
+      )
+      .subscribe()
     return () => {
-      active = false
+      void supabase.removeChannel(channel)
     }
-  }, [member])
+  }, [familyId, loadData])
 
   async function onCreateBucket(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -109,18 +140,18 @@ export default function HomePage() {
     (sum, b) => sum + Number(b.allocated_amount),
     0,
   )
-  // For now: assume the signed-in admin is the only person with accounts.
-  // The real "unallocated" calc per CONTEXT.md will live in the
-  // check-invariant Edge Function once members and child members exist.
-  const realBalance = accounts.reduce(
-    (sum, a) => sum + Number(a.current_balance),
-    0,
-  )
+  // Cash accounts only — credit cards / loans / investments are not
+  // money you can allocate to envelopes. See `lib/accounts.ts`.
+  const realBalance = sumCashBalance(accounts)
   const unallocated = realBalance - allocated
   const unallocatedColor =
     unallocated >= 0
       ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
       : 'bg-red-50 text-red-700 ring-red-200'
+
+  const cashAccountsCount = accounts.filter(
+    (a) => a.current_balance !== null && Number(a.current_balance) > 0,
+  ).length
 
   return (
     <div className="space-y-6">
@@ -135,9 +166,9 @@ export default function HomePage() {
           {currency.format(unallocated)}
         </p>
         <p className="mt-1 text-xs opacity-70">
-          {accounts.length === 0
-            ? 'No linked bank accounts yet — link one from the Admin tab.'
-            : `Across ${accounts.length} linked account${accounts.length === 1 ? '' : 's'}`}
+          {cashAccountsCount === 0
+            ? 'No linked cash accounts yet — link one from the Admin tab.'
+            : `${currency.format(realBalance)} across ${cashAccountsCount} linked account${cashAccountsCount === 1 ? '' : 's'}`}
         </p>
       </section>
 
@@ -161,21 +192,24 @@ export default function HomePage() {
         ) : (
           <ul className="divide-y divide-slate-200 overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
             {buckets.map((bucket) => (
-              <li
-                key={bucket.id}
-                className="flex items-center justify-between px-4 py-3"
-              >
-                <div>
-                  <p className="text-sm font-medium text-slate-900">
-                    {bucket.name}
+              <li key={bucket.id}>
+                <button
+                  type="button"
+                  onClick={() => setMoveBucketId(bucket.id)}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-900">
+                      {bucket.name}
+                    </p>
+                    {bucket.owner_member_id === null && (
+                      <p className="text-xs text-slate-500">Family pool</p>
+                    )}
+                  </div>
+                  <p className="shrink-0 text-sm font-semibold tabular-nums text-slate-700">
+                    {currency.format(Number(bucket.allocated_amount))}
                   </p>
-                  {bucket.owner_member_id === null && (
-                    <p className="text-xs text-slate-500">Family pool</p>
-                  )}
-                </div>
-                <p className="text-sm font-semibold tabular-nums text-slate-700">
-                  {currency.format(Number(bucket.allocated_amount))}
-                </p>
+                </button>
               </li>
             ))}
           </ul>
@@ -201,6 +235,19 @@ export default function HomePage() {
           <p className="mt-2 text-xs text-red-700">{createError}</p>
         )}
       </section>
+
+      <MoveMoneyDialog
+        open={moveBucketId !== null}
+        buckets={buckets}
+        unallocated={unallocated}
+        initialBucketId={moveBucketId ?? ''}
+        onClose={() => setMoveBucketId(null)}
+        onMoved={() => {
+          // Realtime will refresh, but trigger an immediate fetch too
+          // so optimism kicks in before the WS round-trip.
+          void loadData()
+        }}
+      />
     </div>
   )
 }
