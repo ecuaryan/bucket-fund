@@ -69,16 +69,18 @@ npx supabase functions serve    # all Edge Functions (separate terminal)
 
 ## CI and deployments
 
+See **[CONTRIBUTING.md](./CONTRIBUTING.md)** for the full workflow: branch protection (no direct
+pushes to `main`), required CI checks, and Vercel waiting for GitHub Actions before production.
+
 Every push to `main` and every pull request runs
 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml):
 
 - **lint, unit test, build** — Vitest on `src/lib/`, production build
 - **database RLS tests** — local Supabase; tenant isolation, `move_money`, transaction visibility
-- **e2e smoke tests** — login redirect, admin sign-in, forgot-password link
+- **e2e smoke tests** — login redirect, admin sign-in, forgot-password flow
 
-**Block broken deploys:** GitHub → **Settings → Branches** → `main` → require status
-checks: **`lint, unit test, build`**, **`database RLS tests`**, and **`e2e smoke tests`**. Vercel should
-deploy only from `main`.
+**Quick setup:** GitHub → **Branches** → protect `main` (require PR + the three checks above).
+Vercel → **Deployment Protection** → production waits for the same checks.
 
 ## Project layout
 

@@ -4,15 +4,17 @@ Entry point for AI coding agents (and humans) working in this repo.
 
 ## Read before starting
 
-1. **[CONTEXT.md](./CONTEXT.md)** — full product brief: problem, users
+1. **[CONTRIBUTING.md](./CONTRIBUTING.md)** — branch/PR workflow, CI check names,
+   Vercel gating, environments (do not push directly to `main`).
+2. **[CONTEXT.md](./CONTEXT.md)** — full product brief: problem, users
    and roles, balance model and invariant, schema, security model, and
    what's intentionally out of scope. This is the source of product
    truth. Update it when product decisions change.
-2. **[.cursor/rules/](./.cursor/rules/)** — project-specific code
+3. **[.cursor/rules/](./.cursor/rules/)** — project-specific code
    conventions that Cursor auto-loads. Currently:
    - `tailwind-v4.mdc` — this project uses Tailwind v4 (CSS-first config,
      no `tailwind.config.ts`). Do not generate v3 patterns.
-3. **[README.md](./README.md)** — dev setup, scripts, and the
+4. **[README.md](./README.md)** — dev setup, scripts, and the
    "Before connecting real Teller data" TODO list. The items in that
    list are security-critical.
 
