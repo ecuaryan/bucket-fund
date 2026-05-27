@@ -134,13 +134,13 @@ High-level snapshot of what exists on `main` today. Product truth lives in
 - Home screen: unallocated pool, bucket list, Realtime sync
 - Bucket CRUD: create, inline rename, reorder, delete (with fund reclaim)
 - Move money flow (`move_money` Postgres fn + MoveMoneyDialog)
+- Send money (`send_money` Postgres fn + Send page; virtual transfers between members)
 - Teller Connect: link bank, sync accounts, webhook balance updates, unlink
 - Transaction history with bucket filter, pagination, tap-to-expand notes
 - Dark theme (pure black + zinc palette)
 
 ### Not yet built
 
-- Send money (member → member virtual transfers)
 - WebAuthn biometric fast path
 - Balance invariant check wired end-to-end + admin alert banner
 - PWA icon assets + install polish

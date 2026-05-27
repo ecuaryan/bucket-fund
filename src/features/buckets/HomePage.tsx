@@ -33,6 +33,7 @@ export default function HomePage() {
   const navigate = useNavigate()
   const [buckets, setBuckets] = useState<Bucket[] | null>(null)
   const [accounts, setAccounts] = useState<Account[] | null>(null)
+  const [availableBalance, setAvailableBalance] = useState<number | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
@@ -56,10 +57,11 @@ export default function HomePage() {
     setLoadError(null)
     await supabase.rpc('ensure_member_bucket_orders')
 
-    const [bucketsRes, orderRes, accountsRes] = await Promise.all([
+    const [bucketsRes, orderRes, accountsRes, balanceRes] = await Promise.all([
       supabase.from('buckets').select('*'),
       supabase.from('member_bucket_order').select('bucket_id, display_order'),
       supabase.from('accounts').select('*'),
+      supabase.rpc('get_available_balance'),
     ])
     if (bucketsRes.error) {
       const msg = bucketsRes.error.message
@@ -86,6 +88,10 @@ export default function HomePage() {
       setLoadError(accountsRes.error.message)
       return
     }
+    if (balanceRes.error) {
+      setLoadError(balanceRes.error.message)
+      return
+    }
 
     const orderMap = new Map(
       (orderRes.data ?? []).map((row) => [row.bucket_id, row.display_order]),
@@ -99,6 +105,7 @@ export default function HomePage() {
 
     setBuckets(sorted)
     setAccounts(accountsRes.data ?? [])
+    setAvailableBalance(Number(balanceRes.data ?? 0))
   }, [])
 
   useEffect(() => {
@@ -237,7 +244,7 @@ export default function HomePage() {
     )
   }
 
-  if (buckets === null || accounts === null) {
+  if (buckets === null || accounts === null || availableBalance === null) {
     return <p className="text-sm text-zinc-400">Loading…</p>
   }
 
@@ -245,10 +252,10 @@ export default function HomePage() {
     (sum, b) => sum + Number(b.allocated_amount),
     0,
   )
-  // Cash accounts only — credit cards / loans / investments are not
-  // money you can allocate to envelopes. See `lib/accounts.ts`.
+  // Server-side: cash (role-scoped) + net sends − allocations. See send_money migration.
+  const unallocated = availableBalance
+  // Cash accounts only — for the subtitle hint under Unallocated.
   const realBalance = sumCashBalance(accounts)
-  const unallocated = realBalance - allocated
   const unallocatedColor =
     unallocated >= 0
       ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30'

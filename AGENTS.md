@@ -65,8 +65,8 @@ Use the `@/` alias for absolute imports from `src/`.
 
 - **`npm test`** — unit tests (fast, no Docker).
 - **`npm run test:db`** — database tests (needs `npm run db:start`): RLS in
-  `tests/db/rls.test.ts`, `move_money` in `move_money.test.ts`, transaction
-  visibility in `transactions.test.ts`.
+  `tests/db/rls.test.ts`, `move_money` in `move_money.test.ts`, `send_money`
+  in `send_money.test.ts`, transaction visibility in `transactions.test.ts`.
 - **`npm run test:e2e`** — Playwright smoke (Docker + local Supabase).
 - **`npm run check:full`** — lint + unit + db tests + build (no e2e).
 - When changing RLS or money RPCs, extend the matching file under `tests/db/`.

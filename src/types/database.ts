@@ -436,6 +436,19 @@ export type Database = {
         }
         Returns: string
       }
+      send_money: {
+        Args: {
+          p_amount: number
+          p_note?: string
+          p_to_member_id: string
+        }
+        Returns: string
+      }
+      get_available_balance: { Args: never; Returns: number }
+      member_available_balance: {
+        Args: { p_member_id: string }
+        Returns: number
+      }
       reorder_bucket: {
         Args: { p_bucket_id: string; p_direction: string }
         Returns: undefined
