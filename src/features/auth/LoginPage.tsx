@@ -56,7 +56,7 @@ export default function LoginPage() {
       const msg = err instanceof Error ? err.message : 'Something went wrong.'
       if (msg.toLowerCase().includes('invalid login')) {
         setError(
-          'Invalid email or password. Use Forgot password below — a successful PIN sign-in can also change your email password.',
+          'Invalid email or password. Try again or use Forgot password below.',
         )
       } else {
         setError(msg)
