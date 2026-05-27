@@ -279,7 +279,11 @@ teller_events (
 )
 ```
 
-RLS policies must be added to every table, filtering by `family_id` and enforcing role-based column/row access.
+RLS policies are implemented in
+`supabase/migrations/00000000000001_rls_and_auth_bootstrap.sql` (replacing
+the fail-closed stubs in the initial schema). Every table filters by
+`family_id` via `auth_family_id()` with per-role refinements for
+admin / member / child.
 
 ---
 
@@ -289,34 +293,42 @@ RLS policies must be added to every table, filtering by `family_id` and enforcin
 bucketfund/
 ├── public/
 │   ├── icons/              # PWA icons (all required sizes)
-│   └── manifest.json
+│   └── offline.html        # PWA offline fallback
 ├── src/
 │   ├── components/
 │   │   ├── ui/             # Reusable primitives (Button, Input, etc.)
-│   │   └── layout/         # Shell, nav, header
+│   │   └── layout/         # Shell, nav, header (AppShell)
 │   ├── features/
-│   │   ├── auth/           # Login, PIN entry, biometric, member picker
-│   │   ├── buckets/        # Bucket list, bucket move flow
-│   │   ├── sends/          # Send money flow
+│   │   ├── auth/           # Login (email/password today; PIN + biometric planned)
+│   │   ├── buckets/        # Home, bucket list, move flow, CRUD
+│   │   ├── sends/          # Send money flow (stub)
 │   │   ├── history/        # Transaction history
-│   │   ├── accounts/       # Teller link, account management
-│   │   └── admin/          # Member management, family settings
+│   │   ├── accounts/       # Reserved — Teller linking lives in admin/ for now
+│   │   └── admin/          # Bank linking, family settings (members planned)
 │   ├── lib/
 │   │   ├── supabase.ts     # Supabase client
-│   │   ├── teller.ts       # Teller client helpers
-│   │   └── invariant.ts    # Balance invariant checker
+│   │   ├── auth.tsx        # Auth context + Realtime JWT sync
+│   │   ├── teller.ts       # Teller Connect client helpers
+│   │   ├── buckets.ts      # move_money RPC + bucket CRUD helpers
+│   │   ├── accounts.ts     # Cash-account filtering for unallocated pool
+│   │   └── invariant.ts    # Client-side invariant helper (optimistic UI only)
 │   ├── hooks/              # Shared React hooks
 │   ├── types/              # TypeScript types mirroring DB schema
+│   ├── index.css           # Tailwind v4 entry (CSS-first config)
 │   └── main.tsx
 ├── supabase/
 │   ├── functions/          # Edge Functions
-│   │   ├── teller-webhook/ # Receives Teller events, updates balances
-│   │   └── check-invariant/# Server-side invariant verification
+│   │   ├── teller-enroll/  # Process Connect enrollment, sync accounts
+│   │   ├── teller-disconnect/
+│   │   ├── teller-webhook/ # Webhook handler, balance updates
+│   │   └── check-invariant/# Server-side invariant verification (stub)
 │   └── migrations/         # SQL migrations
 ├── vite.config.ts
-├── tailwind.config.ts
 └── tsconfig.json
 ```
+
+> **Tailwind v4:** there is no `tailwind.config.ts`. Theme tokens and
+> `@import "tailwindcss"` live in `src/index.css`. See `.cursor/rules/tailwind-v4.mdc`.
 
 ---
 
@@ -333,6 +345,9 @@ The primary use case must be frictionless:
 2. Enter amount
 3. Tap destination bucket
 4. Confirm → done
+
+Implemented in `src/features/buckets/HomePage.tsx` and
+`MoveMoneyDialog.tsx` via the `move_money()` Postgres function.
 
 ### Child PIN login
 - Admin sets PIN for child member (stored as bcrypt hash in `family_members.pin_hash`)
@@ -354,6 +369,9 @@ The primary use case must be frictionless:
 ### Supabase Realtime
 - Subscribe to balance and transaction changes scoped to the authenticated member's family
 - UI updates instantly when any family member makes a move or a Teller sync fires
+- Wired on Home (buckets + accounts) and History (transactions INSERT). Requires
+  tables in the `supabase_realtime` publication and `replica identity full`
+  on RLS-protected tables (migrations 00000000000006–07).
 
 ### PWA requirements
 - Full `manifest.json` with icons at all required sizes (72, 96, 128, 144, 152, 192, 384, 512px)

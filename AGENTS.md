@@ -48,9 +48,9 @@ Entry point for AI coding agents (and humans) working in this repo.
 | Buckets list + move flow        | `src/features/buckets/`               |
 | Send money flow                 | `src/features/sends/`                 |
 | Transaction history             | `src/features/history/`               |
-| Account linking / Teller Connect | `src/features/accounts/`             |
+| Account linking / Teller Connect | `src/features/admin/` (not `accounts/` yet) |
 | Admin / family management       | `src/features/admin/`                 |
-| Supabase client / Teller helpers / invariant helper | `src/lib/`        |
+| Supabase client / Teller helpers / invariant helper | `src/lib/` (`auth.tsx`, `buckets.ts`, `accounts.ts`, …) |
 | Shared React hooks              | `src/hooks/`                          |
 | DB-mirrored TS types (generated) | `src/types/database.ts`              |
 | SQL migrations                  | `supabase/migrations/`                |
