@@ -101,10 +101,16 @@ export default function SendPage() {
     loadData,
   )
 
-  const recipients = useMemo(
-    () => (members ?? []).filter((m) => m.id !== memberId),
-    [members, memberId],
-  )
+  const isAdult =
+    member?.role === 'admin' || member?.role === 'member'
+
+  const recipients = useMemo(() => {
+    const others = (members ?? []).filter((m) => m.id !== memberId)
+    if (isAdult) {
+      return others.filter((m) => m.role === 'child')
+    }
+    return others
+  }, [members, memberId, isAdult])
 
   const amount = parseFloat(amountStr)
   const amountValid = Number.isFinite(amount) && amount > 0
@@ -188,7 +194,9 @@ export default function SendPage() {
       <header>
         <h1 className="text-xl font-semibold">Send</h1>
         <p className="mt-1 text-sm text-zinc-400">
-          Move unallocated money to another family member instantly.
+          {isAdult
+            ? 'Fund a child’s personal unallocated balance from the family pool.'
+            : 'Send unallocated money to another family member.'}
         </p>
       </header>
 
@@ -214,7 +222,9 @@ export default function SendPage() {
 
       {recipients.length === 0 ? (
         <p className="rounded-2xl bg-zinc-900 px-4 py-3 text-sm text-zinc-400 ring-1 ring-zinc-800">
-          Add another family member from Admin before sending.
+          {isAdult
+            ? 'Add a child in Admin to send allowance or spending money. Adults share one pool — use buckets to set aside money together.'
+            : 'Add another family member from Admin before sending.'}
         </p>
       ) : sendEnabled ? (
         <form
