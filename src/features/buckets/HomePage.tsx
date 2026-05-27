@@ -186,7 +186,7 @@ export default function HomePage() {
 
   if (!member) {
     return (
-      <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
+      <p className="rounded-2xl bg-amber-500/10 px-4 py-3 text-sm text-amber-200 ring-1 ring-amber-500/30">
         Signed in, but no family membership found. The sign-up trigger may
         not have run — try signing out and signing up again.
       </p>
@@ -195,7 +195,7 @@ export default function HomePage() {
 
   if (loadError) {
     return (
-      <div className="rounded-2xl bg-red-50 p-4 text-sm text-red-700 ring-1 ring-red-200">
+      <div className="rounded-2xl bg-red-500/10 p-4 text-sm text-red-300 ring-1 ring-red-500/30">
         <p className="font-semibold">Could not load buckets</p>
         <p className="mt-1">{loadError}</p>
       </div>
@@ -203,7 +203,7 @@ export default function HomePage() {
   }
 
   if (buckets === null || accounts === null) {
-    return <p className="text-sm text-slate-500">Loading…</p>
+    return <p className="text-sm text-zinc-400">Loading…</p>
   }
 
   const allocated = buckets.reduce(
@@ -216,8 +216,8 @@ export default function HomePage() {
   const unallocated = realBalance - allocated
   const unallocatedColor =
     unallocated >= 0
-      ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-      : 'bg-red-50 text-red-700 ring-red-200'
+      ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30'
+      : 'bg-red-500/10 text-red-300 ring-red-500/30'
 
   const cashAccountsCount = accounts.filter(
     (a) => a.current_balance !== null && Number(a.current_balance) > 0,
@@ -245,22 +245,22 @@ export default function HomePage() {
       <section aria-label="Buckets">
         <header className="mb-3 flex items-baseline justify-between">
           <h2 className="text-lg font-semibold">Buckets</h2>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-zinc-400">
             {buckets.length} total · {currency.format(allocated)} allocated
           </span>
         </header>
 
         {buckets.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center">
-            <p className="text-sm font-medium text-slate-700">
+          <div className="rounded-2xl border border-dashed border-zinc-700 p-6 text-center">
+            <p className="text-sm font-medium text-zinc-300">
               No buckets yet
             </p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-zinc-400">
               Create your first one below — e.g. Groceries, Rent, Fun.
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-slate-200 rounded-2xl bg-white ring-1 ring-slate-200">
+          <ul className="divide-y divide-zinc-800 rounded-2xl bg-zinc-900 ring-1 ring-zinc-800">
             {buckets.map((bucket, idx) => {
               const renaming = renamingId === bucket.id
               return (
@@ -280,9 +280,9 @@ export default function HomePage() {
                           if (e.key === 'Escape') cancelRename()
                         }}
                         onBlur={() => void commitRename(bucket.id)}
-                        className="flex-1 rounded-lg border-0 bg-white px-3 py-2 text-sm text-slate-900 ring-1 ring-inset ring-emerald-300 focus:outline focus:outline-2 focus:outline-emerald-500"
+                        className="flex-1 rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-emerald-400 focus:outline focus:outline-2 focus:outline-emerald-400"
                       />
-                      <p className="shrink-0 text-sm font-semibold tabular-nums text-slate-400">
+                      <p className="shrink-0 text-sm font-semibold tabular-nums text-zinc-500">
                         {currency.format(Number(bucket.allocated_amount))}
                       </p>
                     </div>
@@ -290,17 +290,17 @@ export default function HomePage() {
                     <button
                       type="button"
                       onClick={() => setMoveBucketId(bucket.id)}
-                      className="-ml-1 flex flex-1 items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
+                      className="-ml-1 flex flex-1 items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-zinc-800/60 focus:bg-zinc-800/60 focus:outline-none"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-slate-900">
+                        <p className="truncate text-sm font-medium text-zinc-300">
                           {bucket.name}
                         </p>
                         {bucket.owner_member_id === null && (
-                          <p className="text-xs text-slate-500">Family pool</p>
+                          <p className="text-xs text-zinc-400">Family pool</p>
                         )}
                       </div>
-                      <p className="shrink-0 text-sm font-semibold tabular-nums text-slate-700">
+                      <p className="shrink-0 text-sm font-semibold tabular-nums text-zinc-300">
                         {currency.format(Number(bucket.allocated_amount))}
                       </p>
                     </button>
@@ -323,7 +323,7 @@ export default function HomePage() {
           </ul>
         )}
         {actionError && (
-          <p className="mt-2 text-xs text-red-700">{actionError}</p>
+          <p className="mt-2 text-xs text-red-300">{actionError}</p>
         )}
 
         <form onSubmit={onCreateBucket} className="mt-4 flex gap-2">
@@ -332,18 +332,18 @@ export default function HomePage() {
             value={newBucketName}
             onChange={(e) => setNewBucketName(e.target.value)}
             placeholder="New bucket name"
-            className="flex-1 rounded-lg border-0 bg-white px-3 py-2 text-sm text-slate-900 ring-1 ring-inset ring-slate-200 placeholder:text-slate-400 focus:outline focus:outline-2 focus:outline-emerald-500"
+            className="flex-1 rounded-lg border-0 bg-zinc-900 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-500 focus:outline focus:outline-2 focus:outline-emerald-400"
           />
           <button
             type="submit"
             disabled={creating || newBucketName.trim().length === 0}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {creating ? 'Adding…' : 'Add'}
           </button>
         </form>
         {createError && (
-          <p className="mt-2 text-xs text-red-700">{createError}</p>
+          <p className="mt-2 text-xs text-red-300">{createError}</p>
         )}
       </section>
 

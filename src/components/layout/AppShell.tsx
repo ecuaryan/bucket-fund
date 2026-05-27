@@ -18,23 +18,23 @@ export default function AppShell() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col bg-slate-50 text-slate-900">
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur">
+    <div className="flex min-h-svh flex-col bg-black text-zinc-300">
+      <header className="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-900/80 backdrop-blur">
         <div className="mx-auto flex max-w-md items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-black">
               <span className="text-sm font-semibold">$</span>
             </div>
             <div className="leading-tight">
               <p className="text-sm font-semibold">BucketFund</p>
-              <p className="text-xs text-slate-500">{familyName}</p>
+              <p className="text-xs text-zinc-400">{familyName}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onSignOut}
             disabled={signingOut}
-            className="rounded-lg px-2 py-1 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50"
+            className="rounded-lg px-2 py-1 text-xs font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50"
           >
             {signingOut ? 'Signing out…' : 'Sign out'}
           </button>
@@ -45,7 +45,7 @@ export default function AppShell() {
         <Outlet />
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white/95 backdrop-blur">
+      <nav className="fixed inset-x-0 bottom-0 border-t border-zinc-800 bg-zinc-900/95 backdrop-blur">
         <ul className="mx-auto flex max-w-md items-stretch justify-around px-4 py-2 text-xs font-medium">
           <TabLink to="/" label="Home" />
           <TabLink to="/send" label="Send" />
@@ -67,8 +67,8 @@ function TabLink({ to, label }: { to: string; label: string }) {
           [
             'flex h-12 w-full items-center justify-center rounded-lg transition',
             isActive
-              ? 'bg-emerald-50 text-emerald-700'
-              : 'text-slate-500 hover:text-slate-800',
+              ? 'bg-emerald-500/15 text-emerald-300'
+              : 'text-zinc-400 hover:text-zinc-300',
           ].join(' ')
         }
       >

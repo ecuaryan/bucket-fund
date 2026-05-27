@@ -69,7 +69,7 @@ export default function BucketActionsMenu({
           e.stopPropagation()
           setOpen((v) => !v)
         }}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline focus:outline-2 focus:outline-emerald-500"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 focus:outline focus:outline-2 focus:outline-emerald-400"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -85,10 +85,10 @@ export default function BucketActionsMenu({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-lg bg-white py-1 text-sm shadow-lg ring-1 ring-slate-200"
+          className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-lg bg-zinc-900 py-1 text-sm shadow-xl ring-1 ring-zinc-700"
         >
           <MenuItem onClick={fire(onViewHistory)}>View history</MenuItem>
-          <div className="my-1 h-px bg-slate-100" />
+          <div className="my-1 h-px bg-zinc-800" />
           <MenuItem onClick={fire(onRename)}>Rename</MenuItem>
           <MenuItem onClick={fire(onMoveUp)} disabled={isFirst}>
             Move up
@@ -96,7 +96,7 @@ export default function BucketActionsMenu({
           <MenuItem onClick={fire(onMoveDown)} disabled={isLast}>
             Move down
           </MenuItem>
-          <div className="my-1 h-px bg-slate-100" />
+          <div className="my-1 h-px bg-zinc-800" />
           <MenuItem
             onClick={fire(onDelete)}
             destructive
@@ -137,8 +137,8 @@ function MenuItem({
       className={
         'block w-full px-3 py-2 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ' +
         (destructive
-          ? 'text-red-700 hover:bg-red-50'
-          : 'text-slate-700 hover:bg-slate-50')
+          ? 'text-red-300 hover:bg-red-500/10'
+          : 'text-zinc-300 hover:bg-zinc-800')
       }
     >
       {children}

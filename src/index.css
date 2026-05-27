@@ -1,6 +1,24 @@
 @import "tailwindcss";
 
 /*
+ * Force dark theme app-wide. We also set `color-scheme: dark` so the
+ * browser themes scrollbars, autofill, and form widgets accordingly,
+ * and put a dark color on <html>/<body> so any area outside the React
+ * root (e.g. iOS safe-area bounce, overscroll) matches.
+ *
+ * Background is pure black and cards step up to zinc-900 — high-contrast
+ * Strike-style look. Neutral zinc (no blue cast) rather than slate.
+ */
+:root {
+  color-scheme: dark;
+}
+html,
+body {
+  background-color: #000000;
+  color: #d4d4d8; /* zinc-300 — soft white, less laser-bright for long sessions */
+}
+
+/*
  * Tailwind v4's Preflight leaves buttons with the default cursor on
  * the strict W3C reading that pointer is for navigation, not controls.
  * Every major modern UI kit (Bootstrap, Material, shadcn/ui) overrides

@@ -218,7 +218,7 @@ export default function HistoryPage() {
 
   if (!member) {
     return (
-      <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200">
+      <p className="rounded-2xl bg-amber-500/10 px-4 py-3 text-sm text-amber-200 ring-1 ring-amber-500/30">
         Signed in, but no family membership found.
       </p>
     )
@@ -226,7 +226,7 @@ export default function HistoryPage() {
 
   if (loadError) {
     return (
-      <div className="rounded-2xl bg-red-50 p-4 text-sm text-red-700 ring-1 ring-red-200">
+      <div className="rounded-2xl bg-red-500/10 p-4 text-sm text-red-300 ring-1 ring-red-500/30">
         <p className="font-semibold">Could not load history</p>
         <p className="mt-1">{loadError}</p>
       </div>
@@ -237,7 +237,7 @@ export default function HistoryPage() {
     <div className="space-y-6">
       <header>
         <h1 className="text-lg font-semibold">History</h1>
-        <p className="mt-0.5 text-xs text-slate-500">
+        <p className="mt-0.5 text-xs text-zinc-400">
           {rows === null
             ? 'Loading…'
             : rows.length === 0
@@ -254,13 +254,13 @@ export default function HistoryPage() {
       />
 
       {rows === null ? (
-        <p className="text-sm text-slate-500">Loading…</p>
+        <p className="text-sm text-zinc-400">Loading…</p>
       ) : rows.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center">
-          <p className="text-sm font-medium text-slate-700">
+        <div className="rounded-2xl border border-dashed border-zinc-700 p-6 text-center">
+          <p className="text-sm font-medium text-zinc-300">
             {bucketFilter ? 'No moves for this bucket yet' : 'Nothing here yet'}
           </p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-zinc-400">
             {bucketFilter
               ? 'Move money in or out of this bucket and it will appear here.'
               : 'Bucket moves and sends will show up here as you make them.'}
@@ -270,10 +270,10 @@ export default function HistoryPage() {
         <div className="space-y-5">
           {grouped.map((group) => (
             <section key={group.key} aria-label={group.label}>
-              <h2 className="mb-2 px-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <h2 className="mb-2 px-1 text-xs font-medium uppercase tracking-wide text-zinc-500">
                 {group.label}
               </h2>
-              <ul className="divide-y divide-slate-200 rounded-2xl bg-white ring-1 ring-slate-200">
+              <ul className="divide-y divide-zinc-800 rounded-2xl bg-zinc-900 ring-1 ring-zinc-800">
                 {group.rows.map((row) => (
                   <li key={row.id} className="px-3 py-3">
                     <TxItem row={row} currentMemberId={member.id} />
@@ -288,7 +288,7 @@ export default function HistoryPage() {
               type="button"
               onClick={() => void loadMore()}
               disabled={loadingMore}
-              className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-medium text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300 ring-1 ring-zinc-800 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loadingMore ? 'Loading…' : 'Load older'}
             </button>
@@ -317,14 +317,14 @@ function FilterBar({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <label className="text-xs font-medium text-slate-500" htmlFor="bucket-filter">
+      <label className="text-xs font-medium text-zinc-400" htmlFor="bucket-filter">
         Filter
       </label>
       <select
         id="bucket-filter"
         value={activeBucketId ?? ''}
         onChange={(e) => onChange(e.target.value === '' ? null : e.target.value)}
-        className="rounded-lg border-0 bg-white px-2 py-1.5 text-sm text-slate-900 ring-1 ring-inset ring-slate-200 focus:outline focus:outline-2 focus:outline-emerald-500"
+        className="rounded-lg border-0 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
       >
         <option value="">All transactions</option>
         {buckets.map((b) => (
@@ -338,13 +338,13 @@ function FilterBar({
       </select>
 
       {activeBucketId && (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300 ring-1 ring-emerald-500/30">
           {activeBucketName ?? 'Deleted bucket'}
           <button
             type="button"
             aria-label="Clear filter"
             onClick={() => onChange(null)}
-            className="-mr-0.5 flex h-4 w-4 items-center justify-center rounded-full text-emerald-700 hover:bg-emerald-100"
+            className="-mr-0.5 flex h-4 w-4 items-center justify-center rounded-full text-emerald-300 hover:bg-emerald-500/20"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -393,8 +393,8 @@ function TxItem({
   return (
     <div className="flex items-start gap-3">
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-slate-900">{title}</p>
-        <p className="text-xs text-slate-500">
+        <p className="truncate text-sm font-medium text-zinc-300">{title}</p>
+        <p className="text-xs text-zinc-400">
           {subtitle} · {time}
         </p>
         {row.note && (
@@ -407,7 +407,7 @@ function TxItem({
             aria-expanded={noteExpanded}
             aria-label={noteExpanded ? 'Collapse note' : 'Expand note'}
             className={
-              'mt-1 block w-full text-left text-xs italic text-slate-600 transition hover:text-slate-900 focus:outline-none focus-visible:text-slate-900 ' +
+              'mt-1 block w-full text-left text-xs italic text-zinc-400 transition hover:text-zinc-300 focus:outline-none focus-visible:text-zinc-300 ' +
               (noteExpanded
                 ? 'whitespace-pre-wrap break-words'
                 : 'truncate')
@@ -417,7 +417,7 @@ function TxItem({
           </button>
         )}
       </div>
-      <p className="shrink-0 text-sm font-semibold tabular-nums text-slate-900">
+      <p className="shrink-0 text-sm font-semibold tabular-nums text-zinc-300">
         {amount}
       </p>
     </div>

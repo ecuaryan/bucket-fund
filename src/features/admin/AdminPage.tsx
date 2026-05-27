@@ -154,12 +154,12 @@ export default function AdminPage() {
   }
 
   if (!member) {
-    return <p className="text-sm text-slate-500">Loading family…</p>
+    return <p className="text-sm text-zinc-400">Loading family…</p>
   }
 
   if (!isAdmin) {
     return (
-      <div className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-800 ring-1 ring-amber-200">
+      <div className="rounded-2xl bg-amber-500/10 p-4 text-sm text-amber-200 ring-1 ring-amber-500/30">
         <p className="font-semibold">Admins only</p>
         <p className="mt-1">
           Linking bank accounts is restricted to family admins. Ask the
@@ -175,7 +175,7 @@ export default function AdminPage() {
       <header className="flex items-baseline justify-between">
         <div>
           <h1 className="text-xl font-semibold">Admin</h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-zinc-400">
             Link bank accounts and manage family settings.
           </p>
         </div>
@@ -188,7 +188,7 @@ export default function AdminPage() {
             type="button"
             onClick={onLink}
             disabled={!teller.ready || teller.opening}
-            className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {teller.opening
               ? 'Opening…'
@@ -199,28 +199,28 @@ export default function AdminPage() {
         </div>
 
         {(linkError || teller.error) && (
-          <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 ring-1 ring-red-200">
+          <p className="mb-3 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300 ring-1 ring-red-500/30">
             {linkError ?? teller.error}
           </p>
         )}
         {linkInfo && (
-          <p className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-800 ring-1 ring-emerald-200">
+          <p className="mb-3 rounded-lg bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300 ring-1 ring-emerald-500/30">
             {linkInfo}
           </p>
         )}
 
         {loadError ? (
-          <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700 ring-1 ring-red-200">
+          <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-300 ring-1 ring-red-500/30">
             {loadError}
           </p>
         ) : accounts === null ? (
-          <p className="text-sm text-slate-500">Loading accounts…</p>
+          <p className="text-sm text-zinc-400">Loading accounts…</p>
         ) : groups.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-center">
-            <p className="text-sm font-medium text-slate-700">
+          <div className="rounded-2xl border border-dashed border-zinc-700 p-6 text-center">
+            <p className="text-sm font-medium text-zinc-300">
               No accounts linked yet
             </p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-zinc-400">
               Tap "Link bank" to connect your first account via Teller.
               Balances will appear on Home once linked.
             </p>
@@ -230,14 +230,14 @@ export default function AdminPage() {
             {groups.map((group) => (
               <li
                 key={group.enrollmentId || 'orphans'}
-                className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200"
+                className="overflow-hidden rounded-2xl bg-zinc-900 ring-1 ring-zinc-800"
               >
-                <header className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+                <header className="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-900">
+                    <p className="truncate text-sm font-semibold text-zinc-300">
                       {group.institutionName ?? 'Unknown institution'}
                     </p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-zinc-400">
                       {group.accounts.length} account
                       {group.accounts.length === 1 ? '' : 's'} ·{' '}
                       {currency.format(group.totalBalance)} · last synced{' '}
@@ -249,7 +249,7 @@ export default function AdminPage() {
                       type="button"
                       onClick={() => onUnlink(group)}
                       disabled={unlinkingId === group.enrollmentId}
-                      className="shrink-0 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="shrink-0 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {unlinkingId === group.enrollmentId
                         ? 'Unlinking…'
@@ -257,21 +257,21 @@ export default function AdminPage() {
                     </button>
                   )}
                 </header>
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y divide-zinc-800">
                   {group.accounts.map((a) => (
                     <li
                       key={a.id}
                       className="flex items-center justify-between gap-3 px-4 py-2.5"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm text-slate-800">
+                        <p className="truncate text-sm text-zinc-300">
                           {a.account_name ?? 'Account'}
                         </p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-zinc-400">
                           {a.account_type ?? '—'}
                         </p>
                       </div>
-                      <p className="shrink-0 text-sm font-medium tabular-nums text-slate-700">
+                      <p className="shrink-0 text-sm font-medium tabular-nums text-zinc-300">
                         {currency.format(Number(a.current_balance))}
                       </p>
                     </li>

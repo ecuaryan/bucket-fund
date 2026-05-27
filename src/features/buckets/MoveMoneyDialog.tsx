@@ -130,19 +130,19 @@ export default function MoveMoneyDialog({
       role="dialog"
       aria-modal="true"
       aria-label="Move money"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-t-2xl bg-white p-5 shadow-xl ring-1 ring-slate-200 sm:rounded-2xl"
+        className="w-full max-w-md rounded-t-2xl bg-zinc-900 p-5 shadow-2xl ring-1 ring-zinc-800 sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="mb-4 flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">Move money</h2>
+          <h2 className="text-lg font-semibold text-zinc-300">Move money</h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+            className="rounded p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300"
             aria-label="Close"
           >
             ×
@@ -165,7 +165,7 @@ export default function MoveMoneyDialog({
               }}
               aria-label="Swap From and To"
               title="Swap From and To"
-              className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-700 focus:outline focus:outline-2 focus:outline-emerald-500"
+              className="absolute left-1/2 top-1/2 z-10 -tranzinc-x-1/2 -tranzinc-y-1/2 rounded-full border border-zinc-700 bg-zinc-800 p-2 text-zinc-300 shadow-md transition hover:bg-zinc-700 hover:text-zinc-300 focus:outline focus:outline-2 focus:outline-emerald-400"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -190,11 +190,11 @@ export default function MoveMoneyDialog({
           </div>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
+            <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400">
               Amount
             </span>
             <div className="relative">
-              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-500">
                 $
               </span>
               <input
@@ -206,12 +206,12 @@ export default function MoveMoneyDialog({
                 value={amountStr}
                 onChange={(e) => setAmountStr(e.target.value)}
                 placeholder="0.00"
-                className="w-full rounded-lg border-0 bg-white py-2 pl-7 pr-3 text-base text-slate-900 ring-1 ring-inset ring-slate-200 placeholder:text-slate-400 focus:outline focus:outline-2 focus:outline-emerald-500"
+                className="w-full rounded-lg border-0 bg-zinc-950 py-2 pl-7 pr-3 text-base text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-500 focus:outline focus:outline-2 focus:outline-emerald-400"
               />
             </div>
             {fromEndpoint && fromEndpoint.balance !== null && (
               <p
-                className={`mt-1 text-xs ${overdraft ? 'text-red-600' : 'text-slate-500'}`}
+                className={`mt-1 text-xs ${overdraft ? 'text-red-300' : 'text-zinc-400'}`}
               >
                 {fromEndpoint.label} has {currency.format(fromEndpoint.balance)} available.
               </p>
@@ -219,7 +219,7 @@ export default function MoveMoneyDialog({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
+            <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400">
               Note (optional)
             </span>
             <input
@@ -228,20 +228,20 @@ export default function MoveMoneyDialog({
               onChange={(e) => setNote(e.target.value)}
               maxLength={280}
               placeholder="What's this for?"
-              className="w-full rounded-lg border-0 bg-white px-3 py-2 text-sm text-slate-900 ring-1 ring-inset ring-slate-200 placeholder:text-slate-400 focus:outline focus:outline-2 focus:outline-emerald-500"
+              className="w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-500 focus:outline focus:outline-2 focus:outline-emerald-400"
             />
           </label>
 
           {error && (
             <p
               role="alert"
-              className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-200"
+              className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30"
             >
               {error}
             </p>
           )}
           {sameEndpoint && (
-            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
+            <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-200 ring-1 ring-amber-500/30">
               Pick a different source and destination.
             </p>
           )}
@@ -250,14 +250,14 @@ export default function MoveMoneyDialog({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              className="rounded-lg px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:bg-zinc-800 hover:text-zinc-300"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!canSubmit}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting
                 ? 'Moving…'
@@ -285,13 +285,13 @@ function Picker({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
+      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400">
         {label}
       </span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border-0 bg-white px-3 py-2 text-sm text-slate-900 ring-1 ring-inset ring-slate-200 focus:outline focus:outline-2 focus:outline-emerald-500"
+        className="w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
       >
         {endpoints.map((e) => {
           const key = endpointKey(e.id)

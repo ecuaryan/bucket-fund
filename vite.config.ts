@@ -22,8 +22,8 @@ export default defineConfig({
         short_name: 'BucketFund',
         description:
           'Bank-agnostic virtual envelope budgeting for families. Every dollar lives in a named bucket.',
-        theme_color: '#10b981',
-        background_color: '#ffffff',
+        theme_color: '#000000',
+        background_color: '#000000',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
