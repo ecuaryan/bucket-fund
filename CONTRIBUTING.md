@@ -27,16 +27,20 @@ Merge when all required checks are green.
 
 ### GitHub branch protection (`main`)
 
-Configure once in **Settings → Branches → Add rule** (branch name pattern `main`):
+**Configured on this repo** (ruleset + classic protection):
 
-1. **Require a pull request before merging** — blocks direct pushes to `main`.
-2. **Require status checks to pass before merging** — enable these exact names (from [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)):
-   - `lint, unit test, build`
-   - `database RLS tests`
-   - `e2e smoke tests`
-3. *(Optional)* **Require branches to be up to date before merging** — re-runs CI on latest `main` before merge.
+- **Repository ruleset** [`main`](https://github.com/ecuaryan/bucket-fund/rules/16950243): PR required, three status checks, no force-push, no branch delete.
+- **Classic branch protection**: same three checks (strict), PR required (0 approvals), **including administrators**.
 
-Solo maintainers can set **required approving reviews** to 0; the PR requirement still prevents direct pushes.
+Required check names (must match [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) job names exactly):
+
+- `lint, unit test, build`
+- `database RLS tests`
+- `e2e smoke tests`
+
+**Workflow:** branch → push → open PR → wait for green CI → merge. Do not `git push origin main`.
+
+To change rules: **Settings → Rules → Rulesets** or **Settings → Branches**.
 
 ### Vercel (production should wait for CI)
 
