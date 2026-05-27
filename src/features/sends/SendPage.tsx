@@ -101,7 +101,8 @@ export default function SendPage() {
     loadData,
   )
 
-  const isAdult = member.role === 'admin' || member.role === 'member'
+  const isAdult =
+    member?.role === 'admin' || member?.role === 'member'
 
   const recipients = useMemo(() => {
     const others = (members ?? []).filter((m) => m.id !== memberId)
