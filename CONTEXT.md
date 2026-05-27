@@ -390,7 +390,7 @@ bucketfund/
 │   ├── features/
 │   │   ├── auth/           # Login (email/password today; PIN + biometric planned)
 │   │   ├── buckets/        # Home, bucket list, move flow, CRUD
-│   │   ├── sends/          # Send money flow (stub)
+│   │   ├── sends/          # Send money flow (SendPage + send_money RPC)
 │   │   ├── history/        # Transaction history
 │   │   ├── accounts/       # Reserved — Teller linking lives in admin/ for now
 │   │   └── admin/          # Bank linking, family settings (members planned)

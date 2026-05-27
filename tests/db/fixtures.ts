@@ -150,6 +150,34 @@ export async function moveMoney(
   return data
 }
 
+export async function sendMoney(
+  client: Db,
+  args: { toMemberId: string; amount: number; note?: string },
+): Promise<string> {
+  const { data, error } = await client.rpc('send_money', {
+    p_to_member_id: args.toMemberId,
+    p_amount: args.amount,
+    p_note: args.note ?? undefined,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function getAvailableBalance(client: Db): Promise<number> {
+  const { data, error } = await client.rpc('get_available_balance')
+  if (error) throw error
+  return Number(data)
+}
+
+/** Service role — same formula as Home / send_money. */
+export async function memberBalance(svc: Db, memberId: string): Promise<number> {
+  const { data, error } = await svc.rpc('member_available_balance', {
+    p_member_id: memberId,
+  })
+  if (error) throw error
+  return Number(data)
+}
+
 export async function getBucketAllocation(
   svc: Db,
   bucketId: string,
