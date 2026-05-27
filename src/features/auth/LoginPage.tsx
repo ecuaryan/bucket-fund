@@ -11,10 +11,12 @@ export default function LoginPage() {
   const location = useLocation()
   const from = (location.state as LocationState)?.from ?? '/'
 
-  const loginInfo = (location.state as { info?: string } | null)?.info ?? null
+  const loginState = location.state as { info?: string; email?: string } | null
+  const loginInfo = loginState?.info ?? null
+  const loginEmail = loginState?.email ?? ''
 
   const [mode, setMode] = useState<Mode>('signIn')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(loginEmail)
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [familyName, setFamilyName] = useState('')
@@ -85,6 +87,7 @@ export default function LoginPage() {
 
         <form
           onSubmit={onSubmit}
+          autoComplete="on"
           className="space-y-4 rounded-2xl bg-zinc-900 p-6 shadow-lg ring-1 ring-zinc-800"
         >
           <h2 className="text-lg font-semibold text-zinc-300">
@@ -118,6 +121,7 @@ export default function LoginPage() {
             placeholder="you@example.com"
             autoComplete={isSignUp ? 'email' : 'username'}
             name="email"
+            id="login-email"
             required
           />
           <Field
@@ -128,6 +132,7 @@ export default function LoginPage() {
             placeholder={isSignUp ? 'At least 8 characters' : ''}
             autoComplete={isSignUp ? 'new-password' : 'current-password'}
             name="password"
+            id="login-password"
             required
           />
 
@@ -203,6 +208,7 @@ function Field({
   placeholder,
   autoComplete,
   name,
+  id,
   required,
 }: {
   label: string
@@ -212,6 +218,7 @@ function Field({
   placeholder?: string
   autoComplete?: string
   name?: string
+  id?: string
   required?: boolean
 }) {
   return (
@@ -220,6 +227,7 @@ function Field({
       <input
         type={type}
         name={name}
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

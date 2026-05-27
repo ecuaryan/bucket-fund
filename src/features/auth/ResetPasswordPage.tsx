@@ -1,11 +1,13 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { isHumanAuthEmail } from '@/lib/passwordReset'
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate()
   const [ready, setReady] = useState(false)
   const [checking, setChecking] = useState(true)
+  const [accountEmail, setAccountEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -15,18 +17,30 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     let active = true
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((event) => {
-      if (!active) return
-      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
-        setReady(true)
-        setChecking(false)
-      }
-    })
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      async (event) => {
+        if (!active) return
+        if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+          setReady(true)
+          setChecking(false)
+          const { data: userData } = await supabase.auth.getUser()
+          const email = userData.user?.email ?? ''
+          if (email && isHumanAuthEmail(email)) {
+            setAccountEmail(email)
+          }
+        }
+      },
+    )
 
-    void supabase.auth.getSession().then(({ data }) => {
+    void supabase.auth.getSession().then(async ({ data }) => {
       if (!active) return
       if (data.session) {
         setReady(true)
+        const { data: userData } = await supabase.auth.getUser()
+        const email = userData.user?.email ?? ''
+        if (email && isHumanAuthEmail(email)) {
+          setAccountEmail(email)
+        }
       }
       setChecking(false)
     })
@@ -53,6 +67,7 @@ export default function ResetPasswordPage() {
     try {
       const { error: updateError } = await supabase.auth.updateUser({ password })
       if (updateError) throw updateError
+      const savedEmail = accountEmail
       await supabase.auth.signOut()
       setDone(true)
       setTimeout(() => {
@@ -60,6 +75,7 @@ export default function ResetPasswordPage() {
           replace: true,
           state: {
             info: 'Password updated. Sign in with your new password.',
+            email: savedEmail,
           },
         })
       }, 1500)
@@ -105,7 +121,21 @@ export default function ResetPasswordPage() {
 
   return (
     <AuthShell title="Choose a new password" subtitle="Admin email account">
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={onSubmit} className="space-y-4" autoComplete="on">
+        {accountEmail && (
+          <label className="block">
+            <span className="block text-sm font-medium text-zinc-300">Email</span>
+            <input
+              type="email"
+              name="email"
+              id="reset-email"
+              autoComplete="username"
+              readOnly
+              value={accountEmail}
+              className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-400 ring-1 ring-inset ring-zinc-700"
+            />
+          </label>
+        )}
         <label className="block">
           <span className="block text-sm font-medium text-zinc-300">
             New password
@@ -113,6 +143,7 @@ export default function ResetPasswordPage() {
           <input
             type="password"
             name="password"
+            id="reset-password"
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -127,8 +158,9 @@ export default function ResetPasswordPage() {
           </span>
           <input
             type="password"
-            name="confirm-password"
+            name="password-confirm"
             autoComplete="new-password"
+            id="reset-password-confirm"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             minLength={8}
