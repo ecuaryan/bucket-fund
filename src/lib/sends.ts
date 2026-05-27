@@ -1,3 +1,4 @@
+import { isMissingDbFunctionError } from '@/lib/availableBalance'
 import { supabase } from '@/lib/supabase'
 
 export type SendMoneyArgs = {
@@ -13,15 +14,14 @@ export async function sendMoney(args: SendMoneyArgs): Promise<string> {
     p_note: args.note ?? undefined,
   })
   if (error) {
+    if (isMissingDbFunctionError(error.message)) {
+      throw new Error(
+        'Send is not available until the database is updated. An admin must run: supabase db push',
+      )
+    }
     throw new Error(humaniseSendError(error.message))
   }
   return data as unknown as string
-}
-
-export async function fetchAvailableBalance(): Promise<number> {
-  const { data, error } = await supabase.rpc('get_available_balance')
-  if (error) throw new Error(error.message)
-  return Number(data ?? 0)
 }
 
 function humaniseSendError(msg: string): string {

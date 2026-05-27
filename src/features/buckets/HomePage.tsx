@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import { sumCashBalance } from '@/lib/accounts'
+import { fetchAvailableBalance } from '@/lib/availableBalance'
 import {
   deleteBucket,
   renameBucket,
@@ -34,6 +35,7 @@ export default function HomePage() {
   const [buckets, setBuckets] = useState<Bucket[] | null>(null)
   const [accounts, setAccounts] = useState<Account[] | null>(null)
   const [availableBalance, setAvailableBalance] = useState<number | null>(null)
+  const [balanceUsesFallback, setBalanceUsesFallback] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
@@ -57,11 +59,10 @@ export default function HomePage() {
     setLoadError(null)
     await supabase.rpc('ensure_member_bucket_orders')
 
-    const [bucketsRes, orderRes, accountsRes, balanceRes] = await Promise.all([
+    const [bucketsRes, orderRes, accountsRes] = await Promise.all([
       supabase.from('buckets').select('*'),
       supabase.from('member_bucket_order').select('bucket_id, display_order'),
       supabase.from('accounts').select('*'),
-      supabase.rpc('get_available_balance'),
     ])
     if (bucketsRes.error) {
       const msg = bucketsRes.error.message
@@ -88,11 +89,6 @@ export default function HomePage() {
       setLoadError(accountsRes.error.message)
       return
     }
-    if (balanceRes.error) {
-      setLoadError(balanceRes.error.message)
-      return
-    }
-
     const orderMap = new Map(
       (orderRes.data ?? []).map((row) => [row.bucket_id, row.display_order]),
     )
@@ -103,9 +99,16 @@ export default function HomePage() {
       return a.created_at.localeCompare(b.created_at)
     })
 
+    const accountRows = accountsRes.data ?? []
     setBuckets(sorted)
-    setAccounts(accountsRes.data ?? [])
-    setAvailableBalance(Number(balanceRes.data ?? 0))
+    setAccounts(accountRows)
+
+    const { balance, usedFallback } = await fetchAvailableBalance({
+      accounts: accountRows,
+      buckets: sorted,
+    })
+    setAvailableBalance(balance)
+    setBalanceUsesFallback(usedFallback)
   }, [])
 
   useEffect(() => {
@@ -276,6 +279,12 @@ export default function HomePage() {
 
   return (
     <div className="space-y-6">
+      {balanceUsesFallback && (
+        <p className="rounded-2xl bg-amber-500/10 px-4 py-3 text-sm text-amber-200 ring-1 ring-amber-500/30">
+          Balance is estimated from linked accounts only (database update pending).
+          Sends may be unavailable until migrations are applied.
+        </p>
+      )}
       <section
         className={`rounded-2xl px-4 py-5 ring-1 ${unallocatedColor}`}
         aria-label="Unallocated balance"
