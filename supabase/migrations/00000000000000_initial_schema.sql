@@ -25,18 +25,16 @@
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
--- Extensions
--- ---------------------------------------------------------------------
-create extension if not exists "uuid-ossp";
-
-
--- ---------------------------------------------------------------------
 -- Tables
+--
+-- We use Postgres's built-in `gen_random_uuid()` for primary keys.
+-- It ships in core Postgres 13+ and is available everywhere on Supabase
+-- without needing to manage the `uuid-ossp` extension's search path.
 -- ---------------------------------------------------------------------
 
 -- Families (tenants)
 create table public.families (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   name text not null,
   plan text not null default 'free',
   created_at timestamptz not null default now()
@@ -44,7 +42,7 @@ create table public.families (
 
 -- Members
 create table public.family_members (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   family_id uuid not null references public.families(id) on delete cascade,
   user_id uuid references auth.users(id) on delete set null, -- null for PIN-only children
   name text not null,
@@ -58,7 +56,7 @@ create index family_members_user_id_idx on public.family_members(user_id);
 
 -- Linked bank accounts
 create table public.accounts (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   family_id uuid not null references public.families(id) on delete cascade,
   owner_member_id uuid references public.family_members(id) on delete set null, -- null = family pool
   teller_account_id text not null,
@@ -75,7 +73,7 @@ create index accounts_owner_member_id_idx on public.accounts(owner_member_id);
 
 -- Buckets
 create table public.buckets (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   family_id uuid not null references public.families(id) on delete cascade,
   owner_member_id uuid references public.family_members(id) on delete cascade, -- null = family pool bucket
   name text not null,
@@ -87,7 +85,7 @@ create index buckets_owner_member_id_idx on public.buckets(owner_member_id);
 
 -- Virtual transactions (bucket moves and sends)
 create table public.transactions (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   family_id uuid not null references public.families(id) on delete cascade,
   type text not null check (type in ('bucket_move', 'send')),
   amount numeric(14, 2) not null check (amount > 0),
@@ -110,7 +108,7 @@ create index transactions_created_at_idx on public.transactions(created_at desc)
 
 -- Teller webhook events log
 create table public.teller_events (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   family_id uuid not null references public.families(id) on delete cascade,
   account_id uuid references public.accounts(id) on delete set null,
   event_type text not null,
