@@ -1,6 +1,10 @@
-import { useState, type FormEvent } from 'react'
-import { Link, Navigate, useLocation } from 'react-router-dom'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
+import {
+  clearRequireFreshSignIn,
+  isRequireFreshSignIn,
+} from '@/lib/freshSignIn'
 
 type Mode = 'signIn' | 'signUp'
 
@@ -9,11 +13,19 @@ type LocationState = { from?: string } | null
 export default function LoginPage() {
   const auth = useAuth()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const from = (location.state as LocationState)?.from ?? '/'
 
   const loginState = location.state as { info?: string; email?: string } | null
-  const loginInfo = loginState?.info ?? null
-  const loginEmail = loginState?.email ?? ''
+  const loginInfo = loginState?.info ?? searchParams.get('info')
+  const loginEmail = loginState?.email ?? searchParams.get('email') ?? ''
+  const pendingFreshSignIn = isRequireFreshSignIn()
+
+  useEffect(() => {
+    if (pendingFreshSignIn && auth.status === 'signedIn') {
+      void auth.signOut()
+    }
+  }, [pendingFreshSignIn, auth.status, auth.signOut])
 
   const [mode, setMode] = useState<Mode>('signIn')
   const [email, setEmail] = useState(loginEmail)
@@ -24,7 +36,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(loginInfo)
 
-  if (auth.status === 'signedIn') {
+  if (auth.status === 'signedIn' && !pendingFreshSignIn) {
     return <Navigate to={from} replace />
   }
 
@@ -46,6 +58,7 @@ export default function LoginPage() {
     try {
       if (mode === 'signIn') {
         await auth.signIn(email, password)
+        clearRequireFreshSignIn()
       } else {
         await auth.signUp({ email, password, displayName, familyName })
         setInfo(

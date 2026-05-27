@@ -1,10 +1,10 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { supabase } from '@/lib/supabase'
+import { Link } from 'react-router-dom'
+import { markRequireFreshSignIn } from '@/lib/freshSignIn'
 import { isHumanAuthEmail } from '@/lib/passwordReset'
+import { supabase } from '@/lib/supabase'
 
 export default function ResetPasswordPage() {
-  const navigate = useNavigate()
   const [ready, setReady] = useState(false)
   const [checking, setChecking] = useState(true)
   const [accountEmail, setAccountEmail] = useState('')
@@ -12,7 +12,6 @@ export default function ResetPasswordPage() {
   const [confirm, setConfirm] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -67,31 +66,23 @@ export default function ResetPasswordPage() {
     try {
       const { error: updateError } = await supabase.auth.updateUser({ password })
       if (updateError) throw updateError
+
+      const { error: refreshError } = await supabase.auth.refreshSession()
+      if (refreshError) throw refreshError
+
       const savedEmail = accountEmail
+      markRequireFreshSignIn()
       await supabase.auth.signOut()
-      setDone(true)
-      setTimeout(() => {
-        void navigate('/login', {
-          replace: true,
-          state: {
-            info: 'Password updated. Sign in with your new password.',
-            email: savedEmail,
-          },
-        })
-      }, 1500)
+
+      const loginUrl = new URL('/login', window.location.origin)
+      if (savedEmail) loginUrl.searchParams.set('email', savedEmail)
+      loginUrl.searchParams.set('info', 'Password updated. Sign in with your new password.')
+      window.location.replace(loginUrl.toString())
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not update password.')
     } finally {
       setSubmitting(false)
     }
-  }
-
-  if (done) {
-    return (
-      <AuthShell title="Password updated" subtitle="Redirecting to sign in…">
-        <p className="text-sm text-zinc-400">You can close this tab if nothing happens.</p>
-      </AuthShell>
-    )
   }
 
   if (checking) {

@@ -18,5 +18,9 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
 
+  if (auth.isPasswordRecovery) {
+    return <Navigate to="/login/reset" replace />
+  }
+
   return <>{children}</>
 }

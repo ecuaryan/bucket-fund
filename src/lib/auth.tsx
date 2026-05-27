@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { isPasswordRecoverySession } from '@/lib/recoverySession'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database'
 
@@ -19,6 +20,8 @@ type AuthState =
   | { status: 'signedIn'; session: Session; member: FamilyMember | null }
 
 type AuthContextValue = AuthState & {
+  /** Password-reset email link session — must not use the main app yet. */
+  isPasswordRecovery: boolean
   signIn: (email: string, password: string) => Promise<void>
   signUp: (input: {
     email: string
@@ -138,16 +141,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     )
   }, [state])
 
+  const isPasswordRecovery =
+    state.status === 'signedIn' && isPasswordRecoverySession(state.session)
+
   const value = useMemo<AuthContextValue>(
     () => ({
       ...state,
+      isPasswordRecovery,
       signIn,
       signUp,
       signInWithSession,
       signOut,
       refreshMember,
     }),
-    [state, signIn, signUp, signInWithSession, signOut, refreshMember],
+    [
+      state,
+      isPasswordRecovery,
+      signIn,
+      signUp,
+      signInWithSession,
+      signOut,
+      refreshMember,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

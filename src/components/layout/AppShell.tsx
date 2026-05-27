@@ -6,8 +6,12 @@ export default function AppShell() {
   const auth = useAuth()
   const [signingOut, setSigningOut] = useState(false)
 
-  const familyName = auth.member?.name ?? auth.session?.user.email ?? 'You'
-  const isAdmin = auth.member?.role === 'admin'
+  const member = auth.status === 'signedIn' ? auth.member : null
+  const familyName =
+    member?.name ??
+    (auth.status === 'signedIn' ? auth.session.user.email : null) ??
+    'You'
+  const isAdmin = member?.role === 'admin'
 
   async function onSignOut() {
     setSigningOut(true)

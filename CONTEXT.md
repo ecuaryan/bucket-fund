@@ -186,6 +186,65 @@ Every dollar lives in exactly one place — either in a named bucket or in someo
 - Transaction history filters and search
 - Super-admin / platform management UI
 
+### Operator cannot read bank balances (defer — privacy promise)
+
+**Goal (product trust):** When friends use BucketFund, you want to be able to
+say honestly: **even you, as the app owner with Supabase credentials, cannot
+see their linked bank balances** (or bucket amounts / transaction details if
+that promise extends that far).
+
+**Today — do not over-promise:** That claim is **not** true yet.
+
+- `accounts.current_balance`, `buckets.allocated_amount`, and `transactions`
+  are **plaintext** in Postgres. The **service role** (Edge Functions, your
+  Supabase dashboard SQL editor) bypasses RLS entirely.
+- `teller_enrollments.access_token` is server-held so Teller sync can run;
+  anyone with service-role access can pull live balances from Teller API.
+- RLS only isolates **families from each other**, not **users from the
+  operator**.
+
+**TODO — think deeper later (feasibility TBD):** Can we architect toward a
+credible “operator-blind” guarantee?
+
+- **Field-level encryption** per family (e.g. pgsodium / app-layer encrypt of
+  balances and amounts) with keys derived on the client or held only by the
+  family — operator sees ciphertext in SQL. Hard parts: server-side
+  `move_money`, invariant checks, and Teller webhooks all currently need
+  numeric truth on the server unless we redesign (client-only crypto,
+  MPC, or accept encrypted sync with client decrypt).
+- **Minimize server storage** — e.g. balances live only in client memory /
+  secure device storage; server stores allocation deltas only. Conflicts with
+  multi-device Realtime and webhook-driven balance updates unless carefully
+  designed.
+- **Third-party / HSM key custody** — keys the operator doesn’t possess
+  (higher ops burden).
+- **Honest alternative** — no crypto, but contractual + access policy: you
+  simply don’t query production; weaker than “can’t,” not sellable as
+  technical proof.
+
+Until this is designed and built, tell early users the truth: **tenant
+isolation from other families, not cryptographic privacy from the operator.**
+Do not market “I can’t see your balances” yet.
+
+### Credit cards & linked liabilities (defer — think on this later)
+
+**TODO:** Teller can return **credit** accounts as well as cash (checking,
+savings, etc.). Today we **only count cash subtypes** toward real balance and
+unallocated (`src/lib/accounts.ts` — credit cards are ignored on Home; they
+may still be stored in `accounts` if enrolled). Decide later:
+
+- **Exclude entirely** — do not persist or display credit/loan accounts at
+  all during Teller enroll (simplest mental model: envelopes = cash only).
+- **Integrate as liabilities** — show them separately and adjust unallocated,
+  e.g. treat credit card balance as debt that **reduces** effective unallocated
+  (or available-to-allocate) so the family pool reflects “cash minus what you
+  owe on cards.”
+- **Display-only** — sync and show card balances for awareness but never fold
+  them into the allocation invariant.
+
+Until decided, keep current behavior: **cash accounts only** in unallocated
+math; do not change the invariant without an explicit product decision.
+
 ---
 
 ## Technical Stack

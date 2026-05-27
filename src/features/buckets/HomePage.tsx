@@ -62,7 +62,20 @@ export default function HomePage() {
       supabase.from('accounts').select('*'),
     ])
     if (bucketsRes.error) {
-      setLoadError(bucketsRes.error.message)
+      const msg = bucketsRes.error.message
+      if (msg.toLowerCase().includes('permission denied')) {
+        const { data: userData } = await supabase.auth.getUser()
+        await supabase.auth.signOut()
+        navigate('/login', {
+          replace: true,
+          state: {
+            info: 'Your session expired. Sign in again.',
+            email: userData.user?.email ?? '',
+          },
+        })
+        return
+      }
+      setLoadError(msg)
       return
     }
     if (orderRes.error) {
