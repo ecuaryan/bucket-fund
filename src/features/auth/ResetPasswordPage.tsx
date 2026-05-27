@@ -112,21 +112,27 @@ export default function ResetPasswordPage() {
 
   return (
     <AuthShell title="Choose a new password" subtitle="Admin email account">
-      <form onSubmit={onSubmit} className="space-y-4" autoComplete="on">
-        {accountEmail && (
-          <label className="block">
-            <span className="block text-sm font-medium text-zinc-300">Email</span>
-            <input
-              type="email"
-              name="email"
-              id="reset-email"
-              autoComplete="username"
-              readOnly
-              value={accountEmail}
-              className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-400 ring-1 ring-inset ring-zinc-700"
-            />
-          </label>
-        )}
+      <form
+        key={accountEmail || 'reset'}
+        onSubmit={onSubmit}
+        method="post"
+        className="space-y-4"
+        autoComplete="on"
+      >
+        <label className="block">
+          <span className="block text-sm font-medium text-zinc-300">Email</span>
+          <input
+            type="email"
+            name="username"
+            id="reset-email"
+            autoComplete="username email"
+            inputMode="email"
+            value={accountEmail}
+            onChange={(e) => setAccountEmail(e.target.value)}
+            required
+            className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
+          />
+        </label>
         <label className="block">
           <span className="block text-sm font-medium text-zinc-300">
             New password
@@ -138,6 +144,7 @@ export default function ResetPasswordPage() {
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onInput={(e) => setPassword(e.currentTarget.value)}
             minLength={8}
             required
             className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
@@ -149,11 +156,12 @@ export default function ResetPasswordPage() {
           </span>
           <input
             type="password"
-            name="password-confirm"
+            name="password_confirm"
             autoComplete="new-password"
             id="reset-password-confirm"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
+            onInput={(e) => setConfirm(e.currentTarget.value)}
             minLength={8}
             required
             className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
