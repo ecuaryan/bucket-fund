@@ -245,6 +245,15 @@ export default function HomePage() {
     (a) => a.current_balance !== null && Number(a.current_balance) > 0,
   ).length
 
+  const unallocatedHint =
+    cashAccountsCount > 0
+      ? `${currency.format(realBalance)} across ${cashAccountsCount} linked account${cashAccountsCount === 1 ? '' : 's'}`
+      : isChild
+        ? 'Fund buckets with money family sends you, or ask a parent to link your bank account.'
+        : isAdmin
+          ? 'No linked cash accounts yet — link one from Admin.'
+          : 'No linked cash accounts yet — ask your admin to link a family account.'
+
   return (
     <div className="space-y-6">
       <section
@@ -257,11 +266,7 @@ export default function HomePage() {
         <p className="mt-1 text-3xl font-semibold tabular-nums">
           {currency.format(unallocated)}
         </p>
-        <p className="mt-1 text-xs opacity-70">
-          {cashAccountsCount === 0
-            ? 'No linked cash accounts yet — link one from the Admin tab.'
-            : `${currency.format(realBalance)} across ${cashAccountsCount} linked account${cashAccountsCount === 1 ? '' : 's'}`}
-        </p>
+        <p className="mt-1 text-xs opacity-70">{unallocatedHint}</p>
       </section>
 
       <section aria-label="Buckets">
