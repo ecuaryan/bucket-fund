@@ -102,6 +102,7 @@ export async function insertBucket(
   familyId: string,
   name: string,
   ownerMemberId: string | null,
+  allocatedAmount = 0,
 ): Promise<string> {
   const { data, error } = await svc
     .from('buckets')
@@ -109,10 +110,55 @@ export async function insertBucket(
       family_id: familyId,
       name,
       owner_member_id: ownerMemberId,
-      allocated_amount: 0,
+      allocated_amount: allocatedAmount,
     })
     .select('id')
     .single()
   if (error) throw error
   return data.id
+}
+
+/** Service role only — clients cannot update allocated_amount directly. */
+export async function setBucketAllocation(
+  svc: Db,
+  bucketId: string,
+  amount: number,
+): Promise<void> {
+  const { error } = await svc
+    .from('buckets')
+    .update({ allocated_amount: amount })
+    .eq('id', bucketId)
+  if (error) throw error
+}
+
+export async function moveMoney(
+  client: Db,
+  args: {
+    fromBucketId: string | null
+    toBucketId: string | null
+    amount: number
+    note?: string
+  },
+): Promise<string> {
+  const { data, error } = await client.rpc('move_money', {
+    p_from_bucket_id: args.fromBucketId,
+    p_to_bucket_id: args.toBucketId,
+    p_amount: args.amount,
+    p_note: args.note ?? undefined,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function getBucketAllocation(
+  svc: Db,
+  bucketId: string,
+): Promise<number> {
+  const { data, error } = await svc
+    .from('buckets')
+    .select('allocated_amount')
+    .eq('id', bucketId)
+    .single()
+  if (error) throw error
+  return Number(data.allocated_amount)
 }

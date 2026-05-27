@@ -28,6 +28,11 @@ dist-ssr
 .env.local
 .env.*.local
 
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+
 # Supabase local dev
 supabase/.branches
 supabase/.temp

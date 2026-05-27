@@ -62,12 +62,13 @@ Use the `@/` alias for absolute imports from `src/`.
 ## Testing
 
 - **`npm test`** — unit tests (fast, no Docker).
-- **`npm run test:db`** — RLS tests (needs `npm run db:start` locally).
-- **`npm run check:full`** — lint + all tests + build before a big merge.
-- Add cases in **`tests/db/rls.test.ts`** when changing policies; colocate unit
-  tests as `src/**/*.test.ts`.
-- **Phase C (later):** Playwright smoke (sign-in, reset, PIN); `move_money` RPC
-  tests in `tests/db/`.
+- **`npm run test:db`** — database tests (needs `npm run db:start`): RLS in
+  `tests/db/rls.test.ts`, `move_money` in `move_money.test.ts`, transaction
+  visibility in `transactions.test.ts`.
+- **`npm run test:e2e`** — Playwright smoke (Docker + local Supabase).
+- **`npm run check:full`** — lint + unit + db tests + build (no e2e).
+- When changing RLS or money RPCs, extend the matching file under `tests/db/`.
+  Colocate unit tests as `src/**/*.test.ts`.
 
 ## Update this file
 

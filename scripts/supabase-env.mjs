@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 /**
  * Print local Supabase connection vars (for eval or .env.local).
- * Usage: eval "$(node scripts/supabase-env.mjs)"
+ *
+ * Prefer:  source scripts/env-local.sh
+ * Or:      eval "$(node scripts/supabase-env.mjs)"
+ *
+ * Do NOT:  eval "$(npm run env:local)"  — npm adds lines that break eval.
  */
 import { execSync } from 'node:child_process'
 

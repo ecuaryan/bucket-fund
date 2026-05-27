@@ -93,8 +93,10 @@ Every dollar lives in exactly one place — either in a named bucket or in someo
 
 ### Buckets
 - Named allocations against a member's or family pool's balance
-- Any member can create and manage their own buckets
-- Admin can create and manage family-level buckets
+- **Admin** creates and manages family-pool and adult-owned buckets
+- **Member** moves money and reorders buckets (no create/delete of bucket structure)
+- **Child** creates and manages only their own buckets (hidden from adult Home)
+- See [README.md § Implementation status](./README.md) for what is shipped on `main`
 - No targets — just current allocated amounts
 - Buckets start at zero and are funded by moving money from unallocated or via a send from another member
 

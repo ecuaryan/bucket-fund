@@ -29,7 +29,7 @@ entry points.
 npm install
 cp .env.example .env.local
 npm run db:start          # first time: Docker + local Supabase (~1 min)
-eval "$(npm run env:local)" && npm run dev   # Vite on :5173 against local API
+source scripts/env-local.sh && npm run dev   # Vite on :5173 against local API
 ```
 
 **Fast loop (recommended):** leave `supabase start` running in one terminal;
@@ -41,14 +41,16 @@ use another for `npm run dev`. After pulling SQL changes: `npm run db:reset`.
 | `npm run db:stop` | Stop local stack |
 | `npm run db:reset` | Re-apply all migrations (+ optional `seed.sql`) |
 | `npm run db:types` | Regenerate `src/types/database.ts` from local DB |
-| `npm run env:local` | Print `export …` for local API URL and keys |
-| `npm run test:db` | RLS tests against local Supabase |
+| `source scripts/env-local.sh` | Load local API URL + keys into your shell |
+| `node scripts/supabase-env.mjs` | Print `export …` lines (for manual copy) |
+| `npm run test:db` | RLS + `move_money` + transaction visibility (local Supabase) |
+| `npm run test:e2e` | Playwright smoke (Docker + local Supabase; first run: `npx playwright install chromium`) |
 | `npm run test:all` | Unit + database tests |
 | `npm run check:full` | Lint + all tests + production build |
 
-Point `.env.local` at local Supabase (run `eval "$(npm run env:local)"` once per
-shell, or paste `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` from
-`npm run db:status`). Edge Function secrets stay in `supabase/functions/.env`.
+Point `.env.local` at local Supabase (`source scripts/env-local.sh` once per
+shell, or paste keys from `npm run db:status`). Edge Function secrets stay in
+`supabase/functions/.env`.
 
 ```bash
 npx supabase functions serve    # all Edge Functions (separate terminal)
@@ -71,11 +73,11 @@ Every push to `main` and every pull request runs
 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml):
 
 - **lint, unit test, build** — Vitest on `src/lib/`, production build
-- **database RLS tests** — local Supabase in GitHub Actions; tenant isolation +
-  admin / member / child bucket policies
+- **database RLS tests** — local Supabase; tenant isolation, `move_money`, transaction visibility
+- **e2e smoke tests** — login redirect, admin sign-in, forgot-password link
 
 **Block broken deploys:** GitHub → **Settings → Branches** → `main` → require status
-checks: **`lint, unit test, build`** and **`database RLS tests`**. Vercel should
+checks: **`lint, unit test, build`**, **`database RLS tests`**, and **`e2e smoke tests`**. Vercel should
 deploy only from `main`.
 
 ## Project layout
@@ -152,9 +154,9 @@ money data is connected. Several scaffold stubs have been replaced (see
 - [x] Replace RLS policy stubs with real `admin` / `member` / `child`
       policies — implemented in
       `supabase/migrations/00000000000001_rls_and_auth_bootstrap.sql`.
-- [ ] **Audit RLS against a multi-family fixture** — policies exist but
-      have not been formally tested for cross-tenant leakage or child
-      role overreach.
+- [x] **Audit RLS against a multi-family fixture** — `tests/db/rls.test.ts`,
+      `move_money.test.ts`, and `transactions.test.ts` (run via `npm run test:db`).
+      Expand when adding policies or tables.
 - [x] Implement `auth_family_id()` (and related helpers) with
       `SECURITY DEFINER` + empty `search_path` — same migration as above.
 - [x] Implement Teller webhook signature verification in
