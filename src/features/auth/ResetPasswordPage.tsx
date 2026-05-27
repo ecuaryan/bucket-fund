@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase'
 
 export default function ResetPasswordPage() {
   const formRef = useRef<HTMLFormElement>(null)
+  const emailRef = useRef<HTMLInputElement>(null)
+  const emailLoaded = useRef(false)
   const [ready, setReady] = useState(false)
   const [checking, setChecking] = useState(true)
   const [accountEmail, setAccountEmail] = useState('')
@@ -15,17 +17,28 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     let active = true
 
+    function applyEmail(email: string) {
+      if (!email || !isHumanAuthEmail(email)) return
+      setAccountEmail((prev) => (prev === email ? prev : email))
+      if (emailRef.current) {
+        emailRef.current.value = email
+      }
+    }
+
+    async function loadEmailFromSession() {
+      const { data: userData } = await supabase.auth.getUser()
+      if (!active) return
+      const email = userData.user?.email ?? ''
+      applyEmail(email)
+    }
+
     const { data: subscription } = supabase.auth.onAuthStateChange(
       async (event) => {
         if (!active) return
         if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
           setReady(true)
           setChecking(false)
-          const { data: userData } = await supabase.auth.getUser()
-          const email = userData.user?.email ?? ''
-          if (email && isHumanAuthEmail(email)) {
-            setAccountEmail(email)
-          }
+          await loadEmailFromSession()
         }
       },
     )
@@ -34,11 +47,7 @@ export default function ResetPasswordPage() {
       if (!active) return
       if (data.session) {
         setReady(true)
-        const { data: userData } = await supabase.auth.getUser()
-        const email = userData.user?.email ?? ''
-        if (email && isHumanAuthEmail(email)) {
-          setAccountEmail(email)
-        }
+        await loadEmailFromSession()
       }
       setChecking(false)
     })
@@ -48,6 +57,17 @@ export default function ResetPasswordPage() {
       subscription.subscription.unsubscribe()
     }
   }, [])
+
+  // After recovery session is established, drop the hash so Supabase / Chrome
+  // don't re-process # and remount or reload the form (clears generated passwords).
+  useEffect(() => {
+    if (!ready || emailLoaded.current) return
+    emailLoaded.current = true
+    const path = `${window.location.pathname}${window.location.search}`
+    if (window.location.hash) {
+      window.history.replaceState(null, '', path)
+    }
+  }, [ready])
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -125,15 +145,14 @@ export default function ResetPasswordPage() {
     <AuthShell title="Choose a new password" subtitle="Admin email account">
       <form
         ref={formRef}
-        key={accountEmail || 'reset'}
         onSubmit={onSubmit}
-        method="post"
         className="space-y-4"
         autoComplete="on"
       >
         <label className="block">
           <span className="block text-sm font-medium text-zinc-300">Email</span>
           <input
+            ref={emailRef}
             type="email"
             name="username"
             id="username"
@@ -184,6 +203,17 @@ export default function ResetPasswordPage() {
         >
           {submitting ? 'Saving…' : 'Update password'}
         </button>
+        <p className="text-center text-xs text-zinc-500">
+          <Link
+            to="/login"
+            className="text-zinc-400 hover:text-zinc-300"
+            onClick={() => {
+              void supabase.auth.signOut()
+            }}
+          >
+            Cancel and sign in
+          </Link>
+        </p>
       </form>
     </AuthShell>
   )
