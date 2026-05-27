@@ -15,7 +15,14 @@ export async function verifyPin(pin: string, hash: string): Promise<boolean> {
   return bcrypt.compare(pin, hash)
 }
 
+const PIN_EMAIL_DOMAIN = '@pin.bucketfund.internal'
+
 /** Internal auth email for PIN-only members (never shown to users). */
 export function memberAuthEmail(memberId: string): string {
-  return `${memberId}@pin.bucketfund.internal`
+  return `${memberId}${PIN_EMAIL_DOMAIN}`
+}
+
+/** True when this auth user was created for PIN-only login (password rotation safe). */
+export function isPinOnlyAuthEmail(email: string): boolean {
+  return email.endsWith(PIN_EMAIL_DOMAIN)
 }

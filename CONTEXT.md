@@ -220,7 +220,7 @@ Teller API (webhooks → Edge Function → Supabase DB)
 | Local dev | http://localhost:5173 | `npm run dev` |
 
 - **SPA routing:** Client routes (`/login`, `/login/family`, `/join`, `/admin`, etc.) require `vercel.json` rewrites; without them, refreshing a deep link returns 404 from Vercel.
-- **Supabase Auth:** Site URL and redirect allow list must include `https://bucket-fund.vercel.app` (and `http://localhost:5173` for local dev) until a custom domain replaces it.
+- **Supabase Auth:** Site URL and redirect allow list must include `https://bucket-fund.vercel.app` (and `http://localhost:5173` for local dev) until a custom domain replaces it. Add **`/login/reset`** to redirect URLs for admin forgot-password emails.
 - **Family join links:** Admin QR / copy-link use the current origin, e.g. `https://bucket-fund.vercel.app/join?code=…`.
 
 ### Free Tier Limits (all sufficient for personal/early SaaS use)

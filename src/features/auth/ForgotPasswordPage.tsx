@@ -1,0 +1,124 @@
+import { useState, type FormEvent, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
+import { supabase } from '@/lib/supabase'
+import { passwordResetRedirectUrl } from '@/lib/passwordReset'
+
+export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [sent, setSent] = useState(false)
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+    const trimmed = email.trim()
+    if (!trimmed) {
+      setError('Enter your email address.')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        trimmed,
+        { redirectTo: passwordResetRedirectUrl() },
+      )
+      if (resetError) throw resetError
+      setSent(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not send reset email.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <AuthShell
+      title="Reset password"
+      subtitle="Admin email sign-in only — not for family PINs"
+    >
+      {sent ? (
+        <div className="space-y-4 text-sm text-zinc-300">
+          <p>
+            If an account exists for <strong className="text-zinc-200">{email}</strong>,
+            we sent a reset link. Check your inbox (and spam).
+          </p>
+          <p className="text-xs text-zinc-400">
+            The link opens this app so you can choose a new password. PIN
+            sign-in for family members is separate and is not changed by this.
+          </p>
+          <Link
+            to="/login"
+            className="block text-center text-emerald-400 hover:underline"
+          >
+            Back to sign in
+          </Link>
+        </div>
+      ) : (
+        <form onSubmit={onSubmit} className="space-y-4">
+          <label className="block">
+            <span className="block text-sm font-medium text-zinc-300">Email</span>
+            <input
+              type="email"
+              name="email"
+              autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+              className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
+            />
+          </label>
+          {error && (
+            <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30">
+              {error}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black disabled:opacity-50"
+          >
+            {submitting ? 'Sending…' : 'Send reset link'}
+          </button>
+          <Link
+            to="/login"
+            className="block text-center text-sm text-zinc-400 hover:text-zinc-300"
+          >
+            Back to sign in
+          </Link>
+        </form>
+      )}
+    </AuthShell>
+  )
+}
+
+function AuthShell({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string
+  subtitle?: string
+  children: ReactNode
+}) {
+  return (
+    <div className="flex min-h-svh items-center justify-center bg-black px-4 py-12">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-black">
+            <span className="text-xl font-semibold">$</span>
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-300">
+            {title}
+          </h1>
+          {subtitle && <p className="mt-1 text-sm text-zinc-400">{subtitle}</p>}
+        </div>
+        <div className="rounded-2xl bg-zinc-900 p-6 shadow-lg ring-1 ring-zinc-800">
+          {children}
+        </div>
+      </div>
+    </div>
+  )
+}

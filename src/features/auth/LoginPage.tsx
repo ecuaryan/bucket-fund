@@ -11,6 +11,8 @@ export default function LoginPage() {
   const location = useLocation()
   const from = (location.state as LocationState)?.from ?? '/'
 
+  const loginInfo = (location.state as { info?: string } | null)?.info ?? null
+
   const [mode, setMode] = useState<Mode>('signIn')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -18,7 +20,7 @@ export default function LoginPage() {
   const [familyName, setFamilyName] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [info, setInfo] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(loginInfo)
 
   if (auth.status === 'signedIn') {
     return <Navigate to={from} replace />
@@ -51,7 +53,14 @@ export default function LoginPage() {
         setPassword('')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong.')
+      const msg = err instanceof Error ? err.message : 'Something went wrong.'
+      if (msg.toLowerCase().includes('invalid login')) {
+        setError(
+          'Invalid email or password. Use Forgot password below — a successful PIN sign-in can also change your email password.',
+        )
+      } else {
+        setError(msg)
+      }
     } finally {
       setSubmitting(false)
     }
@@ -121,6 +130,17 @@ export default function LoginPage() {
             name="password"
             required
           />
+
+          {!isSignUp && (
+            <p className="text-right text-sm">
+              <Link
+                to="/login/forgot"
+                className="text-emerald-400 hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </p>
+          )}
 
           {error && (
             <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30">

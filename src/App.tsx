@@ -4,6 +4,8 @@ import AppShell from '@/components/layout/AppShell'
 import LoginPage from '@/features/auth/LoginPage'
 import FamilyLoginPage from '@/features/auth/FamilyLoginPage'
 import JoinPage from '@/features/auth/JoinPage'
+import ForgotPasswordPage from '@/features/auth/ForgotPasswordPage'
+import ResetPasswordPage from '@/features/auth/ResetPasswordPage'
 import HomePage from '@/features/buckets/HomePage'
 import BucketsPage from '@/features/buckets/BucketsPage'
 import SendPage from '@/features/sends/SendPage'
@@ -15,6 +17,8 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/login/family" element={<FamilyLoginPage />} />
+      <Route path="/login/forgot" element={<ForgotPasswordPage />} />
+      <Route path="/login/reset" element={<ResetPasswordPage />} />
       <Route path="/join" element={<JoinPage />} />
       <Route
         element={

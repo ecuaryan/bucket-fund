@@ -4,7 +4,12 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { handleCors, jsonResponse } from '../_shared/http.ts'
 import { serviceClient } from '../_shared/supabase.ts'
-import { isValidPin, MAX_PIN_ATTEMPTS, verifyPin } from '../_shared/pin.ts'
+import {
+  isPinOnlyAuthEmail,
+  isValidPin,
+  MAX_PIN_ATTEMPTS,
+  verifyPin,
+} from '../_shared/pin.ts'
 
 type Body = {
   familyId?: string
@@ -101,33 +106,53 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Login failed' }, 500)
   }
 
-  const newPassword = crypto.randomUUID() + crypto.randomUUID()
-
-  const { error: updateError } = await admin.auth.admin.updateUserById(
-    member.user_id,
-    { password: newPassword },
-  )
-  if (updateError) {
-    console.error('pin-login password rotate', updateError)
-    return jsonResponse({ error: 'Login failed' }, 500)
-  }
-
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
   const anon = createClient(supabaseUrl, anonKey)
 
-  const { data: sessionData, error: signInError } =
-    await anon.auth.signInWithPassword({ email, password: newPassword })
+  let sessionData: Awaited<ReturnType<typeof anon.auth.signInWithPassword>>
 
-  if (signInError || !sessionData.session) {
-    console.error('pin-login signIn', signInError)
+  if (isPinOnlyAuthEmail(email)) {
+    // PIN-only accounts (spouse/kids): rotate internal password each login.
+    const newPassword = crypto.randomUUID() + crypto.randomUUID()
+    const { error: updateError } = await admin.auth.admin.updateUserById(
+      member.user_id,
+      { password: newPassword },
+    )
+    if (updateError) {
+      console.error('pin-login password rotate', updateError)
+      return jsonResponse({ error: 'Login failed' }, 500)
+    }
+    sessionData = await anon.auth.signInWithPassword({
+      email,
+      password: newPassword,
+    })
+  } else {
+    // Admin (real email): never rotate email password — issue session via OTP.
+    const { data: linkData, error: linkError } =
+      await admin.auth.admin.generateLink({ type: 'magiclink', email })
+    const tokenHash = linkData?.properties?.hashed_token
+    if (linkError || !tokenHash) {
+      console.error('pin-login generateLink', linkError)
+      return jsonResponse({ error: 'Login failed' }, 500)
+    }
+    sessionData = await anon.auth.verifyOtp({
+      email,
+      token: tokenHash,
+      type: 'email',
+    })
+  }
+
+  if (sessionData.error || !sessionData.data.session) {
+    console.error('pin-login session', sessionData.error)
     return jsonResponse({ error: 'Login failed' }, 500)
   }
 
+  const session = sessionData.data.session
   return jsonResponse({
-    access_token: sessionData.session.access_token,
-    refresh_token: sessionData.session.refresh_token,
-    expires_at: sessionData.session.expires_at,
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+    expires_at: session.expires_at,
     member: {
       id: member.id,
       role: member.role,
