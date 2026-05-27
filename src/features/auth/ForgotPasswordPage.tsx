@@ -1,10 +1,14 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { passwordResetRedirectUrl } from '@/lib/passwordReset'
 
+type ForgotLocationState = { email?: string } | null
+
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('')
+  const location = useLocation()
+  const prefilledEmail = (location.state as ForgotLocationState)?.email ?? ''
+  const [email, setEmail] = useState(prefilledEmail)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
@@ -56,13 +60,21 @@ export default function ForgotPasswordPage() {
           </Link>
         </div>
       ) : (
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form
+          onSubmit={onSubmit}
+          className="space-y-4"
+          autoComplete="off"
+          data-bwignore="true"
+          data-lpignore="true"
+        >
           <label className="block">
             <span className="block text-sm font-medium text-zinc-300">Email</span>
             <input
               type="email"
               name="email"
-              autoComplete="username"
+              id="forgot-email"
+              autoComplete="email"
+              inputMode="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"

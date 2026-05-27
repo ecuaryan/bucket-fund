@@ -185,18 +185,19 @@ export default function LoginPage() {
               ? 'Already have an account? Sign in'
               : 'New here? Create a family'}
           </button>
-
-          {!isSignUp && (
-            <p className="text-center text-sm">
-              <Link
-                to="/login/forgot"
-                className="text-emerald-400 hover:underline"
-              >
-                Forgot password?
-              </Link>
-            </p>
-          )}
         </form>
+
+        {!isSignUp && (
+          <p className="mt-3 text-center text-sm">
+            <Link
+              to="/login/forgot"
+              state={{ email }}
+              className="text-emerald-400 hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </p>
+        )}
 
         <p className="mt-6 text-center text-sm text-zinc-500">
           <Link to="/login/family" className="text-emerald-400 hover:underline">
