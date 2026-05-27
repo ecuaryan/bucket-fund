@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import RequireAuth from '@/components/RequireAuth'
 import AppShell from '@/components/layout/AppShell'
 import LoginPage from '@/features/auth/LoginPage'
+import FamilyLoginPage from '@/features/auth/FamilyLoginPage'
+import JoinPage from '@/features/auth/JoinPage'
 import HomePage from '@/features/buckets/HomePage'
 import BucketsPage from '@/features/buckets/BucketsPage'
 import SendPage from '@/features/sends/SendPage'
@@ -12,6 +14,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/login/family" element={<FamilyLoginPage />} />
+      <Route path="/join" element={<JoinPage />} />
       <Route
         element={
           <RequireAuth>

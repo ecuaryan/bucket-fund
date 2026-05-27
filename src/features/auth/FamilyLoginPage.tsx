@@ -1,0 +1,303 @@
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react'
+import { Link, Navigate, useLocation } from 'react-router-dom'
+import { useAuth } from '@/lib/auth'
+import {
+  bindFamily,
+  clearBoundFamily,
+  getBoundFamilyId,
+  getBoundJoinCode,
+} from '@/lib/familyDevice'
+import {
+  pinLogin,
+  validateJoinCode,
+  type JoinMember,
+  type ValidateJoinResult,
+} from '@/lib/memberAuth'
+
+type LocationState = { from?: string } | null
+
+export default function FamilyLoginPage() {
+  const auth = useAuth()
+  const location = useLocation()
+  const from = (location.state as LocationState)?.from ?? '/'
+
+  const [roster, setRoster] = useState<ValidateJoinResult | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const [codeInput, setCodeInput] = useState('')
+  const [binding, setBinding] = useState(false)
+
+  const [selected, setSelected] = useState<JoinMember | null>(null)
+  const [pin, setPin] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [pinError, setPinError] = useState<string | null>(null)
+
+  const refreshRoster = useCallback(async (code: string) => {
+    setLoadError(null)
+    const result = await validateJoinCode(code)
+    bindFamily(result.familyId, code)
+    setRoster(result)
+    return result
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    const storedCode = getBoundJoinCode()
+    if (!storedCode) {
+      setLoading(false)
+      return
+    }
+
+    void refreshRoster(storedCode)
+      .catch((e) => {
+        if (!cancelled) {
+          setLoadError(e instanceof Error ? e.message : 'Could not load family')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [refreshRoster])
+
+  if (auth.status === 'signedIn') {
+    return <Navigate to={from} replace />
+  }
+
+  async function onBindCode(e: FormEvent) {
+    e.preventDefault()
+    setLoadError(null)
+    setBinding(true)
+    try {
+      await refreshRoster(codeInput)
+      setCodeInput('')
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Invalid code')
+    } finally {
+      setBinding(false)
+    }
+  }
+
+  async function onPinSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (!selected || !roster) return
+    const familyId = getBoundFamilyId()
+    if (!familyId) return
+
+    setPinError(null)
+    if (!/^\d{4}$/.test(pin)) {
+      setPinError('Enter your 4-digit PIN.')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      await pinLogin({ familyId, memberId: selected.id, pin })
+    } catch (err) {
+      setPinError(err instanceof Error ? err.message : 'Sign-in failed')
+      setPin('')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  function onUnbind() {
+    clearBoundFamily()
+    setRoster(null)
+    setSelected(null)
+    setPin('')
+  }
+
+  if (selected) {
+    return (
+      <AuthShell title={selected.name} subtitle="Enter your 4-digit PIN">
+        <form onSubmit={onPinSubmit} className="space-y-4">
+          <input
+            type="password"
+            inputMode="numeric"
+            pattern="\d{4}"
+            maxLength={4}
+            autoComplete="one-time-code"
+            autoFocus
+            value={pin}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+            placeholder="••••"
+            className="block w-full rounded-xl border-0 bg-zinc-950 px-4 py-4 text-center text-2xl tracking-[0.5em] text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
+          />
+          {pinError && (
+            <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30">
+              {pinError}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={submitting || pin.length !== 4}
+            className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black disabled:opacity-50"
+          >
+            {submitting ? 'Signing in…' : 'Sign in'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSelected(null)
+              setPin('')
+              setPinError(null)
+            }}
+            className="w-full text-sm text-zinc-400 hover:text-zinc-300"
+          >
+            Choose someone else
+          </button>
+        </form>
+      </AuthShell>
+    )
+  }
+
+  if (loading) {
+    return (
+      <AuthShell title="BucketFund" subtitle="Loading family…">
+        <p className="text-sm text-zinc-500">One moment</p>
+      </AuthShell>
+    )
+  }
+
+  if (!roster) {
+    return (
+      <AuthShell title="Join your family" subtitle="Enter the code from Admin">
+        <form onSubmit={onBindCode} className="space-y-4">
+          <input
+            value={codeInput}
+            onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+            placeholder="JOIN CODE"
+            autoComplete="off"
+            autoCapitalize="characters"
+            className="block w-full rounded-lg border-0 bg-zinc-950 px-3 py-3 text-center text-lg font-mono tracking-widest text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
+          />
+          {loadError && (
+            <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30">
+              {loadError}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={binding || codeInput.trim().length < 6}
+            className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black disabled:opacity-50"
+          >
+            {binding ? 'Checking…' : 'Continue'}
+          </button>
+        </form>
+        <FooterLinks />
+      </AuthShell>
+    )
+  }
+
+  const pinMembers = roster.members.filter((m) => m.hasPin)
+
+  return (
+    <AuthShell title={roster.familyName} subtitle="Who's signing in?">
+      {loadError && (
+        <p className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30">
+          {loadError}
+        </p>
+      )}
+      {pinMembers.length === 0 ? (
+        <p className="text-sm text-zinc-400">
+          No one has a PIN yet. Ask your admin to add members and set PINs.
+        </p>
+      ) : (
+        <ul className="grid grid-cols-2 gap-3">
+          {pinMembers.map((m) => (
+            <li key={m.id}>
+              <button
+                type="button"
+                disabled={m.pinLocked}
+                onClick={() => setSelected(m)}
+                className="flex w-full flex-col items-center gap-2 rounded-2xl bg-zinc-900 p-4 ring-1 ring-zinc-800 transition hover:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Avatar name={m.name} url={m.avatarUrl} />
+                <span className="text-sm font-medium text-zinc-300">{m.name}</span>
+                {m.pinLocked && (
+                  <span className="text-xs text-amber-300">Locked</span>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <button
+        type="button"
+        onClick={onUnbind}
+        className="mt-6 w-full text-sm text-zinc-500 hover:text-zinc-400"
+      >
+        Use a different family code
+      </button>
+      <FooterLinks />
+    </AuthShell>
+  )
+}
+
+function Avatar({ name, url }: { name: string; url: string | null }) {
+  if (url) {
+    return (
+      <img
+        src={url}
+        alt=""
+        className="h-14 w-14 rounded-full object-cover ring-2 ring-zinc-700"
+      />
+    )
+  }
+  const initial = name.trim().charAt(0).toUpperCase() || '?'
+  return (
+    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-zinc-800 text-lg font-semibold text-zinc-300 ring-2 ring-zinc-700">
+      {initial}
+    </div>
+  )
+}
+
+function AuthShell({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string
+  subtitle?: string
+  children: ReactNode
+}) {
+  return (
+    <div className="flex min-h-svh items-center justify-center bg-black px-4 py-12">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-black">
+            <span className="text-xl font-semibold">$</span>
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-300">
+            {title}
+          </h1>
+          {subtitle && <p className="mt-1 text-sm text-zinc-400">{subtitle}</p>}
+        </div>
+        <div className="rounded-2xl bg-zinc-900 p-6 shadow-lg ring-1 ring-zinc-800">
+          {children}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function FooterLinks() {
+  return (
+    <p className="mt-6 text-center text-sm text-zinc-500">
+      <Link to="/login" className="text-emerald-400 hover:underline">
+        Admin email sign-in
+      </Link>
+    </p>
+  )
+}

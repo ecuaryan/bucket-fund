@@ -94,7 +94,10 @@ High-level snapshot of what exists on `main` today. Product truth lives in
 
 ### Shipped
 
-- Email/password auth + sign-up bootstrap (creates family + admin member)
+- Email/password auth + sign-up bootstrap (creates family + admin member;
+  `bootstrap_family` metadata prevents duplicate families for PIN users)
+- Family join code + QR, avatar + 4-digit PIN login, admin member/PIN management
+- Per-member bucket ordering; adults do not see children's buckets on Home
 - Home screen: unallocated pool, bucket list, Realtime sync
 - Bucket CRUD: create, inline rename, reorder, delete (with fund reclaim)
 - Move money flow (`move_money` Postgres fn + MoveMoneyDialog)
@@ -104,9 +107,8 @@ High-level snapshot of what exists on `main` today. Product truth lives in
 
 ### Not yet built
 
-- Member management (invite spouse/kids, assign roles)
 - Send money (member → member virtual transfers)
-- Child PIN login + member picker + WebAuthn biometric
+- WebAuthn biometric fast path
 - Balance invariant check wired end-to-end + admin alert banner
 - PWA icon assets + install polish
 
@@ -193,11 +195,13 @@ Full list and behavior matrix: <https://teller.io/docs/guides/sandbox>
 
 - [ ] Add real PWA icons (72, 96, 128, 144, 152, 192, 384, 512 px) to
       `public/icons/`.
-- [ ] Auth flows: PIN (child) and WebAuthn biometric. Email/password for
-      admin + member is done (`src/features/auth/LoginPage.tsx`).
+- [x] PIN login + family join code (`/login/family`, `/join`, Edge Functions).
+      Email/password for admin setup (`src/features/auth/LoginPage.tsx`).
+- [ ] WebAuthn biometric fast path.
 - [x] UI for the bucket move flow (HomePage + MoveMoneyDialog + `move_money`
       RPC). Optional note field included.
-- [ ] Member management UI (admin: invite, roles, account assignment).
+- [x] Member management UI (admin: add member/child, set PIN, unlock, rotate join code).
+- [ ] Account assignment UI (assign linked accounts to members / family pool).
 - [ ] Send money flow (member → member).
 
 ## License

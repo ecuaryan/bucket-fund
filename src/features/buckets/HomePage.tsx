@@ -45,23 +45,37 @@ export default function HomePage() {
 
   const loadData = useCallback(async () => {
     setLoadError(null)
-    const [bucketsRes, accountsRes] = await Promise.all([
-      supabase
-        .from('buckets')
-        .select('*')
-        .order('display_order', { ascending: true })
-        .order('created_at', { ascending: true }),
+    await supabase.rpc('ensure_member_bucket_orders')
+
+    const [bucketsRes, orderRes, accountsRes] = await Promise.all([
+      supabase.from('buckets').select('*'),
+      supabase.from('member_bucket_order').select('bucket_id, display_order'),
       supabase.from('accounts').select('*'),
     ])
     if (bucketsRes.error) {
       setLoadError(bucketsRes.error.message)
       return
     }
+    if (orderRes.error) {
+      setLoadError(orderRes.error.message)
+      return
+    }
     if (accountsRes.error) {
       setLoadError(accountsRes.error.message)
       return
     }
-    setBuckets(bucketsRes.data ?? [])
+
+    const orderMap = new Map(
+      (orderRes.data ?? []).map((row) => [row.bucket_id, row.display_order]),
+    )
+    const sorted = [...(bucketsRes.data ?? [])].sort((a, b) => {
+      const oa = orderMap.get(a.id) ?? a.display_order
+      const ob = orderMap.get(b.id) ?? b.display_order
+      if (oa !== ob) return oa - ob
+      return a.created_at.localeCompare(b.created_at)
+    })
+
+    setBuckets(sorted)
     setAccounts(accountsRes.data ?? [])
   }, [])
 
@@ -101,11 +115,23 @@ export default function HomePage() {
           void loadData()
         },
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'member_bucket_order',
+          filter: member ? `member_id=eq.${member.id}` : undefined,
+        },
+        () => {
+          void loadData()
+        },
+      )
       .subscribe()
     return () => {
       void supabase.removeChannel(channel)
     }
-  }, [familyId, loadData])
+  }, [familyId, member?.id, loadData])
 
   function startRename(id: string, currentName: string) {
     setRenameValue(currentName)

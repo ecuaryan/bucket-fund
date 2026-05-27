@@ -122,7 +122,7 @@ Every dollar lives in exactly one place — either in a named bucket or in someo
 ---
 
 ### Home Screen
-- Bucket list with allocated amounts per bucket
+- Bucket list with allocated amounts per bucket (adults: shared set, per-person sort order)
 - Unallocated balance prominently displayed (green if ≥ 0, red if < 0)
 - No separate "real balance" display — unallocated is the signal
 
@@ -155,11 +155,21 @@ Every dollar lives in exactly one place — either in a named bucket or in someo
 ---
 
 ### Authentication
-- **Admin / Member:** email + password via Supabase Auth
-- **Children:** PIN-based login, handled at the app level on top of Supabase Auth
-- **Login screen:** displays all family member avatars/names; user taps theirs and enters PIN or password
-- **Biometric:** WebAuthn (Face ID, Touch ID, fingerprint) supported on compatible devices; registered per-device on first login, used as fast path thereafter
-- **Shared device support:** login screen always returns to the member picker after logout/timeout — supports wall-mounted tablet kiosk use case as well as individual personal devices
+- **Admin (setup & bank):** email + password via Supabase Auth. Sign-up sets
+  `bootstrap_family` metadata so only the first admin creates a tenant (PIN
+  users do not spawn extra families).
+- **Admin / Member / Child (day-to-day):** bind device once with an unguessable
+  **family join code** or QR (`/join?code=…`), then avatar + **4-digit PIN**.
+  Each person has their own `auth.users` row (internal email, never shown).
+- **PIN management:** admin only — set/reset PIN verbally; no self-service PIN
+  change in v1. Reset PIN revokes all sessions for that member.
+- **Lockout:** 6 failed PIN attempts → locked until admin clears.
+- **Join code rotation:** admin can rotate; only affects **new** device binds.
+- **Sessions:** independent per person — logout on one device does not sign out others.
+- **Home bucket visibility:** admin and member see family-pool + adult-owned buckets
+  only (not children's buckets). Each adult orders that list independently via
+  `member_bucket_order`. Children see only their own buckets.
+- **Deferred:** optional member email, WebAuthn fast path, children-first polish.
 
 ---
 

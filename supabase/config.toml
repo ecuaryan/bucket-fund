@@ -396,6 +396,21 @@ verify_jwt = false
 [functions.check-invariant]
 verify_jwt = true
 
+[functions.validate-join-code]
+verify_jwt = false
+
+[functions.pin-login]
+verify_jwt = false
+
+[functions.create-member]
+verify_jwt = true
+
+[functions.set-pin]
+verify_jwt = true
+
+[functions.clear-pin-lockout]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

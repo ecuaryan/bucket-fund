@@ -26,6 +26,10 @@ type AuthContextValue = AuthState & {
     displayName?: string
     familyName?: string
   }) => Promise<void>
+  signInWithSession: (tokens: {
+    access_token: string
+    refresh_token: string
+  }) => Promise<void>
   signOut: () => Promise<void>
   refreshMember: () => Promise<void>
 }
@@ -99,14 +103,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
         options: {
-          // Consumed by the handle_new_user() trigger to seed the
-          // families.name and family_members.name rows.
+          // Consumed by handle_new_user() — only runs when bootstrap_family
+          // is true so PIN-created auth users do not spawn a second family.
           data: {
+            bootstrap_family: 'true',
             display_name: displayName ?? '',
             family_name: familyName ?? '',
           },
         },
       })
+      if (error) throw error
+    },
+    [],
+  )
+
+  const signInWithSession = useCallback(
+    async (tokens: { access_token: string; refresh_token: string }) => {
+      const { error } = await supabase.auth.setSession(tokens)
       if (error) throw error
     },
     [],
@@ -126,8 +139,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [state])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ ...state, signIn, signUp, signOut, refreshMember }),
-    [state, signIn, signUp, signOut, refreshMember],
+    () => ({
+      ...state,
+      signIn,
+      signUp,
+      signInWithSession,
+      signOut,
+      refreshMember,
+    }),
+    [state, signIn, signUp, signInWithSession, signOut, refreshMember],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -7,6 +7,7 @@ export default function AppShell() {
   const [signingOut, setSigningOut] = useState(false)
 
   const familyName = auth.member?.name ?? auth.session?.user.email ?? 'You'
+  const isAdmin = auth.member?.role === 'admin'
 
   async function onSignOut() {
     setSigningOut(true)
@@ -50,7 +51,7 @@ export default function AppShell() {
           <TabLink to="/" label="Home" />
           <TabLink to="/send" label="Send" />
           <TabLink to="/history" label="History" />
-          <TabLink to="/admin" label="Admin" />
+          {isAdmin && <TabLink to="/admin" label="Admin" />}
         </ul>
       </nav>
     </div>

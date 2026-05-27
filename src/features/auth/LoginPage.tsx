@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 
 type Mode = 'signIn' | 'signUp'
@@ -158,9 +158,15 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-zinc-500">
-          By signing up you become the admin of a new family. You can invite
-          a spouse or kids later.
+        <p className="mt-6 text-center text-sm text-zinc-500">
+          <Link to="/login/family" className="text-emerald-400 hover:underline">
+            Family member? Sign in with PIN
+          </Link>
+        </p>
+
+        <p className="mt-4 text-center text-xs text-zinc-500">
+          By signing up you become the admin of a new family. Add members
+          and PINs from Admin.
         </p>
       </div>
     </div>

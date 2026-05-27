@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import { disconnectEnrollment, useTellerConnect } from '@/lib/teller'
+import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
+import MembersSection from '@/features/admin/MembersSection'
 import type { Database } from '@/types/database'
 
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -180,6 +182,9 @@ export default function AdminPage() {
           </p>
         </div>
       </header>
+
+      <FamilyJoinSection />
+      <MembersSection />
 
       <section aria-label="Linked accounts">
         <div className="mb-3 flex items-center justify-between">

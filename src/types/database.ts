@@ -148,22 +148,58 @@ export type Database = {
           },
         ]
       }
+      member_bucket_order: {
+        Row: {
+          bucket_id: string
+          display_order: number
+          member_id: string
+        }
+        Insert: {
+          bucket_id: string
+          display_order: number
+          member_id: string
+        }
+        Update: {
+          bucket_id?: string
+          display_order?: number
+          member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_bucket_order_bucket_id_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_bucket_order_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       families: {
         Row: {
           created_at: string
           id: string
+          join_code: string
           name: string
           plan: string
         }
         Insert: {
           created_at?: string
           id?: string
+          join_code?: string
           name: string
           plan?: string
         }
         Update: {
           created_at?: string
           id?: string
+          join_code?: string
           name?: string
           plan?: string
         }
@@ -176,7 +212,10 @@ export type Database = {
           family_id: string
           id: string
           name: string
+          pin_failed_attempts: number
           pin_hash: string | null
+          pin_locked: boolean
+          pin_set_at: string | null
           role: string
           user_id: string | null
         }
@@ -186,7 +225,10 @@ export type Database = {
           family_id: string
           id?: string
           name: string
+          pin_failed_attempts?: number
           pin_hash?: string | null
+          pin_locked?: boolean
+          pin_set_at?: string | null
           role: string
           user_id?: string | null
         }
@@ -196,7 +238,10 @@ export type Database = {
           family_id?: string
           id?: string
           name?: string
+          pin_failed_attempts?: number
           pin_hash?: string | null
+          pin_locked?: boolean
+          pin_set_at?: string | null
           role?: string
           user_id?: string | null
         }
@@ -395,6 +440,8 @@ export type Database = {
         Args: { p_bucket_id: string; p_direction: string }
         Returns: undefined
       }
+      ensure_member_bucket_orders: { Args: never; Returns: undefined }
+      rotate_family_join_code: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
