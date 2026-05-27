@@ -1,5 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom'
+import {
+  Link,
+  Navigate,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import {
   clearRequireFreshSignIn,
@@ -10,9 +16,18 @@ type Mode = 'signIn' | 'signUp'
 
 type LocationState = { from?: string } | null
 
+function clearPasswordInput(elementId: string) {
+  const el = document.getElementById(elementId) as HTMLInputElement | null
+  if (!el) return
+  el.value = ''
+  el.defaultValue = ''
+  el.blur()
+}
+
 export default function LoginPage() {
   const auth = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const from = (location.state as LocationState)?.from ?? '/'
 
@@ -70,6 +85,8 @@ export default function LoginPage() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Something went wrong.'
       if (msg.toLowerCase().includes('invalid login')) {
+        setPassword('')
+        clearPasswordInput('login-password')
         setError(
           'Invalid email or password. Try again or use Forgot password below.',
         )
@@ -143,7 +160,13 @@ export default function LoginPage() {
             value={password}
             onChange={setPassword}
             placeholder={isSignUp ? 'At least 8 characters' : ''}
-            autoComplete={isSignUp ? 'new-password' : 'current-password'}
+            autoComplete={
+              isSignUp
+                ? 'new-password'
+                : error
+                  ? 'off'
+                  : 'current-password'
+            }
             name="password"
             id="login-password"
             required
@@ -189,13 +212,22 @@ export default function LoginPage() {
 
         {!isSignUp && (
           <p className="mt-3 text-center text-sm">
-            <Link
-              to="/login/forgot"
-              state={{ email }}
+            <button
+              type="button"
               className="text-emerald-400 hover:underline"
+              onClick={() => {
+                setPassword('')
+                clearPasswordInput('login-password')
+                ;(
+                  document.getElementById('login-email') as HTMLInputElement | null
+                )?.blur()
+                requestAnimationFrame(() => {
+                  navigate('/login/forgot', { state: { email } })
+                })
+              }}
             >
               Forgot password?
-            </Link>
+            </button>
           </p>
         )}
 
