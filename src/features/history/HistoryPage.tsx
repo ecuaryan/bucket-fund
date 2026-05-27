@@ -29,7 +29,18 @@ type Bucket = Pick<
   'id' | 'name' | 'display_order' | 'created_at'
 >
 
-const PAGE_SIZE = 200
+// Initial render and Realtime refreshes pull only the most recent few
+// rows — most sessions just want "what happened today" and a tiny
+// payload makes that snappier. Tapping "Load older" pulls larger
+// pages from there on, since at that point the user is intentionally
+// digging through history.
+const INITIAL_PAGE_SIZE = 10
+const MORE_PAGE_SIZE = 50
+
+// PostgREST select expression for the embedded joins. Pulled out as a
+// constant so every page fetch uses the exact same shape.
+const TX_SELECT =
+  '*, from_bucket:buckets!from_bucket_id(name), to_bucket:buckets!to_bucket_id(name), from_member:family_members!from_member_id(name), to_member:family_members!to_member_id(name)'
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -55,39 +66,89 @@ export default function HistoryPage() {
   const [rows, setRows] = useState<TxRow[] | null>(null)
   const [buckets, setBuckets] = useState<Bucket[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   const member = auth.status === 'signedIn' ? auth.member : null
   const familyId = member?.family_id ?? null
 
-  const loadData = useCallback(async () => {
+  // PostgREST embedded resources: alias:table!fk_column(cols). Two FKs
+  // to the same target table (buckets), so we disambiguate by FK column
+  // name. RLS scopes everything to this family already.
+  //
+  // The same base query is used by all three loaders below; the filter
+  // (when set) matches transactions where the bucket is either the
+  // source or the destination.
+  const fetchPage = useCallback(
+    async (
+      beforeCreatedAt: string | null,
+      limit: number,
+    ): Promise<TxRow[] | null> => {
+      let query = supabase
+        .from('transactions')
+        .select(TX_SELECT)
+        .order('created_at', { ascending: false })
+        .limit(limit)
+      if (beforeCreatedAt) query = query.lt('created_at', beforeCreatedAt)
+      if (bucketFilter) {
+        query = query.or(
+          `from_bucket_id.eq.${bucketFilter},to_bucket_id.eq.${bucketFilter}`,
+        )
+      }
+      const { data, error } = await query
+      if (error) {
+        setLoadError(error.message)
+        return null
+      }
+      return (data ?? []) as unknown as TxRow[]
+    },
+    [bucketFilter],
+  )
+
+  // Initial load (also re-runs on filter change). Replaces the list.
+  const loadFirstPage = useCallback(async () => {
     setLoadError(null)
-    // PostgREST embedded resources: alias:table!fk_column(cols).
-    // Two FKs to the same target table (buckets) so we must disambiguate
-    // by FK column name. RLS scopes everything to this family already.
-    let query = supabase
-      .from('transactions')
-      .select(
-        '*, from_bucket:buckets!from_bucket_id(name), to_bucket:buckets!to_bucket_id(name), from_member:family_members!from_member_id(name), to_member:family_members!to_member_id(name)',
+    const next = await fetchPage(null, INITIAL_PAGE_SIZE)
+    if (!next) return
+    setRows(next)
+    setHasMore(next.length === INITIAL_PAGE_SIZE)
+  }, [fetchPage])
+
+  // Load older rows beneath the current oldest. Cursor pagination on
+  // created_at (rather than OFFSET) avoids skipping/duplicating rows
+  // when Realtime inserts new transactions while the user is paging.
+  const loadMore = useCallback(async () => {
+    if (loadingMore || rows === null || rows.length === 0) return
+    setLoadingMore(true)
+    const next = await fetchPage(
+      rows[rows.length - 1].created_at,
+      MORE_PAGE_SIZE,
+    )
+    setLoadingMore(false)
+    if (!next) return
+    setRows((prev) => (prev ? [...prev, ...next] : next))
+    setHasMore(next.length === MORE_PAGE_SIZE)
+  }, [fetchPage, loadingMore, rows])
+
+  // Realtime handler. Re-fetches only the head and merges with any
+  // older rows the user already paginated to, so we don't blow away
+  // their scroll state on a new insert.
+  const refreshHead = useCallback(async () => {
+    const head = await fetchPage(null, INITIAL_PAGE_SIZE)
+    if (!head) return
+    setRows((prev) => {
+      if (!prev) return head
+      if (head.length === 0) return prev
+      const headIds = new Set(head.map((r) => r.id))
+      const oldestInHead = head[head.length - 1].created_at
+      // Keep older paginated rows; the head replaces everything within
+      // its time window.
+      const tail = prev.filter(
+        (r) => !headIds.has(r.id) && r.created_at < oldestInHead,
       )
-      .order('created_at', { ascending: false })
-      .limit(PAGE_SIZE)
-
-    if (bucketFilter) {
-      // Match if the bucket is either the source or the destination.
-      // `.or` takes a comma-separated PostgREST filter expression.
-      query = query.or(
-        `from_bucket_id.eq.${bucketFilter},to_bucket_id.eq.${bucketFilter}`,
-      )
-    }
-
-    const { data, error } = await query
-
-    if (error) {
-      setLoadError(error.message)
-      return
-    }
-    setRows((data ?? []) as unknown as TxRow[])
-  }, [bucketFilter])
+      return [...head, ...tail]
+    })
+  }, [fetchPage])
 
   // Bucket list is for the filter picker. We don't need it for
   // rendering rows (the row query already joins names) but it lets
@@ -104,17 +165,17 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (!familyId) return
-    void loadData()
-  }, [familyId, loadData])
+    void loadFirstPage()
+  }, [familyId, loadFirstPage])
 
   useEffect(() => {
     if (!familyId) return
     void loadBuckets()
   }, [familyId, loadBuckets])
 
-  // Realtime: any new transaction in this family bumps the list.
-  // We refetch (rather than splice) so joined names resolve correctly
-  // without us reproducing the join client-side.
+  // Realtime: any new transaction in this family refreshes the head
+  // of the list. Older paginated rows are preserved by refreshHead's
+  // merge logic.
   useEffect(() => {
     if (!familyId) return
     const channel = supabase
@@ -128,14 +189,14 @@ export default function HistoryPage() {
           filter: `family_id=eq.${familyId}`,
         },
         () => {
-          void loadData()
+          void refreshHead()
         },
       )
       .subscribe()
     return () => {
       void supabase.removeChannel(channel)
     }
-  }, [familyId, loadData])
+  }, [familyId, refreshHead])
 
   const grouped = useMemo(() => groupByDay(rows ?? []), [rows])
 
@@ -181,9 +242,7 @@ export default function HistoryPage() {
             ? 'Loading…'
             : rows.length === 0
               ? 'No transactions yet'
-              : rows.length === PAGE_SIZE
-                ? `Showing ${PAGE_SIZE} most recent`
-                : `${rows.length} ${rows.length === 1 ? 'transaction' : 'transactions'}`}
+              : `${rows.length}${hasMore ? '+' : ''} ${rows.length === 1 ? 'transaction' : 'transactions'}`}
         </p>
       </header>
 
@@ -223,6 +282,17 @@ export default function HistoryPage() {
               </ul>
             </section>
           ))}
+
+          {hasMore && (
+            <button
+              type="button"
+              onClick={() => void loadMore()}
+              disabled={loadingMore}
+              className="w-full rounded-2xl bg-white px-4 py-3 text-sm font-medium text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loadingMore ? 'Loading…' : 'Load older'}
+            </button>
+          )}
         </div>
       )}
     </div>
