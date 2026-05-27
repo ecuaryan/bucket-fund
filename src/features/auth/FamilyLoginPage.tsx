@@ -13,6 +13,7 @@ import {
   getBoundFamilyId,
   getBoundJoinCode,
 } from '@/lib/familyDevice'
+import PinInput from '@/components/ui/PinInput'
 import {
   pinLogin,
   validateJoinCode,
@@ -136,18 +137,19 @@ export default function FamilyLoginPage() {
   if (selected) {
     return (
       <AuthShell title={selected.name} subtitle="Enter your 4-digit PIN">
-        <form onSubmit={onPinSubmit} className="space-y-4">
-          <input
-            type="password"
-            inputMode="numeric"
-            pattern="\d{4}"
-            maxLength={4}
-            autoComplete="one-time-code"
+        <form
+          onSubmit={onPinSubmit}
+          className="space-y-4"
+          autoComplete="off"
+          data-bucketfund-form="family-pin"
+        >
+          <PinInput
             autoFocus
+            aria-label="4-digit PIN"
             value={pin}
-            onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-            placeholder="••••"
-            className="block w-full rounded-xl border-0 bg-zinc-950 px-4 py-4 text-center text-2xl tracking-[0.5em] text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
+            onChange={setPin}
+            placeholder="····"
+            className="block w-full rounded-xl border-0 bg-zinc-950 px-4 py-4 text-center text-2xl tracking-[0.5em] text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-600 focus:outline focus:outline-2 focus:outline-emerald-400"
           />
           {pinError && (
             <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30">

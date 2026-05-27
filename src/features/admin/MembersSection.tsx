@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { supabase } from '@/lib/supabase'
+import PinInput from '@/components/ui/PinInput'
 import {
   clearPinLockout,
   createMember,
@@ -224,6 +225,8 @@ export default function MembersSection() {
         >
           <form
             onSubmit={onSavePin}
+            autoComplete="off"
+            data-bucketfund-form="admin-set-pin"
             className="w-full max-w-sm rounded-2xl bg-zinc-900 p-6 ring-1 ring-zinc-800"
           >
             <h3 id="pin-dialog-title" className="text-lg font-semibold text-zinc-300">
@@ -233,16 +236,11 @@ export default function MembersSection() {
               4 digits. Saving signs them out everywhere until they sign in
               again.
             </p>
-            <input
-              type="password"
-              inputMode="numeric"
-              pattern="\d{4}"
-              maxLength={4}
+            <PinInput
               autoFocus
+              aria-label={`4-digit PIN for ${pinTarget.name}`}
               value={pinValue}
-              onChange={(e) =>
-                setPinValue(e.target.value.replace(/\D/g, '').slice(0, 4))
-              }
+              onChange={setPinValue}
               className="mt-4 block w-full rounded-lg bg-zinc-950 px-3 py-3 text-center text-2xl tracking-[0.5em] text-zinc-300 ring-1 ring-zinc-700"
             />
             <div className="mt-4 flex gap-2">

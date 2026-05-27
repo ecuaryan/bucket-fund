@@ -26,6 +26,11 @@ body {
  * interactive element. Existing `disabled:cursor-not-allowed` utilities
  * on individual elements still win on specificity.
  */
+/* Mask PIN digits without type=password (keeps password managers away). */
+.pin-mask {
+  -webkit-text-security: disc;
+}
+
 @layer base {
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),

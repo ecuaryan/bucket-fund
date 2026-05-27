@@ -4,12 +4,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { handleCors, jsonResponse } from '../_shared/http.ts'
 import { serviceClient } from '../_shared/supabase.ts'
-import {
-  isValidPin,
-  MAX_PIN_ATTEMPTS,
-  memberAuthEmail,
-  verifyPin,
-} from '../_shared/pin.ts'
+import { isValidPin, MAX_PIN_ATTEMPTS, verifyPin } from '../_shared/pin.ts'
 
 type Body = {
   familyId?: string
@@ -98,7 +93,14 @@ Deno.serve(async (req: Request) => {
     .update({ pin_failed_attempts: 0, pin_locked: false })
     .eq('id', member.id)
 
-  const email = memberAuthEmail(member.id)
+  const { data: authUser, error: userLookupError } =
+    await admin.auth.admin.getUserById(member.user_id)
+  const email = authUser?.user?.email
+  if (userLookupError || !email) {
+    console.error('pin-login user lookup', userLookupError)
+    return jsonResponse({ error: 'Login failed' }, 500)
+  }
+
   const newPassword = crypto.randomUUID() + crypto.randomUUID()
 
   const { error: updateError } = await admin.auth.admin.updateUserById(

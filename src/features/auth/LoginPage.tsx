@@ -107,7 +107,8 @@ export default function LoginPage() {
             value={email}
             onChange={setEmail}
             placeholder="you@example.com"
-            autoComplete="email"
+            autoComplete={isSignUp ? 'email' : 'username'}
+            name="email"
             required
           />
           <Field
@@ -117,6 +118,7 @@ export default function LoginPage() {
             onChange={setPassword}
             placeholder={isSignUp ? 'At least 8 characters' : ''}
             autoComplete={isSignUp ? 'new-password' : 'current-password'}
+            name="password"
             required
           />
 
@@ -180,6 +182,7 @@ function Field({
   type = 'text',
   placeholder,
   autoComplete,
+  name,
   required,
 }: {
   label: string
@@ -188,6 +191,7 @@ function Field({
   type?: string
   placeholder?: string
   autoComplete?: string
+  name?: string
   required?: boolean
 }) {
   return (
@@ -195,6 +199,7 @@ function Field({
       <span className="block text-sm font-medium text-zinc-300">{label}</span>
       <input
         type={type}
+        name={name}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
