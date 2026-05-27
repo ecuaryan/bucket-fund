@@ -367,7 +367,7 @@ function TxItem({
   const time = timeFormatter.format(new Date(row.created_at))
 
   let title: string
-  let subtitle: string | null = null
+  let subtitle: string
 
   if (row.type === 'bucket_move') {
     const fromLabel = bucketEndpointLabel(row.from_bucket_id, row.from_bucket)

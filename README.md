@@ -42,12 +42,26 @@ npx supabase gen types typescript --local > src/types/database.ts
 
 ## Scripts
 
-| Script          | Purpose                          |
-| --------------- | -------------------------------- |
-| `npm run dev`   | Vite dev server                  |
-| `npm run build` | Type-check + production build    |
-| `npm run lint`  | ESLint                           |
-| `npm run preview` | Preview the built bundle       |
+| Script            | Purpose                          |
+| ----------------- | -------------------------------- |
+| `npm run dev`     | Vite dev server                  |
+| `npm run build`   | Type-check + production build    |
+| `npm run lint`    | ESLint                           |
+| `npm test`        | Unit tests (Vitest, run once)  |
+| `npm run test:watch` | Unit tests in watch mode    |
+| `npm run preview` | Preview the built bundle         |
+
+## CI and deployments
+
+Every push to `main` and every pull request runs
+[`.github/workflows/ci.yml`](./.github/workflows/ci.yml): **lint → test → build**.
+
+**Block broken deploys:** In GitHub → **Settings → Branches** → branch protection
+for `main`, enable **Require status checks to pass** and select the **CI** check
+(`lint, test, build`). Vercel production should deploy only from `main`, so merges
+that fail CI never reach production.
+
+Planned next: Supabase RLS / RPC tests in CI (Phase B in AGENTS.md).
 
 ## Project layout
 

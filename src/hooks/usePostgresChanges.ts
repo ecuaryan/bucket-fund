@@ -20,9 +20,12 @@ export function usePostgresChanges(
   onChange: () => void,
 ): void {
   const onChangeRef = useRef(onChange)
-  onChangeRef.current = onChange
 
   const specsKey = JSON.stringify(specs)
+
+  useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
 
   useEffect(() => {
     if (!accessToken || !channelName || specs.length === 0) return

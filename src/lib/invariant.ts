@@ -20,6 +20,7 @@ export type InvariantResult = {
   violationAmount: number
 }
 
-export async function checkInvariant(_familyId: string): Promise<InvariantResult> {
+export async function checkInvariant(familyId: string): Promise<InvariantResult> {
+  void familyId
   throw new Error('checkInvariant() not yet implemented')
 }

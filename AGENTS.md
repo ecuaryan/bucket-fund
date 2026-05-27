@@ -52,11 +52,21 @@ Entry point for AI coding agents (and humans) working in this repo.
 | Admin / family management       | `src/features/admin/`                 |
 | Supabase client / Teller helpers / invariant helper | `src/lib/` (`auth.tsx`, `buckets.ts`, `accounts.ts`, …) |
 | Shared React hooks              | `src/hooks/`                          |
+| Unit tests (Vitest)             | `src/**/*.test.ts` (colocate with code) |
 | DB-mirrored TS types (generated) | `src/types/database.ts`              |
 | SQL migrations                  | `supabase/migrations/`                |
 | Edge Functions (Deno runtime)   | `supabase/functions/<name>/index.ts`  |
 
 Use the `@/` alias for absolute imports from `src/`.
+
+## Testing
+
+- Run **`npm test`** before pushing. CI runs lint, test, and build on every PR.
+- **Phase A (now):** Vitest unit tests for pure logic in `src/lib/` (cash
+  accounts, auth helpers). No real Supabase or Teller in unit tests.
+- **Phase B (planned):** Local Supabase in CI — RLS matrix (admin / member /
+  child, two families) and `move_money` / invariant RPCs. Highest security ROI.
+- **Phase C (later):** A few Playwright smoke paths (sign-in, reset password, PIN).
 
 ## Update this file
 
