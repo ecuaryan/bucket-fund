@@ -4,6 +4,7 @@ type Props = {
   isFirst: boolean
   isLast: boolean
   hasAllocation: boolean
+  onViewHistory: () => void
   onRename: () => void
   onMoveUp: () => void
   onMoveDown: () => void
@@ -19,6 +20,7 @@ export default function BucketActionsMenu({
   isFirst,
   isLast,
   hasAllocation,
+  onViewHistory,
   onRename,
   onMoveUp,
   onMoveDown,
@@ -85,6 +87,8 @@ export default function BucketActionsMenu({
           role="menu"
           className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-lg bg-white py-1 text-sm shadow-lg ring-1 ring-slate-200"
         >
+          <MenuItem onClick={fire(onViewHistory)}>View history</MenuItem>
+          <div className="my-1 h-px bg-slate-100" />
           <MenuItem onClick={fire(onRename)}>Rename</MenuItem>
           <MenuItem onClick={fire(onMoveUp)} disabled={isFirst}>
             Move up

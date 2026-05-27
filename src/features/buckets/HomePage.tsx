@@ -5,6 +5,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import { sumCashBalance } from '@/lib/accounts'
@@ -27,6 +28,7 @@ const currency = new Intl.NumberFormat('en-US', {
 
 export default function HomePage() {
   const auth = useAuth()
+  const navigate = useNavigate()
   const [buckets, setBuckets] = useState<Bucket[] | null>(null)
   const [accounts, setAccounts] = useState<Account[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -307,6 +309,9 @@ export default function HomePage() {
                     isFirst={idx === 0}
                     isLast={idx === buckets.length - 1}
                     hasAllocation={Number(bucket.allocated_amount) > 0}
+                    onViewHistory={() =>
+                      navigate(`/history?bucket=${bucket.id}`)
+                    }
                     onRename={() => startRename(bucket.id, bucket.name)}
                     onMoveUp={() => void handleReorder(bucket.id, 'up')}
                     onMoveDown={() => void handleReorder(bucket.id, 'down')}

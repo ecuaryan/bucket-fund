@@ -1,1 +1,25 @@
 @import "tailwindcss";
+
+/*
+ * Tailwind v4's Preflight leaves buttons with the default cursor on
+ * the strict W3C reading that pointer is for navigation, not controls.
+ * Every major modern UI kit (Bootstrap, Material, shadcn/ui) overrides
+ * that — and so do users' expectations. Set pointer for any non-disabled
+ * interactive element. Existing `disabled:cursor-not-allowed` utilities
+ * on individual elements still win on specificity.
+ */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="menuitem"]:not([aria-disabled="true"]),
+  summary,
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
+  input[type="button"]:not(:disabled),
+  input[type="file"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
