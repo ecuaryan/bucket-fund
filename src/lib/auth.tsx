@@ -8,8 +8,11 @@ import {
   type ReactNode,
 } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { clearLocalAuthSession } from '@/lib/authStorage'
+import { takePendingPinSession } from '@/lib/pendingPinSession'
 import { isPasswordRecoverySession } from '@/lib/recoverySession'
 import { supabase } from '@/lib/supabase'
+import { withTimeout } from '@/lib/timeout'
 import type { Database } from '@/types/database'
 
 export type FamilyMember = Database['public']['Tables']['family_members']['Row']
@@ -61,11 +64,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   })
 
   const applySession = useCallback(async (session: Session | null) => {
-    // Sync the JWT into Realtime so RLS-filtered subscriptions can
-    // identify the user. supabase-js auto-syncs on most versions but
-    // a regression in 2.54.x silently dropped events; calling this
-    // explicitly is harmless and makes the behavior version-proof.
-    await supabase.realtime.setAuth(session?.access_token ?? null)
+    // Sync JWT for Realtime; do not block sign-in on this — a wedged
+    // websocket can hang `setAuth` and leave the app on "Loading…".
+    void supabase.realtime.setAuth(session?.access_token ?? null)
     if (!session) {
       setState({ status: 'signedOut', session: null, member: null })
       return
@@ -77,10 +78,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true
 
-    supabase.auth.getSession().then(({ data }) => {
+    void (async () => {
+      const pending = takePendingPinSession()
+      if (pending) {
+        clearLocalAuthSession()
+        try {
+          const { error } = await withTimeout(
+            supabase.auth.setSession(pending),
+            20_000,
+            'Sign-in timed out. Close other BucketFund tabs and try again.',
+          )
+          if (error) {
+            console.error('pending PIN setSession', error)
+          }
+        } catch (err) {
+          console.error('pending PIN setSession', err)
+        }
+      }
+
       if (!active) return
-      void applySession(data.session)
-    })
+      const { data } = await supabase.auth.getSession()
+      if (!active) return
+      await applySession(data.session)
+    })()
 
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (_event, session) => {

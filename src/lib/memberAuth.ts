@@ -1,7 +1,11 @@
-import { supabase } from '@/lib/supabase'
+import { clearLocalAuthSession } from '@/lib/authStorage'
+import { setPendingPinSession } from '@/lib/pendingPinSession'
+import { supabase, supabaseUrl } from '@/lib/supabase'
+import { withTimeout } from '@/lib/timeout'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+const PIN_LOGIN_TIMEOUT_MS = 25_000
 
 export type JoinMember = {
   id: string
@@ -22,6 +26,7 @@ async function postFunction<T>(
   name: string,
   body: unknown,
   accessToken?: string,
+  timeoutMs = PIN_LOGIN_TIMEOUT_MS,
 ): Promise<T> {
   const headers: Record<string, string> = {
     'content-type': 'application/json',
@@ -31,11 +36,16 @@ async function postFunction<T>(
     headers.Authorization = `Bearer ${accessToken}`
   }
 
-  const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-  })
+  const res = await withTimeout(
+    fetch(`${supabaseUrl}/functions/v1/${name}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs),
+    }),
+    timeoutMs,
+    'Sign-in timed out. Check your connection and try again.',
+  )
 
   const data = (await res.json().catch(() => ({}))) as T & { error?: string }
   if (!res.ok) {
@@ -60,11 +70,15 @@ export async function pinLogin(input: {
     refresh_token: string
   }>('pin-login', input)
 
-  const { error } = await supabase.auth.setSession({
+  // setSession in-tab can hang when a stale session holds the auth lock
+  // (refresh in progress, another tab, etc.). Clear storage and reload so
+  // AuthProvider applies the new session on a clean client.
+  clearLocalAuthSession()
+  setPendingPinSession({
     access_token: data.access_token,
     refresh_token: data.refresh_token,
   })
-  if (error) throw error
+  window.location.reload()
 }
 
 export async function createMember(input: {

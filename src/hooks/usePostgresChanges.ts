@@ -34,7 +34,7 @@ export function usePostgresChanges(
     let cancelled = false
 
     void (async () => {
-      await supabase.realtime.setAuth(accessToken)
+      void supabase.realtime.setAuth(accessToken)
       if (cancelled) return
 
       let ch = supabase.channel(channelName)
