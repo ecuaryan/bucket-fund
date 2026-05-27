@@ -34,14 +34,16 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 - Links/unlinks bank accounts via Teller
 - Creates and deletes buckets for the family pool
 - Manages family members (invite, assign roles, assign accounts)
-- Sends/receives money with anyone within the family
+- Funds children via Send; sees all family sends and shared-pool history
 - Views family-level transaction history
 - Receives data integrity error alerts if the invariant is violated
 
 **Member** (e.g. spouse)
 - Operational access only
 - Moves money between buckets
-- Sends/receives money with anyone within the family
+- Shares one **family unallocated** number with admin on Home (same pool)
+- Funds children via Send; sees all family sends and shared-pool history
+- Cannot send to admin (adults share money — use buckets for shared goals)
 - Cannot link/unlink accounts or create/delete buckets
 - Cannot manage other members
 
@@ -49,7 +51,8 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 - Scoped entirely to their own buckets and balance
 - Cannot see family pool buckets or balances
 - Can create and manage (rename, delete, reorder) **their own** buckets — adults never see these on Home
-- Sends/receives money with anyone within the family
+- Sends to adults (returns money to the shared pool) or other children; sees
+  only sends they participate in
 
 ---
 
@@ -72,16 +75,20 @@ Every dollar lives in exactly one place — either in a named bucket or in someo
 
 **If this invariant is ever violated**, a prominent error is displayed to the admin. This is a critical data integrity issue and must never be silently ignored.
 
-**Members with linked accounts:**
-- Real balance = sum of their Teller-linked account balances
-- Unallocated balance = real balance minus sum of their bucket allocations
-- Unallocated ≥ 0 → displayed in green
-- Unallocated < 0 → displayed in red; user needs to pull from a bucket to cover
+**Admin and member (shared family pool on Home):**
+- **Unallocated** on Home is one number for both: family cash minus
+  adult-visible bucket allocations minus children's virtual unallocated
+  (funded-by-sends amounts not yet in a child bucket).
+- Adult-to-adult sends are not allowed — they would not move the pool anyway.
+- Unallocated ≥ 0 → green; negative → red (pull from a bucket or fix allocations).
 
-**Members without linked accounts (virtual-only):**
-- Balance is funded entirely by sends from other members
-- Unallocated = total received via sends minus sum of bucket allocations
-- Same green/red logic applies
+**Child:**
+- Unallocated = their cash accounts + net sends − their bucket allocations
+- Virtual-only children (no linked accounts) are funded entirely by sends from adults
+
+**Members with their own linked accounts (future / optional):**
+- Per-person Teller balances may exist in the schema; Home still presents the
+  shared adult pool for admin/member roles. See `member_available_balance` in SQL.
 
 **When a bank transaction hits via Teller webhook:**
 - Real balance updates automatically
@@ -110,11 +117,12 @@ Every dollar lives in exactly one place — either in a named bucket or in someo
 - Logged with: amount, from, to, timestamp, optional note
 
 **Virtual sends**
-- Any member sends $X to any other family member
-- Optional note field
-- Instant — no approval required
-- Mistakes corrected by sending back
-- Logged with: amount, sender, recipient, timestamp, optional note
+- **Adults → children:** fund a child's personal unallocated balance (allowance).
+- **Adults ↔ adults:** not supported — same shared pool; use **buckets** instead.
+- **Children → anyone:** from the child's balance; child → adult returns money to
+  the shared pool.
+- Optional note; instant; logged with amount, sender, recipient, timestamp, note.
+- Enforced in UI (Send recipient list) and `send_money` RPC.
 
 **Teller sync**
 - Teller webhooks keep real balances updated in real time
@@ -123,8 +131,10 @@ Every dollar lives in exactly one place — either in a named bucket or in someo
 ---
 
 ### Transaction History
-- **Admin and member** see all `bucket_move` entries on family-pool and adult-owned
-  buckets (each other's moves included). Children's bucket moves stay hidden.
+- **Admin** sees every transaction in the family.
+- **Member** sees all `send` rows in the family plus `bucket_move` on family-pool
+  and adult-owned buckets (each other's moves included). Children's bucket moves
+  stay hidden.
 - **Child** sees only moves involving their own buckets, plus sends they're part of.
 - Each entry shows: amount, counterparty or bucket name, timestamp, optional note
 
