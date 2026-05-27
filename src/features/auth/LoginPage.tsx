@@ -131,17 +131,6 @@ export default function LoginPage() {
             required
           />
 
-          {!isSignUp && (
-            <p className="text-right text-sm">
-              <Link
-                to="/login/forgot"
-                className="text-emerald-400 hover:underline"
-              >
-                Forgot password?
-              </Link>
-            </p>
-          )}
-
           {error && (
             <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30">
               {error}
@@ -178,6 +167,17 @@ export default function LoginPage() {
               ? 'Already have an account? Sign in'
               : 'New here? Create a family'}
           </button>
+
+          {!isSignUp && (
+            <p className="text-center text-sm">
+              <Link
+                to="/login/forgot"
+                className="text-emerald-400 hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </p>
+          )}
         </form>
 
         <p className="mt-6 text-center text-sm text-zinc-500">
