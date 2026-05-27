@@ -6,7 +6,8 @@ This document contains the full product brief, technical stack, architecture dec
 
 ## What Is BucketFund?
 
-**Domain:** bucketfund.me
+**Domain:** bucketfund.me (planned). Production currently uses the Vercel
+preview URL (e.g. `bucket-fund.vercel.app`) until DNS is purchased.
 
 BucketFund is a **bank-agnostic virtual envelope budgeting PWA** for families. It sits on top of real bank accounts (read via Teller API) and provides a fast, universal mental accounting layer. Users carve their real bank balance into named buckets. The app tracks where every dollar is allocated. Every dollar in the system always reconciles back to the real Teller balance.
 
