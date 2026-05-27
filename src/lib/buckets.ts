@@ -33,6 +33,48 @@ export async function moveMoney(args: MoveMoneyArgs): Promise<string> {
   return data as unknown as string
 }
 
+/** Rename a bucket. RLS gates it to the owner or an admin. */
+export async function renameBucket(
+  bucketId: string,
+  name: string,
+): Promise<void> {
+  const trimmed = name.trim()
+  if (!trimmed) throw new Error('Name cannot be empty.')
+  const { error } = await supabase
+    .from('buckets')
+    .update({ name: trimmed })
+    .eq('id', bucketId)
+  if (error) throw new Error(error.message)
+}
+
+/**
+ * Delete a bucket. The bucket's `allocated_amount` automatically
+ * returns to the unallocated pool because unallocated is computed
+ * as `cash_balance - sum(allocated)` and the deleted row drops out
+ * of the sum. Any historical `transactions` referencing this bucket
+ * keep their rows; the FKs are `on delete set null` so the audit
+ * trail is preserved without dangling references.
+ */
+export async function deleteBucket(bucketId: string): Promise<void> {
+  const { error } = await supabase
+    .from('buckets')
+    .delete()
+    .eq('id', bucketId)
+  if (error) throw new Error(error.message)
+}
+
+/** Move a bucket one slot up or down within its family's display order. */
+export async function reorderBucket(
+  bucketId: string,
+  direction: 'up' | 'down',
+): Promise<void> {
+  const { error } = await supabase.rpc('reorder_bucket', {
+    p_bucket_id: bucketId,
+    p_direction: direction,
+  })
+  if (error) throw new Error(error.message)
+}
+
 // The Postgres function raises with codes + English messages. Map a
 // few of the common ones to friendlier strings; pass the rest through.
 function humaniseMoveError(msg: string): string {

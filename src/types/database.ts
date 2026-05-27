@@ -107,6 +107,7 @@ export type Database = {
         Row: {
           allocated_amount: number
           created_at: string
+          display_order: number
           family_id: string
           id: string
           name: string
@@ -115,6 +116,7 @@ export type Database = {
         Insert: {
           allocated_amount?: number
           created_at?: string
+          display_order?: number
           family_id: string
           id?: string
           name: string
@@ -123,6 +125,7 @@ export type Database = {
         Update: {
           allocated_amount?: number
           created_at?: string
+          display_order?: number
           family_id?: string
           id?: string
           name?: string
@@ -387,6 +390,10 @@ export type Database = {
           p_to_bucket_id: string
         }
         Returns: string
+      }
+      reorder_bucket: {
+        Args: { p_bucket_id: string; p_direction: string }
+        Returns: undefined
       }
     }
     Enums: {

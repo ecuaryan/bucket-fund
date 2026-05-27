@@ -25,8 +25,11 @@ type Props = {
   open: boolean
   buckets: Bucket[]
   unallocated: number
-  /** Bucket the user tapped to open the dialog. Used as the default
-   *  destination for the common case ("put money into this bucket"). */
+  /** Bucket the user tapped to open the dialog. Pre-fills as the
+   *  source (From) since "I tapped this bucket because I want to
+   *  spend / reallocate out of it" is the more common intent than
+   *  the inverse. The swap button covers the other direction in
+   *  one tap. */
   initialBucketId: string
   onClose: () => void
   onMoved: () => void
@@ -51,8 +54,8 @@ export default function MoveMoneyDialog({
   // Reset state whenever the dialog re-opens (or the tapped bucket changes).
   useEffect(() => {
     if (!open) return
-    setFromKey(UNALLOCATED_ID)
-    setToKey(initialBucketId)
+    setFromKey(initialBucketId)
+    setToKey(UNALLOCATED_ID)
     setAmountStr('')
     setNote('')
     setError(null)
