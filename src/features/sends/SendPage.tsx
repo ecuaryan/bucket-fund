@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
-import { fetchAvailableBalance, sendMoney } from '@/lib/sends'
+import { fetchAvailableBalance } from '@/lib/availableBalance'
+import { sendMoney } from '@/lib/sends'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import type { Database } from '@/types/database'
@@ -26,6 +27,7 @@ export default function SendPage() {
 
   const [members, setMembers] = useState<Member[] | null>(null)
   const [available, setAvailable] = useState<number | null>(null)
+  const [sendEnabled, setSendEnabled] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [toMemberId, setToMemberId] = useState('')
   const [amountStr, setAmountStr] = useState('')
@@ -38,20 +40,35 @@ export default function SendPage() {
     if (!memberId) return
     setLoadError(null)
     try {
-      const [membersRes, balance] = await Promise.all([
+      const [membersRes, bucketsRes, accountsRes] = await Promise.all([
         supabase
           .from('family_members')
           .select('id, name, role')
           .neq('id', memberId)
           .order('name'),
-        fetchAvailableBalance(),
+        supabase.from('buckets').select('allocated_amount'),
+        supabase.from('accounts').select('*'),
       ])
       if (membersRes.error) {
         setLoadError(membersRes.error.message)
         return
       }
+      if (bucketsRes.error) {
+        setLoadError(bucketsRes.error.message)
+        return
+      }
+      if (accountsRes.error) {
+        setLoadError(accountsRes.error.message)
+        return
+      }
+
+      const { balance, usedFallback } = await fetchAvailableBalance({
+        accounts: accountsRes.data ?? [],
+        buckets: bucketsRes.data ?? [],
+      })
       setMembers(membersRes.data ?? [])
       setAvailable(balance)
+      setSendEnabled(!usedFallback)
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : 'Could not load send screen.')
     }
@@ -187,11 +204,19 @@ export default function SendPage() {
         </p>
       </section>
 
+      {!sendEnabled && (
+        <p className="rounded-2xl bg-amber-500/10 px-4 py-3 text-sm text-amber-200 ring-1 ring-amber-500/30">
+          Send requires a database update on the hosted Supabase project. Run{' '}
+          <code className="text-amber-100">supabase db push</code> after merging
+          migrations, then refresh.
+        </p>
+      )}
+
       {recipients.length === 0 ? (
         <p className="rounded-2xl bg-zinc-900 px-4 py-3 text-sm text-zinc-400 ring-1 ring-zinc-800">
           Add another family member from Admin before sending.
         </p>
-      ) : (
+      ) : sendEnabled ? (
         <form
           onSubmit={onSubmit}
           className="space-y-4 rounded-2xl bg-zinc-900 p-5 ring-1 ring-zinc-800"
@@ -267,6 +292,10 @@ export default function SendPage() {
             {submitting ? 'Sending…' : 'Send'}
           </button>
         </form>
+      ) : (
+        <p className="rounded-2xl bg-zinc-900 px-4 py-3 text-sm text-zinc-400 ring-1 ring-zinc-800">
+          Sending is disabled until the database migration is applied.
+        </p>
       )}
 
       <p className="text-center text-xs text-zinc-500">

@@ -89,7 +89,17 @@ Local Supabase env: `source scripts/env-local.sh` (see [README.md](./README.md))
 ## Deploying backend changes
 
 - **Frontend:** merges to `main` → Vercel (after checks, if configured).
-- **SQL migrations:** `supabase db push` against the **hosted** project (manual, not automatic from CI today).
+- **SQL migrations:** after merging migration files to `main`, run against the **hosted**
+  project (not automatic from CI today):
+
+  ```bash
+  npx supabase link   # once, if not already linked
+  npx supabase db push
+  ```
+
+  If the app shows “Could not find the function `get_available_balance`”, the
+  frontend deployed before this step — run `db push`, wait a few seconds, refresh.
+
 - **Edge Functions:** `supabase functions deploy` + secrets via dashboard or `supabase secrets set`.
 
 See [README.md § Before connecting real Teller data](./README.md) for security TODOs.
