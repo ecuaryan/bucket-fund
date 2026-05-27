@@ -117,8 +117,33 @@ describe('send_money RPC', () => {
     await sendMoney(childClient, { toMemberId: member.memberId, amount: 15 })
 
     expect(await getAvailableBalance(childClient)).toBe(25)
-    // Members share family cash accounts on Home (+ net sends).
-    expect(await getAvailableBalance(await userClient(member.email, member.password))).toBe(115)
+    // Child → adult returns funds to the shared pool (not personal send_net).
+    expect(await getAvailableBalance(await userClient(member.email, member.password))).toBe(75)
+  })
+
+  it('admin and member see the same unallocated after adult-to-adult send', async () => {
+    const family = await createAdminFamily('send-adult-parity')
+    const spouse = await addMember(family.familyId, 'member', 'Jamie')
+    const svc = serviceClient()
+
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 200,
+    })
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const memberClient = await userClient(spouse.email, spouse.password)
+
+    expect(await getAvailableBalance(admin)).toBe(200)
+    expect(await getAvailableBalance(memberClient)).toBe(200)
+
+    await sendMoney(admin, { toMemberId: spouse.memberId, amount: 50 })
+
+    expect(await getAvailableBalance(admin)).toBe(200)
+    expect(await getAvailableBalance(memberClient)).toBe(200)
   })
 
   it('authenticated clients cannot insert send transactions directly', async () => {

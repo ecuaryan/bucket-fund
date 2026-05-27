@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
   type KeyboardEvent,
@@ -55,15 +56,26 @@ export default function HomePage() {
   const canCreateBuckets = isAdmin || isChild
   const canManageStructure = isAdmin || isChild
 
+  const loadGeneration = useRef(0)
+  const ensureOrdersDone = useRef(false)
+
   const loadData = useCallback(async () => {
+    const generation = ++loadGeneration.current
     setLoadError(null)
-    await supabase.rpc('ensure_member_bucket_orders')
+
+    if (!ensureOrdersDone.current) {
+      await supabase.rpc('ensure_member_bucket_orders')
+      if (generation !== loadGeneration.current) return
+      ensureOrdersDone.current = true
+    }
 
     const [bucketsRes, orderRes, accountsRes] = await Promise.all([
       supabase.from('buckets').select('*'),
       supabase.from('member_bucket_order').select('bucket_id, display_order'),
       supabase.from('accounts').select('*'),
     ])
+    if (generation !== loadGeneration.current) return
+
     if (bucketsRes.error) {
       const msg = bucketsRes.error.message
       if (msg.toLowerCase().includes('permission denied')) {
@@ -107,9 +119,32 @@ export default function HomePage() {
       accounts: accountRows,
       buckets: sorted,
     })
+    if (generation !== loadGeneration.current) return
     setAvailableBalance(balance)
     setBalanceUsesFallback(usedFallback)
   }, [])
+
+  const realtimeReloadTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  )
+  const debouncedLoadData = useCallback(() => {
+    clearTimeout(realtimeReloadTimer.current)
+    realtimeReloadTimer.current = setTimeout(() => {
+      void loadData()
+    }, 300)
+  }, [loadData])
+
+  useEffect(() => {
+    ensureOrdersDone.current = false
+    loadGeneration.current += 1
+  }, [familyId, memberId])
+
+  useEffect(
+    () => () => {
+      clearTimeout(realtimeReloadTimer.current)
+    },
+    [],
+  )
 
   useEffect(() => {
     if (!familyId) return
@@ -149,7 +184,7 @@ export default function HomePage() {
     accessToken,
     familyId ? `home:${familyId}` : null,
     realtimeSpecs,
-    loadData,
+    debouncedLoadData,
   )
 
   function startRename(id: string, currentName: string) {
@@ -255,7 +290,7 @@ export default function HomePage() {
     (sum, b) => sum + Number(b.allocated_amount),
     0,
   )
-  // Server-side: cash (role-scoped) + net sends − allocations. See send_money migration.
+  // Server-side family pool (admin/member share one number). See migration 16.
   const unallocated = availableBalance
   // Cash accounts only — for the subtitle hint under Unallocated.
   const realBalance = sumCashBalance(accounts)

@@ -15,7 +15,7 @@ export function isMissingDbFunctionError(message: string): boolean {
 
 /**
  * Client-side unallocated estimate (cash − visible bucket allocations).
- * Omits net sends — use only when `get_available_balance` RPC is unavailable.
+ * Omits child virtual draw and sends — use only when the RPC is unavailable.
  */
 export function computeClientUnallocated(
   accounts: Account[],
