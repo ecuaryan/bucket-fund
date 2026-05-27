@@ -230,10 +230,10 @@ create policy "accounts_delete_admin"
 --     other members' buckets must remain invisible.
 --
 -- Write access:
---   - Admins can create/modify any bucket (incl. family-pool).
---   - Members and children can create/modify only buckets they own
---     (owner_member_id = themselves; never family-pool, never another
---     member's bucket).
+--   - Admins can create/delete any bucket (incl. family-pool).
+--   - Members: operational only — no bucket create/delete (migration 12/13).
+--   - Children: create/delete/rename own buckets only (migration 12/13).
+--   - UPDATE (rename) still uses buckets_update_own_or_admin below.
 -- ---------------------------------------------------------------------
 create policy "buckets_select_family_or_self"
   on public.buckets

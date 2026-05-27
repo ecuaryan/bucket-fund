@@ -4,6 +4,8 @@ type Props = {
   isFirst: boolean
   isLast: boolean
   hasAllocation: boolean
+  /** When false, hide rename/delete (members — admin-only structural edits). */
+  canManageStructure?: boolean
   onViewHistory: () => void
   onRename: () => void
   onMoveUp: () => void
@@ -20,6 +22,7 @@ export default function BucketActionsMenu({
   isFirst,
   isLast,
   hasAllocation,
+  canManageStructure = true,
   onViewHistory,
   onRename,
   onMoveUp,
@@ -88,26 +91,34 @@ export default function BucketActionsMenu({
           className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-lg bg-zinc-900 py-1 text-sm shadow-xl ring-1 ring-zinc-700"
         >
           <MenuItem onClick={fire(onViewHistory)}>View history</MenuItem>
-          <div className="my-1 h-px bg-zinc-800" />
-          <MenuItem onClick={fire(onRename)}>Rename</MenuItem>
+          {canManageStructure && (
+            <>
+              <div className="my-1 h-px bg-zinc-800" />
+              <MenuItem onClick={fire(onRename)}>Rename</MenuItem>
+            </>
+          )}
           <MenuItem onClick={fire(onMoveUp)} disabled={isFirst}>
             Move up
           </MenuItem>
           <MenuItem onClick={fire(onMoveDown)} disabled={isLast}>
             Move down
           </MenuItem>
-          <div className="my-1 h-px bg-zinc-800" />
-          <MenuItem
-            onClick={fire(onDelete)}
-            destructive
-            title={
-              hasAllocation
-                ? 'This bucket has money allocated; deleting returns it to Unallocated.'
-                : undefined
-            }
-          >
-            Delete
-          </MenuItem>
+          {canManageStructure && (
+            <>
+              <div className="my-1 h-px bg-zinc-800" />
+              <MenuItem
+                onClick={fire(onDelete)}
+                destructive
+                title={
+                  hasAllocation
+                    ? 'This bucket has money allocated; deleting returns it to Unallocated.'
+                    : undefined
+                }
+              >
+                Delete
+              </MenuItem>
+            </>
+          )}
         </div>
       )}
     </div>

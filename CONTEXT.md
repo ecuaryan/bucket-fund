@@ -48,8 +48,8 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 **Child**
 - Scoped entirely to their own buckets and balance
 - Cannot see family pool buckets or balances
+- Can create and manage (rename, delete, reorder) **their own** buckets — adults never see these on Home
 - Sends/receives money with anyone within the family
-- Cannot make structural changes
 
 ---
 

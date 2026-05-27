@@ -47,6 +47,10 @@ export default function HomePage() {
     auth.status === 'signedIn' ? auth.session.access_token : null
   const familyId = member?.family_id ?? null
   const memberId = member?.id ?? null
+  const isAdmin = member?.role === 'admin'
+  const isChild = member?.role === 'child'
+  const canCreateBuckets = isAdmin || isChild
+  const canManageStructure = isAdmin || isChild
 
   const loadData = useCallback(async () => {
     setLoadError(null)
@@ -186,7 +190,7 @@ export default function HomePage() {
       .from('buckets')
       .insert({
         family_id: member.family_id,
-        owner_member_id: member.id,
+        owner_member_id: isChild ? member.id : null,
         name,
         allocated_amount: 0,
       })
@@ -274,7 +278,9 @@ export default function HomePage() {
               No buckets yet
             </p>
             <p className="mt-1 text-xs text-zinc-400">
-              Create your first one below — e.g. Groceries, Rent, Fun.
+              {canCreateBuckets
+                ? 'Create your first one below.'
+                : 'Ask your admin to add family buckets.'}
             </p>
           </div>
         ) : (
@@ -327,6 +333,7 @@ export default function HomePage() {
                     isFirst={idx === 0}
                     isLast={idx === buckets.length - 1}
                     hasAllocation={Number(bucket.allocated_amount) > 0}
+                    canManageStructure={canManageStructure}
                     onViewHistory={() =>
                       navigate(`/history?bucket=${bucket.id}`)
                     }
@@ -344,24 +351,28 @@ export default function HomePage() {
           <p className="mt-2 text-xs text-red-300">{actionError}</p>
         )}
 
-        <form onSubmit={onCreateBucket} className="mt-4 flex gap-2">
-          <input
-            type="text"
-            value={newBucketName}
-            onChange={(e) => setNewBucketName(e.target.value)}
-            placeholder="New bucket name"
-            className="flex-1 rounded-lg border-0 bg-zinc-900 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-500 focus:outline focus:outline-2 focus:outline-emerald-400"
-          />
-          <button
-            type="submit"
-            disabled={creating || newBucketName.trim().length === 0}
-            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {creating ? 'Adding…' : 'Add'}
-          </button>
-        </form>
-        {createError && (
-          <p className="mt-2 text-xs text-red-300">{createError}</p>
+        {canCreateBuckets && (
+          <>
+            <form onSubmit={onCreateBucket} className="mt-4 flex gap-2">
+              <input
+                type="text"
+                value={newBucketName}
+                onChange={(e) => setNewBucketName(e.target.value)}
+                placeholder="New bucket name"
+                className="flex-1 rounded-lg border-0 bg-zinc-900 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-500 focus:outline focus:outline-2 focus:outline-emerald-400"
+              />
+              <button
+                type="submit"
+                disabled={creating || newBucketName.trim().length === 0}
+                className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {creating ? 'Adding…' : 'Add'}
+              </button>
+            </form>
+            {createError && (
+              <p className="mt-2 text-xs text-red-300">{createError}</p>
+            )}
+          </>
         )}
       </section>
 
