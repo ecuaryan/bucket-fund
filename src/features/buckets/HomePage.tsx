@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import {
-  childFamilyFunding,
+  childTotalBalance,
   fetchHomeBalanceBreakdown,
   type HomeBalanceBreakdown,
 } from '@/lib/availableBalance'
@@ -293,7 +293,7 @@ export default function HomePage() {
   // Server-side family pool (admin/member share one number). See migration 16.
   const unallocated = balanceBreakdown.unallocated
   const isAdult = !isChild
-  const familyFunding = isChild ? childFamilyFunding(balanceBreakdown) : 0
+  const childTotal = isChild ? childTotalBalance(balanceBreakdown) : 0
   const showAdultBreakdown =
     isAdult &&
     !balanceUsesFallback &&
@@ -303,9 +303,7 @@ export default function HomePage() {
   const showChildBreakdown =
     isChild &&
     !balanceUsesFallback &&
-    (balanceBreakdown.totalCash > 0 ||
-      balanceBreakdown.bucketAllocated > 0 ||
-      familyFunding > 0)
+    (childTotal > 0 || balanceBreakdown.bucketAllocated > 0)
   const showBalanceBreakdown = showAdultBreakdown || showChildBreakdown
   const unallocatedColor =
     unallocated >= 0
@@ -349,7 +347,13 @@ export default function HomePage() {
         ) : null}
         {showBalanceBreakdown && (
           <dl className="mt-3 space-y-1 border-t border-current/10 pt-3 text-xs opacity-90">
-            {balanceBreakdown.totalCash > 0 ? (
+            {isChild && childTotal > 0 ? (
+              <div className="flex justify-between gap-4 tabular-nums">
+                <dt>Total balance</dt>
+                <dd>{currency.format(childTotal)}</dd>
+              </div>
+            ) : null}
+            {!isChild && balanceBreakdown.totalCash > 0 ? (
               <div className="flex justify-between gap-4 tabular-nums">
                 <dt>
                   Linked cash
@@ -358,12 +362,6 @@ export default function HomePage() {
                     : ''}
                 </dt>
                 <dd>{currency.format(balanceBreakdown.totalCash)}</dd>
-              </div>
-            ) : null}
-            {isChild && familyFunding > 0 ? (
-              <div className="flex justify-between gap-4 tabular-nums">
-                <dt>From family</dt>
-                <dd>{currency.format(familyFunding)}</dd>
               </div>
             ) : null}
             {balanceBreakdown.bucketAllocated > 0 ? (

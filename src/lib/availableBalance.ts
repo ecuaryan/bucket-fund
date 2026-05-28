@@ -33,6 +33,11 @@ export function childFamilyFunding(breakdown: HomeBalanceBreakdown): number {
   return breakdown.unallocated + breakdown.bucketAllocated - breakdown.totalCash
 }
 
+/** Child's total funds before bucket splits (linked cash + net sends). */
+export function childTotalBalance(breakdown: HomeBalanceBreakdown): number {
+  return breakdown.unallocated + breakdown.bucketAllocated
+}
+
 function parseChildLines(raw: unknown): ChildSetAsideLine[] {
   if (!Array.isArray(raw)) return []
   const lines: ChildSetAsideLine[] = []

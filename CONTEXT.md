@@ -92,8 +92,8 @@ Every dollar lives in exactly one place — either in a named bucket or in someo
 **Child:**
 - Unallocated = their cash accounts + net sends − their bucket allocations
 - Virtual-only children (no linked accounts) are funded entirely by sends from adults
-- **Home / Send breakdown:** linked cash, from family (net sends), in your buckets — same
-  idea as the adult card, without exposing other members’ balances
+- **Home / Send breakdown:** total balance (linked cash + net sends), in your buckets,
+  then unallocated — without exposing other members’ balances
 
 **Members with their own linked accounts (future / optional):**
 - Per-person Teller balances may exist in the schema; Home still presents the

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import {
-  childFamilyFunding,
+  childTotalBalance,
   fetchHomeBalanceBreakdown,
   type HomeBalanceBreakdown,
 } from '@/lib/availableBalance'
@@ -114,15 +114,13 @@ export default function SendPage() {
   const isAdult =
     member?.role === 'admin' || member?.role === 'member'
   const isChild = member?.role === 'child'
-  const familyFunding =
-    balanceBreakdown && isChild ? childFamilyFunding(balanceBreakdown) : 0
+  const childTotal =
+    balanceBreakdown && isChild ? childTotalBalance(balanceBreakdown) : 0
   const showChildBreakdown =
     isChild &&
     balanceBreakdown &&
     !balanceUsesFallback &&
-    (balanceBreakdown.totalCash > 0 ||
-      balanceBreakdown.bucketAllocated > 0 ||
-      familyFunding > 0)
+    (childTotal > 0 || balanceBreakdown.bucketAllocated > 0)
 
   const recipients = useMemo(() => {
     const others = (members ?? []).filter((m) => m.id !== memberId)
@@ -232,16 +230,10 @@ export default function SendPage() {
         </p>
         {showChildBreakdown && balanceBreakdown ? (
           <dl className="mt-3 space-y-1 border-t border-current/10 pt-3 text-xs opacity-90">
-            {balanceBreakdown.totalCash > 0 ? (
+            {childTotal > 0 ? (
               <div className="flex justify-between gap-4 tabular-nums">
-                <dt>Linked cash</dt>
-                <dd>{currency.format(balanceBreakdown.totalCash)}</dd>
-              </div>
-            ) : null}
-            {familyFunding > 0 ? (
-              <div className="flex justify-between gap-4 tabular-nums">
-                <dt>From family</dt>
-                <dd>{currency.format(familyFunding)}</dd>
+                <dt>Total balance</dt>
+                <dd>{currency.format(childTotal)}</dd>
               </div>
             ) : null}
             {balanceBreakdown.bucketAllocated > 0 ? (
