@@ -32,7 +32,13 @@ import {
 
 type Mode = 'signIn' | 'signUp'
 
-type LocationState = { from?: string } | null
+type LocationState = {
+  from?: string
+  /** From PIN page “Admin email sign-in” — do not bounce back to /login/family. */
+  preferEmailSignIn?: boolean
+  info?: string
+  email?: string
+} | null
 
 function clearPasswordInput(elementId: string) {
   const el = document.getElementById(elementId) as HTMLInputElement | null
@@ -49,11 +55,14 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams()
   const from = (location.state as LocationState)?.from ?? '/'
 
-  const loginState = location.state as { info?: string; email?: string } | null
+  const loginState = location.state as LocationState
   const loginInfo = loginState?.info ?? searchParams.get('info')
-  const loginEmail = loginState?.email ?? searchParams.get('email') ?? ''
+  const emailParam = searchParams.get('email')
+  const loginEmail =
+    loginState?.email ??
+    (emailParam && emailParam.includes('@') ? emailParam : '')
   const pendingFreshSignIn = isRequireFreshSignIn()
-  const preferEmailSignIn = searchParams.get('email') === '1'
+  const preferEmailSignIn = loginState?.preferEmailSignIn === true
 
   useEffect(() => {
     if (pendingFreshSignIn && auth.status === 'signedIn') {
