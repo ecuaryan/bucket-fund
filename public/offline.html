@@ -2,26 +2,20 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#10b981" />
+    <meta name="theme-color" content="#000000" />
     <title>Offline · BucketFund</title>
     <style>
       :root {
-        color-scheme: light dark;
-        --bg: #ffffff;
-        --fg: #0f172a;
-        --muted: #475569;
+        color-scheme: dark;
+        --bg: #000000;
+        --fg: #d4d4d8;
+        --muted: #a1a1aa;
         --accent: #10b981;
-      }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #0b0f14;
-          --fg: #f1f5f9;
-          --muted: #94a3b8;
-        }
       }
       html, body {
         margin: 0;
@@ -41,14 +35,19 @@
         text-align: center;
         gap: 1rem;
       }
-      h1 { margin: 0; font-size: 1.75rem; font-weight: 600; }
-      p  { margin: 0; max-width: 28rem; color: var(--muted); }
+      .logo {
+        width: 48px;
+        height: 48px;
+        border-radius: 1rem;
+      }
+      h1 { margin: 0; font-size: 1.75rem; font-weight: 600; color: var(--fg); }
+      p  { margin: 0; max-width: 28rem; color: var(--muted); line-height: 1.5; }
       button {
         margin-top: 1rem;
         padding: 0.75rem 1.25rem;
         font: inherit;
         font-weight: 600;
-        color: white;
+        color: #000000;
         background: var(--accent);
         border: 0;
         border-radius: 9999px;
@@ -59,6 +58,7 @@
   </head>
   <body>
     <main>
+      <img class="logo" src="/icons/icon-192.png" width="48" height="48" alt="" />
       <h1>You're offline</h1>
       <!-- Keep in sync with OFFLINE_PAGE_BODY in src/lib/brand.ts -->
       <p>

@@ -18,6 +18,9 @@ export const APP_TAGLINE =
 export const PWA_DESCRIPTION =
   'Envelope budgeting on your real bank balance. Solo or with your household.'
 
+/** Primary PWA icon (192×192) — also used in auth UI. */
+export const PWA_ICON_192 = '/icons/icon-192.png' as const
+
 /** Sync with index.html `<meta name="description">`. */
 export const HTML_META_DESCRIPTION = `${APP_TAGLINE} ${PWA_DESCRIPTION}`
 
