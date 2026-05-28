@@ -20,6 +20,10 @@ Entry point for AI coding agents (and humans) working in this repo.
 
 ## Operating principles for this codebase
 
+- **Branch from current `main`.** One open PR at a time. After a merge:
+  `git checkout main && git pull`, then `git checkout -b …` for the next task.
+  Never continue on a merged branch or branch cut before the previous PR landed.
+  See [CONTRIBUTING.md § One PR at a time](./CONTRIBUTING.md#one-pr-at-a-time--always-branch-from-current-main).
 - **Tenant isolation.** Every domain table has a `family_id`. Every
   query, every RLS policy, every Edge Function must scope to one family.
   If you touch RLS or `auth_family_id()`, re-read the SECURITY WARNING

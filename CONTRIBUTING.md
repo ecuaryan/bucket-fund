@@ -25,6 +25,32 @@ gh pr create
 
 Merge when all required checks are green.
 
+### One PR at a time — always branch from current `main`
+
+We ship **one open PR at a time**. After a PR merges, reset your local tree
+before starting the next change so branches do not diverge and fight over the
+same files (e.g. two PRs both editing `App.tsx`).
+
+**After every merge (you or the agent):**
+
+```bash
+git checkout main
+git pull origin main
+# optional: delete the merged branch locally and on GitHub
+git branch -d feat/my-change
+git push origin --delete feat/my-change   # if still on remote
+git checkout -b feat/next-thing           # new branch, never reuse the old one
+```
+
+**Do not:**
+
+- Keep committing on a branch after its PR has merged.
+- Open PR #2 from a branch that was cut **before** PR #1 merged (rebase onto
+  `main` first, or cut a fresh branch from `main` and cherry-pick if needed).
+
+**Agents:** before any new feature/fix, confirm `git branch --show-current` is
+a **new** branch based on up-to-date `origin/main`, not a stale or merged branch.
+
 ### GitHub branch protection (`main`)
 
 **Configured on this repo** (ruleset + classic protection):
