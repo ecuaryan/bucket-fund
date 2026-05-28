@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import { accountAssignmentChildId } from '@/lib/accounts'
-import { ADMIN_LINKED_ACCOUNTS_INTRO } from '@/lib/brand'
+import { ADMIN_LINKED_ACCOUNTS_INTRO, HOUSEHOLD_POOL_LABEL } from '@/lib/brand'
 import { disconnectEnrollment, useTellerConnect } from '@/lib/teller'
 import AccountAssignmentSelect from '@/features/admin/AccountAssignmentSelect'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
@@ -287,7 +287,8 @@ export default function AdminPage() {
             </p>
             <p className="mt-1 text-xs text-zinc-400">
               Tap &quot;Link bank&quot; to connect checking or savings.
-              Balances count toward the shared pool until you assign an account
+              Balances count toward the {HOUSEHOLD_POOL_LABEL.toLowerCase()}{' '}
+              until you assign an account
               to a child.
             </p>
           </div>

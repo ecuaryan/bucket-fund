@@ -58,7 +58,7 @@ export default function AccountAssignmentSelect({
         disabled={saving}
         onChange={(e) => void onChange(e.target.value)}
         className="max-w-[9rem] rounded-lg border-0 bg-zinc-950 py-1.5 pl-2 pr-7 text-xs text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400 disabled:opacity-50"
-        aria-label="Assign account to shared pool or child"
+        aria-label={`Assign account to ${HOUSEHOLD_POOL_LABEL.toLowerCase()} or child`}
       >
         <option value="">{HOUSEHOLD_POOL_LABEL}</option>
         {children.map((c) => (

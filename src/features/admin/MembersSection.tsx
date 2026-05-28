@@ -4,6 +4,7 @@ import PinInput from '@/components/ui/PinInput'
 import {
   ADMIN_HOUSEHOLD_MEMBERS_INTRO,
   ADMIN_HOUSEHOLD_MEMBERS_TITLE,
+  HOUSEHOLD_POOL_LABEL,
 } from '@/lib/brand'
 import {
   ROLE_OPTION_ADULT,
@@ -115,7 +116,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     if (m.role === 'admin') return
     const detail =
       m.role === 'child'
-        ? 'Their buckets will be deleted. Any bank accounts assigned to them will move to the shared pool. '
+        ? `Their buckets will be deleted. Any bank accounts assigned to them will move to the ${HOUSEHOLD_POOL_LABEL.toLowerCase()}. `
         : 'They will lose access to the app. '
     const ok = window.confirm(
       `Remove ${m.name} from your household? ${detail}This cannot be undone.`,

@@ -63,8 +63,8 @@ export const ADMIN_HOUSEHOLD_MEMBERS_TITLE = 'Household members'
 export const ADMIN_HOUSEHOLD_MEMBERS_INTRO =
   'Add people who sign in with a PIN (not your email). Adults share your Home buckets and unallocated pool. Children get their own buckets—you can fund them with Send.'
 
-/** Shared cash / buckets on Home (not a child assignment). */
-export const HOUSEHOLD_POOL_LABEL = 'Shared pool'
+/** Unassigned bank balance / adult-shared buckets (not a child assignment). */
+export const HOUSEHOLD_POOL_LABEL = 'Household pool'
 
 export const ADMIN_LINKED_ACCOUNTS_INTRO =
   'Read-only via Teller—we sync balances, not payments. This app cannot move money at your bank.'
