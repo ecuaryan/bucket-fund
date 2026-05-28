@@ -16,6 +16,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<Navigate to="/login?signup=1" replace />} />
       <Route path="/login/family" element={<FamilyLoginPage />} />
       <Route path="/login/forgot" element={<ForgotPasswordPage />} />
       <Route path="/login/reset" element={<ResetPasswordPage />} />
