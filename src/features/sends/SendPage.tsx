@@ -9,6 +9,8 @@ import {
 import { sendMoney } from '@/lib/sends'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
+import { AmountLimitHint } from '@/components/AmountLimitHint'
+import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
 import type { Database } from '@/types/database'
 
 type Member = Pick<
@@ -137,6 +139,10 @@ export default function SendPage() {
   const overdraftMessage =
     overdraft && available !== null
       ? `You can only send up to ${currency.format(available)}.`
+      : null
+  const sendAvailableHint =
+    available !== null && !overdraft
+      ? `You have ${currency.format(available)} available to send.`
       : null
 
   async function onSubmit(e: FormEvent) {
@@ -294,7 +300,11 @@ export default function SendPage() {
                 placeholder="0.00"
                 required
                 aria-invalid={overdraft || undefined}
-                aria-describedby={overdraftMessage ? 'send-amount-hint' : undefined}
+                aria-describedby={amountLimitDescribedBy(
+                  'send-amount-hint',
+                  sendAvailableHint,
+                  overdraftMessage,
+                )}
                 className={`w-full rounded-xl border bg-zinc-950 py-2.5 pl-7 pr-3 text-sm tabular-nums text-zinc-100 focus:outline-none focus:ring-1 ${
                   overdraft
                     ? 'border-red-500/60 focus:border-red-500 focus:ring-red-500/40'
@@ -302,15 +312,11 @@ export default function SendPage() {
                 }`}
               />
             </div>
-            {overdraftMessage ? (
-              <p
-                id="send-amount-hint"
-                role="alert"
-                className="mt-1.5 text-sm text-red-300"
-              >
-                {overdraftMessage}
-              </p>
-            ) : null}
+            <AmountLimitHint
+              id="send-amount-hint"
+              availableHint={sendAvailableHint}
+              overdraftMessage={overdraftMessage}
+            />
           </label>
 
           <label className="block">

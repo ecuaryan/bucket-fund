@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { AmountLimitHint } from '@/components/AmountLimitHint'
+import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
 import { moveMoney } from '@/lib/buckets'
 import type { Database } from '@/types/database'
 
@@ -95,11 +97,23 @@ export default function MoveMoneyDialog({
   const amount = parseFloat(amountStr)
   const amountValid = Number.isFinite(amount) && amount > 0
   const sameEndpoint = fromKey === toKey
+  const fromBalance = fromEndpoint?.balance
   const overdraft =
     amountValid &&
-    fromEndpoint?.balance !== null &&
-    fromEndpoint?.balance !== undefined &&
-    amount > fromEndpoint.balance
+    fromBalance !== null &&
+    fromBalance !== undefined &&
+    amount > fromBalance
+  const overdraftMessage =
+    overdraft && fromBalance !== null && fromBalance !== undefined
+      ? `You can only move up to ${currency.format(fromBalance)}.`
+      : null
+  const moveAvailableHint =
+    fromEndpoint &&
+    fromBalance !== null &&
+    fromBalance !== undefined &&
+    !overdraft
+      ? `${fromEndpoint.label} has ${currency.format(fromBalance)} available.`
+      : null
   const canSubmit = amountValid && !sameEndpoint && !overdraft && !submitting
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -157,7 +171,10 @@ export default function MoveMoneyDialog({
                 <Picker
                   label="From"
                   value={fromKey}
-                  onChange={setFromKey}
+                  onChange={(key) => {
+                    setFromKey(key)
+                    setError(null)
+                  }}
                   endpoints={endpoints}
                   embedded
                   hideLabel
@@ -214,18 +231,29 @@ export default function MoveMoneyDialog({
                 min="0"
                 step="0.01"
                 value={amountStr}
-                onChange={(e) => setAmountStr(e.target.value)}
+                onChange={(e) => {
+                  setAmountStr(e.target.value)
+                  setError(null)
+                }}
                 placeholder="0.00"
-                className="w-full rounded-lg border-0 bg-zinc-950 py-2 pl-7 pr-3 text-base text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-500 focus:outline focus:outline-2 focus:outline-emerald-400"
+                aria-invalid={overdraft || undefined}
+                aria-describedby={amountLimitDescribedBy(
+                  'move-amount-hint',
+                  moveAvailableHint,
+                  overdraftMessage,
+                )}
+                className={
+                  overdraft
+                    ? 'w-full rounded-lg border border-red-500/60 bg-zinc-950 py-2 pl-7 pr-3 text-base tabular-nums text-zinc-300 placeholder:text-zinc-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500/40'
+                    : 'w-full rounded-lg border-0 bg-zinc-950 py-2 pl-7 pr-3 text-base tabular-nums text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-500 focus:outline focus:outline-2 focus:outline-emerald-400'
+                }
               />
             </div>
-            {fromEndpoint && fromEndpoint.balance !== null && (
-              <p
-                className={`mt-1 text-xs ${overdraft ? 'text-red-300' : 'text-zinc-400'}`}
-              >
-                {fromEndpoint.label} has {currency.format(fromEndpoint.balance)} available.
-              </p>
-            )}
+            <AmountLimitHint
+              id="move-amount-hint"
+              availableHint={moveAvailableHint}
+              overdraftMessage={overdraftMessage}
+            />
           </label>
 
           <label className="block">
