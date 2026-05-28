@@ -4,6 +4,8 @@ import PinInput from '@/components/ui/PinInput'
 import {
   ADMIN_HOUSEHOLD_MEMBERS_INTRO,
   ADMIN_HOUSEHOLD_MEMBERS_TITLE,
+  ADMIN_LOADING_MEMBERS,
+  REMOVE_CHILD_ACCOUNTS_DETAIL,
 } from '@/lib/brand'
 import {
   ROLE_OPTION_ADULT,
@@ -115,7 +117,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     if (m.role === 'admin') return
     const detail =
       m.role === 'child'
-        ? 'Their buckets will be deleted. Any bank accounts assigned to them will move to the shared pool. '
+        ? REMOVE_CHILD_ACCOUNTS_DETAIL
         : 'They will lose access to the app. '
     const ok = window.confirm(
       `Remove ${m.name} from your household? ${detail}This cannot be undone.`,
@@ -213,7 +215,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
       </form>
 
       {members === null ? (
-        <p className="text-sm text-zinc-400">Loading members…</p>
+        <p className="text-sm text-zinc-400">{ADMIN_LOADING_MEMBERS}</p>
       ) : (
         <ul className="divide-y divide-zinc-800 overflow-hidden rounded-2xl bg-zinc-900 ring-1 ring-zinc-800">
           {members.map((m) => (

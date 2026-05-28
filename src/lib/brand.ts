@@ -4,7 +4,9 @@
  * Display name may change — see docs/BRAND.md. Repo/package URLs can stay
  * bucket-fund until a rename is decided.
  *
- * `index.html` and `public/offline.html` duplicate some strings (static HTML).
+ * Static HTML cannot import this module — keep these in sync manually:
+ * `HTML_META_DESCRIPTION` → index.html meta description;
+ * `OFFLINE_PAGE_BODY` → public/offline.html main paragraph.
  */
 export const APP_NAME = 'BucketFund' as const
 
@@ -15,6 +17,13 @@ export const APP_TAGLINE =
 /** Install / share sheet blurb (may echo the tagline). */
 export const PWA_DESCRIPTION =
   'Envelope budgeting on your real bank balance. Solo or with your household.'
+
+/** Sync with index.html `<meta name="description">`. */
+export const HTML_META_DESCRIPTION = `${APP_TAGLINE} ${PWA_DESCRIPTION}`
+
+/** Sync with public/offline.html main `<p>`. */
+export const OFFLINE_PAGE_BODY =
+  'BucketFund needs a connection to sync with your bank and household. Your last-seen balances may still be visible in the app.'
 
 /** Above “Get started” on the login screen. */
 export const LOGIN_NEW_HERE_INTRO =
@@ -48,6 +57,11 @@ export const JOIN_CODE_LABEL = 'Join code'
 
 export const JOIN_CODE_ENTER_PROMPT = 'Enter your household join code.'
 
+export const PIN_JOIN_PAGE_TITLE = 'Join your household'
+
+export const PIN_JOIN_PAGE_SUBTITLE =
+  'Enter your household join code from Admin (or scan the QR there).'
+
 export const ADMIN_JOIN_CODE_TITLE = 'Join code'
 
 export const ADMIN_JOIN_CODE_INTRO =
@@ -61,10 +75,48 @@ export const ADMIN_JOIN_CODE_QR_ALT =
 export const ADMIN_HOUSEHOLD_MEMBERS_TITLE = 'Household members'
 
 export const ADMIN_HOUSEHOLD_MEMBERS_INTRO =
-  'Add people who sign in with a PIN (not your email). Adults share your Home buckets and unallocated pool. Children get their own buckets—you can fund them with Send.'
+  'Add people who sign in with a PIN (not your email). Every adult sees all household buckets and unallocated; children only see their own. Fund children with Send.'
 
-/** Shared cash / buckets on Home (not a child assignment). */
-export const HOUSEHOLD_POOL_LABEL = 'Shared pool'
+/** Admin: linked account or bucket belongs to all adults (not a child). */
+export const HOUSEHOLD_LABEL = 'Household'
+
+/** Who can link banks, add members, and change Admin settings. */
+export const HOUSEHOLD_ADMIN_PHRASE = 'your household admin'
 
 export const ADMIN_LINKED_ACCOUNTS_INTRO =
   'Read-only via Teller—we sync balances, not payments. This app cannot move money at your bank.'
+
+export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
+  'Balances count toward household unallocated until you assign an account to a child.'
+
+export const ADMIN_LOADING_MEMBERS = 'Loading household members…'
+
+export const REMOVE_CHILD_ACCOUNTS_DETAIL =
+  'Their buckets will be deleted. Any bank accounts assigned to them will count toward household unallocated. '
+
+// --- Home ---
+
+export const HOME_CHILD_UNALLOCATED_HINT =
+  'When an adult sends you money, move it into buckets—or ask them to link your bank account in Admin.'
+
+export const HOME_ADULT_NO_ACCOUNTS_HINT =
+  'No linked cash accounts yet—link one from Admin.'
+
+export const HOME_MEMBER_NO_ACCOUNTS_HINT =
+  'No linked cash accounts yet—ask your household admin to link a bank account in Admin.'
+
+export const HOME_MEMBER_NO_BUCKETS_HINT =
+  'Ask your household admin to add buckets.'
+
+// --- Send ---
+
+export const SEND_ADULT_INTRO =
+  'Fund a child’s unallocated from the balance adults share on Home.'
+
+export const SEND_CHILD_INTRO =
+  'Send your unallocated to another household member.'
+
+// --- PIN sign-in ---
+
+export const PIN_NO_MEMBERS_YET =
+  'No one has a PIN yet. Ask your household admin to add people and set PINs in Admin.'
