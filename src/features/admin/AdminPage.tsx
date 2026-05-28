@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import { accountAssignmentChildId } from '@/lib/accounts'
+import { BANK_LINK_READ_ONLY_SHORT } from '@/lib/brand'
 import { disconnectEnrollment, useTellerConnect } from '@/lib/teller'
 import AccountAssignmentSelect from '@/features/admin/AccountAssignmentSelect'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
@@ -232,7 +233,7 @@ export default function AdminPage() {
         <div>
           <h1 className="text-xl font-semibold">Admin</h1>
           <p className="text-xs text-zinc-400">
-            Link bank accounts and manage family settings.
+            Read-only bank link and household settings.
           </p>
         </div>
       </header>
@@ -280,9 +281,9 @@ export default function AdminPage() {
               No accounts linked yet
             </p>
             <p className="mt-1 text-xs text-zinc-400">
-              Tap "Link bank" to connect your first account via Teller.
-              Balances count toward the family pool until you assign an
-              account to a child.
+              Tap &quot;Link bank&quot; to connect via Teller.{' '}
+              {BANK_LINK_READ_ONLY_SHORT} Balances count toward the shared pool
+              until you assign an account to a child.
             </p>
           </div>
         ) : (

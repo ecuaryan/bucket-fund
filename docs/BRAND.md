@@ -42,6 +42,19 @@ When you pick a name: update `APP_NAME` in `brand.ts`, PWA manifest (via
 `vite.config.ts`), `index.html`, e2e heading assertion, and CONTEXT/README
 titles. Internal keys (`family_id`, `bucketfund:` cache prefixes) can wait.
 
+## Bank link (read-only — must stay accurate)
+
+BucketFund uses [Teller](https://teller.io) with Connect products **`balance`**
+and **`transactions`** only. Our server calls Teller **GET** endpoints for
+accounts and balances; webhooks refresh balances when activity posts. We do
+**not** use Teller payment initiation or any API that moves money at the bank.
+
+**`send_money` and `move_money` are virtual** — labels inside the app only.
+
+User-facing reassurance: `BANK_LINK_READ_ONLY` in `brand.ts`. Do not promise
+“we never see transactions” if we later fetch transaction history; today we
+mainly use the transactions product for balance sync webhooks.
+
 ## Copy map (auth)
 
 | Surface | String source |
@@ -50,3 +63,4 @@ titles. Internal keys (`family_id`, `bucketfund:` cache prefixes) can wait.
 | Sign-in intro | `LOGIN_SIGN_IN_INTRO` |
 | Sign-up | `LOGIN_SIGNUP_*`, `LOGIN_HOUSEHOLD_*` |
 | PIN path | `LOGIN_SHARED_*` |
+| Bank read-only note | `BANK_LINK_READ_ONLY` |

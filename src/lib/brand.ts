@@ -17,7 +17,15 @@ export const PWA_DESCRIPTION =
   'Envelope budgeting on your real bank balance. Solo or with a household.'
 
 export const LOGIN_SIGN_IN_INTRO =
-  'New here? Link your bank and organize your cash with buckets—solo or with others.'
+  'New here? Connect your bank (read-only) and organize your cash with buckets—solo or with others.'
+
+/** Login/sign-up footnote. Fact-checked against our Teller usage (see docs/BRAND.md). */
+export const BANK_LINK_READ_ONLY =
+  'Read-only bank connection via Teller—we sync balances, not payments. BucketFund cannot move money or pay bills from your account.'
+
+/** Shorter note near Admin “Link bank”. */
+export const BANK_LINK_READ_ONLY_SHORT =
+  'Read-only via Teller—balances only; this app cannot move money at your bank.'
 
 export const LOGIN_GET_STARTED = 'Get started'
 

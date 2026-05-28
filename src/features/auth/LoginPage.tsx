@@ -9,6 +9,7 @@ import {
 import { AuthBrandHeader } from '@/components/AuthBrandHeader'
 import { useAuth } from '@/lib/auth'
 import {
+  BANK_LINK_READ_ONLY,
   LOGIN_GET_STARTED,
   LOGIN_HOUSEHOLD_LABEL,
   LOGIN_HOUSEHOLD_PLACEHOLDER,
@@ -252,6 +253,10 @@ export default function LoginPage() {
             </>
           )}
         </form>
+
+        <p className="mt-3 text-center text-xs leading-relaxed text-zinc-500">
+          {BANK_LINK_READ_ONLY}
+        </p>
 
         {!isSignUp && (
           <p className="mt-3 text-center text-sm">
