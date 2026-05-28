@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import {
   childTotalBalance,
   fetchHomeBalanceBreakdown,
   type HomeBalanceBreakdown,
 } from '@/lib/availableBalance'
+import { filterSendRecipients } from '@/lib/sendRecipients'
 import { sendMoney } from '@/lib/sends'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
@@ -124,13 +125,11 @@ export default function SendPage() {
     !balanceUsesFallback &&
     (childTotal > 0 || balanceBreakdown.bucketAllocated > 0)
 
+  const callerRole = member?.role
   const recipients = useMemo(() => {
-    const others = (members ?? []).filter((m) => m.id !== memberId)
-    if (isAdult) {
-      return others.filter((m) => m.role === 'child')
-    }
-    return others
-  }, [members, memberId, isAdult])
+    if (!members || !memberId || !callerRole) return []
+    return filterSendRecipients(members, memberId, callerRole)
+  }, [members, memberId, callerRole])
 
   const amount = parseFloat(amountStr)
   const amountValid = Number.isFinite(amount) && amount > 0
@@ -201,6 +200,10 @@ export default function SendPage() {
     return <p className="text-sm text-zinc-400">Loading…</p>
   }
 
+  if (recipients.length === 0) {
+    return <Navigate to="/" replace />
+  }
+
   const availableColor =
     available >= 0
       ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30'
@@ -253,13 +256,7 @@ export default function SendPage() {
         </p>
       )}
 
-      {recipients.length === 0 ? (
-        <p className="rounded-2xl bg-zinc-900 px-4 py-3 text-sm text-zinc-400 ring-1 ring-zinc-800">
-          {isAdult
-            ? 'Add a child in Admin to send allowance or spending money. Adults share one pool — use buckets to set aside money together.'
-            : 'Add another family member from Admin before sending.'}
-        </p>
-      ) : sendEnabled ? (
+      {sendEnabled ? (
         <form
           onSubmit={onSubmit}
           className="space-y-4 rounded-2xl bg-zinc-900 p-5 ring-1 ring-zinc-800"
