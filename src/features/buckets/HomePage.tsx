@@ -268,15 +268,6 @@ export default function HomePage() {
     setNewBucketName('')
   }
 
-  if (!member) {
-    return (
-      <p className="rounded-2xl bg-amber-500/10 px-4 py-3 text-sm text-amber-200 ring-1 ring-amber-500/30">
-        Signed in, but no family membership found. The sign-up trigger may
-        not have run — try signing out and signing up again.
-      </p>
-    )
-  }
-
   if (loadError) {
     return (
       <div className="rounded-2xl bg-red-500/10 p-4 text-sm text-red-300 ring-1 ring-red-500/30">

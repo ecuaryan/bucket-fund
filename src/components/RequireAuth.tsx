@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
+import OrphanMemberNotice from '@/components/OrphanMemberNotice'
 import { useAuth } from '@/lib/auth'
+import { takeOrphanMemberNotice } from '@/lib/pinAuth'
 
 export default function RequireAuth({ children }: { children: ReactNode }) {
   const auth = useAuth()
@@ -15,7 +17,21 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
   }
 
   if (auth.status === 'signedOut') {
+    const orphanNotice = takeOrphanMemberNotice()
+    if (orphanNotice) {
+      return (
+        <Navigate
+          to="/login/family"
+          replace
+          state={{ from: location.pathname, info: orphanNotice }}
+        />
+      )
+    }
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  }
+
+  if (auth.status === 'signedIn' && !auth.member) {
+    return <OrphanMemberNotice />
   }
 
   if (auth.isPasswordRecovery) {

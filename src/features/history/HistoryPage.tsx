@@ -209,13 +209,7 @@ export default function HistoryPage() {
     }
   }
 
-  if (!member) {
-    return (
-      <p className="rounded-2xl bg-amber-500/10 px-4 py-3 text-sm text-amber-200 ring-1 ring-amber-500/30">
-        Signed in, but no family membership found.
-      </p>
-    )
-  }
+  if (!member) return null
 
   if (loadError) {
     return (

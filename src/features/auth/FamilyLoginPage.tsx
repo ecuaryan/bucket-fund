@@ -22,13 +22,15 @@ import {
   type JoinMember,
   type ValidateJoinResult,
 } from '@/lib/memberAuth'
+import { takeOrphanMemberNotice } from '@/lib/pinAuth'
 
-type LocationState = { from?: string } | null
+type LocationState = { from?: string; info?: string } | null
 
 export default function FamilyLoginPage() {
   const auth = useAuth()
   const location = useLocation()
-  const from = (location.state as LocationState)?.from ?? '/'
+  const loginState = location.state as LocationState
+  const from = loginState?.from ?? '/'
 
   const [roster, setRoster] = useState<ValidateJoinResult | null>(null)
   /** Shown only after the user submits a code (not on silent stale-device cleanup). */
@@ -63,6 +65,11 @@ export default function FamilyLoginPage() {
     setRestoreNotice(null)
     return result
   }, [])
+
+  useEffect(() => {
+    const notice = loginState?.info ?? takeOrphanMemberNotice()
+    if (notice) setRestoreNotice(notice)
+  }, [loginState?.info])
 
   useEffect(() => {
     let cancelled = false

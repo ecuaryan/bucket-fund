@@ -9,6 +9,11 @@ import {
 } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { clearLocalAuthSession } from '@/lib/authStorage'
+import {
+  isPinAuthEmail,
+  ORPHAN_MEMBER_MESSAGE,
+  stashOrphanMemberNotice,
+} from '@/lib/pinAuth'
 import { isPasswordRecoverySession } from '@/lib/recoverySession'
 import { supabase } from '@/lib/supabase'
 import { withTimeout } from '@/lib/timeout'
@@ -71,6 +76,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
     const member = await fetchMember(session.user.id)
+    if (!member && isPinAuthEmail(session.user.email ?? undefined)) {
+      stashOrphanMemberNotice(ORPHAN_MEMBER_MESSAGE)
+      clearLocalAuthSession()
+      try {
+        await supabase.auth.signOut({ scope: 'local' })
+      } catch {
+        // Best effort — session is unusable without a membership row.
+      }
+      setState({ status: 'signedOut', session: null, member: null })
+      return
+    }
     setState({ status: 'signedIn', session, member })
   }, [])
 
