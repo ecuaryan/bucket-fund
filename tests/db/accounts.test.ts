@@ -71,13 +71,22 @@ describe('accounts: child assignment', () => {
     const accountId = await insertTestAccount(family.familyId, null)
 
     const memberClient = await userClient(member.email, member.password)
-    const { error } = await memberClient
+    const { data, error } = await memberClient
       .from('accounts')
       .update({ owner_member_id: child.memberId })
       .eq('id', accountId)
+      .select('id')
 
-    expect(error).not.toBeNull()
-    expect(error?.code).toBe('42501')
+    expect(error).toBeNull()
+    expect(data).toEqual([])
+
+    const svc = serviceClient()
+    const { data: row } = await svc
+      .from('accounts')
+      .select('owner_member_id')
+      .eq('id', accountId)
+      .single()
+    expect(row?.owner_member_id).toBeNull()
   })
 
   it('child cannot reassign accounts', async () => {
@@ -86,12 +95,21 @@ describe('accounts: child assignment', () => {
     const accountId = await insertTestAccount(family.familyId, child.memberId)
 
     const childClient = await userClient(child.email, child.password)
-    const { error } = await childClient
+    const { data, error } = await childClient
       .from('accounts')
       .update({ owner_member_id: null })
       .eq('id', accountId)
+      .select('id')
 
-    expect(error).not.toBeNull()
-    expect(error?.code).toBe('42501')
+    expect(error).toBeNull()
+    expect(data).toEqual([])
+
+    const svc = serviceClient()
+    const { data: row } = await svc
+      .from('accounts')
+      .select('owner_member_id')
+      .eq('id', accountId)
+      .single()
+    expect(row?.owner_member_id).toBe(child.memberId)
   })
 })
