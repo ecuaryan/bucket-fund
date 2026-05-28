@@ -366,7 +366,7 @@ export default function HomePage() {
             ) : null}
             {balanceBreakdown.bucketAllocated > 0 ? (
               <div className="flex justify-between gap-4 tabular-nums">
-                <dt>{isChild ? 'In your buckets' : 'In family buckets'}</dt>
+                <dt>{isChild ? 'In your buckets' : 'Allocated to buckets'}</dt>
                 <dd>−{currency.format(balanceBreakdown.bucketAllocated)}</dd>
               </div>
             ) : null}
