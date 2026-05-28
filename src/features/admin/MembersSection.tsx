@@ -20,7 +20,12 @@ type Member = {
   user_id: string | null
 }
 
-export default function MembersSection() {
+type MembersSectionProps = {
+  /** Called when the family roster changes (add/remove) so siblings can refresh. */
+  onRosterChanged?: () => void
+}
+
+export default function MembersSection({ onRosterChanged }: MembersSectionProps) {
   const [members, setMembers] = useState<Member[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -66,6 +71,7 @@ export default function MembersSection() {
       setNewName('')
       setInfo(`Added ${name}. Set their PIN next.`)
       await loadMembers()
+      onRosterChanged?.()
     } catch (err) {
       setActionError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -98,14 +104,12 @@ export default function MembersSection() {
 
   async function onRemove(m: Member) {
     if (m.role === 'admin') return
-    const bucketNote =
+    const detail =
       m.role === 'child'
-        ? 'Their buckets will be deleted. '
-        : ''
+        ? 'Their buckets will be deleted. Any bank accounts assigned to them will move to the family pool. '
+        : 'They will lose access to the app. '
     const ok = window.confirm(
-      `Remove ${m.name} from your family? ${bucketNote}` +
-        'Any bank accounts assigned to them will move to the family pool. ' +
-        'This cannot be undone.',
+      `Remove ${m.name} from your family? ${detail}This cannot be undone.`,
     )
     if (!ok) return
 
@@ -120,6 +124,7 @@ export default function MembersSection() {
       }
       setInfo(`Removed ${m.name}.`)
       await loadMembers()
+      onRosterChanged?.()
     } catch (err) {
       setActionError(err instanceof Error ? err.message : String(err))
     } finally {

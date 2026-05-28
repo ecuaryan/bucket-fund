@@ -238,7 +238,7 @@ export default function AdminPage() {
       </header>
 
       <FamilyJoinSection />
-      <MembersSection />
+      <MembersSection onRosterChanged={loadMembers} />
 
       <section aria-label="Linked accounts">
         <div className="mb-3 flex items-center justify-between">
