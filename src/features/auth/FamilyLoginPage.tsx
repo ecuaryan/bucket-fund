@@ -32,9 +32,10 @@ import {
 } from '@/lib/memberAuth'
 import { clearPasswordRecoveryFlow } from '@/lib/passwordRecoveryFlow'
 import { takeOrphanMemberNotice } from '@/lib/pinAuth'
+import type { AuthLocationState } from '@/lib/authNavigation'
 import { setSignInPreference } from '@/lib/signInPreference'
 
-type LocationState = { from?: string; info?: string } | null
+type LocationState = AuthLocationState
 
 export default function FamilyLoginPage() {
   const auth = useAuth()
@@ -270,7 +271,7 @@ export default function FamilyLoginPage() {
             {binding ? 'Checking…' : 'Continue'}
           </button>
         </form>
-        <FooterLinks />
+        <FooterLinks from={from} />
       </AuthShell>
     )
   }
@@ -310,7 +311,7 @@ export default function FamilyLoginPage() {
       >
         Use a different join code
       </button>
-      <FooterLinks />
+      <FooterLinks from={from} />
     </AuthShell>
   )
 }
@@ -362,10 +363,15 @@ function AuthShell({
   )
 }
 
-function FooterLinks() {
+function FooterLinks({ from }: { from: string }) {
   return (
     <p className="mt-6 text-center text-sm text-zinc-500">
-      <Link to="/login?email=1" className="text-emerald-400 hover:underline">
+      <Link
+        to="/login"
+        state={{ preferEmailSignIn: true, from }}
+        onClick={() => setSignInPreference('email')}
+        className="text-emerald-400 hover:underline"
+      >
         Admin email sign-in
       </Link>
     </p>
