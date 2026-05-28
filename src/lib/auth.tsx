@@ -15,6 +15,10 @@ import {
   ORPHAN_MEMBER_MESSAGE,
   stashOrphanMemberNotice,
 } from '@/lib/pinAuth'
+import {
+  clearPasswordRecoveryFlow,
+  markPasswordRecoveryFlow,
+} from '@/lib/passwordRecoveryFlow'
 import { isPasswordRecoverySession } from '@/lib/recoverySession'
 import { supabase } from '@/lib/supabase'
 import { withTimeout } from '@/lib/timeout'
@@ -79,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // websocket can hang `setAuth` and leave the app on "Loading…".
     void supabase.realtime.setAuth(session?.access_token ?? null)
     if (!session) {
+      clearPasswordRecoveryFlow()
       setState({
         status: 'signedOut',
         session: null,
@@ -128,8 +133,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })()
 
     const { data: subscription } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         if (!active) return
+        if (event === 'PASSWORD_RECOVERY') {
+          markPasswordRecoveryFlow()
+        }
         void applySession(session)
       },
     )
@@ -187,6 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!data.session) {
         throw new Error('Sign-in did not return a session.')
       }
+      clearPasswordRecoveryFlow()
       await applySession(data.session)
     },
     [applySession],

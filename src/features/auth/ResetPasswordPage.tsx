@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { markRequireFreshSignIn } from '@/lib/freshSignIn'
+import { clearPasswordRecoveryFlow } from '@/lib/passwordRecoveryFlow'
+import { setSignInPreference } from '@/lib/signInPreference'
 import { isHumanAuthEmail } from '@/lib/passwordReset'
 import { supabase } from '@/lib/supabase'
 
@@ -103,6 +105,8 @@ export default function ResetPasswordPage() {
 
       const savedEmail = email || accountEmail
       markRequireFreshSignIn()
+      clearPasswordRecoveryFlow()
+      setSignInPreference('email')
       await supabase.auth.signOut()
 
       const loginUrl = new URL('/login', window.location.origin)

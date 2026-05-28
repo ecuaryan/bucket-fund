@@ -137,9 +137,8 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: 'Login failed' }, 500)
     }
     sessionData = await anon.auth.verifyOtp({
-      email,
-      token: tokenHash,
-      type: 'email',
+      token_hash: tokenHash,
+      type: 'magiclink',
     })
   }
 

@@ -67,12 +67,16 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Could not save PIN' }, 500)
   }
 
-  const { error: signOutError } = await admin.auth.admin.signOut(
-    member.user_id,
-    'global',
-  )
-  if (signOutError) {
-    console.warn('set-pin signOut', signOutError)
+  // Sign out other members so they must use the new PIN. Skip when the admin
+  // updates their own PIN while already signed in with email.
+  if (member.id !== auth.memberId) {
+    const { error: signOutError } = await admin.auth.admin.signOut(
+      member.user_id,
+      'global',
+    )
+    if (signOutError) {
+      console.warn('set-pin signOut', signOutError)
+    }
   }
 
   return jsonResponse({ ok: true })
