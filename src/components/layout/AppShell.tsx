@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { APP_NAME } from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
+import { useSendRecipients } from '@/hooks/useSendRecipients'
 
 export default function AppShell() {
   const auth = useAuth()
@@ -17,6 +18,7 @@ export default function AppShell() {
         : null) ??
     'You'
   const isAdmin = member?.role === 'admin'
+  const { showSendNav } = useSendRecipients()
 
   async function onSignOut() {
     setSigningOut(true)
@@ -58,7 +60,7 @@ export default function AppShell() {
       <nav className="fixed inset-x-0 bottom-0 border-t border-zinc-800 bg-zinc-900/95 backdrop-blur">
         <ul className="mx-auto flex max-w-md items-stretch justify-around px-4 py-2 text-xs font-medium">
           <TabLink to="/" label="Home" />
-          <TabLink to="/send" label="Send" />
+          {showSendNav && <TabLink to="/send" label="Send" />}
           <TabLink to="/history" label="History" />
           {isAdmin && <TabLink to="/admin" label="Admin" />}
         </ul>
