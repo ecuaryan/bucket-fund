@@ -217,7 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [state])
 
   const isPasswordRecovery =
-    state.status === 'signedIn' && isPasswordRecoverySession(state.session)
+    state.status === 'signedIn' && isPasswordRecoverySession()
 
   const value = useMemo<AuthContextValue>(
     () => ({
