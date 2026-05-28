@@ -113,7 +113,7 @@ public/
   offline.html              PWA offline fallback
 supabase/
   config.toml               Supabase CLI project config
-  migrations/               SQL migrations (00000000000000 … 00000000000009)
+  migrations/               SQL migrations (00000000000000 … 00000000000022)
   functions/                Deno Edge Functions (see list below)
 ```
 
@@ -127,9 +127,6 @@ Edge Functions:
 | `check-invariant`   | Server-side balance invariant (stub)         |
 
 > Teller Connect UI and account linking live in `src/features/admin/` today.
-> The `src/features/accounts/` folder is reserved for a future dedicated
-> accounts screen if we split it out of Admin.
-
 > The PWA uses `vite-plugin-pwa` in `injectManifest` mode: the service
 > worker source lives at `src/sw.ts`, and workbox injects the precache
 > manifest at the `self.__WB_MANIFEST` placeholder during the build.

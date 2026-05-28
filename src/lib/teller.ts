@@ -236,8 +236,3 @@ export async function disconnectEnrollment(
   }
   return body as DisconnectResult
 }
-
-// Legacy placeholder kept so older imports don't break.
-export async function tellerConnect(): Promise<void> {
-  throw new Error('Use the `useTellerConnect` hook instead.')
-}

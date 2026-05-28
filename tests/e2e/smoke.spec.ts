@@ -29,4 +29,18 @@ test.describe('smoke', () => {
     await page.getByRole('button', { name: /forgot password/i }).click()
     await expect(page).toHaveURL(/\/login\/forgot/)
   })
+
+  test('legacy /buckets URL redirects to home', async ({ page }) => {
+    const family = await createAdminFamily('e2e-buckets-redirect')
+
+    await page.goto('/login')
+    await page.locator('#login-email').fill(family.adminEmail)
+    await page.locator('#login-password').fill(family.adminPassword)
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await expect(page).toHaveURL('/')
+
+    await page.goto('/buckets')
+    await expect(page).toHaveURL('/')
+    await expect(page.getByLabel('Unallocated balance')).toBeVisible()
+  })
 })
