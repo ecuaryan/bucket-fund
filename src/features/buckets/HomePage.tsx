@@ -425,9 +425,6 @@ export default function HomePage() {
                         <p className="truncate text-sm font-medium text-zinc-300">
                           {bucket.name}
                         </p>
-                        {bucket.owner_member_id === null && (
-                          <p className="text-xs text-zinc-400">Shared pool</p>
-                        )}
                       </div>
                       <p className="shrink-0 text-sm font-semibold tabular-nums text-zinc-300">
                         {currency.format(Number(bucket.allocated_amount))}
