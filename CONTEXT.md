@@ -218,6 +218,8 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
   users do not spawn extra families).
 - **Admin / Member / Child (day-to-day):** bind device once with an unguessable
   **family join code** or QR (`/join?code=…`), then avatar + **4-digit PIN**.
+  Devices with a stored join code redirect to `/login/family` when signed out
+  (email `/login` remains for account setup and `?signup=1`).
   Each person has their own `auth.users` row (internal email, never shown).
 - **PIN management:** admin only — set/reset PIN verbally; no self-service PIN
   change in v1. Reset PIN revokes all sessions for that member.

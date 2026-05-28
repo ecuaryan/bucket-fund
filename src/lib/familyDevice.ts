@@ -17,6 +17,11 @@ export function getBoundJoinCode(): string | null {
   }
 }
 
+/** True after this device completed join / family PIN setup (not email-only admin). */
+export function isPinBoundDevice(): boolean {
+  return Boolean(getBoundJoinCode()?.trim())
+}
+
 export function bindFamily(familyId: string, joinCode: string): void {
   localStorage.setItem(FAMILY_ID_KEY, familyId)
   localStorage.setItem(JOIN_CODE_KEY, joinCode.toUpperCase())

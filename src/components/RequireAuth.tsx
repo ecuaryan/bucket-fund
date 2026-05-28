@@ -4,6 +4,7 @@ import OrphanMemberNotice from '@/components/OrphanMemberNotice'
 import PageFallback from '@/components/PageFallback'
 import { APP_NAME } from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
+import { isPinBoundDevice } from '@/lib/familyDevice'
 import { takeOrphanMemberNotice } from '@/lib/pinAuth'
 
 export default function RequireAuth({ children }: { children: ReactNode }) {
@@ -31,6 +32,15 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
           to="/login/family"
           replace
           state={{ from: location.pathname, info: orphanNotice }}
+        />
+      )
+    }
+    if (isPinBoundDevice()) {
+      return (
+        <Navigate
+          to="/login/family"
+          replace
+          state={{ from: location.pathname }}
         />
       )
     }
