@@ -3,6 +3,7 @@ import { fileURLToPath, URL } from 'node:url'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { APP_NAME, PWA_DESCRIPTION } from './src/lib/brand'
 
 export default defineConfig({
   plugins: [
@@ -18,10 +19,9 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webp,woff2}'],
       },
       manifest: {
-        name: 'BucketFund',
-        short_name: 'BucketFund',
-        description:
-          'Bank-agnostic virtual envelope budgeting for families. Every dollar lives in a named bucket.',
+        name: APP_NAME,
+        short_name: APP_NAME,
+        description: PWA_DESCRIPTION,
         theme_color: '#000000',
         background_color: '#000000',
         display: 'standalone',

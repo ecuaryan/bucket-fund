@@ -17,6 +17,9 @@ Entry point for AI coding agents (and humans) working in this repo.
 4. **[README.md](./README.md)** — dev setup, scripts, and the
    "Before connecting real Teller data" TODO list. The items in that
    list are security-critical.
+5. **[docs/BRAND.md](./docs/BRAND.md)** — product voice, positioning (solo +
+   household), and display-name candidates. User-facing strings live in
+   `src/lib/brand.ts`.
 
 ## Operating principles for this codebase
 

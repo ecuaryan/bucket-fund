@@ -6,7 +6,18 @@ import {
   useNavigate,
   useSearchParams,
 } from 'react-router-dom'
+import { AuthBrandHeader } from '@/components/AuthBrandHeader'
 import { useAuth } from '@/lib/auth'
+import {
+  LOGIN_GET_STARTED,
+  LOGIN_HOUSEHOLD_LABEL,
+  LOGIN_HOUSEHOLD_PLACEHOLDER,
+  LOGIN_SHARED_SUB,
+  LOGIN_SHARED_TITLE,
+  LOGIN_SIGN_IN_INTRO,
+  LOGIN_SIGNUP_SUBTITLE,
+  LOGIN_SIGNUP_TITLE,
+} from '@/lib/brand'
 import {
   clearRequireFreshSignIn,
   isRequireFreshSignIn,
@@ -111,17 +122,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-svh items-center justify-center bg-black px-4 py-12">
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-black shadow-sm">
-            <span className="text-xl font-semibold">$</span>
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-300">
-            BucketFund
-          </h1>
-          <p className="mt-1 text-sm text-zinc-400">
-            Every dollar lives in a named bucket.
-          </p>
-        </div>
+        <AuthBrandHeader />
 
         <form
           onSubmit={onSubmit}
@@ -132,11 +133,10 @@ export default function LoginPage() {
             <>
               <div>
                 <h2 className="text-lg font-semibold text-zinc-300">
-                  Create your family
+                  {LOGIN_SIGNUP_TITLE}
                 </h2>
                 <p className="mt-1.5 text-sm text-zinc-400">
-                  You&apos;ll confirm your email, then sign in once. You&apos;ll
-                  be the family admin.
+                  {LOGIN_SIGNUP_SUBTITLE}
                 </p>
               </div>
 
@@ -148,10 +148,10 @@ export default function LoginPage() {
                 autoComplete="name"
               />
               <Field
-                label="Family name"
+                label={LOGIN_HOUSEHOLD_LABEL}
                 value={familyName}
                 onChange={setFamilyName}
-                placeholder="The Smiths"
+                placeholder={LOGIN_HOUSEHOLD_PLACEHOLDER}
                 autoComplete="off"
               />
               <Field
@@ -197,9 +197,7 @@ export default function LoginPage() {
             </>
           ) : (
             <>
-              <p className="text-sm text-zinc-400">
-                New family? Set up buckets and invite members.
-              </p>
+              <p className="text-sm text-zinc-400">{LOGIN_SIGN_IN_INTRO}</p>
 
               <button
                 type="button"
@@ -207,7 +205,7 @@ export default function LoginPage() {
                 onClick={() => switchMode('signUp')}
                 className="w-full rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-emerald-300 ring-1 ring-emerald-500/40 transition hover:bg-zinc-900 hover:ring-emerald-500/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Create a family
+                {LOGIN_GET_STARTED}
               </button>
 
               <div
@@ -277,10 +275,8 @@ export default function LoginPage() {
         )}
 
         <div className="mt-6 rounded-2xl bg-zinc-900/80 p-4 text-center ring-1 ring-zinc-800">
-          <p className="text-sm font-medium text-zinc-300">Family member?</p>
-          <p className="mt-1 text-xs text-zinc-500">
-            Use the join code from your admin, then your PIN.
-          </p>
+          <p className="text-sm font-medium text-zinc-300">{LOGIN_SHARED_TITLE}</p>
+          <p className="mt-1 text-xs text-zinc-500">{LOGIN_SHARED_SUB}</p>
           <Link
             to="/login/family"
             className="mt-3 inline-block text-sm font-semibold text-emerald-400 hover:underline"

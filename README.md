@@ -1,8 +1,10 @@
 # BucketFund
 
-A bank-agnostic virtual envelope budgeting PWA for families. Sits on top of
-real bank accounts (read via Teller) and provides a fast, universal mental
-accounting layer that reconciles to the real balance.
+A bank-agnostic virtual envelope budgeting PWA—for solo use or a shared
+household. Sits on top of real bank accounts (read via Teller) so you can
+label cash with buckets, and decide which bucket covers it when the bank balance
+moves. Tagline and auth copy live in `src/lib/brand.ts`; see
+[docs/BRAND.md](./docs/BRAND.md) for voice and naming.
 
 See [CONTEXT.md](./CONTEXT.md) for the full product brief, balance model,
 and architecture. See [AGENTS.md](./AGENTS.md) for AI agent / contributor

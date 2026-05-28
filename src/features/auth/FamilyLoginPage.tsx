@@ -8,6 +8,7 @@ import {
 } from 'react'
 import { flushSync } from 'react-dom'
 import { Link, Navigate, useLocation } from 'react-router-dom'
+import { APP_NAME } from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
 import {
   bindFamily,
@@ -87,7 +88,7 @@ export default function FamilyLoginPage() {
           clearBoundFamily()
           setRoster(null)
           setRestoreNotice(
-            'This device needs to be linked again. Enter your family code from Admin.',
+            'This device needs to be linked again. Enter your household join code from Admin.',
           )
         }
       })
@@ -214,7 +215,7 @@ export default function FamilyLoginPage() {
 
   if (loading) {
     return (
-      <AuthShell title="BucketFund" subtitle="Loading family…">
+      <AuthShell title={APP_NAME} subtitle="Loading household…">
         <p className="text-sm text-zinc-500">One moment</p>
       </AuthShell>
     )
@@ -222,7 +223,7 @@ export default function FamilyLoginPage() {
 
   if (!roster) {
     return (
-      <AuthShell title="Join your family" subtitle="Enter the code from Admin">
+      <AuthShell title="Join your household" subtitle="Enter the code from Admin">
         <form onSubmit={onBindCode} className="space-y-4">
           <input
             value={codeInput}
@@ -288,7 +289,7 @@ export default function FamilyLoginPage() {
         onClick={onUnbind}
         className="mt-6 w-full text-sm text-zinc-500 hover:text-zinc-400"
       >
-        Use a different family code
+        Use a different join code
       </button>
       <FooterLinks />
     </AuthShell>

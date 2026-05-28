@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { APP_NAME } from '@/lib/brand'
 import { clearLocalAuthSession } from '@/lib/authStorage'
 import {
   isPinAuthEmail,
@@ -180,7 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await withTimeout(
         supabase.auth.setSession(tokens),
         20_000,
-        'Sign-in timed out. Close other BucketFund tabs and try again.',
+        `Sign-in timed out. Close other ${APP_NAME} tabs and try again.`,
       )
       if (error) throw error
       if (!data.session) {
