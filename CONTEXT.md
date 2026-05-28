@@ -14,7 +14,7 @@ Auth redirect URLs, Teller allowed origins (if applicable), and any
 bookmarked join links; join QR codes use `window.location.origin` so they
 will pick up the new host automatically after deploy.
 
-BucketFund is a **bank-agnostic virtual envelope budgeting PWA** for families. It sits on top of real bank accounts (read via Teller API) and provides a fast, universal mental accounting layer. Users carve their real bank balance into named buckets. The app tracks where every dollar is allocated. Every dollar in the system always reconciles back to the real Teller balance.
+BucketFund is a **bank-agnostic virtual envelope budgeting PWA** for **you alone or a shared household**. It sits on top of real bank accounts (read via Teller API) and provides a fast mental accounting layer: label cash with buckets, see what is still unallocated, and when the bank balance moves, decide which bucket covers it (negative unallocated → move money from buckets on purpose). Brand voice and naming notes live in [docs/BRAND.md](./docs/BRAND.md); user-facing strings in `src/lib/brand.ts` (`APP_TAGLINE`, login copy).
 
 The primary use case is: **open app → move money from one bucket to another → done. Target: 4 taps from a cold open.**
 
@@ -35,7 +35,7 @@ for the same situation as negative unallocated. See [Data Integrity](#data-integ
 ## Product Brief
 
 ### Problem
-Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means rebuilding your entire budgeting system. This app provides a fast, universal mental accounting layer that works across any bank, shared with the whole family.
+Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means rebuilding your entire budgeting system. This app provides a fast, universal mental accounting layer that works across any bank—for solo use or a shared household.
 
 ---
 
@@ -218,6 +218,8 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
   users do not spawn extra families).
 - **Admin / Member / Child (day-to-day):** bind device once with an unguessable
   **family join code** or QR (`/join?code=…`), then avatar + **4-digit PIN**.
+  Devices with a stored join code redirect to `/login/family` when signed out
+  (email `/login` remains for account setup and `?signup=1`).
   Each person has their own `auth.users` row (internal email, never shown).
 - **PIN management:** admin only — set/reset PIN verbally; no self-service PIN
   change in v1. Reset PIN revokes all sessions for that member.

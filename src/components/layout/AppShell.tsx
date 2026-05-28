@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
+import { APP_NAME } from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
 
 export default function AppShell() {
@@ -35,7 +36,7 @@ export default function AppShell() {
               <span className="text-sm font-semibold">$</span>
             </div>
             <div className="leading-tight">
-              <p className="text-sm font-semibold">BucketFund</p>
+              <p className="text-sm font-semibold">{APP_NAME}</p>
               <p className="text-xs text-zinc-400">{familyName}</p>
             </div>
           </div>

@@ -38,9 +38,9 @@ export default function JoinPage() {
     return (
       <AuthShell>
         <p className="text-sm text-zinc-400">
-          Missing join code. Scan your family QR or enter the code on the{' '}
+          Missing join code. Scan your household QR or enter the code on the{' '}
           <Link to="/login/family" className="text-emerald-400 hover:underline">
-            family sign-in
+            PIN sign-in
           </Link>{' '}
           page.
         </p>
@@ -63,7 +63,7 @@ export default function JoinPage() {
           </Link>
         </>
       ) : (
-        <p className="text-sm text-zinc-400">Linking this device to your family…</p>
+        <p className="text-sm text-zinc-400">Linking this device to your household…</p>
       )}
     </AuthShell>
   )

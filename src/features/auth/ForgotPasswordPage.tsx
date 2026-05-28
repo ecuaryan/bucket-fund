@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
   return (
     <AuthShell
       title="Reset password"
-      subtitle="Admin email sign-in only — not for family PINs"
+      subtitle="Admin email sign-in only — not for household PIN sign-in"
     >
       {sent ? (
         <div className="space-y-4 text-sm text-zinc-300">
@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
           </p>
           <p className="text-xs text-zinc-400">
             The link opens this app so you can choose a new password. PIN
-            sign-in for family members is separate and is not changed by this.
+            sign-in for household members is separate and is not changed by this.
           </p>
           <Link
             to="/login"

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { APP_TAGLINE } from '../../src/lib/brand'
 import { createAdminFamily } from '../db/fixtures'
 
 test.describe('smoke', () => {
@@ -6,8 +7,9 @@ test.describe('smoke', () => {
     await page.goto('/')
     await expect(page).toHaveURL(/\/login/)
     await expect(page.getByRole('heading', { name: 'BucketFund' })).toBeVisible()
+    await expect(page.getByText(APP_TAGLINE)).toBeVisible()
     await expect(
-      page.getByRole('button', { name: 'Create a family' }),
+      page.getByRole('button', { name: 'Get started' }),
     ).toBeVisible()
     await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible()
   })
