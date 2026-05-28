@@ -11,7 +11,7 @@ type AccountAssignmentSelectProps = {
   /** null = family pool; otherwise a child member id. */
   assignedChildId: string | null
   children: ChildMemberOption[]
-  onAssigned: () => void
+  onAssigned: (ownerMemberId: string | null) => void
   onError: (message: string) => void
 }
 
@@ -31,7 +31,7 @@ export default function AccountAssignmentSelect({
     setSaving(true)
     try {
       await assignAccountOwner(accountId, ownerMemberId)
-      onAssigned()
+      onAssigned(ownerMemberId)
     } catch (e) {
       onError(e instanceof Error ? e.message : String(e))
     } finally {
