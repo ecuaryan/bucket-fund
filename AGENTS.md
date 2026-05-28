@@ -29,14 +29,15 @@ Entry point for AI coding agents (and humans) working in this repo.
   If you touch RLS or `auth_family_id()`, re-read the SECURITY WARNING
   at the top of
   [supabase/migrations/00000000000000_initial_schema.sql](./supabase/migrations/00000000000000_initial_schema.sql).
-- **The invariant is the contract.** `sum(allocated) + sum(unallocated)`
-  must equal the real Teller balance for every family at every moment.
-  Authoritative checks live server-side in
-  [supabase/functions/check-invariant/](./supabase/functions/check-invariant/).
-  Client-side calculation is optimistic UI only and must not be trusted
-  for security decisions.
-- **No silent failures on money.** If the invariant is violated, surface
-  a prominent admin alert. Never swallow it.
+- **The ledger identity is the contract.** Cash (Teller) = allocations +
+  unallocated, with unallocated derived in SQL (`member_available_balance`).
+  **User signal for “rebalance”:** negative red unallocated on Home — not a
+  separate integrity banner. **Operator ledger checks** (automated family-wide
+  verification, `check-invariant`) are deferred until a possible paid SaaS;
+  see CONTEXT.md § Data Integrity. Do not add a second user-facing alarm for
+  normal bank-vs-bucket drift.
+- **Money writes only via RPCs.** `move_money` and `send_money`; extend
+  `tests/db/` when changing balance logic.
 - **Child role is locked down.** A child must never be able to query
   family-pool balances, other members' balances, or other members'
   transactions. Validate this at the RLS layer, not the UI layer.

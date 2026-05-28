@@ -124,7 +124,7 @@ Edge Functions:
 | `teller-enroll`     | Store enrollment + sync accounts (admin JWT) |
 | `teller-disconnect` | Revoke enrollment + delete local rows        |
 | `teller-webhook`    | Verify signature, update balances, log events  |
-| `check-invariant`   | Server-side balance invariant (stub)         |
+| `check-invariant`   | Ledger check stub (deferred; see CONTEXT.md) |
 
 > Teller Connect UI and account linking live in `src/features/admin/` today.
 > The PWA uses `vite-plugin-pwa` in `injectManifest` mode: the service
@@ -136,7 +136,12 @@ Edge Functions:
 ## Implementation status
 
 High-level snapshot of what exists on `main` today. Product truth lives in
-[CONTEXT.md](./CONTEXT.md); this section tracks build progress only.
+[CONTEXT.md](./CONTEXT.md) (including [product stage](./CONTEXT.md#product-stage));
+this section tracks build progress only.
+
+**Rollout:** Builder’s family is the first beta. Negative unallocated on Home
+is the user-facing “rebalance your envelopes” signal. Automated operator ledger
+checks are deferred until a possible paid SaaS phase.
 
 ### Shipped
 
@@ -156,8 +161,12 @@ High-level snapshot of what exists on `main` today. Product truth lives in
 ### Not yet built
 
 - WebAuthn biometric fast path
-- Balance invariant check wired end-to-end + admin alert banner
 - PWA icon assets + install polish
+
+### Deferred (family beta → paid SaaS if ever)
+
+- Automated operator ledger monitoring (`check-invariant`, violation logging,
+  optional admin-only alerts). Not required for negative unallocated workflow.
 
 ## TODO
 
@@ -177,9 +186,9 @@ npx supabase functions deploy
 
 ### Before connecting real Teller data
 
-These items are SECURITY-CRITICAL before any real user, real bank, or real
-money data is connected. Several scaffold stubs have been replaced (see
-**Implementation status**), but the project is not production-ready.
+These items are SECURITY-CRITICAL before **other families** or a public paid
+launch. The builder’s family may dogfood on production earlier; still rotate
+Teller certs before trusting real bank credentials (see below).
 
 - [x] Replace RLS policy stubs with real `admin` / `member` / `child`
       policies — implemented in
@@ -192,10 +201,6 @@ money data is connected. Several scaffold stubs have been replaced (see
 - [x] Implement Teller webhook signature verification in
       `supabase/functions/teller-webhook/index.ts` and reject unsigned
       payloads with 401 before parsing the body.
-- [ ] Implement the server-side invariant calculation in
-      `supabase/functions/check-invariant/index.ts` and wire its
-      `violation_amount > 0` output to an admin-visible alert via
-      Supabase Realtime.
 - [ ] **Rotate the Teller application certificate + private key.** The
       current values were pasted into a chat session during scaffolding
       and should be considered compromised before any production use.
@@ -251,6 +256,13 @@ controls which flow you exercise:
 | `verify.microdeposit` | Tests the `Verify Account Details via Microdeposit` flow. |
 
 Full list and behavior matrix: <https://teller.io/docs/guides/sandbox>
+
+### Deferred until paid SaaS (if ever)
+
+- [ ] Operator ledger monitoring: SQL family-wide check (same formulas as Home),
+      logging/alerts for the operator — not a user-facing duplicate of red
+      unallocated. Scaffold: `supabase/functions/check-invariant/`. See
+      CONTEXT.md § Data Integrity.
 
 ### Other follow-ups
 
