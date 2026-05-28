@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
+import { BrandLogo } from '@/components/BrandLogo'
 import { APP_NAME } from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
 import { useSendRecipients } from '@/hooks/useSendRecipients'
@@ -34,9 +35,7 @@ export default function AppShell() {
       <header className="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-900/80 backdrop-blur">
         <div className="mx-auto flex max-w-md items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-black">
-              <span className="text-sm font-semibold">$</span>
-            </div>
+            <BrandLogo size={32} className="shrink-0 rounded-lg" />
             <div className="leading-tight">
               <p className="text-sm font-semibold">{APP_NAME}</p>
               <p className="text-xs text-zinc-400">{familyName}</p>
