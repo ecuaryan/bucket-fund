@@ -9,7 +9,11 @@ export default function AppShell() {
   const member = auth.status === 'signedIn' ? auth.member : null
   const familyName =
     member?.name ??
-    (auth.status === 'signedIn' ? auth.session.user.email : null) ??
+    (auth.status === 'signedIn' && auth.memberLoading
+      ? '…'
+      : auth.status === 'signedIn'
+        ? auth.session.user.email
+        : null) ??
     'You'
   const isAdmin = member?.role === 'admin'
 

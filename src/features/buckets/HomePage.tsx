@@ -10,11 +10,13 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
+import HomePageSkeleton from '@/components/HomePageSkeleton'
 import {
   childTotalBalance,
-  fetchHomeBalanceBreakdown,
   type HomeBalanceBreakdown,
 } from '@/lib/availableBalance'
+import { readHomeCache, writeHomeCache } from '@/lib/homeCache'
+import { loadHomePage } from '@/lib/homePage'
 import {
   deleteBucket,
   renameBucket,
@@ -61,27 +63,28 @@ export default function HomePage() {
   const canManageStructure = isAdmin || isChild
 
   const loadGeneration = useRef(0)
-  const ensureOrdersDone = useRef(false)
 
   const loadData = useCallback(async () => {
+    if (!familyId || !memberId) return
     const generation = ++loadGeneration.current
     setLoadError(null)
 
-    if (!ensureOrdersDone.current) {
-      await supabase.rpc('ensure_member_bucket_orders')
+    try {
+      const data = await loadHomePage()
       if (generation !== loadGeneration.current) return
-      ensureOrdersDone.current = true
-    }
-
-    const [bucketsRes, orderRes, accountsRes] = await Promise.all([
-      supabase.from('buckets').select('*'),
-      supabase.from('member_bucket_order').select('bucket_id, display_order'),
-      supabase.from('accounts').select('*'),
-    ])
-    if (generation !== loadGeneration.current) return
-
-    if (bucketsRes.error) {
-      const msg = bucketsRes.error.message
+      setBuckets(data.buckets)
+      setAccounts(data.accounts)
+      setBalanceBreakdown(data.breakdown)
+      setBalanceUsesFallback(data.usedFallback)
+      writeHomeCache(familyId, memberId, {
+        buckets: data.buckets,
+        accounts: data.accounts,
+        breakdown: data.breakdown,
+        balanceUsesFallback: data.usedFallback,
+      })
+    } catch (e) {
+      if (generation !== loadGeneration.current) return
+      const msg = e instanceof Error ? e.message : String(e)
       if (msg.toLowerCase().includes('permission denied')) {
         const { data: userData } = await supabase.auth.getUser()
         await supabase.auth.signOut()
@@ -95,38 +98,8 @@ export default function HomePage() {
         return
       }
       setLoadError(msg)
-      return
     }
-    if (orderRes.error) {
-      setLoadError(orderRes.error.message)
-      return
-    }
-    if (accountsRes.error) {
-      setLoadError(accountsRes.error.message)
-      return
-    }
-    const orderMap = new Map(
-      (orderRes.data ?? []).map((row) => [row.bucket_id, row.display_order]),
-    )
-    const sorted = [...(bucketsRes.data ?? [])].sort((a, b) => {
-      const oa = orderMap.get(a.id) ?? a.display_order
-      const ob = orderMap.get(b.id) ?? b.display_order
-      if (oa !== ob) return oa - ob
-      return a.created_at.localeCompare(b.created_at)
-    })
-
-    const accountRows = accountsRes.data ?? []
-    setBuckets(sorted)
-    setAccounts(accountRows)
-
-    const { breakdown, usedFallback } = await fetchHomeBalanceBreakdown({
-      accounts: accountRows,
-      buckets: sorted,
-    })
-    if (generation !== loadGeneration.current) return
-    setBalanceBreakdown(breakdown)
-    setBalanceUsesFallback(usedFallback)
-  }, [])
+  }, [familyId, memberId, navigate])
 
   const realtimeReloadTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
@@ -139,8 +112,20 @@ export default function HomePage() {
   }, [loadData])
 
   useEffect(() => {
-    ensureOrdersDone.current = false
     loadGeneration.current += 1
+    if (!familyId || !memberId) {
+      setBuckets(null)
+      setAccounts(null)
+      setBalanceBreakdown(null)
+      return
+    }
+    const cached = readHomeCache(familyId, memberId)
+    if (cached) {
+      setBuckets(cached.buckets)
+      setAccounts(cached.accounts)
+      setBalanceBreakdown(cached.breakdown)
+      setBalanceUsesFallback(cached.balanceUsesFallback)
+    }
   }, [familyId, memberId])
 
   useEffect(
@@ -277,8 +262,16 @@ export default function HomePage() {
     )
   }
 
-  if (buckets === null || accounts === null || balanceBreakdown === null) {
-    return <p className="text-sm text-zinc-400">Loading…</p>
+  const authLoading =
+    auth.status === 'signedIn' && auth.memberLoading
+  if (
+    authLoading ||
+    !familyId ||
+    buckets === null ||
+    accounts === null ||
+    balanceBreakdown === null
+  ) {
+    return <HomePageSkeleton />
   }
 
   // Server-side family pool (admin/member share one number). See migration 16.

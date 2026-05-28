@@ -56,7 +56,7 @@ function parseChildLines(raw: unknown): ChildSetAsideLine[] {
   return lines
 }
 
-function parseBreakdownRow(data: Json): HomeBalanceBreakdown | null {
+export function parseBreakdownRow(data: Json): HomeBalanceBreakdown | null {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return null
   const row = data as Record<string, unknown>
   const num = (key: string) => Number(row[key] ?? 0)
