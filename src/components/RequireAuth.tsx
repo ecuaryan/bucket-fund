@@ -4,7 +4,7 @@ import OrphanMemberNotice from '@/components/OrphanMemberNotice'
 import PageFallback from '@/components/PageFallback'
 import { APP_NAME } from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
-import { isPinBoundDevice } from '@/lib/familyDevice'
+import { shouldDefaultToPinSignIn } from '@/lib/signInPreference'
 import { takeOrphanMemberNotice } from '@/lib/pinAuth'
 
 export default function RequireAuth({ children }: { children: ReactNode }) {
@@ -35,7 +35,7 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
         />
       )
     }
-    if (isPinBoundDevice()) {
+    if (shouldDefaultToPinSignIn()) {
       return (
         <Navigate
           to="/login/family"

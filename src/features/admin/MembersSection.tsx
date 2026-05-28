@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import PinInput from '@/components/ui/PinInput'
 import {
@@ -37,6 +38,10 @@ type MembersSectionProps = {
 }
 
 export default function MembersSection({ onRosterChanged }: MembersSectionProps) {
+  const auth = useAuth()
+  const selfMemberId =
+    auth.status === 'signedIn' ? auth.member?.id ?? null : null
+
   const [members, setMembers] = useState<Member[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -102,7 +107,11 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     setInfo(null)
     try {
       await setMemberPin(pinTarget.id, pinValue)
-      setInfo(`PIN updated for ${pinTarget.name}. They'll need to sign in again.`)
+      setInfo(
+        pinTarget.id === selfMemberId
+          ? `PIN updated. You can use it on this device from PIN sign-in.`
+          : `PIN updated for ${pinTarget.name}. They'll need to sign in again.`,
+      )
       setPinTarget(null)
       setPinValue('')
       await loadMembers()

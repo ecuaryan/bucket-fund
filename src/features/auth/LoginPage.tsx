@@ -20,11 +20,15 @@ import {
   LOGIN_SIGNUP_SUBTITLE,
   LOGIN_SIGNUP_TITLE,
 } from '@/lib/brand'
-import { isPinBoundDevice } from '@/lib/familyDevice'
 import {
   clearRequireFreshSignIn,
   isRequireFreshSignIn,
 } from '@/lib/freshSignIn'
+import { clearPasswordRecoveryFlow } from '@/lib/passwordRecoveryFlow'
+import {
+  setSignInPreference,
+  shouldDefaultToPinSignIn,
+} from '@/lib/signInPreference'
 
 type Mode = 'signIn' | 'signUp'
 
@@ -49,12 +53,19 @@ export default function LoginPage() {
   const loginInfo = loginState?.info ?? searchParams.get('info')
   const loginEmail = loginState?.email ?? searchParams.get('email') ?? ''
   const pendingFreshSignIn = isRequireFreshSignIn()
+  const preferEmailSignIn = searchParams.get('email') === '1'
 
   useEffect(() => {
     if (pendingFreshSignIn && auth.status === 'signedIn') {
       void auth.signOut()
     }
   }, [pendingFreshSignIn, auth])
+
+  useEffect(() => {
+    if (preferEmailSignIn) {
+      setSignInPreference('email')
+    }
+  }, [preferEmailSignIn])
 
   const [mode, setMode] = useState<Mode>(() =>
     searchParams.get('signup') === '1' ? 'signUp' : 'signIn',
@@ -71,16 +82,12 @@ export default function LoginPage() {
     return <Navigate to={from} replace />
   }
 
-  // Pin-bound devices default to PIN sign-in unless the user explicitly
-  // chose admin email (e.g. link from /login/family with ?email=1).
-  const preferEmailSignIn = searchParams.get('email') === '1'
-
   if (
     auth.status === 'signedOut' &&
     !pendingFreshSignIn &&
     searchParams.get('signup') !== '1' &&
     !preferEmailSignIn &&
-    isPinBoundDevice()
+    shouldDefaultToPinSignIn()
   ) {
     return <Navigate to="/login/family" replace state={{ from }} />
   }
@@ -108,7 +115,9 @@ export default function LoginPage() {
     setSubmitting(true)
     try {
       if (mode === 'signIn') {
+        clearPasswordRecoveryFlow()
         await auth.signIn(email, password)
+        setSignInPreference('email')
         clearRequireFreshSignIn()
       } else {
         await auth.signUp({ email, password, displayName, familyName })

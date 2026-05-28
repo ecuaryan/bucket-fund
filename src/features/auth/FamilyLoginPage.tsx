@@ -30,7 +30,9 @@ import {
   type JoinMember,
   type ValidateJoinResult,
 } from '@/lib/memberAuth'
+import { clearPasswordRecoveryFlow } from '@/lib/passwordRecoveryFlow'
 import { takeOrphanMemberNotice } from '@/lib/pinAuth'
+import { setSignInPreference } from '@/lib/signInPreference'
 
 type LocationState = { from?: string; info?: string } | null
 
@@ -149,7 +151,9 @@ export default function FamilyLoginPage() {
         memberId: selected.id,
         pin,
       })
+      clearPasswordRecoveryFlow()
       await auth.signInWithSession(tokens)
+      setSignInPreference('pin')
     } catch (err) {
       setPinError(err instanceof Error ? err.message : 'Sign-in failed')
       setPin('')
