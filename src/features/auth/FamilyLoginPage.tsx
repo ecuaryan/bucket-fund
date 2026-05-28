@@ -1,10 +1,12 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
   type FormEvent,
   type ReactNode,
 } from 'react'
+import { flushSync } from 'react-dom'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import {
@@ -41,6 +43,16 @@ export default function FamilyLoginPage() {
   const [pin, setPin] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [pinError, setPinError] = useState<string | null>(null)
+  const pinInputRef = useRef<HTMLInputElement>(null)
+
+  function selectMember(member: JoinMember) {
+    setPin('')
+    setPinError(null)
+    flushSync(() => setSelected(member))
+    // iOS only opens the keyboard when focus runs in the same user-gesture
+    // turn as the tap that revealed the field (autoFocus alone is unreliable).
+    pinInputRef.current?.focus()
+  }
 
   const refreshRoster = useCallback(async (code: string) => {
     const trimmed = code.trim()
@@ -157,6 +169,7 @@ export default function FamilyLoginPage() {
           data-bucketfund-form="family-pin"
         >
           <PinInput
+            ref={pinInputRef}
             autoFocus
             aria-label="4-digit PIN"
             value={pin}
@@ -250,7 +263,7 @@ export default function FamilyLoginPage() {
               <button
                 type="button"
                 disabled={m.pinLocked}
-                onClick={() => setSelected(m)}
+                onClick={() => selectMember(m)}
                 className="flex w-full flex-col items-center gap-2 rounded-2xl bg-zinc-900 p-4 ring-1 ring-zinc-800 transition hover:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Avatar name={m.name} url={m.avatarUrl} />
