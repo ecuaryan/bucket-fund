@@ -16,8 +16,13 @@ export const APP_TAGLINE =
 export const PWA_DESCRIPTION =
   'Envelope budgeting on your real bank balance. Solo or with your household.'
 
-export const LOGIN_SIGN_IN_INTRO =
+/** Above “Get started” on the login screen. */
+export const LOGIN_NEW_HERE_INTRO =
   'New here? Connect your bank (read-only) and organize your cash with buckets—solo or with your household.'
+
+export const LOGIN_ALREADY_HAVE_ACCOUNT = 'Already have an account?'
+
+export const LOGIN_EMAIL_SECTION_TITLE = 'Sign in with email'
 
 /** Login/sign-up footnote. Fact-checked against our Teller usage (see docs/BRAND.md). */
 export const BANK_LINK_READ_ONLY =

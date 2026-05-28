@@ -10,15 +10,18 @@ import { AuthBrandHeader } from '@/components/AuthBrandHeader'
 import { useAuth } from '@/lib/auth'
 import {
   BANK_LINK_READ_ONLY,
+  LOGIN_ALREADY_HAVE_ACCOUNT,
+  LOGIN_EMAIL_SECTION_TITLE,
   LOGIN_GET_STARTED,
   LOGIN_HOUSEHOLD_LABEL,
   LOGIN_HOUSEHOLD_PLACEHOLDER,
+  LOGIN_NEW_HERE_INTRO,
   LOGIN_SHARED_SUB,
   LOGIN_SHARED_TITLE,
-  LOGIN_SIGN_IN_INTRO,
   LOGIN_SIGNUP_SUBTITLE,
   LOGIN_SIGNUP_TITLE,
 } from '@/lib/brand'
+import { isPinBoundDevice } from '@/lib/familyDevice'
 import {
   clearRequireFreshSignIn,
   isRequireFreshSignIn,
@@ -67,6 +70,15 @@ export default function LoginPage() {
 
   if (auth.status === 'signedIn' && !pendingFreshSignIn) {
     return <Navigate to={from} replace />
+  }
+
+  if (
+    auth.status === 'signedOut' &&
+    !pendingFreshSignIn &&
+    searchParams.get('signup') !== '1' &&
+    isPinBoundDevice()
+  ) {
+    return <Navigate to="/login/family" replace state={{ from }} />
   }
 
   function switchMode(next: Mode) {
@@ -198,7 +210,7 @@ export default function LoginPage() {
             </>
           ) : (
             <>
-              <p className="text-sm text-zinc-400">{LOGIN_SIGN_IN_INTRO}</p>
+              <p className="text-sm text-zinc-400">{LOGIN_NEW_HERE_INTRO}</p>
 
               <button
                 type="button"
@@ -209,13 +221,25 @@ export default function LoginPage() {
                 {LOGIN_GET_STARTED}
               </button>
 
-              <div
-                className="border-t border-zinc-700/80"
-                role="separator"
-                aria-hidden
-              />
+              <div className="relative py-1" role="separator">
+                <div
+                  className="absolute inset-0 flex items-center"
+                  aria-hidden
+                >
+                  <div className="w-full border-t border-zinc-700/80" />
+                </div>
+                <p className="relative flex justify-center">
+                  <span className="bg-zinc-900 px-2 text-xs text-zinc-500">
+                    {LOGIN_ALREADY_HAVE_ACCOUNT}
+                  </span>
+                </p>
+              </div>
 
               <div className="space-y-4">
+                <h2 className="text-sm font-semibold text-zinc-300">
+                  {LOGIN_EMAIL_SECTION_TITLE}
+                </h2>
+
                 {info && <AuthMessage tone="info">{info}</AuthMessage>}
 
                 <Field
