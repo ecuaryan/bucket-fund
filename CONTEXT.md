@@ -81,8 +81,9 @@ Every dollar lives in exactly one place — either in a named bucket or in someo
 
 **Admin and member (shared family pool on Home):**
 - **Unallocated** on Home is one number for both: family cash minus
-  adult-visible bucket allocations minus children's virtual unallocated
-  (funded-by-sends amounts not yet in a child bucket).
+  adult-visible bucket allocations minus each child's total funded balance
+  (their linked cash plus net sends). How a child splits that between their
+  own buckets and their own unallocated does not change the adult number.
 - Adult-to-adult sends are not allowed — they would not move the pool anyway.
 - Unallocated ≥ 0 → green; negative → red (pull from a bucket or fix allocations).
 

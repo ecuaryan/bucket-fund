@@ -5,6 +5,7 @@ import {
   getAvailableBalance,
   insertBucket,
   memberBalance,
+  moveMoney,
   sendMoney,
   serviceClient,
   setBucketAllocation,
@@ -51,6 +52,40 @@ describe('send_money RPC', () => {
       to_member_id: child.memberId,
       note: 'allowance',
     })
+  })
+
+  it('admin unallocated does not change when child buckets received money', async () => {
+    const family = await createAdminFamily('send-child-bucket-stable')
+    const child = await addMember(family.familyId, 'child', 'Alex')
+    const svc = serviceClient()
+
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 200,
+    })
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    await sendMoney(admin, { toMemberId: child.memberId, amount: 75 })
+    expect(await getAvailableBalance(admin)).toBe(125)
+
+    const kidBucket = await insertBucket(
+      svc,
+      family.familyId,
+      'Allowance',
+      child.memberId,
+    )
+    const childClient = await userClient(child.email, child.password)
+    await moveMoney(childClient, {
+      fromBucketId: null,
+      toBucketId: kidBucket,
+      amount: 75,
+    })
+
+    expect(await getAvailableBalance(childClient)).toBe(0)
+    expect(await getAvailableBalance(admin)).toBe(125)
   })
 
   it('rejects send when unallocated is insufficient', async () => {
