@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { isCashAccount, sumCashBalance } from '@/lib/accounts'
+import {
+  accountAssignmentChildId,
+  isCashAccount,
+  isFamilyPoolAccount,
+  sumCashBalance,
+} from '@/lib/accounts'
 import type { Database } from '@/types/database'
 
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -32,6 +37,35 @@ describe('isCashAccount', () => {
     expect(isCashAccount({ account_type: 'credit_card' })).toBe(false)
     expect(isCashAccount({ account_type: 'loan' })).toBe(false)
     expect(isCashAccount({ account_type: null })).toBe(false)
+  })
+})
+
+describe('account assignment helpers', () => {
+  const roles = new Map([
+    ['admin-id', 'admin'],
+    ['child-id', 'child'],
+  ])
+
+  it('treats null and adult owners as family pool', () => {
+    expect(isFamilyPoolAccount({ owner_member_id: null }, roles)).toBe(true)
+    expect(isFamilyPoolAccount({ owner_member_id: 'admin-id' }, roles)).toBe(
+      true,
+    )
+    expect(isFamilyPoolAccount({ owner_member_id: 'child-id' }, roles)).toBe(
+      false,
+    )
+  })
+
+  it('returns child id only for child-owned accounts', () => {
+    expect(
+      accountAssignmentChildId({ owner_member_id: null }, roles),
+    ).toBeNull()
+    expect(
+      accountAssignmentChildId({ owner_member_id: 'admin-id' }, roles),
+    ).toBeNull()
+    expect(
+      accountAssignmentChildId({ owner_member_id: 'child-id' }, roles),
+    ).toBe('child-id')
   })
 })
 

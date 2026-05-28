@@ -160,9 +160,25 @@ Deno.serve(async (req: Request) => {
     )
   }
 
+  const tellerAccountIds = accountsWithBalances.map((a) => a.id)
+  const { data: existingAccounts } = await admin
+    .from('accounts')
+    .select('teller_account_id, owner_member_id')
+    .eq('family_id', enrollment.family_id)
+    .in('teller_account_id', tellerAccountIds)
+
+  const ownerByTellerAccountId = new Map(
+    (existingAccounts ?? []).map((row) => [
+      row.teller_account_id,
+      row.owner_member_id,
+    ]),
+  )
+
+  // New links default to the family pool (null). Re-links keep the admin's
+  // prior assignment (e.g. a child's checking).
   const upsertRows = accountsWithBalances.map((a) => ({
     family_id: enrollment.family_id,
-    owner_member_id: member.id,
+    owner_member_id: ownerByTellerAccountId.get(a.id) ?? null,
     teller_account_id: a.id,
     teller_enrollment_id: enrollment.id,
     institution_name: a.institution.name,

@@ -1,6 +1,40 @@
+import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database'
 
 type Account = Database['public']['Tables']['accounts']['Row']
+
+/** Family pool or legacy admin/member ownership — not assigned to a child. */
+export function isFamilyPoolAccount(
+  account: Pick<Account, 'owner_member_id'>,
+  memberRolesById: ReadonlyMap<string, string>,
+): boolean {
+  if (!account.owner_member_id) return true
+  const role = memberRolesById.get(account.owner_member_id)
+  return role === 'admin' || role === 'member'
+}
+
+export function accountAssignmentChildId(
+  account: Pick<Account, 'owner_member_id'>,
+  memberRolesById: ReadonlyMap<string, string>,
+): string | null {
+  if (!account.owner_member_id) return null
+  if (memberRolesById.get(account.owner_member_id) === 'child') {
+    return account.owner_member_id
+  }
+  return null
+}
+
+/** Assign linked account to the family pool or to one child. Admin-only (RLS). */
+export async function assignAccountOwner(
+  accountId: string,
+  ownerMemberId: string | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from('accounts')
+    .update({ owner_member_id: ownerMemberId })
+    .eq('id', accountId)
+  if (error) throw error
+}
 
 // Account subtypes Teller returns. Anything in this set is treated as
 // real, allocatable cash on hand. Everything else (credit cards,

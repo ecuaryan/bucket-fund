@@ -137,6 +137,7 @@ High-level snapshot of what exists on `main` today. Product truth lives in
 - Send money (`send_money` RPC + Send page; adults fund children; blocked adult↔adult)
 - Teller Connect: link bank, sync accounts, webhook balance updates, unlink
 - Transaction history with bucket filter, pagination, tap-to-expand notes
+- Admin: assign linked bank accounts to children (family pool default)
 - Dark theme (pure black + zinc palette)
 
 ### Not yet built
@@ -252,7 +253,7 @@ Full list and behavior matrix: <https://teller.io/docs/guides/sandbox>
 - [x] UI for the bucket move flow (HomePage + MoveMoneyDialog + `move_money`
       RPC). Optional note field included.
 - [x] Member management UI (admin: add member/child, set PIN, unlock, rotate join code).
-- [ ] Account assignment UI (assign linked accounts to members / family pool).
+- [x] Account assignment UI (Admin: family pool by default; assign to children).
 - [x] Send money flow (adults → children; shared adult unallocated on Home).
 - [ ] **Operator-blind balances (privacy):** architecture so the app owner
       cannot read families’ bank/bucket amounts even with Supabase access
