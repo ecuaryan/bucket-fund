@@ -264,11 +264,6 @@ Full list and behavior matrix: <https://teller.io/docs/guides/sandbox>
 - [x] Member management UI (admin: add member/child, set PIN, unlock, rotate join code).
 - [x] Account assignment UI (Admin: family pool by default; assign to children).
 - [x] Send money flow (adults → children; shared adult unallocated on Home).
-- [ ] **Operator-blind balances (privacy):** architecture so the app owner
-      cannot read families’ bank/bucket amounts even with Supabase access
-      (e.g. per-family encryption — feasibility TBD). Today: plaintext +
-      service role can see everything; do not promise friends otherwise. See
-      CONTEXT.md § “Operator cannot read bank balances”.
 - [ ] **Credit cards:** exclude from enroll/storage vs integrate (e.g.
       subtract card balance from unallocated / show as liability). Today only
       cash account types count toward Home unallocated. See CONTEXT.md §
