@@ -5,7 +5,11 @@ test.describe('smoke', () => {
   test('redirects unauthenticated users to login', async ({ page }) => {
     await page.goto('/')
     await expect(page).toHaveURL(/\/login/)
-    await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'BucketFund' })).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Create a family' }),
+    ).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible()
   })
 
   test('admin email sign-in reaches home with unallocated', async ({ page }) => {

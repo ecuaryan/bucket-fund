@@ -42,7 +42,9 @@ export default function LoginPage() {
     }
   }, [pendingFreshSignIn, auth.status, auth.signOut])
 
-  const [mode, setMode] = useState<Mode>('signIn')
+  const [mode, setMode] = useState<Mode>(() =>
+    searchParams.get('signup') === '1' ? 'signUp' : 'signIn',
+  )
   const [email, setEmail] = useState(loginEmail)
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -53,6 +55,12 @@ export default function LoginPage() {
 
   if (auth.status === 'signedIn' && !pendingFreshSignIn) {
     return <Navigate to={from} replace />
+  }
+
+  function switchMode(next: Mode) {
+    setMode(next)
+    setError(null)
+    setInfo(null)
   }
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -77,9 +85,9 @@ export default function LoginPage() {
       } else {
         await auth.signUp({ email, password, displayName, familyName })
         setInfo(
-          'Account created. Check your email to confirm, then sign in.',
+          'Account created. Check your email to confirm, then sign in below.',
         )
-        setMode('signIn')
+        switchMode('signIn')
         setPassword('')
       }
     } catch (err) {
@@ -120,12 +128,18 @@ export default function LoginPage() {
           autoComplete="on"
           className="space-y-4 rounded-2xl bg-zinc-900 p-6 shadow-lg ring-1 ring-zinc-800"
         >
-          <h2 className="text-lg font-semibold text-zinc-300">
-            {isSignUp ? 'Create your family' : 'Sign in'}
-          </h2>
-
-          {isSignUp && (
+          {isSignUp ? (
             <>
+              <div>
+                <h2 className="text-lg font-semibold text-zinc-300">
+                  Create your family
+                </h2>
+                <p className="mt-1.5 text-sm text-zinc-400">
+                  You&apos;ll confirm your email, then sign in once. You&apos;ll
+                  be the family admin.
+                </p>
+              </div>
+
               <Field
                 label="Your name"
                 value={displayName}
@@ -140,81 +154,112 @@ export default function LoginPage() {
                 placeholder="The Smiths"
                 autoComplete="off"
               />
+              <Field
+                label="Email"
+                type="email"
+                value={email}
+                onChange={setEmail}
+                placeholder="you@example.com"
+                autoComplete="email"
+                name="email"
+                id="login-email"
+                required
+              />
+              <Field
+                label="Password"
+                type="password"
+                value={password}
+                onChange={setPassword}
+                placeholder="At least 8 characters"
+                autoComplete="new-password"
+                name="password"
+                id="login-password"
+                required
+              />
+
+              {error && <AuthMessage tone="error">{error}</AuthMessage>}
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black shadow-sm transition hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting ? 'Working…' : 'Create account'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => switchMode('signIn')}
+                className="block w-full text-center text-sm text-zinc-400 hover:text-zinc-300"
+              >
+                Already have an account? Sign in
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-zinc-400">
+                New family? Set up buckets and invite members.
+              </p>
+
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => switchMode('signUp')}
+                className="w-full rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-emerald-300 ring-1 ring-emerald-500/40 transition hover:bg-zinc-900 hover:ring-emerald-500/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Create a family
+              </button>
+
+              <div
+                className="border-t border-zinc-700/80"
+                role="separator"
+                aria-hidden
+              />
+
+              <div className="space-y-4">
+                {info && <AuthMessage tone="info">{info}</AuthMessage>}
+
+                <Field
+                  label="Email"
+                  type="email"
+                  value={email}
+                  onChange={setEmail}
+                  placeholder="you@example.com"
+                  autoComplete="username"
+                  name="email"
+                  id="login-email"
+                  required
+                />
+                <Field
+                  label="Password"
+                  type="password"
+                  value={password}
+                  onChange={setPassword}
+                  autoComplete={error ? 'off' : 'current-password'}
+                  name="password"
+                  id="login-password"
+                  required
+                />
+
+                {error && <AuthMessage tone="error">{error}</AuthMessage>}
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black shadow-sm transition hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {submitting ? 'Working…' : 'Sign in'}
+                </button>
+              </div>
             </>
           )}
-
-          <Field
-            label="Email"
-            type="email"
-            value={email}
-            onChange={setEmail}
-            placeholder="you@example.com"
-            autoComplete={isSignUp ? 'email' : 'username'}
-            name="email"
-            id="login-email"
-            required
-          />
-          <Field
-            label="Password"
-            type="password"
-            value={password}
-            onChange={setPassword}
-            placeholder={isSignUp ? 'At least 8 characters' : ''}
-            autoComplete={
-              isSignUp
-                ? 'new-password'
-                : error
-                  ? 'off'
-                  : 'current-password'
-            }
-            name="password"
-            id="login-password"
-            required
-          />
-
-          {error && (
-            <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30">
-              {error}
-            </p>
-          )}
-          {info && (
-            <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300 ring-1 ring-emerald-500/30">
-              {info}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black shadow-sm transition hover:bg-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {submitting
-              ? 'Working…'
-              : isSignUp
-                ? 'Create account'
-                : 'Sign in'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setMode(isSignUp ? 'signIn' : 'signUp')
-              setError(null)
-              setInfo(null)
-            }}
-            className="block w-full text-center text-sm text-zinc-400 hover:text-zinc-300"
-          >
-            {isSignUp
-              ? 'Already have an account? Sign in'
-              : 'New here? Create a family'}
-          </button>
         </form>
 
         {!isSignUp && (
           <p className="mt-3 text-center text-sm">
             <button
               type="button"
-              className="text-emerald-400 hover:underline"
+              className="text-zinc-400 hover:text-zinc-300 hover:underline"
               onClick={() => {
                 setPassword('')
                 clearPasswordInput('login-password')
@@ -231,18 +276,36 @@ export default function LoginPage() {
           </p>
         )}
 
-        <p className="mt-6 text-center text-sm text-zinc-500">
-          <Link to="/login/family" className="text-emerald-400 hover:underline">
-            Family member? Sign in with PIN
+        <div className="mt-6 rounded-2xl bg-zinc-900/80 p-4 text-center ring-1 ring-zinc-800">
+          <p className="text-sm font-medium text-zinc-300">Family member?</p>
+          <p className="mt-1 text-xs text-zinc-500">
+            Use the join code from your admin, then your PIN.
+          </p>
+          <Link
+            to="/login/family"
+            className="mt-3 inline-block text-sm font-semibold text-emerald-400 hover:underline"
+          >
+            Sign in with PIN →
           </Link>
-        </p>
-
-        <p className="mt-4 text-center text-xs text-zinc-500">
-          By signing up you become the admin of a new family. Add members
-          and PINs from Admin.
-        </p>
+        </div>
       </div>
     </div>
+  )
+}
+
+function AuthMessage({
+  tone,
+  children,
+}: {
+  tone: 'error' | 'info'
+  children: string
+}) {
+  const styles =
+    tone === 'error'
+      ? 'bg-red-500/10 text-red-300 ring-red-500/30'
+      : 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30'
+  return (
+    <p className={`rounded-lg px-3 py-2 text-sm ring-1 ${styles}`}>{children}</p>
   )
 }
 
