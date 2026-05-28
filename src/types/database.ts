@@ -446,6 +446,7 @@ export type Database = {
       }
       get_available_balance: { Args: never; Returns: number }
       get_home_balance_breakdown: { Args: never; Returns: Json }
+      get_home_page_data: { Args: never; Returns: Json }
       member_available_balance: {
         Args: { p_member_id: string }
         Returns: number

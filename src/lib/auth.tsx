@@ -22,9 +22,14 @@ import type { Database } from '@/types/database'
 export type FamilyMember = Database['public']['Tables']['family_members']['Row']
 
 type AuthState =
-  | { status: 'loading'; session: null; member: null }
-  | { status: 'signedOut'; session: null; member: null }
-  | { status: 'signedIn'; session: Session; member: FamilyMember | null }
+  | { status: 'loading'; session: null; member: null; memberLoading: false }
+  | { status: 'signedOut'; session: null; member: null; memberLoading: false }
+  | {
+      status: 'signedIn'
+      session: Session
+      member: FamilyMember | null
+      memberLoading: boolean
+    }
 
 type AuthContextValue = AuthState & {
   /** Password-reset email link session — must not use the main app yet. */
@@ -65,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     status: 'loading',
     session: null,
     member: null,
+    memberLoading: false,
   })
 
   const applySession = useCallback(async (session: Session | null) => {
@@ -72,9 +78,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // websocket can hang `setAuth` and leave the app on "Loading…".
     void supabase.realtime.setAuth(session?.access_token ?? null)
     if (!session) {
-      setState({ status: 'signedOut', session: null, member: null })
+      setState({
+        status: 'signedOut',
+        session: null,
+        member: null,
+        memberLoading: false,
+      })
       return
     }
+    setState({
+      status: 'signedIn',
+      session,
+      member: null,
+      memberLoading: true,
+    })
     const member = await fetchMember(session.user.id)
     if (!member && isPinAuthEmail(session.user.email ?? undefined)) {
       stashOrphanMemberNotice(ORPHAN_MEMBER_MESSAGE)
@@ -84,10 +101,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         // Best effort — session is unusable without a membership row.
       }
-      setState({ status: 'signedOut', session: null, member: null })
+      setState({
+        status: 'signedOut',
+        session: null,
+        member: null,
+        memberLoading: false,
+      })
       return
     }
-    setState({ status: 'signedIn', session, member })
+    setState({
+      status: 'signedIn',
+      session,
+      member,
+      memberLoading: false,
+    })
   }, [])
 
   useEffect(() => {
@@ -173,7 +200,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (state.status !== 'signedIn') return
     const member = await fetchMember(state.session.user.id)
     setState((prev) =>
-      prev.status === 'signedIn' ? { ...prev, member } : prev,
+      prev.status === 'signedIn'
+        ? { ...prev, member, memberLoading: false }
+        : prev,
     )
   }, [state])
 
