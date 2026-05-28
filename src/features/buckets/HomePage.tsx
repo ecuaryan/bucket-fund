@@ -348,7 +348,7 @@ export default function HomePage() {
               <dd>−{currency.format(balanceBreakdown.bucketAllocated)}</dd>
             </div>
             <div className="flex justify-between gap-4 tabular-nums">
-              <dt>Set aside for children</dt>
+              <dt>Children&apos;s funds</dt>
               <dd>−{currency.format(balanceBreakdown.childrenSetAside)}</dd>
             </div>
           </dl>
