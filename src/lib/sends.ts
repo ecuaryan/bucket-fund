@@ -30,13 +30,13 @@ function humaniseSendError(msg: string): string {
     return 'Not enough unallocated for that amount.'
   }
   if (lower.includes('cannot send to yourself')) {
-    return 'Pick someone else in your family.'
+    return 'Pick someone else in your household.'
   }
   if (lower.includes('amount must be positive')) {
     return 'Enter an amount greater than $0.'
   }
   if (lower.includes('recipient not in your family')) {
-    return "That person isn't in your family."
+    return "That person isn't in your household."
   }
   if (lower.includes('not authenticated')) {
     return 'Session expired. Please sign in again.'

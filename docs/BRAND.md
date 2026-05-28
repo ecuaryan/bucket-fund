@@ -22,7 +22,10 @@ label it; buckets are how you **decide** where money is reserved. The payoff:
 - Plain, direct, no finance jargon.
 - Emphasize **which bucket covers a bank move**, not “families only” or income tracing.
 - Say **household** in UI when meaning “your group”; **family** is fine in
-  internal/schema terms (`family_id`, admin docs).
+  internal/schema terms (`family_id`, routes like `/login/family`).
+- Say **join code** everywhere users link a device (not “device code”).
+- DB role `member` → UI **Adult**; `child` → **Child**; `admin` → **Admin**.
+  See `src/lib/memberRoles.ts` and Admin strings in `brand.ts`.
 
 ## Display name (open)
 
@@ -65,3 +68,6 @@ mainly use the transactions product for balance sync webhooks.
 | Sign-up | `LOGIN_SIGNUP_*`, `LOGIN_HOUSEHOLD_*` |
 | PIN path | `LOGIN_SHARED_*` |
 | Bank read-only note | `BANK_LINK_READ_ONLY` |
+| Join code (Admin + PIN) | `JOIN_CODE_*`, `ADMIN_JOIN_CODE_*` |
+| Admin people & roles | `ADMIN_HOUSEHOLD_MEMBERS_*`, `memberRoles.ts` |
+| Admin linked accounts | `ADMIN_LINKED_ACCOUNTS_INTRO` |

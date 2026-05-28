@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import { accountAssignmentChildId } from '@/lib/accounts'
-import { BANK_LINK_READ_ONLY_SHORT } from '@/lib/brand'
+import { ADMIN_LINKED_ACCOUNTS_INTRO } from '@/lib/brand'
 import { disconnectEnrollment, useTellerConnect } from '@/lib/teller'
 import AccountAssignmentSelect from '@/features/admin/AccountAssignmentSelect'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
@@ -211,7 +211,7 @@ export default function AdminPage() {
   }
 
   if (!member) {
-    return <p className="text-sm text-zinc-400">Loading family…</p>
+    return <p className="text-sm text-zinc-400">Loading household…</p>
   }
 
   if (!isAdmin) {
@@ -219,8 +219,8 @@ export default function AdminPage() {
       <div className="rounded-2xl bg-amber-500/10 p-4 text-sm text-amber-200 ring-1 ring-amber-500/30">
         <p className="font-semibold">Admins only</p>
         <p className="mt-1">
-          Linking bank accounts is restricted to family admins. Ask the
-          person who created your family to add the account, then they
+          Linking bank accounts is restricted to the household admin. Ask the
+          person who set up this household to add the account, then they
           can assign it to you.
         </p>
       </div>
@@ -242,13 +242,18 @@ export default function AdminPage() {
       <MembersSection onRosterChanged={loadMembers} />
 
       <section aria-label="Linked accounts">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-base font-semibold">Linked accounts</h2>
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold">Linked accounts</h2>
+            <p className="mt-1 text-xs text-zinc-400">
+              {ADMIN_LINKED_ACCOUNTS_INTRO}
+            </p>
+          </div>
           <button
             type="button"
             onClick={onLink}
             disabled={!teller.ready || teller.linking}
-            className="rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+            className="shrink-0 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {teller.linking
               ? 'Linking…'
@@ -281,9 +286,9 @@ export default function AdminPage() {
               No accounts linked yet
             </p>
             <p className="mt-1 text-xs text-zinc-400">
-              Tap &quot;Link bank&quot; to connect via Teller.{' '}
-              {BANK_LINK_READ_ONLY_SHORT} Balances count toward the shared pool
-              until you assign an account to a child.
+              Tap &quot;Link bank&quot; to connect checking or savings.
+              Balances count toward the shared pool until you assign an account
+              to a child.
             </p>
           </div>
         ) : (
