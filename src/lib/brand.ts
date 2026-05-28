@@ -14,10 +14,10 @@ export const APP_TAGLINE =
 
 /** Install / share sheet blurb (may echo the tagline). */
 export const PWA_DESCRIPTION =
-  'Envelope budgeting on your real bank balance. Solo or with a household.'
+  'Envelope budgeting on your real bank balance. Solo or with your household.'
 
 export const LOGIN_SIGN_IN_INTRO =
-  'New here? Connect your bank (read-only) and organize your cash with buckets—solo or with others.'
+  'New here? Connect your bank (read-only) and organize your cash with buckets—solo or with your household.'
 
 /** Login/sign-up footnote. Fact-checked against our Teller usage (see docs/BRAND.md). */
 export const BANK_LINK_READ_ONLY =
