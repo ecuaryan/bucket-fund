@@ -14,7 +14,11 @@ export function BrandLogo({ size = 48, className = '' }: BrandLogoProps) {
       alt=""
       width={size}
       height={size}
-      className={`rounded-2xl ${className}`.trim()}
+      className={
+        className.includes('rounded')
+          ? className
+          : ['rounded-2xl', className].filter(Boolean).join(' ')
+      }
     />
   )
 }
