@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
-import { fetchAvailableBalance } from '@/lib/availableBalance'
+import {
+  childFamilyFunding,
+  fetchHomeBalanceBreakdown,
+  type HomeBalanceBreakdown,
+} from '@/lib/availableBalance'
 import { sendMoney } from '@/lib/sends'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
@@ -27,6 +31,9 @@ export default function SendPage() {
 
   const [members, setMembers] = useState<Member[] | null>(null)
   const [available, setAvailable] = useState<number | null>(null)
+  const [balanceBreakdown, setBalanceBreakdown] =
+    useState<HomeBalanceBreakdown | null>(null)
+  const [balanceUsesFallback, setBalanceUsesFallback] = useState(false)
   const [sendEnabled, setSendEnabled] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [toMemberId, setToMemberId] = useState('')
@@ -62,12 +69,15 @@ export default function SendPage() {
         return
       }
 
-      const { balance, usedFallback } = await fetchAvailableBalance({
-        accounts: accountsRes.data ?? [],
+      const accountRows = accountsRes.data ?? []
+      const { breakdown, usedFallback } = await fetchHomeBalanceBreakdown({
+        accounts: accountRows,
         buckets: bucketsRes.data ?? [],
       })
       setMembers(membersRes.data ?? [])
-      setAvailable(balance)
+      setBalanceBreakdown(breakdown)
+      setBalanceUsesFallback(usedFallback)
+      setAvailable(breakdown.unallocated)
       setSendEnabled(!usedFallback)
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : 'Could not load send screen.')
@@ -103,6 +113,16 @@ export default function SendPage() {
 
   const isAdult =
     member?.role === 'admin' || member?.role === 'member'
+  const isChild = member?.role === 'child'
+  const familyFunding =
+    balanceBreakdown && isChild ? childFamilyFunding(balanceBreakdown) : 0
+  const showChildBreakdown =
+    isChild &&
+    balanceBreakdown &&
+    !balanceUsesFallback &&
+    (balanceBreakdown.totalCash > 0 ||
+      balanceBreakdown.bucketAllocated > 0 ||
+      familyFunding > 0)
 
   const recipients = useMemo(() => {
     const others = (members ?? []).filter((m) => m.id !== memberId)
@@ -210,6 +230,28 @@ export default function SendPage() {
         <p className="mt-1 text-2xl font-semibold tabular-nums">
           {currency.format(available)}
         </p>
+        {showChildBreakdown && balanceBreakdown ? (
+          <dl className="mt-3 space-y-1 border-t border-current/10 pt-3 text-xs opacity-90">
+            {balanceBreakdown.totalCash > 0 ? (
+              <div className="flex justify-between gap-4 tabular-nums">
+                <dt>Linked cash</dt>
+                <dd>{currency.format(balanceBreakdown.totalCash)}</dd>
+              </div>
+            ) : null}
+            {familyFunding > 0 ? (
+              <div className="flex justify-between gap-4 tabular-nums">
+                <dt>From family</dt>
+                <dd>{currency.format(familyFunding)}</dd>
+              </div>
+            ) : null}
+            {balanceBreakdown.bucketAllocated > 0 ? (
+              <div className="flex justify-between gap-4 tabular-nums">
+                <dt>In your buckets</dt>
+                <dd>−{currency.format(balanceBreakdown.bucketAllocated)}</dd>
+              </div>
+            ) : null}
+          </dl>
+        ) : null}
       </section>
 
       {!sendEnabled && (
@@ -243,7 +285,6 @@ export default function SendPage() {
               {recipients.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.name}
-                  {m.role === 'child' ? ' (child)' : m.role === 'admin' ? ' (admin)' : ''}
                 </option>
               ))}
             </select>

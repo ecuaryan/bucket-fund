@@ -28,6 +28,11 @@ export type HomeBalanceBreakdown = {
   children: ChildSetAsideLine[]
 }
 
+/** Net sends for a child (positive when funded by family). */
+export function childFamilyFunding(breakdown: HomeBalanceBreakdown): number {
+  return breakdown.unallocated + breakdown.bucketAllocated - breakdown.totalCash
+}
+
 function parseChildLines(raw: unknown): ChildSetAsideLine[] {
   if (!Array.isArray(raw)) return []
   const lines: ChildSetAsideLine[] = []

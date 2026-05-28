@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import {
+  childFamilyFunding,
   fetchHomeBalanceBreakdown,
   type HomeBalanceBreakdown,
 } from '@/lib/availableBalance'
@@ -292,12 +293,20 @@ export default function HomePage() {
   // Server-side family pool (admin/member share one number). See migration 16.
   const unallocated = balanceBreakdown.unallocated
   const isAdult = !isChild
-  const showPoolBreakdown =
+  const familyFunding = isChild ? childFamilyFunding(balanceBreakdown) : 0
+  const showAdultBreakdown =
     isAdult &&
     !balanceUsesFallback &&
     (balanceBreakdown.totalCash > 0 ||
       balanceBreakdown.bucketAllocated > 0 ||
       balanceBreakdown.children.length > 0)
+  const showChildBreakdown =
+    isChild &&
+    !balanceUsesFallback &&
+    (balanceBreakdown.totalCash > 0 ||
+      balanceBreakdown.bucketAllocated > 0 ||
+      familyFunding > 0)
+  const showBalanceBreakdown = showAdultBreakdown || showChildBreakdown
   const unallocatedColor =
     unallocated >= 0
       ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30'
@@ -307,7 +316,7 @@ export default function HomePage() {
     (a) => a.current_balance !== null && Number(a.current_balance) > 0,
   ).length
 
-  const unallocatedHint = showPoolBreakdown
+  const unallocatedHint = showBalanceBreakdown
     ? null
     : cashAccountsCount > 0
       ? `${currency.format(balanceBreakdown.totalCash)} across ${cashAccountsCount} linked account${cashAccountsCount === 1 ? '' : 's'}`
@@ -338,7 +347,7 @@ export default function HomePage() {
         {unallocatedHint ? (
           <p className="mt-1 text-xs opacity-70">{unallocatedHint}</p>
         ) : null}
-        {showPoolBreakdown && (
+        {showBalanceBreakdown && (
           <dl className="mt-3 space-y-1 border-t border-current/10 pt-3 text-xs opacity-90">
             {balanceBreakdown.totalCash > 0 ? (
               <div className="flex justify-between gap-4 tabular-nums">
@@ -351,21 +360,29 @@ export default function HomePage() {
                 <dd>{currency.format(balanceBreakdown.totalCash)}</dd>
               </div>
             ) : null}
+            {isChild && familyFunding > 0 ? (
+              <div className="flex justify-between gap-4 tabular-nums">
+                <dt>From family</dt>
+                <dd>{currency.format(familyFunding)}</dd>
+              </div>
+            ) : null}
             {balanceBreakdown.bucketAllocated > 0 ? (
               <div className="flex justify-between gap-4 tabular-nums">
-                <dt>In family buckets</dt>
+                <dt>{isChild ? 'In your buckets' : 'In family buckets'}</dt>
                 <dd>−{currency.format(balanceBreakdown.bucketAllocated)}</dd>
               </div>
             ) : null}
-            {balanceBreakdown.children.map((child) => (
-              <div
-                key={child.memberId}
-                className="flex justify-between gap-4 tabular-nums"
-              >
-                <dt className="truncate">{child.name}</dt>
-                <dd>−{currency.format(child.amount)}</dd>
-              </div>
-            ))}
+            {showAdultBreakdown
+              ? balanceBreakdown.children.map((child) => (
+                  <div
+                    key={child.memberId}
+                    className="flex justify-between gap-4 tabular-nums"
+                  >
+                    <dt className="truncate">{child.name}</dt>
+                    <dd>−{currency.format(child.amount)}</dd>
+                  </div>
+                ))
+              : null}
           </dl>
         )}
       </section>
