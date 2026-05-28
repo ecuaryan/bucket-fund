@@ -16,6 +16,8 @@ html,
 body {
   background-color: #000000;
   color: #d4d4d8; /* zinc-300 — soft white, less laser-bright for long sessions */
+  /* App-like PWA: no pinch/double-tap zoom (viewport also sets maximum-scale=1). */
+  touch-action: manipulation;
 }
 
 /*
@@ -32,6 +34,20 @@ body {
 }
 
 @layer base {
+  /*
+   * iOS Safari auto-zooms focused fields below 16px. Our forms use text-sm;
+   * bump inputs on narrow viewports so focus does not zoom the whole page.
+   */
+  @media (max-width: 767px) {
+    input:not([type='checkbox']):not([type='radio']):not([type='file']):not(
+        [type='button']
+      ):not([type='submit']):not([type='reset']),
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
   [role="menuitem"]:not([aria-disabled="true"]),
