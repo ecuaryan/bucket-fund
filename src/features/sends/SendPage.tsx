@@ -179,17 +179,6 @@ export default function SendPage() {
     }
   }
 
-  if (!member) {
-    return (
-      <p className="text-sm text-zinc-400">
-        Sign in to send money.{' '}
-        <Link to="/login" className="text-emerald-400 hover:underline">
-          Sign in
-        </Link>
-      </p>
-    )
-  }
-
   if (loadError) {
     return (
       <div className="rounded-2xl bg-red-500/10 p-4 text-sm text-red-300 ring-1 ring-red-500/30">

@@ -54,12 +54,12 @@ Deno.serve(async (req: Request) => {
   }
 
   if (target.user_id) {
-    const { error: authDeleteError } = await admin.auth.admin.deleteUser(
+    const { error: signOutError } = await admin.auth.admin.signOut(
       target.user_id,
+      'global',
     )
-    if (authDeleteError) {
-      console.error('remove-member auth delete', authDeleteError)
-      return jsonResponse({ error: 'Could not remove login' }, 500)
+    if (signOutError) {
+      console.warn('remove-member signOut', signOutError)
     }
   }
 
@@ -71,6 +71,16 @@ Deno.serve(async (req: Request) => {
   if (deleteError) {
     console.error('remove-member delete', deleteError)
     return jsonResponse({ error: 'Could not remove member' }, 500)
+  }
+
+  if (target.user_id) {
+    const { error: authDeleteError } = await admin.auth.admin.deleteUser(
+      target.user_id,
+    )
+    if (authDeleteError) {
+      console.error('remove-member auth delete', authDeleteError)
+      return jsonResponse({ error: 'Could not remove login' }, 500)
+    }
   }
 
   return jsonResponse({ ok: true, name: target.name })
