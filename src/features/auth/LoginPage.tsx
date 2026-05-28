@@ -11,7 +11,6 @@ import { useAuth } from '@/lib/auth'
 import {
   BANK_LINK_READ_ONLY,
   LOGIN_ALREADY_HAVE_ACCOUNT,
-  LOGIN_EMAIL_SECTION_TITLE,
   LOGIN_GET_STARTED,
   LOGIN_HOUSEHOLD_LABEL,
   LOGIN_HOUSEHOLD_PLACEHOLDER,
@@ -236,10 +235,6 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-4">
-                <h2 className="text-sm font-semibold text-zinc-300">
-                  {LOGIN_EMAIL_SECTION_TITLE}
-                </h2>
-
                 {info && <AuthMessage tone="info">{info}</AuthMessage>}
 
                 <Field

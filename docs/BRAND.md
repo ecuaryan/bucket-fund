@@ -61,7 +61,7 @@ mainly use the transactions product for balance sync webhooks.
 |---------|----------------|
 | Login tagline | `APP_TAGLINE` |
 | New here blurb | `LOGIN_NEW_HERE_INTRO` |
-| Email sign-in block | `LOGIN_EMAIL_SECTION_TITLE`, `LOGIN_ALREADY_HAVE_ACCOUNT` |
+| Returning sign-in divider | `LOGIN_ALREADY_HAVE_ACCOUNT` |
 | Sign-up | `LOGIN_SIGNUP_*`, `LOGIN_HOUSEHOLD_*` |
 | PIN path | `LOGIN_SHARED_*` |
 | Bank read-only note | `BANK_LINK_READ_ONLY` |

@@ -22,8 +22,6 @@ export const LOGIN_NEW_HERE_INTRO =
 
 export const LOGIN_ALREADY_HAVE_ACCOUNT = 'Already have an account?'
 
-export const LOGIN_EMAIL_SECTION_TITLE = 'Sign in with email'
-
 /** Login/sign-up footnote. Fact-checked against our Teller usage (see docs/BRAND.md). */
 export const BANK_LINK_READ_ONLY =
   'Read-only bank connection via Teller—we sync balances, not payments. BucketFund cannot move money or pay bills from your account.'
