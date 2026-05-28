@@ -18,6 +18,13 @@ export default async function globalSetup() {
     }
   }
 
+  if (process.env.CI && process.env.SKIP_DB_RESET === '1') {
+    console.log(
+      '[db tests] Skipping db reset — CI already ran supabase start with migrations',
+    )
+    return
+  }
+
   console.log('[db tests] Resetting database (migrations only, no seed)…')
   execSync('npx supabase db reset --no-seed', { stdio: 'inherit' })
 }
