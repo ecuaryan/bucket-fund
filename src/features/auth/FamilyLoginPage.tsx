@@ -8,7 +8,7 @@ import {
 } from 'react'
 import { flushSync } from 'react-dom'
 import { Link, Navigate, useLocation } from 'react-router-dom'
-import { APP_NAME, JOIN_CODE_ENTER_PROMPT } from '@/lib/brand'
+import { APP_NAME, JOIN_CODE_ENTER_PROMPT, PIN_NO_MEMBERS_YET } from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
 import {
   bindFamily,
@@ -262,7 +262,7 @@ export default function FamilyLoginPage() {
     <AuthShell title={roster.familyName} subtitle="Who's signing in?">
       {pinMembers.length === 0 ? (
         <p className="text-sm text-zinc-400">
-          No one has a PIN yet. Ask your admin to add members and set PINs.
+          {PIN_NO_MEMBERS_YET}
         </p>
       ) : (
         <ul className="grid grid-cols-2 gap-3">

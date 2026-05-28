@@ -1,7 +1,9 @@
 export const ORPHAN_MEMBER_STORAGE_KEY = 'bucketfund_auth_notice'
 
+import { HOUSEHOLD_ADMIN_PHRASE } from '@/lib/brand'
+
 export const ORPHAN_MEMBER_MESSAGE =
-  'This account was removed from your household. Sign in again with your join code and PIN—or ask your admin to add you back.'
+  `This account was removed from your household. Sign in again with your join code and PIN—or ask ${HOUSEHOLD_ADMIN_PHRASE} to add you back.`
 
 export function isPinAuthEmail(email: string | undefined): boolean {
   return Boolean(email?.endsWith('@pin.bucketfund.internal'))

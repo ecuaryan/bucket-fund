@@ -15,7 +15,7 @@ label it; buckets are how you **decide** where money is reserved. The payoff:
 - **Tradeoffs** — negative unallocated means it is time to pull from buckets
   on purpose, not that income “came from” somewhere new.
 - **Works alone or together** — one person with buckets, or a household sharing
-  a pool and optional member PINs.
+  unallocated and optional member PINs.
 
 ## Voice
 
@@ -26,6 +26,10 @@ label it; buckets are how you **decide** where money is reserved. The payoff:
 - Say **join code** everywhere users link a device (not “device code”).
 - DB role `member` → UI **Adult**; `child` → **Child**; `admin` → **Admin**.
   See `src/lib/memberRoles.ts` and Admin strings in `brand.ts`.
+- Say **household admin** (not “your admin”) when a non-admin needs the person
+  who manages Admin. Use **unallocated** on Home/Send; **Household** in Admin
+  assignment dropdowns (not “pool” in user copy).
+- Child-facing copy: **adult**, not “parent,” unless you mean a specific person.
 
 ## Display name (open)
 
@@ -70,4 +74,5 @@ mainly use the transactions product for balance sync webhooks.
 | Bank read-only note | `BANK_LINK_READ_ONLY` |
 | Join code (Admin + PIN) | `JOIN_CODE_*`, `ADMIN_JOIN_CODE_*` |
 | Admin people & roles | `ADMIN_HOUSEHOLD_MEMBERS_*`, `memberRoles.ts` |
-| Admin linked accounts | `ADMIN_LINKED_ACCOUNTS_INTRO` |
+| Admin linked accounts | `ADMIN_LINKED_ACCOUNTS_*` |
+| Household admin (hints) | `HOUSEHOLD_ADMIN_PHRASE`, Home/Send/PIN strings in `brand.ts` |

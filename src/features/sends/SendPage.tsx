@@ -6,6 +6,7 @@ import {
   fetchHomeBalanceBreakdown,
   type HomeBalanceBreakdown,
 } from '@/lib/availableBalance'
+import { SEND_ADULT_INTRO, SEND_CHILD_INTRO } from '@/lib/brand'
 import { filterSendRecipients } from '@/lib/sendRecipients'
 import { sendMoney } from '@/lib/sends'
 import { supabase } from '@/lib/supabase'
@@ -214,9 +215,7 @@ export default function SendPage() {
       <header>
         <h1 className="text-xl font-semibold">Send</h1>
         <p className="mt-1 text-sm text-zinc-400">
-          {isAdult
-            ? 'Fund a child’s personal unallocated balance from household unallocated.'
-            : 'Send unallocated money to another household member.'}
+          {isAdult ? SEND_ADULT_INTRO : SEND_CHILD_INTRO}
         </p>
       </header>
 

@@ -10,6 +10,12 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
+import {
+  HOME_ADULT_NO_ACCOUNTS_HINT,
+  HOME_CHILD_UNALLOCATED_HINT,
+  HOME_MEMBER_NO_ACCOUNTS_HINT,
+  HOME_MEMBER_NO_BUCKETS_HINT,
+} from '@/lib/brand'
 import HomePageSkeleton from '@/components/HomePageSkeleton'
 import {
   childTotalBalance,
@@ -303,10 +309,10 @@ export default function HomePage() {
     : cashAccountsCount > 0
       ? `${currency.format(balanceBreakdown.totalCash)} across ${cashAccountsCount} linked account${cashAccountsCount === 1 ? '' : 's'}`
       : isChild
-        ? 'When a parent sends you money, move it into buckets — or ask them to link your bank account.'
+        ? HOME_CHILD_UNALLOCATED_HINT
         : isAdmin
-          ? 'No linked cash accounts yet — link one from Admin.'
-          : 'No linked cash accounts yet — ask your admin to link a bank account.'
+          ? HOME_ADULT_NO_ACCOUNTS_HINT
+          : HOME_MEMBER_NO_ACCOUNTS_HINT
 
   return (
     <div className="space-y-6">
@@ -385,7 +391,7 @@ export default function HomePage() {
             <p className="mt-1 text-xs text-zinc-400">
               {canCreateBuckets
                 ? 'Create your first one below.'
-                : 'Ask your admin to add shared buckets.'}
+                : HOME_MEMBER_NO_BUCKETS_HINT}
             </p>
           </div>
         ) : (

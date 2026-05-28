@@ -66,5 +66,43 @@ export const ADMIN_HOUSEHOLD_MEMBERS_INTRO =
 /** Admin: linked account or bucket belongs to all adults (not a child). */
 export const HOUSEHOLD_POOL_LABEL = 'Household'
 
+/** Who can link banks, add members, and change Admin settings. */
+export const HOUSEHOLD_ADMIN_PHRASE = 'your household admin'
+
 export const ADMIN_LINKED_ACCOUNTS_INTRO =
   'Read-only via Teller—we sync balances, not payments. This app cannot move money at your bank.'
+
+export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
+  'Balances count toward household unallocated until you assign an account to a child.'
+
+export const ADMIN_LOADING_MEMBERS = 'Loading household members…'
+
+export const REMOVE_CHILD_ACCOUNTS_DETAIL =
+  'Their buckets will be deleted. Any bank accounts assigned to them will count toward household unallocated. '
+
+// --- Home ---
+
+export const HOME_CHILD_UNALLOCATED_HINT =
+  'When an adult sends you money, move it into buckets—or ask them to link your bank account in Admin.'
+
+export const HOME_ADULT_NO_ACCOUNTS_HINT =
+  'No linked cash accounts yet—link one from Admin.'
+
+export const HOME_MEMBER_NO_ACCOUNTS_HINT =
+  'No linked cash accounts yet—ask your household admin to link a bank account in Admin.'
+
+export const HOME_MEMBER_NO_BUCKETS_HINT =
+  'Ask your household admin to add buckets.'
+
+// --- Send ---
+
+export const SEND_ADULT_INTRO =
+  'Fund a child’s unallocated from the balance adults share on Home.'
+
+export const SEND_CHILD_INTRO =
+  'Send your unallocated to another household member.'
+
+// --- PIN sign-in ---
+
+export const PIN_NO_MEMBERS_YET =
+  'No one has a PIN yet. Ask your household admin to add people and set PINs in Admin.'
