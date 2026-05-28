@@ -88,7 +88,7 @@ export async function fetchHomeBalanceBreakdown(
   }
 
   const breakdownMissing =
-    Boolean(error) && isMissingDbFunctionError(error.message)
+    error != null && isMissingDbFunctionError(error.message)
 
   const { data: legacy, error: legacyError } = await supabase.rpc(
     'get_available_balance',
