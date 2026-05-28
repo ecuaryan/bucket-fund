@@ -7,7 +7,6 @@ import JoinPage from '@/features/auth/JoinPage'
 import ForgotPasswordPage from '@/features/auth/ForgotPasswordPage'
 import ResetPasswordPage from '@/features/auth/ResetPasswordPage'
 import HomePage from '@/features/buckets/HomePage'
-import BucketsPage from '@/features/buckets/BucketsPage'
 import SendPage from '@/features/sends/SendPage'
 import HistoryPage from '@/features/history/HistoryPage'
 import AdminPage from '@/features/admin/AdminPage'
@@ -29,7 +28,6 @@ export default function App() {
         }
       >
         <Route path="/" element={<HomePage />} />
-        <Route path="/buckets" element={<BucketsPage />} />
         <Route path="/send" element={<SendPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/admin" element={<AdminPage />} />

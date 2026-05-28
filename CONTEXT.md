@@ -405,14 +405,13 @@ bucketfund/
 │   └── offline.html        # PWA offline fallback
 ├── src/
 │   ├── components/
-│   │   ├── ui/             # Reusable primitives (Button, Input, etc.)
+│   │   ├── ui/             # Reusable primitives (e.g. PinInput)
 │   │   └── layout/         # Shell, nav, header (AppShell)
 │   ├── features/
 │   │   ├── auth/           # Login (email/password today; PIN + biometric planned)
-│   │   ├── buckets/        # Home, bucket list, move flow, CRUD
+│   │   ├── buckets/        # Home (/), bucket list, move flow, CRUD
 │   │   ├── sends/          # Send money flow (SendPage + send_money RPC)
 │   │   ├── history/        # Transaction history
-│   │   ├── accounts/       # Reserved — Teller link + child assignment live in admin/
 │   │   └── admin/          # Bank link/unlink, assign accounts to children, members/join
 │   ├── lib/
 │   │   ├── supabase.ts     # Supabase client
@@ -501,7 +500,7 @@ Use this to kick off the build:
 > 3. Install and configure vite-plugin-pwa with manifest.json and service worker
 > 4. Set up Supabase client with environment variable placeholders
 > 5. Create the folder structure as specified
-> 6. Set up React Router with placeholder routes for: login, home, buckets, send, history, admin
+> 6. Set up React Router with routes for: login, home (buckets), send, history, admin
 > 7. Create the initial Supabase migration file with the full database schema and RLS policy stubs
 > Do not build any UI yet — just the scaffold, config, and routing skeleton.
 
