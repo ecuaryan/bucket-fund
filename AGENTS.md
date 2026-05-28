@@ -47,6 +47,11 @@ Entry point for AI coding agents (and humans) working in this repo.
 - **Server secrets stay on the server.** `TELLER_SIGNING_SECRET` and the
   Supabase service role key live in Edge Function env only — never
   prefixed with `VITE_`, never imported by client code.
+- **Auth sign-in routing.** Post-sign-out paths and email vs PIN preference
+  live in [`src/lib/authNavigation.ts`](./src/lib/authNavigation.ts) and
+  [`src/lib/signInPreference.ts`](./src/lib/signInPreference.ts). Use router
+  `state` (e.g. `preferEmailSignIn`) for explicit user choices — not overloaded
+  query params.
 
 ## Where to put new code
 

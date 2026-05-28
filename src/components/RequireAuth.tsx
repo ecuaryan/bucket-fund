@@ -4,7 +4,7 @@ import OrphanMemberNotice from '@/components/OrphanMemberNotice'
 import PageFallback from '@/components/PageFallback'
 import { APP_NAME } from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
-import { shouldDefaultToPinSignIn } from '@/lib/signInPreference'
+import { signedOutRedirectTarget } from '@/lib/authNavigation'
 import { takeOrphanMemberNotice } from '@/lib/pinAuth'
 
 export default function RequireAuth({ children }: { children: ReactNode }) {
@@ -25,26 +25,11 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
   }
 
   if (auth.status === 'signedOut') {
-    const orphanNotice = takeOrphanMemberNotice()
-    if (orphanNotice) {
-      return (
-        <Navigate
-          to="/login/family"
-          replace
-          state={{ from: location.pathname, info: orphanNotice }}
-        />
-      )
-    }
-    if (shouldDefaultToPinSignIn()) {
-      return (
-        <Navigate
-          to="/login/family"
-          replace
-          state={{ from: location.pathname }}
-        />
-      )
-    }
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />
+    const { to, state } = signedOutRedirectTarget(
+      location.pathname,
+      takeOrphanMemberNotice(),
+    )
+    return <Navigate to={to} replace state={state} />
   }
 
   if (

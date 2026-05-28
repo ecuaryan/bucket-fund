@@ -24,15 +24,15 @@ import {
   clearRequireFreshSignIn,
   isRequireFreshSignIn,
 } from '@/lib/freshSignIn'
-import { clearPasswordRecoveryFlow } from '@/lib/passwordRecoveryFlow'
 import {
-  setSignInPreference,
-  shouldDefaultToPinSignIn,
-} from '@/lib/signInPreference'
+  type AuthLocationState,
+  loginEmailFromQuery,
+  shouldRedirectLoginToPin,
+} from '@/lib/authNavigation'
+import { clearPasswordRecoveryFlow } from '@/lib/passwordRecoveryFlow'
+import { setSignInPreference } from '@/lib/signInPreference'
 
 type Mode = 'signIn' | 'signUp'
-
-type LocationState = { from?: string } | null
 
 function clearPasswordInput(elementId: string) {
   const el = document.getElementById(elementId) as HTMLInputElement | null
@@ -47,13 +47,16 @@ export default function LoginPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const from = (location.state as LocationState)?.from ?? '/'
-
-  const loginState = location.state as { info?: string; email?: string } | null
+  const loginState = location.state as AuthLocationState | null
+  const from = loginState?.from ?? '/'
   const loginInfo = loginState?.info ?? searchParams.get('info')
-  const loginEmail = loginState?.email ?? searchParams.get('email') ?? ''
+  const loginEmail = loginEmailFromQuery(
+    loginState?.email,
+    searchParams.get('email'),
+  )
   const pendingFreshSignIn = isRequireFreshSignIn()
-  const preferEmailSignIn = searchParams.get('email') === '1'
+  const preferEmailSignIn = loginState?.preferEmailSignIn === true
+  const isSignUpMode = searchParams.get('signup') === '1'
 
   useEffect(() => {
     if (pendingFreshSignIn && auth.status === 'signedIn') {
@@ -83,11 +86,12 @@ export default function LoginPage() {
   }
 
   if (
-    auth.status === 'signedOut' &&
-    !pendingFreshSignIn &&
-    searchParams.get('signup') !== '1' &&
-    !preferEmailSignIn &&
-    shouldDefaultToPinSignIn()
+    shouldRedirectLoginToPin({
+      preferEmailSignIn,
+      isSignUpMode,
+      pendingFreshSignIn,
+      signedOut: auth.status === 'signedOut',
+    })
   ) {
     return <Navigate to="/login/family" replace state={{ from }} />
   }
@@ -121,6 +125,7 @@ export default function LoginPage() {
         clearRequireFreshSignIn()
       } else {
         await auth.signUp({ email, password, displayName, familyName })
+        setSignInPreference('email')
         setInfo(
           'Account created. Check your email to confirm, then sign in below.',
         )
@@ -317,6 +322,7 @@ export default function LoginPage() {
           <p className="mt-1 text-xs text-zinc-500">{LOGIN_SHARED_SUB}</p>
           <Link
             to="/login/family"
+            state={{ from }}
             className="mt-3 inline-block text-sm font-semibold text-emerald-400 hover:underline"
           >
             Sign in with PIN →
