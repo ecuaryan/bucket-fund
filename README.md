@@ -79,8 +79,24 @@ Every push to `main` and every pull request runs
 - **database RLS tests** — local Supabase; tenant isolation, `move_money`, transaction visibility
 - **e2e smoke tests** — login redirect, admin sign-in, forgot-password flow
 
-**Quick setup:** GitHub → **Branches** → protect `main` (require PR + the three checks above).
+After CI **succeeds on `main`**, [`.github/workflows/deploy-supabase.yml`](./.github/workflows/deploy-supabase.yml)
+applies pending SQL migrations (`supabase db push`) and deploys Edge Functions to the
+hosted project. PRs do not touch production.
+
+**Quick setup:** GitHub → **Branches** → protect `main` (require PR + the three CI checks above).
 Vercel → **Deployment Protection** → production waits for the same checks.
+
+### Production Supabase deploy (one-time secrets)
+
+Create a GitHub **environment** named `production` (Settings → Environments) and add:
+
+| Secret | Where to get it |
+| ------ | ---------------- |
+| `SUPABASE_ACCESS_TOKEN` | [Supabase account tokens](https://supabase.com/dashboard/account/tokens) (CI/CD scope) |
+| `SUPABASE_PROJECT_REF` | Project Settings → General → Reference ID |
+
+The deploy workflow runs only after green CI on `main`. If it fails, the hosted DB or
+functions may lag the Vercel frontend — check the **Deploy Supabase** workflow run.
 
 ## Project layout
 
@@ -150,21 +166,17 @@ High-level snapshot of what exists on `main` today. Product truth lives in
 
 ### Production deploy automation (reliability)
 
-Hosted Supabase is **not** deployed when `main` merges — only the Vercel frontend
-is. Migrations and Edge Functions still require manual CLI from a linked machine
-(`npx supabase db push`, `supabase functions deploy`). That gap caused production
-outages when the app shipped before the DB (e.g. missing `get_available_balance`).
+- [x] **CI/CD:** after green CI on `main`, `deploy-supabase.yml` runs `db push` + `functions deploy`
+      (requires `production` environment secrets — see above).
+- [ ] Optional: GitHub deployment branch rule or notification when **Deploy Supabase** fails on `main`.
 
-- [ ] **CI/CD: apply SQL migrations to the hosted project on merge to `main`**
-      (GitHub Actions + `supabase db push` with project access token / DB password
-      in repo secrets; fail the workflow if push fails).
-- [ ] **CI/CD: deploy Edge Functions on merge** (or on path changes under
-      `supabase/functions/`) with secrets from GitHub / Supabase dashboard.
-- [ ] Document one-time secret setup and make “backend deploy” a required check
-      alongside lint / db tests / e2e (or a single `deploy-production` job after merge).
+Manual fallback if automation fails:
 
-Until then, after any PR that adds files under `supabase/migrations/`, run
-`npx supabase db push` against the hosted project before relying on production.
+```bash
+npx supabase link
+npx supabase db push
+npx supabase functions deploy
+```
 
 ### Before connecting real Teller data
 

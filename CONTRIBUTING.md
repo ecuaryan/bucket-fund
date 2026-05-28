@@ -88,22 +88,21 @@ Local Supabase env: `source scripts/env-local.sh` (see [README.md](./README.md))
 
 ## Deploying backend changes
 
-> **TODO:** Automate hosted Supabase deploys on merge to `main` (migrations +
-> Edge Functions). See [README.md § Production deploy automation](./README.md#production-deploy-automation-reliability).
-> Until that ships, production DB/schema can lag the frontend.
+- **Frontend:** merges to `main` → Vercel (after CI, if configured).
+- **Hosted Supabase:** after CI passes on `main`, GitHub Actions runs
+  [`.github/workflows/deploy-supabase.yml`](./.github/workflows/deploy-supabase.yml)
+  (`db push` + `functions deploy`). One-time setup: [README § Production Supabase deploy](./README.md#production-supabase-deploy-one-time-secrets).
 
-- **Frontend:** merges to `main` → Vercel (after checks, if configured).
-- **SQL migrations:** after merging migration files to `main`, run against the **hosted**
-  project (not automatic from CI today):
+If production shows a missing RPC or old Edge Function behavior, check the latest
+**Deploy Supabase** workflow on `main`. Manual fallback:
 
-  ```bash
-  npx supabase link   # once, if not already linked
-  npx supabase db push
-  ```
+```bash
+npx supabase link
+npx supabase db push
+npx supabase functions deploy
+```
 
-  If the app shows “Could not find the function `get_available_balance`”, the
-  frontend deployed before this step — run `db push`, wait a few seconds, refresh.
-
-- **Edge Functions:** `supabase functions deploy` + secrets via dashboard or `supabase secrets set`.
+Edge Function **secrets** (`TELLER_SIGNING_SECRET`, service role, etc.) stay in the
+Supabase dashboard / `supabase secrets set` — deploy only ships function code.
 
 See [README.md § Before connecting real Teller data](./README.md) for security TODOs.
