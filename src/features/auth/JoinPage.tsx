@@ -1,5 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
+import { AuthShell } from '@/components/AuthShell'
 import { bindFamily } from '@/lib/familyDevice'
 import { validateJoinCode } from '@/lib/memberAuth'
 
@@ -66,13 +67,5 @@ export default function JoinPage() {
         <p className="text-sm text-zinc-400">Linking this device to your household…</p>
       )}
     </AuthShell>
-  )
-}
-
-function AuthShell({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex min-h-svh items-center justify-center bg-black px-4 py-12">
-      <div className="w-full max-w-sm text-center">{children}</div>
-    </div>
   )
 }
