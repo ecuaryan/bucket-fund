@@ -53,11 +53,11 @@ export default function AppShell() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-md flex-1 px-4 pb-24 pt-6">
+      <main className="mx-auto w-full max-w-md flex-1 px-4 pt-6 pb-[calc(6rem+max(0.5rem,env(safe-area-inset-bottom,0px)))]">
         <Outlet />
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 border-t border-zinc-800 bg-zinc-900/95 backdrop-blur">
+      <nav className="fixed inset-x-0 bottom-0 border-t border-zinc-800 bg-zinc-900/95 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] backdrop-blur">
         <ul className="mx-auto flex max-w-md items-stretch justify-around px-4 py-2 text-xs font-medium">
           <TabLink to="/" label="Home" />
           {showSendNav && <TabLink to="/send" label="Send" />}
