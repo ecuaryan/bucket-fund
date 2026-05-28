@@ -33,7 +33,7 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 - Full control
 - Links/unlinks bank accounts via Teller
 - Creates and deletes buckets for the family pool
-- Manages family members (invite, assign roles) and assigns linked accounts to children
+- Manages family members (add/remove spouse or kids, assign roles, set PINs) and assigns linked accounts to children
 - Funds children via Send; sees all family sends and shared-pool history
 - Views family-level transaction history
 - Receives data integrity error alerts if the invariant is violated
@@ -106,7 +106,8 @@ Every dollar lives in exactly one place — either in a named bucket or in someo
 - Named allocations against a member's or family pool's balance
 - **Admin** creates and manages family-pool and adult-owned buckets
 - **Member** moves money and reorders buckets (no create/delete of bucket structure)
-- **Child** creates and manages only their own buckets (hidden from adult Home)
+- **Child** creates and manages only their own buckets (hidden from adult Home); moves
+  money between their unallocated balance and their own buckets only
 - See [README.md § Implementation status](./README.md) for what is shipped on `main`
 - No targets — just current allocated amounts
 - Buckets start at zero and are funded by moving money from unallocated or via a send from another member

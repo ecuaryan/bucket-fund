@@ -88,8 +88,14 @@ function humaniseMoveError(msg: string): string {
   if (lower.includes('amount must be positive')) {
     return 'Enter an amount greater than $0.'
   }
-  if (lower.includes('children cannot move money')) {
-    return 'Only parents and members can move money.'
+  if (lower.includes('children can only move from their own buckets')) {
+    return 'You can only move money from your own buckets.'
+  }
+  if (lower.includes('children can only move to their own buckets')) {
+    return 'You can only move money to your own buckets.'
+  }
+  if (lower.includes('insufficient unallocated balance')) {
+    return "Not enough unallocated for that amount."
   }
   if (lower.includes('not in your family')) {
     return "That bucket isn't in your family."

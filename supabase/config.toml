@@ -410,6 +410,9 @@ verify_jwt = false
 [functions.create-member]
 verify_jwt = true
 
+[functions.remove-member]
+verify_jwt = true
+
 [functions.set-pin]
 verify_jwt = true
 
