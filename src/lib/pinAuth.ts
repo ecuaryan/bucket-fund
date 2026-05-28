@@ -1,7 +1,7 @@
 export const ORPHAN_MEMBER_STORAGE_KEY = 'bucketfund_auth_notice'
 
 export const ORPHAN_MEMBER_MESSAGE =
-  'This account was removed from your family. Sign in again with your family code and PIN—or ask your admin to add you back.'
+  'This account was removed from your household. Sign in again with your join code and PIN—or ask your admin to add you back.'
 
 export function isPinAuthEmail(email: string | undefined): boolean {
   return Boolean(email?.endsWith('@pin.bucketfund.internal'))

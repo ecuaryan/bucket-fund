@@ -8,7 +8,7 @@ import {
 } from 'react'
 import { flushSync } from 'react-dom'
 import { Link, Navigate, useLocation } from 'react-router-dom'
-import { APP_NAME } from '@/lib/brand'
+import { APP_NAME, JOIN_CODE_ENTER_PROMPT } from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
 import {
   bindFamily,
@@ -59,7 +59,7 @@ export default function FamilyLoginPage() {
 
   const refreshRoster = useCallback(async (code: string) => {
     const trimmed = code.trim()
-    if (!trimmed) throw new Error('Enter your family join code.')
+    if (!trimmed) throw new Error(JOIN_CODE_ENTER_PROMPT)
     const result = await validateJoinCode(trimmed)
     bindFamily(result.familyId, trimmed)
     setRoster(result)

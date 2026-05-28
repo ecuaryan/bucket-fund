@@ -98,7 +98,7 @@ function humaniseMoveError(msg: string): string {
     return "Not enough unallocated for that amount."
   }
   if (lower.includes('not in your family')) {
-    return "That bucket isn't in your family."
+    return "That bucket isn't in your household."
   }
   if (lower.includes('not authenticated')) {
     return 'Session expired. Please sign in again.'

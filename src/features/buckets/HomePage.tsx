@@ -306,7 +306,7 @@ export default function HomePage() {
         ? 'When a parent sends you money, move it into buckets — or ask them to link your bank account.'
         : isAdmin
           ? 'No linked cash accounts yet — link one from Admin.'
-          : 'No linked cash accounts yet — ask your admin to link a family account.'
+          : 'No linked cash accounts yet — ask your admin to link a bank account.'
 
   return (
     <div className="space-y-6">
@@ -385,7 +385,7 @@ export default function HomePage() {
             <p className="mt-1 text-xs text-zinc-400">
               {canCreateBuckets
                 ? 'Create your first one below.'
-                : 'Ask your admin to add family buckets.'}
+                : 'Ask your admin to add shared buckets.'}
             </p>
           </div>
         ) : (
@@ -426,7 +426,7 @@ export default function HomePage() {
                           {bucket.name}
                         </p>
                         {bucket.owner_member_id === null && (
-                          <p className="text-xs text-zinc-400">Family pool</p>
+                          <p className="text-xs text-zinc-400">Shared pool</p>
                         )}
                       </div>
                       <p className="shrink-0 text-sm font-semibold tabular-nums text-zinc-300">

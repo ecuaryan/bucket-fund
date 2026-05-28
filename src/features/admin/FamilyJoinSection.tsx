@@ -1,4 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  ADMIN_JOIN_CODE_INTRO,
+  ADMIN_JOIN_CODE_QR_ALT,
+  ADMIN_JOIN_CODE_TITLE,
+} from '@/lib/brand'
 import { supabase } from '@/lib/supabase'
 
 export default function FamilyJoinSection() {
@@ -37,7 +42,7 @@ export default function FamilyJoinSection() {
 
   async function onRotate() {
     const ok = window.confirm(
-      'Generate a new join code? Phones already linked keep working; only new devices need the new code.',
+      'Generate a new join code? Devices already linked keep working; only new devices need the new code.',
     )
     if (!ok) return
     setRotating(true)
@@ -67,12 +72,9 @@ export default function FamilyJoinSection() {
   }
 
   return (
-    <section aria-label="Family join code">
-      <h2 className="text-base font-semibold">Family device code</h2>
-      <p className="mt-1 text-xs text-zinc-400">
-        Scan or enter this once on each phone or tablet. After that,
-        everyone signs in with their avatar and PIN.
-      </p>
+    <section aria-label="Household join code">
+      <h2 className="text-base font-semibold">{ADMIN_JOIN_CODE_TITLE}</h2>
+      <p className="mt-1 text-xs text-zinc-400">{ADMIN_JOIN_CODE_INTRO}</p>
 
       {loadError && (
         <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300 ring-1 ring-red-500/30">
@@ -89,7 +91,7 @@ export default function FamilyJoinSection() {
         {qrSrc && (
           <img
             src={qrSrc}
-            alt="QR code to bind a device to this family"
+            alt={ADMIN_JOIN_CODE_QR_ALT}
             width={180}
             height={180}
             className="rounded-lg bg-white p-2"

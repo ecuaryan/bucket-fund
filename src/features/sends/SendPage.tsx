@@ -215,8 +215,8 @@ export default function SendPage() {
         <h1 className="text-xl font-semibold">Send</h1>
         <p className="mt-1 text-sm text-zinc-400">
           {isAdult
-            ? 'Fund a child’s personal unallocated balance from the family pool.'
-            : 'Send unallocated money to another family member.'}
+            ? 'Fund a child’s personal unallocated balance from the shared pool.'
+            : 'Send unallocated money to another household member.'}
         </p>
       </header>
 

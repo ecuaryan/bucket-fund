@@ -13,7 +13,7 @@ export default function OrphanMemberNotice() {
       {pinAccount ? (
         <p className="text-xs text-amber-200/80">
           Use <strong className="font-medium">Sign out</strong> above, then open the
-          family login screen and pick your name.
+          PIN sign-in screen and pick your name.
         </p>
       ) : null}
       <button

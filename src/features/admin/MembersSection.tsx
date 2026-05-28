@@ -2,6 +2,15 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { supabase } from '@/lib/supabase'
 import PinInput from '@/components/ui/PinInput'
 import {
+  ADMIN_HOUSEHOLD_MEMBERS_INTRO,
+  ADMIN_HOUSEHOLD_MEMBERS_TITLE,
+} from '@/lib/brand'
+import {
+  ROLE_OPTION_ADULT,
+  ROLE_OPTION_CHILD,
+  roleLabel,
+} from '@/lib/memberRoles'
+import {
   clearPinLockout,
   createMember,
   removeMember,
@@ -106,10 +115,10 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     if (m.role === 'admin') return
     const detail =
       m.role === 'child'
-        ? 'Their buckets will be deleted. Any bank accounts assigned to them will move to the family pool. '
+        ? 'Their buckets will be deleted. Any bank accounts assigned to them will move to the shared pool. '
         : 'They will lose access to the app. '
     const ok = window.confirm(
-      `Remove ${m.name} from your family? ${detail}This cannot be undone.`,
+      `Remove ${m.name} from your household? ${detail}This cannot be undone.`,
     )
     if (!ok) return
 
@@ -145,12 +154,12 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
   }
 
   return (
-    <section aria-label="Family members" className="space-y-4">
+    <section aria-label="Household members" className="space-y-4">
       <div>
-        <h2 className="text-base font-semibold">Members</h2>
+        <h2 className="text-base font-semibold">{ADMIN_HOUSEHOLD_MEMBERS_TITLE}</h2>
         <p className="mt-1 text-xs text-zinc-400">
-          Add your spouse or kids, then set a 4-digit PIN for each person.
-          Tell them the PIN in person — they cannot change it themselves.
+          {ADMIN_HOUSEHOLD_MEMBERS_INTRO} Tell each person their PIN in
+          person—they cannot change it themselves.
         </p>
       </div>
 
@@ -183,15 +192,15 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
             className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700"
           />
         </label>
-        <label className="block sm:w-32">
-          <span className="text-xs font-medium text-zinc-400">Role</span>
+        <label className="block sm:w-52">
+          <span className="text-xs font-medium text-zinc-400">Type</span>
           <select
             value={newRole}
             onChange={(e) => setNewRole(e.target.value as 'member' | 'child')}
             className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700"
           >
-            <option value="member">Member</option>
-            <option value="child">Child</option>
+            <option value="member">{ROLE_OPTION_ADULT}</option>
+            <option value="child">{ROLE_OPTION_CHILD}</option>
           </select>
         </label>
         <button
@@ -216,7 +225,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
                 <p className="text-sm font-medium text-zinc-300">
                   {m.name}{' '}
                   <span className="text-xs font-normal text-zinc-500">
-                    ({m.role})
+                    ({roleLabel(m.role)})
                   </span>
                 </p>
                 <p className="text-xs text-zinc-500">
