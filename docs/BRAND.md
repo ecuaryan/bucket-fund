@@ -28,7 +28,7 @@ label it; buckets are how you **decide** where money is reserved. The payoff:
   See `src/lib/memberRoles.ts` and Admin strings in `brand.ts`.
 - Say **household admin** (not “your admin”) when a non-admin needs the person
   who manages Admin. Use **unallocated** on Home/Send; **Household** in Admin
-  assignment dropdowns (not “pool” in user copy).
+  assignment dropdowns (`HOUSEHOLD_LABEL`, not “pool” in user copy).
 - Child-facing copy: **adult**, not “parent,” unless you mean a specific person.
 
 ## Display name (open)
@@ -76,3 +76,5 @@ mainly use the transactions product for balance sync webhooks.
 | Admin people & roles | `ADMIN_HOUSEHOLD_MEMBERS_*`, `memberRoles.ts` |
 | Admin linked accounts | `ADMIN_LINKED_ACCOUNTS_*` |
 | Household admin (hints) | `HOUSEHOLD_ADMIN_PHRASE`, Home/Send/PIN strings in `brand.ts` |
+| Static HTML | `HTML_META_DESCRIPTION`, `OFFLINE_PAGE_BODY` (sync index + offline manually) |
+| PIN join screen | `PIN_JOIN_PAGE_*`, `JOIN_CODE_LABEL` |

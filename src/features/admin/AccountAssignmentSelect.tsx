@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { HOUSEHOLD_POOL_LABEL } from '@/lib/brand'
+import { HOUSEHOLD_LABEL } from '@/lib/brand'
 import { assignAccountOwner } from '@/lib/accounts'
 
 export type ChildMemberOption = {
@@ -9,7 +9,7 @@ export type ChildMemberOption = {
 
 type AccountAssignmentSelectProps = {
   accountId: string
-  /** null = family pool; otherwise a child member id. */
+  /** null = household (all adults); otherwise a child member id. */
   assignedChildId: string | null
   children: ChildMemberOption[]
   onAssigned: (ownerMemberId: string | null) => void
@@ -43,7 +43,7 @@ export default function AccountAssignmentSelect({
   if (children.length === 0) {
     return (
       <span className="text-xs text-zinc-500">
-        {assignedChildId ? 'Assigned' : HOUSEHOLD_POOL_LABEL}
+        {assignedChildId ? 'Assigned' : HOUSEHOLD_LABEL}
       </span>
     )
   }
@@ -58,9 +58,9 @@ export default function AccountAssignmentSelect({
         disabled={saving}
         onChange={(e) => void onChange(e.target.value)}
         className="max-w-[9rem] rounded-lg border-0 bg-zinc-950 py-1.5 pl-2 pr-7 text-xs text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400 disabled:opacity-50"
-        aria-label={`Assign account to ${HOUSEHOLD_POOL_LABEL.toLowerCase()} or child`}
+        aria-label={`Assign account to ${HOUSEHOLD_LABEL.toLowerCase()} or child`}
       >
-        <option value="">{HOUSEHOLD_POOL_LABEL}</option>
+        <option value="">{HOUSEHOLD_LABEL}</option>
         {children.map((c) => (
           <option key={c.id} value={c.id}>
             {c.name}

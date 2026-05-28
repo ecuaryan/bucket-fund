@@ -4,7 +4,9 @@
  * Display name may change — see docs/BRAND.md. Repo/package URLs can stay
  * bucket-fund until a rename is decided.
  *
- * `index.html` and `public/offline.html` duplicate some strings (static HTML).
+ * Static HTML cannot import this module — keep these in sync manually:
+ * `HTML_META_DESCRIPTION` → index.html meta description;
+ * `OFFLINE_PAGE_BODY` → public/offline.html main paragraph.
  */
 export const APP_NAME = 'BucketFund' as const
 
@@ -15,6 +17,13 @@ export const APP_TAGLINE =
 /** Install / share sheet blurb (may echo the tagline). */
 export const PWA_DESCRIPTION =
   'Envelope budgeting on your real bank balance. Solo or with your household.'
+
+/** Sync with index.html `<meta name="description">`. */
+export const HTML_META_DESCRIPTION = `${APP_TAGLINE} ${PWA_DESCRIPTION}`
+
+/** Sync with public/offline.html main `<p>`. */
+export const OFFLINE_PAGE_BODY =
+  'BucketFund needs a connection to sync with your bank and household. Your last-seen balances may still be visible in the app.'
 
 /** Above “Get started” on the login screen. */
 export const LOGIN_NEW_HERE_INTRO =
@@ -48,6 +57,11 @@ export const JOIN_CODE_LABEL = 'Join code'
 
 export const JOIN_CODE_ENTER_PROMPT = 'Enter your household join code.'
 
+export const PIN_JOIN_PAGE_TITLE = 'Join your household'
+
+export const PIN_JOIN_PAGE_SUBTITLE =
+  'Enter your household join code from Admin (or scan the QR there).'
+
 export const ADMIN_JOIN_CODE_TITLE = 'Join code'
 
 export const ADMIN_JOIN_CODE_INTRO =
@@ -64,7 +78,7 @@ export const ADMIN_HOUSEHOLD_MEMBERS_INTRO =
   'Add people who sign in with a PIN (not your email). Every adult sees all household buckets and unallocated; children only see their own. Fund children with Send.'
 
 /** Admin: linked account or bucket belongs to all adults (not a child). */
-export const HOUSEHOLD_POOL_LABEL = 'Household'
+export const HOUSEHOLD_LABEL = 'Household'
 
 /** Who can link banks, add members, and change Admin settings. */
 export const HOUSEHOLD_ADMIN_PHRASE = 'your household admin'

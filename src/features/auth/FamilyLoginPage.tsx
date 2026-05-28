@@ -8,7 +8,14 @@ import {
 } from 'react'
 import { flushSync } from 'react-dom'
 import { Link, Navigate, useLocation } from 'react-router-dom'
-import { APP_NAME, JOIN_CODE_ENTER_PROMPT, PIN_NO_MEMBERS_YET } from '@/lib/brand'
+import {
+  APP_NAME,
+  JOIN_CODE_ENTER_PROMPT,
+  JOIN_CODE_LABEL,
+  PIN_JOIN_PAGE_SUBTITLE,
+  PIN_JOIN_PAGE_TITLE,
+  PIN_NO_MEMBERS_YET,
+} from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
 import {
   bindFamily,
@@ -223,16 +230,24 @@ export default function FamilyLoginPage() {
 
   if (!roster) {
     return (
-      <AuthShell title="Join your household" subtitle="Enter the code from Admin">
+      <AuthShell title={PIN_JOIN_PAGE_TITLE} subtitle={PIN_JOIN_PAGE_SUBTITLE}>
         <form onSubmit={onBindCode} className="space-y-4">
-          <input
-            value={codeInput}
-            onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
-            placeholder="JOIN CODE"
-            autoComplete="off"
-            autoCapitalize="characters"
-            className="block w-full rounded-lg border-0 bg-zinc-950 px-3 py-3 text-center text-lg font-mono tracking-widest text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
-          />
+          <label htmlFor="join-code" className="block text-left">
+            <span className="text-xs font-medium text-zinc-400">
+              {JOIN_CODE_LABEL}
+            </span>
+            <input
+              id="join-code"
+              value={codeInput}
+              onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+              placeholder="XXXXXX"
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              aria-label={JOIN_CODE_LABEL}
+              className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-3 text-center text-lg font-mono tracking-widest text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-600 focus:outline focus:outline-2 focus:outline-emerald-400"
+            />
+          </label>
           {restoreNotice && (
             <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-200 ring-1 ring-amber-500/30">
               {restoreNotice}
