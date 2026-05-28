@@ -10,8 +10,10 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
-import { sumCashBalance } from '@/lib/accounts'
-import { fetchAvailableBalance } from '@/lib/availableBalance'
+import {
+  fetchHomeBalanceBreakdown,
+  type HomeBalanceBreakdown,
+} from '@/lib/availableBalance'
 import {
   deleteBucket,
   renameBucket,
@@ -35,7 +37,8 @@ export default function HomePage() {
   const navigate = useNavigate()
   const [buckets, setBuckets] = useState<Bucket[] | null>(null)
   const [accounts, setAccounts] = useState<Account[] | null>(null)
-  const [availableBalance, setAvailableBalance] = useState<number | null>(null)
+  const [balanceBreakdown, setBalanceBreakdown] =
+    useState<HomeBalanceBreakdown | null>(null)
   const [balanceUsesFallback, setBalanceUsesFallback] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
@@ -115,12 +118,12 @@ export default function HomePage() {
     setBuckets(sorted)
     setAccounts(accountRows)
 
-    const { balance, usedFallback } = await fetchAvailableBalance({
+    const { breakdown, usedFallback } = await fetchHomeBalanceBreakdown({
       accounts: accountRows,
       buckets: sorted,
     })
     if (generation !== loadGeneration.current) return
-    setAvailableBalance(balance)
+    setBalanceBreakdown(breakdown)
     setBalanceUsesFallback(usedFallback)
   }, [])
 
@@ -282,7 +285,7 @@ export default function HomePage() {
     )
   }
 
-  if (buckets === null || accounts === null || availableBalance === null) {
+  if (buckets === null || accounts === null || balanceBreakdown === null) {
     return <p className="text-sm text-zinc-400">Loading…</p>
   }
 
@@ -291,9 +294,12 @@ export default function HomePage() {
     0,
   )
   // Server-side family pool (admin/member share one number). See migration 16.
-  const unallocated = availableBalance
-  // Cash accounts only — for the subtitle hint under Unallocated.
-  const realBalance = sumCashBalance(accounts)
+  const unallocated = balanceBreakdown.unallocated
+  const realBalance = balanceBreakdown.totalCash
+  const showPoolBreakdown =
+    !isChild &&
+    !balanceUsesFallback &&
+    balanceBreakdown.childrenSetAside > 0
   const unallocatedColor =
     unallocated >= 0
       ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30'
@@ -307,7 +313,7 @@ export default function HomePage() {
     cashAccountsCount > 0
       ? `${currency.format(realBalance)} across ${cashAccountsCount} linked account${cashAccountsCount === 1 ? '' : 's'}`
       : isChild
-        ? 'Fund buckets with money family sends you, or ask a parent to link your bank account.'
+        ? 'When a parent sends you money, move it into buckets — or ask them to link your bank account.'
         : isAdmin
           ? 'No linked cash accounts yet — link one from Admin.'
           : 'No linked cash accounts yet — ask your admin to link a family account.'
@@ -331,6 +337,22 @@ export default function HomePage() {
           {currency.format(unallocated)}
         </p>
         <p className="mt-1 text-xs opacity-70">{unallocatedHint}</p>
+        {showPoolBreakdown && (
+          <dl className="mt-3 space-y-1 border-t border-current/10 pt-3 text-xs opacity-90">
+            <div className="flex justify-between gap-4 tabular-nums">
+              <dt>Linked cash</dt>
+              <dd>{currency.format(balanceBreakdown.totalCash)}</dd>
+            </div>
+            <div className="flex justify-between gap-4 tabular-nums">
+              <dt>In family buckets</dt>
+              <dd>−{currency.format(balanceBreakdown.bucketAllocated)}</dd>
+            </div>
+            <div className="flex justify-between gap-4 tabular-nums">
+              <dt>Set aside for children</dt>
+              <dd>−{currency.format(balanceBreakdown.childrenSetAside)}</dd>
+            </div>
+          </dl>
+        )}
       </section>
 
       <section aria-label="Buckets">

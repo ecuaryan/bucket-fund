@@ -104,7 +104,14 @@ async function postEnrollment(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.error ?? `teller-enroll failed: ${res.status}`)
+    const detail =
+      typeof body.error === 'string' ? body.error : `teller-enroll failed: ${res.status}`
+    if (res.status === 503) {
+      throw new Error(
+        `${detail}. For local dev, run \`npx supabase functions serve\` in a second terminal (with supabase/functions/.env).`,
+      )
+    }
+    throw new Error(detail)
   }
   return (await res.json()) as LinkBankResult
 }
@@ -116,7 +123,7 @@ async function postEnrollment(
  */
 export function useTellerConnect() {
   const [ready, setReady] = useState(false)
-  const [opening, setOpening] = useState(false)
+  const [linking, setLinking] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -155,7 +162,7 @@ export function useTellerConnect() {
         return
       }
 
-      setOpening(true)
+      setLinking(true)
       setError(null)
       const tc = window.TellerConnect.setup({
         applicationId,
@@ -171,17 +178,17 @@ export function useTellerConnect() {
             setError(msg)
             callbacks.onError?.(msg)
           } finally {
-            setOpening(false)
+            setLinking(false)
           }
         },
         onExit: () => {
-          setOpening(false)
+          setLinking(false)
           callbacks.onExit?.()
         },
         onFailure: (f) => {
           const msg = f.message ?? f.type
           setError(msg)
-          setOpening(false)
+          setLinking(false)
           callbacks.onError?.(msg)
         },
       })
@@ -190,7 +197,7 @@ export function useTellerConnect() {
     [],
   )
 
-  return { ready, opening, error, open }
+  return { ready, linking, error, open }
 }
 
 export type DisconnectResult = {

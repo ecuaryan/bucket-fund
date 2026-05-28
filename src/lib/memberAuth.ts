@@ -72,6 +72,14 @@ export async function exchangePinForSession(input: {
   return postFunction<PinSessionTokens>('pin-login', input)
 }
 
+export async function removeMember(memberId: string): Promise<void> {
+  const { data: sessionData } = await supabase.auth.getSession()
+  const token = sessionData.session?.access_token
+  if (!token) throw new Error('Not signed in')
+
+  await postFunction<{ ok: boolean }>('remove-member', { memberId }, token)
+}
+
 export async function createMember(input: {
   name: string
   role: 'member' | 'child'

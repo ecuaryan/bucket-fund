@@ -4,6 +4,7 @@ import PinInput from '@/components/ui/PinInput'
 import {
   clearPinLockout,
   createMember,
+  removeMember,
   setMemberPin,
 } from '@/lib/memberAuth'
 type Member = {
@@ -32,6 +33,7 @@ export default function MembersSection() {
   const [pinTarget, setPinTarget] = useState<Member | null>(null)
   const [pinValue, setPinValue] = useState('')
   const [savingPin, setSavingPin] = useState(false)
+  const [removingId, setRemovingId] = useState<string | null>(null)
 
   const loadMembers = useCallback(async () => {
     setLoadError(null)
@@ -91,6 +93,37 @@ export default function MembersSection() {
       setActionError(err instanceof Error ? err.message : String(err))
     } finally {
       setSavingPin(false)
+    }
+  }
+
+  async function onRemove(m: Member) {
+    if (m.role === 'admin') return
+    const bucketNote =
+      m.role === 'child'
+        ? 'Their buckets will be deleted. '
+        : ''
+    const ok = window.confirm(
+      `Remove ${m.name} from your family? ${bucketNote}` +
+        'Any bank accounts assigned to them will move to the family pool. ' +
+        'This cannot be undone.',
+    )
+    if (!ok) return
+
+    setRemovingId(m.id)
+    setActionError(null)
+    setInfo(null)
+    try {
+      await removeMember(m.id)
+      if (pinTarget?.id === m.id) {
+        setPinTarget(null)
+        setPinValue('')
+      }
+      setInfo(`Removed ${m.name}.`)
+      await loadMembers()
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setRemovingId(null)
     }
   }
 
@@ -210,6 +243,16 @@ export default function MembersSection() {
                 >
                   {m.pin_set_at ? 'Reset PIN' : 'Set PIN'}
                 </button>
+                {m.role !== 'admin' && (
+                  <button
+                    type="button"
+                    onClick={() => void onRemove(m)}
+                    disabled={removingId === m.id}
+                    className="rounded-lg border border-red-500/30 px-2 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+                  >
+                    {removingId === m.id ? 'Removing…' : 'Remove'}
+                  </button>
+                )}
               </div>
             </li>
           ))}

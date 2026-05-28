@@ -246,11 +246,11 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={onLink}
-            disabled={!teller.ready || teller.opening}
+            disabled={!teller.ready || teller.linking}
             className="rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {teller.opening
-              ? 'Opening…'
+            {teller.linking
+              ? 'Linking…'
               : !teller.ready
                 ? 'Loading…'
                 : 'Link bank'}
