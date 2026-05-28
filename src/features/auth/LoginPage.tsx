@@ -249,6 +249,27 @@ export default function LoginPage() {
                 >
                   {submitting ? 'Working…' : 'Sign in'}
                 </button>
+
+                <p className="text-right">
+                  <button
+                    type="button"
+                    className="text-sm text-zinc-400 hover:text-zinc-300 hover:underline"
+                    onClick={() => {
+                      setPassword('')
+                      clearPasswordInput('login-password')
+                      ;(
+                        document.getElementById(
+                          'login-email',
+                        ) as HTMLInputElement | null
+                      )?.blur()
+                      requestAnimationFrame(() => {
+                        navigate('/login/forgot', { state: { email } })
+                      })
+                    }}
+                  >
+                    Forgot password?
+                  </button>
+                </p>
               </div>
             </>
           )}
@@ -257,27 +278,6 @@ export default function LoginPage() {
         <p className="mt-3 text-center text-xs leading-relaxed text-zinc-500">
           {BANK_LINK_READ_ONLY}
         </p>
-
-        {!isSignUp && (
-          <p className="mt-3 text-center text-sm">
-            <button
-              type="button"
-              className="text-zinc-400 hover:text-zinc-300 hover:underline"
-              onClick={() => {
-                setPassword('')
-                clearPasswordInput('login-password')
-                ;(
-                  document.getElementById('login-email') as HTMLInputElement | null
-                )?.blur()
-                requestAnimationFrame(() => {
-                  navigate('/login/forgot', { state: { email } })
-                })
-              }}
-            >
-              Forgot password?
-            </button>
-          </p>
-        )}
 
         <div className="mt-6 rounded-2xl bg-zinc-900/80 p-4 text-center ring-1 ring-zinc-800">
           <p className="text-sm font-medium text-zinc-300">{LOGIN_SHARED_TITLE}</p>
