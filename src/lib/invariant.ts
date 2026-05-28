@@ -6,14 +6,12 @@
  *   sum(bucket allocations) + sum(unallocated balances across members)
  *     === sum(real Teller balances across all linked accounts)
  *
- * Authoritative check runs server-side in the `check-invariant` Edge
- * Function so child clients never see family-wide raw balances. This
- * client-side helper is for optimistic UI feedback only and MUST NOT be
- * trusted for security decisions.
+ * User-facing “rebalance” signal is negative unallocated on Home (see
+ * CONTEXT.md § Data Integrity). Automated operator ledger checks are
+ * deferred until a possible paid SaaS (`check-invariant` stub).
  *
- * TODO:
- *   - Call the `check-invariant` Edge Function with the current family_id
- *   - Surface a prominent admin error when violation_amount !== 0
+ * This client helper is not implemented and MUST NOT be trusted for
+ * security decisions.
  */
 export type InvariantResult = {
   ok: boolean

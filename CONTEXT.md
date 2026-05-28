@@ -18,6 +18,18 @@ BucketFund is a **bank-agnostic virtual envelope budgeting PWA** for families. I
 
 The primary use case is: **open app → move money from one bucket to another → done. Target: 4 taps from a cold open.**
 
+### Product stage
+
+**Now:** The builder’s family is the first user group — real daily use, discover
+issues in the wild, iterate on UX and sync. Integrity for budgeting gaps is
+**red negative unallocated** on Home (bank cash moved; bucket labels did not —
+rebalance by moving money between buckets and unallocated).
+
+**Later (if this becomes a paid product):** Harden operator-side ledger checks
+(automated SQL or cron, logging, optional admin-only alerts) to catch
+implementation bugs before support tickets — **not** a second user-facing alarm
+for the same situation as negative unallocated. See [Data Integrity](#data-integrity).
+
 ---
 
 ## Product Brief
@@ -36,7 +48,7 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 - Manages family members (add/remove spouse or kids, assign roles, set PINs) and assigns linked accounts to children
 - Funds children via Send; sees all family sends and shared-pool history
 - Views family-level transaction history
-- Receives data integrity error alerts if the invariant is violated
+- Sees the same Home signals as members (e.g. red unallocated when the pool is over-allocated)
 
 **Member** (e.g. spouse)
 - Operational access only
@@ -77,7 +89,11 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 
 Every dollar lives in exactly one place — either in a named bucket or in someone's unallocated balance.
 
-**If this invariant is ever violated**, a prominent error is displayed to the admin. This is a critical data integrity issue and must never be silently ignored.
+Unallocated is **derived** from linked cash, bucket allocations, sends, and role
+rules (`member_available_balance` in SQL). When real bank cash drops but buckets
+do not (e.g. a credit card payment clears), unallocated goes **negative and red**
+— that is the intended “something needs rebalancing” signal, not a separate
+system-error banner.
 
 **Admin and member (shared family pool on Home):**
 - **Unallocated** on Home is one number for both: family cash minus
@@ -87,7 +103,7 @@ Every dollar lives in exactly one place — either in a named bucket or in someo
 - **Home breakdown (admin + member):** one card shows the math — linked cash,
   allocated to buckets, then one line per child with funds (not a single wrapped total).
 - Adult-to-adult sends are not allowed — they would not move the pool anyway.
-- Unallocated ≥ 0 → green; negative → red (pull from a bucket or fix allocations).
+- Unallocated ≥ 0 → green; negative → red — move money from bucket(s) into unallocated until the pool matches your intent (every spend should come from somewhere).
 
 **Child:**
 - Unallocated = their cash accounts + net sends − their bucket allocations
@@ -158,9 +174,22 @@ Every dollar lives in exactly one place — either in a named bucket or in someo
 ---
 
 ### Data Integrity
-- On every Teller webhook and on every virtual transaction, verify the invariant holds
-- If total allocated + total unallocated ≠ Teller real balance → prominent admin error
-- No silent discrepancies — every dollar must be accounted for
+
+Two different situations — do not conflate them in UX or docs.
+
+**1. Budgeting gap (normal, user-facing)**  
+Bank balance changed; envelope labels did not. Home shows negative unallocated.
+The user fixes it with bucket moves. No extra “integrity” modal.
+
+**2. System ledger gap (abnormal, operator-facing)**  
+Stored cash, allocations, and per-member math no longer form one consistent
+ledger (bug, migration mistake, bypass of `move_money` / `send_money`). Rare
+when all writes go through RPCs and Home uses one SQL definition. **Deferred**
+for family beta; revisit before charging strangers — automated check + operator
+alert (see `check-invariant` stub), not a duplicate of red unallocated.
+
+**Today:** Money writes only via `move_money` and `send_money`; database tests
+in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
 
 ---
 
@@ -178,7 +207,7 @@ Every dollar lives in exactly one place — either in a named bucket or in someo
 - Supabase Row Level Security enforced on every table
 - Queries filtered by authenticated user and role at the database level — not the application level
 - Child role locked to their own data only — no query can return another member's balances, buckets, or transactions
-- Sensitive calculations (balance invariant, family totals) handled server-side in Supabase Edge Functions — raw family data never sent to child clients
+- Family-wide totals and adult shared-pool math run server-side in SQL (`SECURITY DEFINER` helpers); child clients never receive other members’ balances via RLS
 - Multi-tenant isolation via `family_id` on every table
 
 ---
@@ -207,6 +236,9 @@ Every dollar lives in exactly one place — either in a named bucket or in someo
 - Recurring allocations ("every payday, put $200 in groceries")
 - Transaction history filters and search
 - Super-admin / platform management UI
+- Automated operator ledger monitoring (family-wide invariant job, violation
+  table, in-app admin integrity banner) — family beta first; add if this ships
+  as a paid multi-tenant product
 
 ### Credit cards & linked liabilities (defer — think on this later)
 
@@ -389,7 +421,7 @@ bucketfund/
 │   │   ├── teller-enroll/  # Process Connect enrollment, sync accounts
 │   │   ├── teller-disconnect/
 │   │   ├── teller-webhook/ # Webhook handler, balance updates
-│   │   └── check-invariant/# Server-side invariant verification (stub)
+│   │   └── check-invariant/# Ledger check stub (deferred until paid SaaS)
 │   └── migrations/         # SQL migrations
 ├── vite.config.ts
 └── tsconfig.json
@@ -402,10 +434,11 @@ bucketfund/
 
 ## Key Implementation Notes for Cursor
 
-### Balance invariant check
-- Run on every Teller webhook receipt (Edge Function)
-- Run on every virtual transaction commit
-- If violated, write an `invariant_violation` record and surface to admin via Supabase Realtime
+### Ledger check (deferred)
+- Family beta relies on derived unallocated + RPC-only writes + `tests/db/`.
+- Before paid SaaS: optional SQL `check_family_ledger`, operator logging/alerts
+  after webhooks; reuse `member_available_balance` — do not duplicate formulas in
+  the client. `check-invariant` Edge Function remains a stub until then.
 
 ### 4-tap bucket move flow
 The primary use case must be frictionless:
@@ -430,8 +463,7 @@ Implemented in `src/features/buckets/HomePage.tsx` and
 
 ### Teller webhook Edge Function
 - Verify Teller webhook signature
-- Update `accounts.current_balance`
-- Recalculate and verify invariant
+- Update `accounts.current_balance` (unallocated on Home updates on next load / Realtime)
 - Broadcast update via Supabase Realtime to all connected clients in that family
 
 ### Supabase Realtime
