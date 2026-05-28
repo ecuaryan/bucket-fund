@@ -1,12 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
+import { accountAssignmentChildId } from '@/lib/accounts'
 import { disconnectEnrollment, useTellerConnect } from '@/lib/teller'
+import AccountAssignmentSelect from '@/features/admin/AccountAssignmentSelect'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
 import MembersSection from '@/features/admin/MembersSection'
 import type { Database } from '@/types/database'
 
 type Account = Database['public']['Tables']['accounts']['Row']
+
+type FamilyMemberRow = {
+  id: string
+  name: string
+  role: string
+}
 
 type EnrollmentGroup = {
   enrollmentId: string
@@ -82,7 +90,9 @@ export default function AdminPage() {
   const teller = useTellerConnect()
 
   const [accounts, setAccounts] = useState<Account[] | null>(null)
+  const [members, setMembers] = useState<FamilyMemberRow[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [assignError, setAssignError] = useState<string | null>(null)
   const [linkError, setLinkError] = useState<string | null>(null)
   const [linkInfo, setLinkInfo] = useState<string | null>(null)
   const [unlinkingId, setUnlinkingId] = useState<string | null>(null)
@@ -102,10 +112,36 @@ export default function AdminPage() {
     setAccounts(data ?? [])
   }, [])
 
+  const loadMembers = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('family_members')
+      .select('id, name, role')
+      .order('created_at', { ascending: true })
+    if (error) {
+      setLoadError(error.message)
+      return
+    }
+    setMembers(data ?? [])
+  }, [])
+
   useEffect(() => {
     if (!member) return
     void loadAccounts()
-  }, [member, loadAccounts])
+    void loadMembers()
+  }, [member, loadAccounts, loadMembers])
+
+  const memberRolesById = useMemo(
+    () => new Map((members ?? []).map((m) => [m.id, m.role])),
+    [members],
+  )
+
+  const childMembers = useMemo(
+    () =>
+      (members ?? [])
+        .filter((m) => m.role === 'child')
+        .map((m) => ({ id: m.id, name: m.name })),
+    [members],
+  )
 
   const groups = useMemo(
     () => (accounts ? groupByEnrollment(accounts) : []),
@@ -203,9 +239,9 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {(linkError || teller.error) && (
+        {(linkError || teller.error || assignError) && (
           <p className="mb-3 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300 ring-1 ring-red-500/30">
-            {linkError ?? teller.error}
+            {linkError ?? teller.error ?? assignError}
           </p>
         )}
         {linkInfo && (
@@ -227,7 +263,8 @@ export default function AdminPage() {
             </p>
             <p className="mt-1 text-xs text-zinc-400">
               Tap "Link bank" to connect your first account via Teller.
-              Balances will appear on Home once linked.
+              Balances count toward the family pool until you assign an
+              account to a child.
             </p>
           </div>
         ) : (
@@ -276,9 +313,24 @@ export default function AdminPage() {
                           {a.account_type ?? '—'}
                         </p>
                       </div>
-                      <p className="shrink-0 text-sm font-medium tabular-nums text-zinc-300">
-                        {currency.format(Number(a.current_balance))}
-                      </p>
+                      <div className="flex shrink-0 items-center gap-3">
+                        <AccountAssignmentSelect
+                          accountId={a.id}
+                          assignedChildId={accountAssignmentChildId(
+                            a,
+                            memberRolesById,
+                          )}
+                          children={childMembers}
+                          onAssigned={() => {
+                            setAssignError(null)
+                            void loadAccounts()
+                          }}
+                          onError={setAssignError}
+                        />
+                        <p className="text-sm font-medium tabular-nums text-zinc-300">
+                          {currency.format(Number(a.current_balance))}
+                        </p>
+                      </div>
                     </li>
                   ))}
                 </ul>

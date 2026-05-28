@@ -33,7 +33,7 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 - Full control
 - Links/unlinks bank accounts via Teller
 - Creates and deletes buckets for the family pool
-- Manages family members (invite, assign roles, assign accounts)
+- Manages family members (invite, assign roles) and assigns linked accounts to children
 - Funds children via Send; sees all family sends and shared-pool history
 - Views family-level transaction history
 - Receives data integrity error alerts if the invariant is violated
@@ -57,12 +57,16 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 ---
 
 ### Accounts
-- Any member (admin, member, or child) can have zero, one, or multiple Teller-linked bank accounts assigned to them
-- Children may have savings and checking accounts (multiple supported)
+- Only the **admin** links or unlinks banks (Teller Connect on **Admin → Linked accounts**).
+- **New links** default to the **family pool** (`accounts.owner_member_id` null). The admin may
+  assign an account to a **child** only (many accounts can belong to one child). Adults
+  (admin and member) share the family pool on Home — assigning to a spouse is not in v1 UI.
+- Children may have zero, one, or multiple linked checking/savings accounts (multiple supported).
 - Children without linked accounts are **virtual-only** — their balance is funded purely by sends from other members
 - The family as a whole must have at least one linked account
-- Each account is assigned to either the family pool or a specific member
+- Re-linking the same Teller account preserves the prior child assignment; balances refresh from Teller
 - Real balances are kept in sync via Teller webhooks
+- **RLS:** children see only accounts where `owner_member_id` is their member id; adults see all family accounts
 
 ---
 
@@ -402,14 +406,14 @@ bucketfund/
 │   │   ├── buckets/        # Home, bucket list, move flow, CRUD
 │   │   ├── sends/          # Send money flow (SendPage + send_money RPC)
 │   │   ├── history/        # Transaction history
-│   │   ├── accounts/       # Reserved — Teller linking lives in admin/ for now
-│   │   └── admin/          # Bank linking, family settings (members planned)
+│   │   ├── accounts/       # Reserved — Teller link + child assignment live in admin/
+│   │   └── admin/          # Bank link/unlink, assign accounts to children, members/join
 │   ├── lib/
 │   │   ├── supabase.ts     # Supabase client
 │   │   ├── auth.tsx        # Auth context + Realtime JWT sync
 │   │   ├── teller.ts       # Teller Connect client helpers
 │   │   ├── buckets.ts      # move_money RPC + bucket CRUD helpers
-│   │   ├── accounts.ts     # Cash-account filtering for unallocated pool
+│   │   ├── accounts.ts     # Cash filtering, assignAccountOwner (family ↔ child)
 │   │   └── invariant.ts    # Client-side invariant helper (optimistic UI only)
 │   ├── hooks/              # Shared React hooks
 │   ├── types/              # TypeScript types mirroring DB schema
