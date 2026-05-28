@@ -55,7 +55,7 @@ export default function LoginPage() {
     if (pendingFreshSignIn && auth.status === 'signedIn') {
       void auth.signOut()
     }
-  }, [pendingFreshSignIn, auth.status, auth.signOut])
+  }, [pendingFreshSignIn, auth])
 
   const [mode, setMode] = useState<Mode>(() =>
     searchParams.get('signup') === '1' ? 'signUp' : 'signIn',
