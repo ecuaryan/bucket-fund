@@ -361,7 +361,7 @@ function AuthShell({
 function FooterLinks() {
   return (
     <p className="mt-6 text-center text-sm text-zinc-500">
-      <Link to="/login" className="text-emerald-400 hover:underline">
+      <Link to="/login?email=1" className="text-emerald-400 hover:underline">
         Admin email sign-in
       </Link>
     </p>

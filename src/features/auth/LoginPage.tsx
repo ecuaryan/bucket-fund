@@ -71,10 +71,15 @@ export default function LoginPage() {
     return <Navigate to={from} replace />
   }
 
+  // Pin-bound devices default to PIN sign-in unless the user explicitly
+  // chose admin email (e.g. link from /login/family with ?email=1).
+  const preferEmailSignIn = searchParams.get('email') === '1'
+
   if (
     auth.status === 'signedOut' &&
     !pendingFreshSignIn &&
     searchParams.get('signup') !== '1' &&
+    !preferEmailSignIn &&
     isPinBoundDevice()
   ) {
     return <Navigate to="/login/family" replace state={{ from }} />
