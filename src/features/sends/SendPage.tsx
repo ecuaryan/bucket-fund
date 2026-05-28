@@ -9,10 +9,8 @@ import {
 import { sendMoney } from '@/lib/sends'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
-import {
-  AmountLimitHint,
-  amountLimitDescribedBy,
-} from '@/components/AmountLimitHint'
+import { AmountLimitHint } from '@/components/AmountLimitHint'
+import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
 import type { Database } from '@/types/database'
 
 type Member = Pick<

@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import {
-  AmountLimitHint,
-  amountLimitDescribedBy,
-} from '@/components/AmountLimitHint'
+import { AmountLimitHint } from '@/components/AmountLimitHint'
+import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
 import { moveMoney } from '@/lib/buckets'
 import type { Database } from '@/types/database'
 
