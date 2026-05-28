@@ -134,6 +134,10 @@ export default function SendPage() {
   const amountValid = Number.isFinite(amount) && amount > 0
   const overdraft =
     amountValid && available !== null && amount > available
+  const overdraftMessage =
+    overdraft && available !== null
+      ? `You can only send up to ${currency.format(available)}.`
+      : null
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -148,8 +152,8 @@ export default function SendPage() {
       setSubmitError('Enter an amount greater than $0.')
       return
     }
-    if (overdraft) {
-      setSubmitError('That amount exceeds your unallocated balance.')
+    if (overdraft && overdraftMessage) {
+      setSubmitError(overdraftMessage)
       return
     }
 
@@ -283,12 +287,30 @@ export default function SendPage() {
                 min="0.01"
                 step="0.01"
                 value={amountStr}
-                onChange={(e) => setAmountStr(e.target.value)}
+                onChange={(e) => {
+                  setAmountStr(e.target.value)
+                  setSubmitError(null)
+                }}
                 placeholder="0.00"
                 required
-                className="w-full rounded-xl border border-zinc-700 bg-zinc-950 py-2.5 pl-7 pr-3 text-sm tabular-nums text-zinc-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                aria-invalid={overdraft || undefined}
+                aria-describedby={overdraftMessage ? 'send-amount-hint' : undefined}
+                className={`w-full rounded-xl border bg-zinc-950 py-2.5 pl-7 pr-3 text-sm tabular-nums text-zinc-100 focus:outline-none focus:ring-1 ${
+                  overdraft
+                    ? 'border-red-500/60 focus:border-red-500 focus:ring-red-500/40'
+                    : 'border-zinc-700 focus:border-emerald-500 focus:ring-emerald-500'
+                }`}
               />
             </div>
+            {overdraftMessage ? (
+              <p
+                id="send-amount-hint"
+                role="alert"
+                className="mt-1.5 text-sm text-red-300"
+              >
+                {overdraftMessage}
+              </p>
+            ) : null}
           </label>
 
           <label className="block">
