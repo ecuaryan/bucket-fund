@@ -28,7 +28,6 @@ export default function App() {
         }
       >
         <Route path="/" element={<HomePage />} />
-        <Route path="/buckets" element={<Navigate to="/" replace />} />
         <Route path="/send" element={<SendPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/admin" element={<AdminPage />} />
