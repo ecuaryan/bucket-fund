@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import {
+  childTotalBalance,
   fetchHomeBalanceBreakdown,
   type HomeBalanceBreakdown,
 } from '@/lib/availableBalance'
@@ -289,17 +290,21 @@ export default function HomePage() {
     return <p className="text-sm text-zinc-400">Loading…</p>
   }
 
-  const allocated = buckets.reduce(
-    (sum, b) => sum + Number(b.allocated_amount),
-    0,
-  )
   // Server-side family pool (admin/member share one number). See migration 16.
   const unallocated = balanceBreakdown.unallocated
-  const realBalance = balanceBreakdown.totalCash
-  const showPoolBreakdown =
-    !isChild &&
+  const isAdult = !isChild
+  const childTotal = isChild ? childTotalBalance(balanceBreakdown) : 0
+  const showAdultBreakdown =
+    isAdult &&
     !balanceUsesFallback &&
-    balanceBreakdown.childrenSetAside > 0
+    (balanceBreakdown.totalCash > 0 ||
+      balanceBreakdown.bucketAllocated > 0 ||
+      balanceBreakdown.children.length > 0)
+  const showChildBreakdown =
+    isChild &&
+    !balanceUsesFallback &&
+    (childTotal > 0 || balanceBreakdown.bucketAllocated > 0)
+  const showBalanceBreakdown = showAdultBreakdown || showChildBreakdown
   const unallocatedColor =
     unallocated >= 0
       ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30'
@@ -309,9 +314,10 @@ export default function HomePage() {
     (a) => a.current_balance !== null && Number(a.current_balance) > 0,
   ).length
 
-  const unallocatedHint =
-    cashAccountsCount > 0
-      ? `${currency.format(realBalance)} across ${cashAccountsCount} linked account${cashAccountsCount === 1 ? '' : 's'}`
+  const unallocatedHint = showBalanceBreakdown
+    ? null
+    : cashAccountsCount > 0
+      ? `${currency.format(balanceBreakdown.totalCash)} across ${cashAccountsCount} linked account${cashAccountsCount === 1 ? '' : 's'}`
       : isChild
         ? 'When a parent sends you money, move it into buckets — or ask them to link your bank account.'
         : isAdmin
@@ -336,21 +342,45 @@ export default function HomePage() {
         <p className="mt-1 text-3xl font-semibold tabular-nums">
           {currency.format(unallocated)}
         </p>
-        <p className="mt-1 text-xs opacity-70">{unallocatedHint}</p>
-        {showPoolBreakdown && (
+        {unallocatedHint ? (
+          <p className="mt-1 text-xs opacity-70">{unallocatedHint}</p>
+        ) : null}
+        {showBalanceBreakdown && (
           <dl className="mt-3 space-y-1 border-t border-current/10 pt-3 text-xs opacity-90">
-            <div className="flex justify-between gap-4 tabular-nums">
-              <dt>Linked cash</dt>
-              <dd>{currency.format(balanceBreakdown.totalCash)}</dd>
-            </div>
-            <div className="flex justify-between gap-4 tabular-nums">
-              <dt>In family buckets</dt>
-              <dd>−{currency.format(balanceBreakdown.bucketAllocated)}</dd>
-            </div>
-            <div className="flex justify-between gap-4 tabular-nums">
-              <dt>Children&apos;s funds</dt>
-              <dd>−{currency.format(balanceBreakdown.childrenSetAside)}</dd>
-            </div>
+            {isChild && childTotal > 0 ? (
+              <div className="flex justify-between gap-4 tabular-nums">
+                <dt>Total balance</dt>
+                <dd>{currency.format(childTotal)}</dd>
+              </div>
+            ) : null}
+            {!isChild && balanceBreakdown.totalCash > 0 ? (
+              <div className="flex justify-between gap-4 tabular-nums">
+                <dt>
+                  Linked cash
+                  {cashAccountsCount > 0
+                    ? ` (${cashAccountsCount} account${cashAccountsCount === 1 ? '' : 's'})`
+                    : ''}
+                </dt>
+                <dd>{currency.format(balanceBreakdown.totalCash)}</dd>
+              </div>
+            ) : null}
+            {balanceBreakdown.bucketAllocated > 0 ? (
+              <div className="flex justify-between gap-4 tabular-nums">
+                <dt>{isChild ? 'In your buckets' : 'In family buckets'}</dt>
+                <dd>−{currency.format(balanceBreakdown.bucketAllocated)}</dd>
+              </div>
+            ) : null}
+            {showAdultBreakdown
+              ? balanceBreakdown.children.map((child) => (
+                  <div
+                    key={child.memberId}
+                    className="flex justify-between gap-4 tabular-nums"
+                  >
+                    <dt className="truncate">{child.name}</dt>
+                    <dd>−{currency.format(child.amount)}</dd>
+                  </div>
+                ))
+              : null}
           </dl>
         )}
       </section>
@@ -359,7 +389,7 @@ export default function HomePage() {
         <header className="mb-3 flex items-baseline justify-between">
           <h2 className="text-lg font-semibold">Buckets</h2>
           <span className="text-xs text-zinc-400">
-            {buckets.length} total · {currency.format(allocated)} allocated
+            {buckets.length} bucket{buckets.length === 1 ? '' : 's'}
           </span>
         </header>
 

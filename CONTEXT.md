@@ -84,12 +84,16 @@ Every dollar lives in exactly one place — either in a named bucket or in someo
   adult-visible bucket allocations minus each child's total funded balance
   (their linked cash plus net sends). How a child splits that between their
   own buckets and their own unallocated does not change the adult number.
+- **Home breakdown (admin + member):** one card shows the math — linked cash,
+  family buckets, then one line per child with funds (not a single wrapped total).
 - Adult-to-adult sends are not allowed — they would not move the pool anyway.
 - Unallocated ≥ 0 → green; negative → red (pull from a bucket or fix allocations).
 
 **Child:**
 - Unallocated = their cash accounts + net sends − their bucket allocations
 - Virtual-only children (no linked accounts) are funded entirely by sends from adults
+- **Home / Send breakdown:** total balance (linked cash + net sends), in your buckets,
+  then unallocated — without exposing other members’ balances
 
 **Members with their own linked accounts (future / optional):**
 - Per-person Teller balances may exist in the schema; Home still presents the
