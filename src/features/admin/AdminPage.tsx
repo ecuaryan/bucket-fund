@@ -43,10 +43,19 @@ function formatLastSynced(iso: string | null): string {
   return dateFormat.format(d)
 }
 
+/** Stable list order (bulk enroll often shares the same created_at). */
+function sortAccountsStable(accounts: Account[]): Account[] {
+  return [...accounts].sort((a, b) => {
+    const byTime = a.created_at.localeCompare(b.created_at)
+    if (byTime !== 0) return byTime
+    return a.id.localeCompare(b.id)
+  })
+}
+
 function groupByEnrollment(accounts: Account[]): EnrollmentGroup[] {
   const map = new Map<string, EnrollmentGroup>()
   const orphans: Account[] = []
-  for (const a of accounts) {
+  for (const a of sortAccountsStable(accounts)) {
     if (!a.teller_enrollment_id) {
       orphans.push(a)
       continue
@@ -71,7 +80,15 @@ function groupByEnrollment(accounts: Account[]): EnrollmentGroup[] {
       })
     }
   }
-  const groups = Array.from(map.values())
+  const groups = Array.from(map.values()).sort((a, b) => {
+    const nameA = a.institutionName ?? ''
+    const nameB = b.institutionName ?? ''
+    if (nameA !== nameB) return nameA.localeCompare(nameB)
+    return a.enrollmentId.localeCompare(b.enrollmentId)
+  })
+  for (const group of groups) {
+    group.accounts = sortAccountsStable(group.accounts)
+  }
   if (orphans.length > 0) {
     groups.push({
       enrollmentId: '',
@@ -105,6 +122,7 @@ export default function AdminPage() {
       .from('accounts')
       .select('*')
       .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
     if (error) {
       setLoadError(error.message)
       return
@@ -321,9 +339,20 @@ export default function AdminPage() {
                             memberRolesById,
                           )}
                           children={childMembers}
-                          onAssigned={() => {
+                          onAssigned={(ownerMemberId) => {
                             setAssignError(null)
-                            void loadAccounts()
+                            setAccounts((prev) =>
+                              prev
+                                ? prev.map((row) =>
+                                    row.id === a.id
+                                      ? {
+                                          ...row,
+                                          owner_member_id: ownerMemberId,
+                                        }
+                                      : row,
+                                  )
+                                : prev,
+                            )
                           }}
                           onError={setAssignError}
                         />
