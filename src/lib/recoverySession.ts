@@ -1,6 +1,9 @@
-import type { Session } from '@supabase/supabase-js'
+import { isPasswordRecoveryFlowActive } from '@/lib/passwordRecoveryFlow'
 
-/** True while the user is in Supabase's password-recovery session (email link). */
-export function isPasswordRecoverySession(session: Session): boolean {
-  return Boolean(session.user.recovery_sent_at)
+/**
+ * True only during the forgot-password email flow — not PIN or magic-link sign-in.
+ * We track PASSWORD_RECOVERY explicitly; `recovery_sent_at` alone is unreliable.
+ */
+export function isPasswordRecoverySession(): boolean {
+  return isPasswordRecoveryFlowActive()
 }
