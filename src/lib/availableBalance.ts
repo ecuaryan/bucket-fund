@@ -14,22 +14,49 @@ export function isMissingDbFunctionError(message: string): boolean {
   )
 }
 
+export type ChildSetAsideLine = {
+  memberId: string
+  name: string
+  amount: number
+}
+
 export type HomeBalanceBreakdown = {
   unallocated: number
   totalCash: number
   bucketAllocated: number
   childrenSetAside: number
+  children: ChildSetAsideLine[]
+}
+
+function parseChildLines(raw: unknown): ChildSetAsideLine[] {
+  if (!Array.isArray(raw)) return []
+  const lines: ChildSetAsideLine[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue
+    const row = item as Record<string, unknown>
+    const memberId = row.member_id
+    const name = row.name
+    if (typeof memberId !== 'string' || typeof name !== 'string') continue
+    lines.push({
+      memberId,
+      name,
+      amount: Number(row.amount ?? 0),
+    })
+  }
+  return lines
 }
 
 function parseBreakdownRow(data: Json): HomeBalanceBreakdown | null {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return null
   const row = data as Record<string, unknown>
   const num = (key: string) => Number(row[key] ?? 0)
+  const children = parseChildLines(row.children)
   return {
     unallocated: num('unallocated'),
     totalCash: num('total_cash'),
     bucketAllocated: num('bucket_allocated'),
     childrenSetAside: num('children_set_aside'),
+    children,
   }
 }
 
@@ -62,6 +89,7 @@ function clientBreakdownFallback(
     totalCash,
     bucketAllocated,
     childrenSetAside: 0,
+    children: [],
   }
 }
 
