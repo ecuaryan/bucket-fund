@@ -93,6 +93,33 @@ export default function FamilyLoginPage() {
     }
   }, [refreshRoster])
 
+  // Family login is unauthenticated (join code only), so we cannot use
+  // postgres_changes Realtime here. Poll quietly while the roster is shown
+  // so new members / PINs from Admin appear without a manual refresh.
+  useEffect(() => {
+    const code = getBoundJoinCode()?.trim()
+    if (!roster || selected || submitting || !code) return
+
+    const refreshSilently = () => {
+      void refreshRoster(code).catch(() => {
+        // Keep the last good roster on transient failures.
+      })
+    }
+
+    const intervalMs = 10_000
+    const id = setInterval(refreshSilently, intervalMs)
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refreshSilently()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [roster, selected, submitting, refreshRoster])
+
   if (auth.status === 'signedIn') {
     return <Navigate to={from} replace />
   }
