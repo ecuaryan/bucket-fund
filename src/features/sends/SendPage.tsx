@@ -7,6 +7,7 @@ import {
   type HomeBalanceBreakdown,
 } from '@/lib/availableBalance'
 import { SEND_ADULT_INTRO, SEND_CHILD_INTRO } from '@/lib/brand'
+import { subscribeHouseholdRosterRefresh } from '@/lib/householdRosterRefresh'
 import { filterSendRecipients } from '@/lib/sendRecipients'
 import { sendMoney } from '@/lib/sends'
 import { supabase } from '@/lib/supabase'
@@ -92,9 +93,20 @@ export default function SendPage() {
     void loadData()
   }, [loadData])
 
+  useEffect(() => {
+    return subscribeHouseholdRosterRefresh(() => {
+      void loadData()
+    })
+  }, [loadData])
+
   const realtimeSpecs = useMemo(() => {
     if (!familyId) return []
     return [
+      {
+        event: '*' as const,
+        table: 'family_members',
+        filter: `family_id=eq.${familyId}`,
+      },
       {
         event: 'INSERT' as const,
         table: 'transactions',

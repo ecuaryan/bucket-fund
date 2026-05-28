@@ -1,3 +1,4 @@
+import { notifyHouseholdRosterChanged } from '@/lib/householdRosterRefresh'
 import { supabase, supabaseUrl } from '@/lib/supabase'
 import { withTimeout } from '@/lib/timeout'
 
@@ -47,7 +48,13 @@ async function postFunction<T>(
 
   const data = (await res.json().catch(() => ({}))) as T & { error?: string }
   if (!res.ok) {
-    throw new Error(data.error ?? `${name} failed: ${res.status}`)
+    const detail = data.error ?? `${name} failed: ${res.status}`
+    if (res.status === 503) {
+      throw new Error(
+        `${detail}. For local dev, run \`npm run functions:serve\` in a second terminal (needs \`supabase/functions/.env\`).`,
+      )
+    }
+    throw new Error(detail)
   }
   return data
 }
@@ -78,6 +85,7 @@ export async function removeMember(memberId: string): Promise<void> {
   if (!token) throw new Error('Not signed in')
 
   await postFunction<{ ok: boolean }>('remove-member', { memberId }, token)
+  notifyHouseholdRosterChanged()
 }
 
 export async function createMember(input: {
@@ -93,6 +101,7 @@ export async function createMember(input: {
     input,
     token,
   )
+  notifyHouseholdRosterChanged()
   return data.member
 }
 

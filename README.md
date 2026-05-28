@@ -40,6 +40,7 @@ use another for `npm run dev`. After pulling SQL changes: `npm run db:reset`.
 | Command | Purpose |
 | ------- | ------- |
 | `npm run db:start` | Local Postgres + Auth + Studio (port 54323) |
+| `npm run functions:serve` | Edge Functions (second terminal; needs `supabase/functions/.env`) |
 | `npm run db:stop` | Stop local stack |
 | `npm run db:reset` | Re-apply all migrations (+ optional `seed.sql`) |
 | `npm run db:types` | Regenerate `src/types/database.ts` from local DB |
@@ -55,7 +56,7 @@ shell, or paste keys from `npm run db:status`). Edge Function secrets stay in
 `supabase/functions/.env`.
 
 ```bash
-npx supabase functions serve    # all Edge Functions (separate terminal)
+npm run functions:serve    # second terminal while the app runs
 ```
 
 ## Scripts

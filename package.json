@@ -15,6 +15,7 @@
     "check": "npm run lint && npm test && npm run build",
     "check:full": "npm run lint && npm run test:all && npm run build",
     "db:start": "supabase start",
+    "functions:serve": "supabase functions serve --env-file supabase/functions/.env",
     "db:stop": "supabase stop",
     "db:status": "supabase status",
     "db:reset": "supabase db reset",
