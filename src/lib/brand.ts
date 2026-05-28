@@ -61,7 +61,7 @@ export const ADMIN_JOIN_CODE_QR_ALT =
 export const ADMIN_HOUSEHOLD_MEMBERS_TITLE = 'Household members'
 
 export const ADMIN_HOUSEHOLD_MEMBERS_INTRO =
-  'Add people who sign in with a PIN (not your email). Adults share your Home buckets and unallocated pool. Children get their own buckets—you can fund them with Send.'
+  'Add people who sign in with a PIN (not your email). Every adult sees all household buckets and the pool; children only see their own. Fund children with Send.'
 
 /** Unassigned bank balance / adult-shared buckets (not a child assignment). */
 export const HOUSEHOLD_POOL_LABEL = 'Household pool'
