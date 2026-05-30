@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BUCKET_NAME_MAX_LENGTH, validateBucketName } from '@/lib/buckets'
+import { BUCKET_NAME_MAX_LENGTH, validateBucketName } from '@/lib/bucketName'
 
 describe('validateBucketName', () => {
   it('accepts a normal label', () => {

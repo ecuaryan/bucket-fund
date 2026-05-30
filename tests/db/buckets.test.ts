@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BUCKET_NAME_MAX_LENGTH } from '@/lib/buckets'
+import { BUCKET_NAME_MAX_LENGTH } from '@/lib/bucketName'
 import { createAdminFamily, insertBucket, serviceClient, userClient } from './fixtures'
 
 describe('buckets: name length constraint', () => {

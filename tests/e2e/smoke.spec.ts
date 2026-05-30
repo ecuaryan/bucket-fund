@@ -55,8 +55,9 @@ test.describe('smoke', () => {
     const oldRow = page.getByRole('listitem').filter({ hasText: 'Old Name' })
     await oldRow.getByRole('button', { name: 'Bucket options' }).click()
     await page.getByRole('menuitem', { name: 'Rename' }).click()
-    await oldRow.locator('input[type="text"]').fill('Groceries')
-    await oldRow.locator('input[type="text"]').press('Enter')
+    const renameInput = page.getByRole('listitem').getByRole('textbox')
+    await renameInput.fill('Groceries')
+    await renameInput.press('Enter')
     await expect(page.getByText('Groceries')).toBeVisible()
     await expect(page.getByText('Old Name')).not.toBeVisible()
 
