@@ -30,6 +30,10 @@ type TellerWebhookPayload = {
   payload?: Record<string, unknown>
 }
 
+type TellerTransactionPayload = {
+  account_id?: string
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 })
@@ -38,13 +42,9 @@ Deno.serve(async (req: Request) => {
   const signingSecret = Deno.env.get('TELLER_SIGNING_SECRET') ?? ''
   if (!signingSecret) {
     console.error('TELLER_SIGNING_SECRET not configured')
-    // 500 is intentional — refuse to acknowledge events when we cannot
-    // authenticate them. Teller will retry; the operator must fix
-    // the secret.
     return new Response('signing secret not configured', { status: 500 })
   }
 
-  // Read the raw body once — we need it for HMAC and for JSON parsing.
   const rawBody = await req.text()
   const verification = await verifyWebhookSignature(
     rawBody,
@@ -67,37 +67,15 @@ Deno.serve(async (req: Request) => {
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const admin = createClient(supabaseUrl, serviceRoleKey)
 
-  // Resolve the family + enrollment + account this event belongs to.
-  // Teller event payloads vary by type but commonly contain
-  // enrollment_id and/or account_id. We look those up so we can scope
-  // the teller_events row correctly.
-  const accountId = (event.payload?.account_id as string | undefined) ?? null
   const enrollmentId =
     (event.payload?.enrollment_id as string | undefined) ?? null
 
   let dbAccountId: string | null = null
   let dbFamilyId: string | null = null
+  let dbEnrollmentInternalId: string | null = null
   let accessToken: string | null = null
 
-  if (accountId) {
-    const { data } = await admin
-      .from('accounts')
-      .select('id, family_id, teller_enrollment_id')
-      .eq('teller_account_id', accountId)
-      .maybeSingle()
-    if (data) {
-      dbAccountId = data.id
-      dbFamilyId = data.family_id
-      if (data.teller_enrollment_id) {
-        const { data: enr } = await admin
-          .from('teller_enrollments')
-          .select('access_token')
-          .eq('id', data.teller_enrollment_id)
-          .maybeSingle()
-        accessToken = enr?.access_token ?? null
-      }
-    }
-  } else if (enrollmentId) {
+  if (enrollmentId) {
     const { data } = await admin
       .from('teller_enrollments')
       .select('id, family_id, access_token')
@@ -105,12 +83,11 @@ Deno.serve(async (req: Request) => {
       .maybeSingle()
     if (data) {
       dbFamilyId = data.family_id
+      dbEnrollmentInternalId = data.id
       accessToken = data.access_token
     }
   }
 
-  // Always log the raw event first so we have a tamper-evident audit
-  // trail even if downstream side-effects fail.
   await admin.from('teller_events').insert({
     family_id: dbFamilyId,
     account_id: dbAccountId,
@@ -119,21 +96,56 @@ Deno.serve(async (req: Request) => {
     processed_at: new Date().toISOString(),
   })
 
-  // Side effects per event type. Keep the switch small and explicit;
-  // unknown events are still logged above.
+  async function refreshAccountBalance(
+    tellerAccountId: string,
+  ): Promise<void> {
+    if (!accessToken) return
+
+    const { data: account } = await admin
+      .from('accounts')
+      .select('id, family_id')
+      .eq('teller_account_id', tellerAccountId)
+      .maybeSingle()
+    if (!account) return
+
+    dbAccountId = account.id
+    dbFamilyId = account.family_id
+
+    const balance = await getBalance(accessToken, tellerAccountId)
+    await admin
+      .from('accounts')
+      .update({
+        current_balance: Number(balance.ledger),
+        last_synced_at: new Date().toISOString(),
+      })
+      .eq('id', account.id)
+  }
+
   try {
     switch (event.type) {
-      case 'account.balance.updated':
       case 'transactions.processed': {
-        if (dbAccountId && accessToken && accountId) {
-          const balance = await getBalance(accessToken, accountId)
-          await admin
+        if (!accessToken) break
+
+        const transactions =
+          (event.payload?.transactions as TellerTransactionPayload[] | undefined) ??
+          []
+        const tellerAccountIds = new Set<string>()
+        for (const txn of transactions) {
+          if (txn.account_id) tellerAccountIds.add(txn.account_id)
+        }
+
+        if (tellerAccountIds.size === 0 && dbEnrollmentInternalId) {
+          const { data: enrollmentAccounts } = await admin
             .from('accounts')
-            .update({
-              current_balance: Number(balance.ledger),
-              last_synced_at: new Date().toISOString(),
-            })
-            .eq('id', dbAccountId)
+            .select('teller_account_id')
+            .eq('teller_enrollment_id', dbEnrollmentInternalId)
+          for (const row of enrollmentAccounts ?? []) {
+            tellerAccountIds.add(row.teller_account_id)
+          }
+        }
+
+        for (const tellerAccountId of tellerAccountIds) {
+          await refreshAccountBalance(tellerAccountId)
         }
         break
       }
@@ -147,15 +159,9 @@ Deno.serve(async (req: Request) => {
         break
       }
       default:
-        // Unhandled events are just logged. That's intentional: we
-        // don't want to noisily fail on event types Teller adds
-        // later.
         break
     }
   } catch (err) {
-    // Side-effect failures: log but still 200 to Teller so the event
-    // doesn't retry forever. The teller_events row remains a record
-    // of the failed processing attempt.
     console.error('Failed to apply webhook side-effect:', err)
   }
 

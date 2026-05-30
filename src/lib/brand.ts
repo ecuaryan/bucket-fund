@@ -105,6 +105,9 @@ export function householdAdminLabel(
 export const ADMIN_LINKED_ACCOUNTS_INTRO =
   'Read-only—we sync balances, not payments. BucketFund cannot move money at your bank.'
 
+export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT =
+  'Use Reconnect on a bank to refresh credentials and balances. Link bank is for a new institution.'
+
 export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
   'Balances count toward household unallocated until you assign an account to a child.'
 

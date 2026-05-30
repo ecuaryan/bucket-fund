@@ -71,14 +71,20 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 
 ### Accounts
 - Only the **admin** links or unlinks banks (Teller Connect on **Admin → Linked accounts**).
+- **Link bank** adds a new institution (new Teller enrollment). **Reconnect** on an
+  existing bank card opens Teller Connect in update mode for that enrollment — use
+  this to refresh credentials and balances, or add/remove accounts at that bank.
+  Do not use Link bank to refresh an institution already linked.
 - **New links** default to the **family pool** (`accounts.owner_member_id` null). The admin may
   assign an account to a **child** only (many accounts can belong to one child). Adults
   (admin and member) share the family pool on Home — assigning to a spouse is not in v1 UI.
 - Children may have zero, one, or multiple linked checking/savings accounts (multiple supported).
 - Children without linked accounts are **virtual-only** — their balance is funded purely by sends from other members
 - The family as a whole must have at least one linked account
-- Re-linking the same Teller account preserves the prior child assignment; balances refresh from Teller
-- Real balances are kept in sync via Teller webhooks
+- Re-linking the same bank account (even when Teller issues a new `acc_…` id) preserves
+  the prior child assignment and updates one row matched by institution + last four + type
+- Real balances are kept in sync via Teller webhooks (`transactions.processed` triggers a
+  live balance fetch) and on enroll/reconnect
 - **RLS:** children see only accounts where `owner_member_id` is their member id; adults see all family accounts
 
 ---
@@ -436,6 +442,7 @@ bucketfund/
 ├── supabase/
 │   ├── functions/          # Edge Functions
 │   │   ├── teller-enroll/  # Process Connect enrollment, sync accounts
+│   │   ├── teller-enrollments-list/  # Admin enrollment metadata (Reconnect)
 │   │   ├── teller-disconnect/
 │   │   ├── teller-webhook/ # Webhook handler, balance updates
 │   │   └── check-invariant/# Ledger check stub (deferred until paid SaaS)
@@ -480,8 +487,9 @@ Implemented in `src/features/buckets/HomePage.tsx` and
 
 ### Teller webhook Edge Function
 - Verify Teller webhook signature
-- Update `accounts.current_balance` (unallocated on Home updates on next load / Realtime)
-- Broadcast update via Supabase Realtime to all connected clients in that family
+- On `transactions.processed`, fetch live balances for affected accounts and update
+  `accounts.current_balance` (unallocated on Home updates on next load / Realtime)
+- On `enrollment.disconnected`, mark the enrollment inactive
 
 ### Supabase Realtime
 - Subscribe to balance and transaction changes scoped to the authenticated member's family

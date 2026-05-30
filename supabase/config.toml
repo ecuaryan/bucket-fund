@@ -392,6 +392,9 @@ deno_version = 2
 [functions.teller-enroll]
 verify_jwt = true
 
+[functions.teller-enrollments-list]
+verify_jwt = true
+
 [functions.teller-disconnect]
 verify_jwt = true
 

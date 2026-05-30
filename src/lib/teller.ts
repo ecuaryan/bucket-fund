@@ -3,8 +3,6 @@ import { supabase } from '@/lib/supabase'
 
 const TELLER_CONNECT_SRC = 'https://cdn.teller.io/connect/connect.js'
 
-// Subset of the Teller Connect API we use. Connect publishes a `TellerConnect`
-// global once the script has loaded.
 type TellerEnrollment = {
   accessToken: string
   enrollment: {
@@ -25,6 +23,7 @@ type TellerConnectSetupOptions = {
   environment?: 'sandbox' | 'development' | 'production'
   products?: Array<'verify' | 'balance' | 'transactions' | 'identity'>
   selectAccount?: 'disabled' | 'single' | 'multiple'
+  enrollmentId?: string
   onInit?: () => void
   onSuccess: (enrollment: TellerEnrollment) => void
   onExit?: () => void
@@ -81,20 +80,44 @@ export type LinkBankResult = {
   }>
 }
 
-async function postEnrollment(
-  enrollment: TellerEnrollment,
-): Promise<LinkBankResult> {
+export type TellerEnrollmentMeta = {
+  id: string
+  enrollmentId: string
+  institutionName: string | null
+  status: string
+  lastSyncedAt: string | null
+  accountCount: number
+}
+
+export type TellerConnectOpenOptions = {
+  /** Teller enr_… id — opens Connect in update/reconnect mode. */
+  enrollmentId?: string
+}
+
+async function authFetch(
+  path: string,
+  init?: RequestInit,
+): Promise<Response> {
   const { data: sessionData } = await supabase.auth.getSession()
   const accessToken = sessionData.session?.access_token
   if (!accessToken) throw new Error('Not signed in')
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-  const res = await fetch(`${supabaseUrl}/functions/v1/teller-enroll`, {
-    method: 'POST',
+  return fetch(`${supabaseUrl}/functions/v1/${path}`, {
+    ...init,
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      'content-type': 'application/json',
+      ...(init?.headers ?? {}),
     },
+  })
+}
+
+async function postEnrollment(
+  enrollment: TellerEnrollment,
+): Promise<LinkBankResult> {
+  const res = await authFetch('teller-enroll', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       accessToken: enrollment.accessToken,
       enrollment: enrollment.enrollment,
@@ -114,6 +137,23 @@ async function postEnrollment(
     throw new Error(detail)
   }
   return (await res.json()) as LinkBankResult
+}
+
+/**
+ * Lists Teller enrollment metadata for the admin's family (no tokens).
+ */
+export async function listTellerEnrollments(): Promise<TellerEnrollmentMeta[]> {
+  const res = await authFetch('teller-enrollments-list', { method: 'GET' })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(
+      typeof body.error === 'string'
+        ? body.error
+        : `teller-enrollments-list failed: ${res.status}`,
+    )
+  }
+  const body = (await res.json()) as { enrollments: TellerEnrollmentMeta[] }
+  return body.enrollments
 }
 
 /**
@@ -141,11 +181,14 @@ export function useTellerConnect() {
   }, [])
 
   const open = useCallback(
-    (callbacks: {
-      onLinked: (result: LinkBankResult) => void
-      onError?: (message: string) => void
-      onExit?: () => void
-    }): void => {
+    (
+      callbacks: {
+        onLinked: (result: LinkBankResult) => void
+        onError?: (message: string) => void
+        onExit?: () => void
+      },
+      options?: TellerConnectOpenOptions,
+    ): void => {
       if (!window.TellerConnect) {
         setError('Teller Connect is not loaded yet')
         return
@@ -169,6 +212,9 @@ export function useTellerConnect() {
         environment,
         products: ['balance', 'transactions'],
         selectAccount: 'multiple',
+        ...(options?.enrollmentId
+          ? { enrollmentId: options.enrollmentId }
+          : {}),
         onSuccess: async (enrollment) => {
           try {
             const result = await postEnrollment(enrollment)
@@ -214,17 +260,9 @@ export type DisconnectResult = {
 export async function disconnectEnrollment(
   enrollmentId: string,
 ): Promise<DisconnectResult> {
-  const { data: sessionData } = await supabase.auth.getSession()
-  const accessToken = sessionData.session?.access_token
-  if (!accessToken) throw new Error('Not signed in')
-
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-  const res = await fetch(`${supabaseUrl}/functions/v1/teller-disconnect`, {
+  const res = await authFetch('teller-disconnect', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'content-type': 'application/json',
-    },
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ enrollmentId }),
   })
 

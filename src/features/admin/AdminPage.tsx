@@ -5,10 +5,16 @@ import { accountAssignmentChildId } from '@/lib/accounts'
 import {
   ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL,
   ADMIN_LINKED_ACCOUNTS_INTRO,
+  ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT,
   adminLinkedAccountsMemberGate,
 } from '@/lib/brand'
 import { pickHouseholdAdminName } from '@/lib/householdAdmin'
-import { disconnectEnrollment, useTellerConnect } from '@/lib/teller'
+import {
+  disconnectEnrollment,
+  listTellerEnrollments,
+  type TellerEnrollmentMeta,
+  useTellerConnect,
+} from '@/lib/teller'
 import AccountAssignmentSelect from '@/features/admin/AccountAssignmentSelect'
 import AdminAccountSection from '@/features/admin/AdminAccountSection'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
@@ -27,6 +33,7 @@ type FamilyMemberRow = {
 
 type EnrollmentGroup = {
   enrollmentId: string
+  tellerConnectEnrollmentId: string | null
   institutionName: string | null
   accounts: Account[]
   totalBalance: number
@@ -61,7 +68,10 @@ function sortAccountsStable(accounts: Account[]): Account[] {
   })
 }
 
-function groupByEnrollment(accounts: Account[]): EnrollmentGroup[] {
+function groupByEnrollment(
+  accounts: Account[],
+  enrollmentMeta: Map<string, TellerEnrollmentMeta>,
+): EnrollmentGroup[] {
   const map = new Map<string, EnrollmentGroup>()
   const orphans: Account[] = []
   for (const a of sortAccountsStable(accounts)) {
@@ -80,9 +90,11 @@ function groupByEnrollment(accounts: Account[]): EnrollmentGroup[] {
         existing.lastSyncedAt = a.last_synced_at
       }
     } else {
+      const meta = enrollmentMeta.get(a.teller_enrollment_id)
       map.set(a.teller_enrollment_id, {
         enrollmentId: a.teller_enrollment_id,
-        institutionName: a.institution_name,
+        tellerConnectEnrollmentId: meta?.enrollmentId ?? null,
+        institutionName: a.institution_name ?? meta?.institutionName ?? null,
         accounts: [a],
         totalBalance: Number(a.current_balance),
         lastSyncedAt: a.last_synced_at,
@@ -101,6 +113,7 @@ function groupByEnrollment(accounts: Account[]): EnrollmentGroup[] {
   if (orphans.length > 0) {
     groups.push({
       enrollmentId: '',
+      tellerConnectEnrollmentId: null,
       institutionName: 'Unlinked',
       accounts: orphans,
       totalBalance: orphans.reduce((s, a) => s + Number(a.current_balance), 0),
@@ -122,7 +135,11 @@ export default function AdminPage() {
   const [linkError, setLinkError] = useState<string | null>(null)
   const [linkInfo, setLinkInfo] = useState<string | null>(null)
   const [unlinkingId, setUnlinkingId] = useState<string | null>(null)
+  const [reconnectingId, setReconnectingId] = useState<string | null>(null)
   const [accountsSyncing, setAccountsSyncing] = useState(false)
+  const [enrollmentMeta, setEnrollmentMeta] = useState<
+    Map<string, TellerEnrollmentMeta>
+  >(new Map())
 
   const isAdmin = member?.role === 'admin'
 
@@ -152,11 +169,23 @@ export default function AdminPage() {
     setMembers(data ?? [])
   }, [])
 
+  const loadEnrollments = useCallback(async () => {
+    try {
+      const enrollments = await listTellerEnrollments()
+      setEnrollmentMeta(new Map(enrollments.map((e) => [e.id, e])))
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : String(e))
+    }
+  }, [])
+
   useEffect(() => {
     if (!member) return
     void loadAccounts()
     void loadMembers()
-  }, [member, loadAccounts, loadMembers])
+    if (member.role === 'admin') {
+      void loadEnrollments()
+    }
+  }, [member, loadAccounts, loadMembers, loadEnrollments])
 
   const memberRolesById = useMemo(
     () => new Map((members ?? []).map((m) => [m.id, m.role])),
@@ -177,26 +206,53 @@ export default function AdminPage() {
   )
 
   const groups = useMemo(
-    () => (accounts ? groupByEnrollment(accounts) : []),
-    [accounts],
+    () => (accounts ? groupByEnrollment(accounts, enrollmentMeta) : []),
+    [accounts, enrollmentMeta],
   )
+
+  function afterLinkSuccess(count: number, verb: 'Linked' | 'Reconnected') {
+    setLinkInfo(
+      count === 0
+        ? `${verb}, but no accounts came back. Try again.`
+        : `${verb} ${count} account${count === 1 ? '' : 's'}.`,
+    )
+    setAccountsSyncing(true)
+    void Promise.all([loadAccounts(), loadEnrollments()]).finally(() =>
+      setAccountsSyncing(false),
+    )
+  }
 
   function onLink() {
     setLinkError(null)
     setLinkInfo(null)
     teller.open({
-      onLinked: (result) => {
-        const count = result.accounts.length
-        setLinkInfo(
-          count === 0
-            ? 'Linked, but no accounts came back. Try again.'
-            : `Linked ${count} account${count === 1 ? '' : 's'}.`,
-        )
-        setAccountsSyncing(true)
-        void loadAccounts().finally(() => setAccountsSyncing(false))
-      },
+      onLinked: (result) => afterLinkSuccess(result.accounts.length, 'Linked'),
       onError: (msg) => setLinkError(msg),
     })
+  }
+
+  function onReconnect(group: EnrollmentGroup) {
+    if (!group.tellerConnectEnrollmentId) {
+      setLinkError('Missing enrollment id for reconnect.')
+      return
+    }
+    setLinkError(null)
+    setLinkInfo(null)
+    setReconnectingId(group.enrollmentId)
+    teller.open(
+      {
+        onLinked: (result) => {
+          setReconnectingId(null)
+          afterLinkSuccess(result.accounts.length, 'Reconnected')
+        },
+        onError: (msg) => {
+          setReconnectingId(null)
+          setLinkError(msg)
+        },
+        onExit: () => setReconnectingId(null),
+      },
+      { enrollmentId: group.tellerConnectEnrollmentId },
+    )
   }
 
   async function onUnlink(group: EnrollmentGroup) {
@@ -224,7 +280,7 @@ export default function AdminPage() {
       )
       setAccountsSyncing(true)
       try {
-        await loadAccounts()
+        await Promise.all([loadAccounts(), loadEnrollments()])
       } finally {
         setAccountsSyncing(false)
       }
@@ -260,15 +316,26 @@ export default function AdminPage() {
       </header>
 
       <BusyOverlay
-        busy={unlinkingId !== null || teller.linking || accountsSyncing}
-        label={teller.linking ? 'Linking…' : 'Updating accounts…'}
+        busy={
+          unlinkingId !== null ||
+          reconnectingId !== null ||
+          teller.linking ||
+          accountsSyncing
+        }
+        label={
+          teller.linking
+            ? reconnectingId
+              ? 'Reconnecting…'
+              : 'Linking…'
+            : 'Updating accounts…'
+        }
       >
       <section aria-label="Linked accounts">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-base font-semibold">Linked accounts</h2>
             <p className="mt-1 text-xs text-zinc-400">
-              {ADMIN_LINKED_ACCOUNTS_INTRO}
+              {ADMIN_LINKED_ACCOUNTS_INTRO} {ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT}
             </p>
           </div>
           <button
@@ -332,16 +399,35 @@ export default function AdminPage() {
                     </p>
                   </div>
                   {group.enrollmentId && (
-                    <button
-                      type="button"
-                      onClick={() => onUnlink(group)}
-                      disabled={unlinkingId === group.enrollmentId}
-                      className="shrink-0 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {unlinkingId === group.enrollmentId
-                        ? 'Unlinking…'
-                        : 'Unlink'}
-                    </button>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {group.tellerConnectEnrollmentId && (
+                        <button
+                          type="button"
+                          onClick={() => onReconnect(group)}
+                          disabled={
+                            !teller.ready ||
+                            teller.linking ||
+                            unlinkingId === group.enrollmentId ||
+                            reconnectingId === group.enrollmentId
+                          }
+                          className="rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {reconnectingId === group.enrollmentId
+                            ? 'Reconnecting…'
+                            : 'Reconnect'}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => onUnlink(group)}
+                        disabled={unlinkingId === group.enrollmentId}
+                        className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {unlinkingId === group.enrollmentId
+                          ? 'Unlinking…'
+                          : 'Unlink'}
+                      </button>
+                    </div>
                   )}
                 </header>
                 <ul className="divide-y divide-zinc-800">
