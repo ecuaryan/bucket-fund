@@ -124,9 +124,10 @@ Edge Functions:
 
 | Function            | Purpose                                      |
 | ------------------- | -------------------------------------------- |
-| `teller-enroll`     | Store enrollment + sync accounts (admin JWT) |
-| `teller-disconnect` | Revoke enrollment + delete local rows        |
-| `teller-webhook`    | Verify signature, update balances, log events  |
+| `teller-enroll`            | Store enrollment + sync accounts (admin JWT) |
+| `teller-enrollments-list`  | List enrollment metadata for Reconnect (admin JWT) |
+| `teller-disconnect`        | Revoke enrollment + delete local rows        |
+| `teller-webhook`           | Verify signature, refresh balances, log events |
 | `check-invariant`   | Ledger check stub (deferred; see CONTEXT.md) |
 
 > Teller Connect UI and account linking live in `src/features/admin/` today.
