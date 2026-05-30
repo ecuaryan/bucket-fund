@@ -49,6 +49,7 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 - Funds children via Send; sees all family sends and shared-pool history
 - Views family-level transaction history
 - Sees the same Home signals as members (e.g. red unallocated when the pool is over-allocated)
+- **Admin screen:** join code, household members, linked accounts, and **admin sign-in** (email display + password reset via email link — admin-only)
 
 **Member** (e.g. spouse)
 - Operational access only
@@ -168,8 +169,13 @@ system-error banner.
 
 ### Home Screen
 - Bucket list with allocated amounts per bucket (adults: shared set, per-person sort order)
-- Unallocated balance prominently displayed (green if ≥ 0, red if < 0)
-- No separate "real balance" display — unallocated is the signal
+- **Unallocated card** when at least one bank account is linked: green if ≥ 0, red if < 0
+  (red = rebalance signal — bank cash dropped but bucket labels did not)
+- **No linked accounts (admin/member):** link-bank CTA instead of the unallocated card —
+  negative unallocated with zero cash is not a meaningful rebalance signal; optional
+  note of total allocated across buckets. Admin gets a link to Admin; members are
+  told to ask the household admin.
+- No separate "real balance" display — unallocated (when linked) is the signal
 
 ---
 
@@ -178,8 +184,9 @@ system-error banner.
 Two different situations — do not conflate them in UX or docs.
 
 **1. Budgeting gap (normal, user-facing)**  
-Bank balance changed; envelope labels did not. Home shows negative unallocated.
-The user fixes it with bucket moves. No extra “integrity” modal.
+Bank balance changed; envelope labels did not. Home shows negative unallocated
+(when accounts are linked). The user fixes it with bucket moves. No extra
+“integrity” modal. With no linked accounts, Home shows the link-bank CTA instead.
 
 **2. System ledger gap (abnormal, operator-facing)**  
 Stored cash, allocations, and per-member math no longer form one consistent
@@ -215,17 +222,25 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
 ### Authentication
 - **Admin (setup & bank):** email + password via Supabase Auth. Sign-up sets
   `bootstrap_family` metadata so only the first admin creates a tenant (PIN
-  users do not spawn extra families).
+  users do not spawn extra families). The admin keeps a **real email** on
+  `auth.users` (shown on Admin → admin sign-in; password reset via the same
+  forgot-password email flow as login).
 - **Admin / Member / Child (day-to-day):** bind device once with an unguessable
   **family join code** or QR (`/join?code=…`), then avatar + **4-digit PIN**.
   Devices with a stored join code redirect to `/login/family` when signed out
   (email `/login` remains for account setup and `?signup=1`).
-  Each person has their own `auth.users` row (internal email, never shown).
+  Each person gets an `auth.users` row. **PIN-only members and children** use
+  an internal `{memberId}@pin.bucketfund.internal` address (never shown in UI).
+  **Admin PIN login** still uses the admin’s real email — the `pin-login` Edge
+  Function issues a session via magic link without rotating the email password.
 - **PIN management:** admin only — set/reset PIN verbally; no self-service PIN
   change in v1. Reset PIN revokes all sessions for that member.
 - **Lockout:** 6 failed PIN attempts → locked until admin clears.
 - **Join code rotation:** admin can rotate; only affects **new** device binds.
 - **Sessions:** independent per person — logout on one device does not sign out others.
+- **Shared / kiosk devices:** PIN sign-in is aimed at children (and adults using
+  join code + PIN). If kids can see Home balances, hiding admin email on Admin
+  adds little; Admin tab remains admin-role-only.
 - **Home bucket visibility:** admin and member see family-pool + adult-owned buckets
   only (not children's buckets). Each adult orders that list independently via
   `member_bucket_order`. Children see only their own buckets.
@@ -406,7 +421,7 @@ bucketfund/
 │   │   ├── buckets/        # Home (/), bucket list, move flow, CRUD
 │   │   ├── sends/          # Send money flow (SendPage + send_money RPC)
 │   │   ├── history/        # Transaction history
-│   │   └── admin/          # Bank link/unlink, assign accounts to children, members/join
+│   │   └── admin/          # Join code, members, linked accounts, admin sign-in account
 │   ├── lib/
 │   │   ├── supabase.ts     # Supabase client
 │   │   ├── auth.tsx        # Auth context + Realtime JWT sync

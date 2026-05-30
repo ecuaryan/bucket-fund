@@ -37,6 +37,13 @@ jobs:
 
       - name: Production build
         run: npm run build
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+
+      - name: Log build version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "Built ${VERSION} (${GITHUB_SHA:0:7})"
 
   db:
     name: database RLS tests

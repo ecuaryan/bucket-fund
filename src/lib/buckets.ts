@@ -1,4 +1,7 @@
 import { supabase } from '@/lib/supabase'
+import { validateBucketName } from '@/lib/bucketName'
+
+export { BUCKET_NAME_MAX_LENGTH, validateBucketName } from '@/lib/bucketName'
 
 export type MoveMoneyArgs = {
   fromBucketId: string | null
@@ -39,7 +42,8 @@ export async function renameBucket(
   name: string,
 ): Promise<void> {
   const trimmed = name.trim()
-  if (!trimmed) throw new Error('Name cannot be empty.')
+  const invalid = validateBucketName(trimmed)
+  if (invalid) throw new Error(invalid)
   const { error } = await supabase
     .from('buckets')
     .update({ name: trimmed })

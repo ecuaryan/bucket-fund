@@ -6,13 +6,22 @@ import {
   fetchHomeBalanceBreakdown,
   type HomeBalanceBreakdown,
 } from '@/lib/availableBalance'
-import { SEND_ADULT_INTRO, SEND_CHILD_INTRO } from '@/lib/brand'
+import {
+  HOME_LINK_BANK_ADMIN_ACTION,
+  HOME_LINK_BANK_TITLE,
+  sendLinkBankMemberBody,
+  SEND_ADULT_INTRO,
+  SEND_ADULT_NO_ACCOUNTS_BODY,
+  SEND_CHILD_INTRO,
+} from '@/lib/brand'
+import { fetchHouseholdAdminName } from '@/lib/householdAdmin'
 import { subscribeHouseholdRosterRefresh } from '@/lib/householdRosterRefresh'
 import { filterSendRecipients } from '@/lib/sendRecipients'
 import { sendMoney } from '@/lib/sends'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import { AmountLimitHint } from '@/components/AmountLimitHint'
+import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
 import type { Database } from '@/types/database'
 
@@ -20,6 +29,7 @@ type Member = Pick<
   Database['public']['Tables']['family_members']['Row'],
   'id' | 'name' | 'role'
 >
+type Account = Database['public']['Tables']['accounts']['Row']
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -35,6 +45,10 @@ export default function SendPage() {
   const memberId = member?.id ?? null
 
   const [members, setMembers] = useState<Member[] | null>(null)
+  const [accounts, setAccounts] = useState<Account[] | null>(null)
+  const [householdAdminName, setHouseholdAdminName] = useState<string | null>(
+    null,
+  )
   const [available, setAvailable] = useState<number | null>(null)
   const [balanceBreakdown, setBalanceBreakdown] =
     useState<HomeBalanceBreakdown | null>(null)
@@ -52,7 +66,7 @@ export default function SendPage() {
     if (!memberId) return
     setLoadError(null)
     try {
-      const [membersRes, bucketsRes, accountsRes] = await Promise.all([
+      const [membersRes, bucketsRes, accountsRes, adminName] = await Promise.all([
         supabase
           .from('family_members')
           .select('id, name, role')
@@ -60,6 +74,7 @@ export default function SendPage() {
           .order('name'),
         supabase.from('buckets').select('allocated_amount'),
         supabase.from('accounts').select('*'),
+        fetchHouseholdAdminName(),
       ])
       if (membersRes.error) {
         setLoadError(membersRes.error.message)
@@ -80,6 +95,8 @@ export default function SendPage() {
         buckets: bucketsRes.data ?? [],
       })
       setMembers(membersRes.data ?? [])
+      setAccounts(accountRows)
+      setHouseholdAdminName(adminName)
       setBalanceBreakdown(breakdown)
       setBalanceUsesFallback(usedFallback)
       setAvailable(breakdown.unallocated)
@@ -209,7 +226,7 @@ export default function SendPage() {
     )
   }
 
-  if (members === null || available === null) {
+  if (members === null || available === null || accounts === null) {
     return <p className="text-sm text-zinc-400">Loading…</p>
   }
 
@@ -217,13 +234,18 @@ export default function SendPage() {
     return <Navigate to="/" replace />
   }
 
+  const hasLinkedAccounts = accounts.length > 0
+  const showLinkBankCard = isAdult && !hasLinkedAccounts
+  const canSend = sendEnabled && !showLinkBankCard
+
   const availableColor =
     available >= 0
       ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30'
       : 'bg-red-500/10 text-red-300 ring-red-500/30'
 
   return (
-    <div className="mx-auto max-w-md space-y-6">
+    <BusyOverlay busy={submitting} label="Sending…">
+      <div className="mx-auto max-w-md space-y-6">
       <header>
         <h1 className="text-xl font-semibold">Send</h1>
         <p className="mt-1 text-sm text-zinc-400">
@@ -231,33 +253,60 @@ export default function SendPage() {
         </p>
       </header>
 
-      <section
-        className={`rounded-2xl px-4 py-4 ring-1 ${availableColor}`}
-        aria-label="Your unallocated balance"
-      >
-        <p className="text-xs font-medium uppercase tracking-wide opacity-70">
-          You can send
-        </p>
-        <p className="mt-1 text-2xl font-semibold tabular-nums">
-          {currency.format(available)}
-        </p>
-        {showChildBreakdown && balanceBreakdown ? (
-          <dl className="mt-3 space-y-1 border-t border-current/10 pt-3 text-xs opacity-90">
-            {childTotal > 0 ? (
-              <div className="flex justify-between gap-4 tabular-nums">
-                <dt>Total balance</dt>
-                <dd>{currency.format(childTotal)}</dd>
-              </div>
-            ) : null}
-            {balanceBreakdown.bucketAllocated > 0 ? (
-              <div className="flex justify-between gap-4 tabular-nums">
-                <dt>In your buckets</dt>
-                <dd>−{currency.format(balanceBreakdown.bucketAllocated)}</dd>
-              </div>
-            ) : null}
-          </dl>
-        ) : null}
-      </section>
+      {showLinkBankCard ? (
+        <section
+          className="rounded-2xl bg-emerald-500/10 px-4 py-4 ring-1 ring-emerald-500/30"
+          aria-label="Link a bank account"
+        >
+          <p className="text-xs font-medium uppercase tracking-wide text-emerald-300/70">
+            Before you send
+          </p>
+          <h2 className="mt-1 text-lg font-semibold text-emerald-100">
+            {HOME_LINK_BANK_TITLE}
+          </h2>
+          <p className="mt-2 text-sm text-emerald-200/80">
+            {member?.role === 'admin'
+              ? SEND_ADULT_NO_ACCOUNTS_BODY
+              : sendLinkBankMemberBody(householdAdminName)}
+          </p>
+          {member?.role === 'admin' ? (
+            <Link
+              to="/admin"
+              className="mt-4 inline-flex rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
+            >
+              {HOME_LINK_BANK_ADMIN_ACTION}
+            </Link>
+          ) : null}
+        </section>
+      ) : (
+        <section
+          className={`rounded-2xl px-4 py-4 ring-1 ${availableColor}`}
+          aria-label="Your unallocated balance"
+        >
+          <p className="text-xs font-medium uppercase tracking-wide opacity-70">
+            You can send
+          </p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums">
+            {currency.format(available)}
+          </p>
+          {showChildBreakdown && balanceBreakdown ? (
+            <dl className="mt-3 space-y-1 border-t border-current/10 pt-3 text-xs opacity-90">
+              {childTotal > 0 ? (
+                <div className="flex justify-between gap-4 tabular-nums">
+                  <dt>Total balance</dt>
+                  <dd>{currency.format(childTotal)}</dd>
+                </div>
+              ) : null}
+              {balanceBreakdown.bucketAllocated > 0 ? (
+                <div className="flex justify-between gap-4 tabular-nums">
+                  <dt>In your buckets</dt>
+                  <dd>−{currency.format(balanceBreakdown.bucketAllocated)}</dd>
+                </div>
+              ) : null}
+            </dl>
+          ) : null}
+        </section>
+      )}
 
       {!sendEnabled && (
         <p className="rounded-2xl bg-amber-500/10 px-4 py-3 text-sm text-amber-200 ring-1 ring-amber-500/30">
@@ -267,7 +316,7 @@ export default function SendPage() {
         </p>
       )}
 
-      {sendEnabled ? (
+      {canSend ? (
         <form
           onSubmit={onSubmit}
           className="space-y-4 rounded-2xl bg-zinc-900 p-5 ring-1 ring-zinc-800"
@@ -360,11 +409,11 @@ export default function SendPage() {
             {submitting ? 'Sending…' : 'Send'}
           </button>
         </form>
-      ) : (
+      ) : !sendEnabled ? (
         <p className="rounded-2xl bg-zinc-900 px-4 py-3 text-sm text-zinc-400 ring-1 ring-zinc-800">
           Sending is disabled until the database migration is applied.
         </p>
-      )}
+      ) : null}
 
       <p className="text-center text-xs text-zinc-500">
         Sent money shows in{' '}
@@ -373,6 +422,7 @@ export default function SendPage() {
         </Link>
         .
       </p>
-    </div>
+      </div>
+    </BusyOverlay>
   )
 }

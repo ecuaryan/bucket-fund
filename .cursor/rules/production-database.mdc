@@ -1,0 +1,18 @@
+---
+description: Never run destructive SQL or data wipes against hosted Supabase
+alwaysApply: true
+---
+
+# Hosted Supabase
+
+Production holds real ledger data. **Do not** run `DELETE`, `TRUNCATE`, `DROP`,
+`db reset --linked`, or `supabase db query --linked` with writes.
+
+- **Schema:** migrations in `supabase/migrations/`, applied via CI `db push` only.
+- **Data experiments:** `npm run db:reset` on local Docker (`--local`) only.
+- **Deploy CLI** (`link`, `db push`, `functions deploy`): only when the user
+  explicitly asks for a production deploy in that message.
+- **Hosted wipe requests:** refuse to automate; user does it in the Supabase
+  dashboard if they truly need to, after confirming backups.
+
+Access control lives in [README § Production database](./README.md#production-database).

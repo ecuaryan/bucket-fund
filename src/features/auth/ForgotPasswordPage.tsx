@@ -50,8 +50,9 @@ export default function ForgotPasswordPage() {
             we sent a reset link. Check your inbox (and spam).
           </p>
           <p className="text-xs text-zinc-400">
-            The link opens this app so you can choose a new password. PIN
-            sign-in for household members is separate and is not changed by this.
+            The link opens this app so you can choose a new password. This only
+            changes your email sign-in password—PINs for household members stay
+            the same.
           </p>
           <Link
             to="/login"

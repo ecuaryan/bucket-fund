@@ -5,11 +5,16 @@ import { accountAssignmentChildId } from '@/lib/accounts'
 import {
   ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL,
   ADMIN_LINKED_ACCOUNTS_INTRO,
+  adminLinkedAccountsMemberGate,
 } from '@/lib/brand'
+import { pickHouseholdAdminName } from '@/lib/householdAdmin'
 import { disconnectEnrollment, useTellerConnect } from '@/lib/teller'
 import AccountAssignmentSelect from '@/features/admin/AccountAssignmentSelect'
+import AdminAccountSection from '@/features/admin/AdminAccountSection'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
 import MembersSection from '@/features/admin/MembersSection'
+import { formatAppVersion } from '@/lib/appVersion'
+import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import type { Database } from '@/types/database'
 
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -117,6 +122,7 @@ export default function AdminPage() {
   const [linkError, setLinkError] = useState<string | null>(null)
   const [linkInfo, setLinkInfo] = useState<string | null>(null)
   const [unlinkingId, setUnlinkingId] = useState<string | null>(null)
+  const [accountsSyncing, setAccountsSyncing] = useState(false)
 
   const isAdmin = member?.role === 'admin'
 
@@ -165,6 +171,11 @@ export default function AdminPage() {
     [members],
   )
 
+  const householdAdminName = useMemo(
+    () => pickHouseholdAdminName(members ?? []),
+    [members],
+  )
+
   const groups = useMemo(
     () => (accounts ? groupByEnrollment(accounts) : []),
     [accounts],
@@ -181,7 +192,8 @@ export default function AdminPage() {
             ? 'Linked, but no accounts came back. Try again.'
             : `Linked ${count} account${count === 1 ? '' : 's'}.`,
         )
-        void loadAccounts()
+        setAccountsSyncing(true)
+        void loadAccounts().finally(() => setAccountsSyncing(false))
       },
       onError: (msg) => setLinkError(msg),
     })
@@ -205,7 +217,17 @@ export default function AdminPage() {
           ? `Unlinked ${group.institutionName ?? 'enrollment'} cleanly.`
           : `Unlinked locally, but Teller-side disconnect failed: ${result.tellerError ?? 'unknown'}. You may want to remove this app from your bank's connected-apps list.`,
       )
-      await loadAccounts()
+      setAccounts((prev) =>
+        prev
+          ? prev.filter((a) => a.teller_enrollment_id !== group.enrollmentId)
+          : prev,
+      )
+      setAccountsSyncing(true)
+      try {
+        await loadAccounts()
+      } finally {
+        setAccountsSyncing(false)
+      }
     } catch (e) {
       setLinkError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -221,11 +243,7 @@ export default function AdminPage() {
     return (
       <div className="rounded-2xl bg-amber-500/10 p-4 text-sm text-amber-200 ring-1 ring-amber-500/30">
         <p className="font-semibold">Admins only</p>
-        <p className="mt-1">
-          Linking bank accounts is restricted to the household admin. Ask the
-          person who set up this household to add the account, then they
-          can assign it to you.
-        </p>
+        <p className="mt-1">{adminLinkedAccountsMemberGate(householdAdminName)}</p>
       </div>
     )
   }
@@ -241,9 +259,10 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <FamilyJoinSection />
-      <MembersSection onRosterChanged={loadMembers} />
-
+      <BusyOverlay
+        busy={unlinkingId !== null || teller.linking || accountsSyncing}
+        label={teller.linking ? 'Linking…' : 'Updating accounts…'}
+      >
       <section aria-label="Linked accounts">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -289,7 +308,7 @@ export default function AdminPage() {
               No accounts linked yet
             </p>
             <p className="mt-1 text-xs text-zinc-400">
-              Tap &quot;Link bank&quot; to connect checking or savings.{' '}
+              Tap &quot;Link bank&quot; to connect one or more accounts.{' '}
               {ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL}
             </p>
           </div>
@@ -376,6 +395,16 @@ export default function AdminPage() {
           </ul>
         )}
       </section>
+      </BusyOverlay>
+
+      <MembersSection onRosterChanged={loadMembers} />
+      <FamilyJoinSection />
+
+      <AdminAccountSection />
+
+      <p className="pt-6 text-center text-xs text-zinc-600">
+        Version {formatAppVersion()}
+      </p>
     </div>
   )
 }

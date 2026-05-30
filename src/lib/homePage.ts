@@ -4,6 +4,7 @@ import {
   parseBreakdownRow,
   type HomeBalanceBreakdown,
 } from '@/lib/availableBalance'
+import { fetchHouseholdAdminName } from '@/lib/householdAdmin'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database'
 import type { Json } from '@/types/database'
@@ -16,7 +17,10 @@ export type HomePageData = {
   accounts: Account[]
   breakdown: HomeBalanceBreakdown
   usedFallback: boolean
+  householdAdminName: string | null
 }
+
+type HomePageCoreData = Omit<HomePageData, 'householdAdminName'>
 
 function parseBucketRows(raw: unknown): Bucket[] {
   if (!Array.isArray(raw)) return []
@@ -29,7 +33,7 @@ function parseAccountRows(raw: unknown): Account[] {
 }
 
 /** One RPC for Home when migration 23 is deployed; null → use legacy loaders. */
-export async function fetchHomePageData(): Promise<HomePageData | null> {
+export async function fetchHomePageData(): Promise<HomePageCoreData | null> {
   const { data, error } = await supabase.rpc('get_home_page_data')
   if (error) {
     if (isMissingDbFunctionError(error.message)) return null
@@ -52,7 +56,7 @@ export async function fetchHomePageData(): Promise<HomePageData | null> {
 }
 
 /** Legacy path when get_home_page_data is not on the linked project yet. */
-export async function fetchHomePageDataLegacy(): Promise<HomePageData> {
+export async function fetchHomePageDataLegacy(): Promise<HomePageCoreData> {
   await supabase.rpc('ensure_member_bucket_orders')
 
   const [bucketsRes, orderRes, accountsRes] = await Promise.all([
@@ -90,6 +94,13 @@ export async function fetchHomePageDataLegacy(): Promise<HomePageData> {
 }
 
 export async function loadHomePage(): Promise<HomePageData> {
-  const fast = await fetchHomePageData()
-  return fast ?? (await fetchHomePageDataLegacy())
+  const [fast, householdAdminName] = await Promise.all([
+    fetchHomePageData(),
+    fetchHouseholdAdminName(),
+  ])
+  if (fast) {
+    return { ...fast, householdAdminName }
+  }
+  const legacy = await fetchHomePageDataLegacy()
+  return { ...legacy, householdAdminName }
 }

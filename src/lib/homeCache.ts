@@ -9,6 +9,7 @@ export type HomePageCache = {
   accounts: Account[]
   breakdown: HomeBalanceBreakdown
   balanceUsesFallback: boolean
+  householdAdminName: string | null
   savedAt: number
 }
 

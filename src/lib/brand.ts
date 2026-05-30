@@ -36,7 +36,7 @@ export const LOGIN_ALREADY_HAVE_ACCOUNT = 'Already have an account?'
 
 /** Login/sign-up footnote. Fact-checked against our Teller usage (see docs/BRAND.md). */
 export const BANK_LINK_READ_ONLY =
-  'Read-only bank connection via Teller—we sync balances, not payments. BucketFund cannot move money or pay bills from your account.'
+  'Read-only bank connection—we sync balances, not payments. BucketFund cannot move money or pay bills from your account.'
 
 export const LOGIN_GET_STARTED = 'Get started'
 
@@ -78,7 +78,15 @@ export const ADMIN_JOIN_CODE_QR_ALT =
 export const ADMIN_HOUSEHOLD_MEMBERS_TITLE = 'Household members'
 
 export const ADMIN_HOUSEHOLD_MEMBERS_INTRO =
-  'Add people who sign in with a PIN (not your email). Every adult sees all household buckets and unallocated; children only see their own. Fund children with Send.'
+  'When you add someone, they sign in with a PIN—not your email.'
+
+/** Role and PIN implications when adding household members. */
+export const ADMIN_HOUSEHOLD_MEMBERS_DETAILS = [
+  'Adults share all household buckets and the same unallocated balance.',
+  'Fund children with Send.',
+  'Each child only sees what you Send them and their own buckets—not the household balance or adult bank accounts.',
+  'Tell each person their PIN—they cannot change it themselves.',
+] as const
 
 /** Admin: linked account or bucket belongs to all adults (not a child). */
 export const HOUSEHOLD_LABEL = 'Household'
@@ -86,40 +94,100 @@ export const HOUSEHOLD_LABEL = 'Household'
 /** Who can link banks, add members, and change Admin settings. */
 export const HOUSEHOLD_ADMIN_PHRASE = 'your household admin'
 
+/** Display name when known; generic phrase as fallback. */
+export function householdAdminLabel(
+  adminName: string | null | undefined,
+): string {
+  const trimmed = adminName?.trim()
+  return trimmed || HOUSEHOLD_ADMIN_PHRASE
+}
+
 export const ADMIN_LINKED_ACCOUNTS_INTRO =
-  'Read-only via Teller—we sync balances, not payments. This app cannot move money at your bank.'
+  'Read-only—we sync balances, not payments. BucketFund cannot move money at your bank.'
 
 export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
   'Balances count toward household unallocated until you assign an account to a child.'
 
 export const ADMIN_LOADING_MEMBERS = 'Loading household members…'
 
+export const ADMIN_ACCOUNT_TITLE = 'Admin sign-in'
+
+export const ADMIN_ACCOUNT_INTRO =
+  'Email and password for Admin on the web—not household PINs.'
+
+export const ADMIN_ACCOUNT_SEND_RESET = 'Email me a reset link'
+
+export const ADMIN_ACCOUNT_RESET_HINT =
+  'Your current session stays active until you finish the reset from your inbox.'
+
+export const ADMIN_ACCOUNT_RESET_SENT =
+  'This only changes your email sign-in password. Your PIN—and everyone else\'s—stays the same.'
+
 export const REMOVE_CHILD_ACCOUNTS_DETAIL =
   'Their buckets will be deleted. Any bank accounts assigned to them will count toward household unallocated. '
 
 // --- Home ---
 
-export const HOME_CHILD_UNALLOCATED_HINT =
-  'When an adult sends you money, move it into buckets—or ask them to link your bank account in Admin.'
+export function homeChildUnallocatedHint(
+  adminName: string | null | undefined,
+): string {
+  return `When an adult sends you money, move it into buckets—or ask ${householdAdminLabel(adminName)} to link your bank account.`
+}
 
-export const HOME_ADULT_NO_ACCOUNTS_HINT =
-  'No linked cash accounts yet—link one from Admin.'
+export const HOME_LINK_BANK_TITLE = 'Link a bank account'
 
-export const HOME_MEMBER_NO_ACCOUNTS_HINT =
-  'No linked cash accounts yet—ask your household admin to link a bank account in Admin.'
+export const HOME_LINK_BANK_ADMIN_BODY =
+  'Link one or more accounts to sync cash balances with your buckets. Read-only—we never move money at your bank.'
 
-export const HOME_MEMBER_NO_BUCKETS_HINT =
-  'Ask your household admin to add buckets.'
+export const HOME_LINK_BANK_ADMIN_ACTION = 'Link in Admin'
+
+export function homeLinkBankMemberBody(
+  adminName: string | null | undefined,
+): string {
+  return `No bank accounts are linked yet. Ask ${householdAdminLabel(adminName)} to connect a bank account so balances stay in sync with your buckets.`
+}
+
+export function sendLinkBankMemberBody(
+  adminName: string | null | undefined,
+): string {
+  return `No bank accounts are linked yet. Ask ${householdAdminLabel(adminName)} to connect one before you can send.`
+}
+
+export function homeMemberNoBucketsHint(
+  adminName: string | null | undefined,
+): string {
+  return `Ask ${householdAdminLabel(adminName)} to add buckets.`
+}
 
 // --- Send ---
 
 export const SEND_ADULT_INTRO =
   'Fund a child’s unallocated from the balance adults share on Home.'
 
+export const SEND_ADULT_NO_ACCOUNTS_BODY =
+  'Send uses cash from the household balance on Home. Link a bank account in Admin first so we know how much you can send.'
+
 export const SEND_CHILD_INTRO =
   'Send your unallocated to another household member.'
 
+// --- History ---
+
+export const HISTORY_EMPTY_BUCKET_BODY =
+  'Move money in or out of this bucket and it will appear here.'
+
+export const HISTORY_EMPTY_BODY =
+  'Move money between buckets and unallocated on Home—it will appear here.'
+
 // --- PIN sign-in ---
 
-export const PIN_NO_MEMBERS_YET =
-  'No one has a PIN yet. Ask your household admin to add people and set PINs in Admin.'
+export function pinNoMembersYet(adminName: string | null | undefined): string {
+  return `No one has a PIN yet. Ask ${householdAdminLabel(adminName)} to add people and set PINs.`
+}
+
+// --- Admin (non-admin viewers) ---
+
+export function adminLinkedAccountsMemberGate(
+  adminName: string | null | undefined,
+): string {
+  return `Only ${householdAdminLabel(adminName)} can link bank accounts and manage household settings here. Ask them to connect an account if Home is not showing balances yet.`
+}

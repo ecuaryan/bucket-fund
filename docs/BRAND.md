@@ -20,6 +20,9 @@ label it; buckets are how you **decide** where money is reserved. The payoff:
 ## Voice
 
 - Plain, direct, no finance jargon.
+- **Do not name Teller** (or other vendors) in user-facing UI — say read-only
+  bank connection / sync balances. Teller stays accurate in this doc and
+  `docs/BRAND.md` § Bank link for implementers.
 - Emphasize **which bucket covers a bank move**, not “families only” or income tracing.
 - Say **household** in UI when meaning “your group”; **family** is fine in
   internal/schema terms (`family_id`, routes like `/login/family`).
@@ -58,11 +61,17 @@ accounts and balances; webhooks refresh balances when activity posts. We do
 
 **`send_money` and `move_money` are virtual** — labels inside the app only.
 
-User-facing reassurance: `BANK_LINK_READ_ONLY` in `brand.ts`. Do not promise
-“we never see transactions” if we later fetch transaction history; today we
-mainly use the transactions product for balance sync webhooks.
+User-facing reassurance: `BANK_LINK_READ_ONLY`, `ADMIN_LINKED_ACCOUNTS_INTRO`,
+`HOME_LINK_BANK_*` in `brand.ts` — read-only, no payments, BucketFund cannot
+move money at the bank. Do not promise “we never see transactions” if we later
+fetch transaction history; today we mainly use the transactions product for
+balance sync webhooks.
 
-## Copy map (auth)
+Link copy: **one or more accounts**; **cash account types** count toward
+unallocated (see `CASH_ACCOUNT_SUBTYPES` in `src/lib/accounts.ts`) — do not
+limit UI to “checking or savings” only.
+
+## Copy map (auth & admin)
 
 | Surface | String source |
 |---------|----------------|
@@ -75,6 +84,14 @@ mainly use the transactions product for balance sync webhooks.
 | Join code (Admin + PIN) | `JOIN_CODE_*`, `ADMIN_JOIN_CODE_*` |
 | Admin people & roles | `ADMIN_HOUSEHOLD_MEMBERS_*`, `memberRoles.ts` |
 | Admin linked accounts | `ADMIN_LINKED_ACCOUNTS_*` |
-| Household admin (hints) | `HOUSEHOLD_ADMIN_PHRASE`, Home/Send/PIN strings in `brand.ts` |
+| Admin email & password reset | `ADMIN_ACCOUNT_*` |
+| Household admin (hints) | `householdAdminLabel()`, `HOUSEHOLD_ADMIN_PHRASE` fallback |
+| Home: no linked accounts | `homeLinkBankMemberBody()` |
+| Home: member empty buckets | `homeMemberNoBucketsHint()` |
+| Home: child unallocated hint | `homeChildUnallocatedHint()` |
+| History empty state | `HISTORY_EMPTY_*` |
+| PIN sign-in: empty roster | `pinNoMembersYet()` |
+| Admin gate (non-admin) | `adminLinkedAccountsMemberGate()` |
+| Orphan PIN session | `ORPHAN_MEMBER_MESSAGE` in `pinAuth.ts` (generic fallback) |
 | Static HTML | `HTML_META_DESCRIPTION`, `OFFLINE_PAGE_BODY` (sync index + offline manually) |
 | PIN join screen | `PIN_JOIN_PAGE_*`, `JOIN_CODE_LABEL` |

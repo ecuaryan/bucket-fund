@@ -60,7 +60,7 @@ export default function BucketActionsMenu({
   return (
     <div
       ref={ref}
-      className="relative"
+      className="relative shrink-0"
       onClick={(e) => e.stopPropagation()}
     >
       <button

@@ -27,6 +27,7 @@ import {
 import {
   type AuthLocationState,
   loginEmailFromQuery,
+  postSignInPath,
   shouldRedirectLoginToPin,
 } from '@/lib/authNavigation'
 import { clearPasswordRecoveryFlow } from '@/lib/passwordRecoveryFlow'
@@ -82,7 +83,16 @@ export default function LoginPage() {
   const [info, setInfo] = useState<string | null>(loginInfo)
 
   if (auth.status === 'signedIn' && !pendingFreshSignIn) {
-    return <Navigate to={from} replace />
+    if (auth.memberLoading) {
+      return (
+        <div className="flex min-h-svh items-center justify-center bg-black px-4">
+          <p className="text-sm text-zinc-500">Signing you in…</p>
+        </div>
+      )
+    }
+    return (
+      <Navigate to={postSignInPath(from, auth.member?.role)} replace />
+    )
   }
 
   if (

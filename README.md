@@ -225,6 +225,21 @@ Teller certs before trusting real bank credentials (see below).
       npx supabase secrets set --env-file ./supabase/functions/.env
       ```
 
+### Production database
+
+Before the first non-builder family signs up:
+
+- [ ] **Keep prod unlinked on your laptop.** Run `npx supabase unlink` after any
+      manual deploy. Routine work is local Docker only (`npm run db:start`,
+      `npm run db:reset`). Do not put `SUPABASE_DB_PASSWORD` or
+      `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` or shell profiles.
+- [ ] **Enable PITR** (Supabase → Database) once real data would hurt to lose.
+- [ ] **Bulk data changes:** local Docker only. If you must touch hosted rows,
+      use the dashboard SQL Editor yourself — not CLI, not agents.
+
+Schema still ships via CI (`deploy-supabase.yml` → `db push`). Manual fallback
+ends with `npx supabase unlink`.
+
 ### Teller environments
 
 Set both `VITE_TELLER_ENVIRONMENT` (in `.env.local`) and

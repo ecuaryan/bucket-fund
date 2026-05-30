@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { bindFamily, clearBoundFamily } from '@/lib/familyDevice'
 import {
   loginEmailFromQuery,
+  postSignInPath,
   shouldRedirectLoginToPin,
   signedOutRedirectTarget,
 } from '@/lib/authNavigation'
@@ -44,6 +45,28 @@ describe('signedOutRedirectTarget', () => {
     const { to, state } = signedOutRedirectTarget('/history', 'Removed from household')
     expect(to).toBe('/login/family')
     expect(state.info).toBe('Removed from household')
+  })
+})
+
+describe('postSignInPath', () => {
+  it('returns home for non-admins when from is admin', () => {
+    expect(postSignInPath('/admin', 'member')).toBe('/')
+    expect(postSignInPath('/admin', 'child')).toBe('/')
+    expect(postSignInPath('/admin', null)).toBe('/')
+  })
+
+  it('preserves admin destination for admin role', () => {
+    expect(postSignInPath('/admin', 'admin')).toBe('/admin')
+  })
+
+  it('preserves other paths for any role', () => {
+    expect(postSignInPath('/history', 'member')).toBe('/history')
+    expect(postSignInPath('/send', 'child')).toBe('/send')
+  })
+
+  it('defaults invalid paths to home', () => {
+    expect(postSignInPath(undefined, 'admin')).toBe('/')
+    expect(postSignInPath('//evil.com', 'admin')).toBe('/')
   })
 })
 

@@ -3,6 +3,10 @@ import { useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import { useAuth } from '@/lib/auth'
+import {
+  HISTORY_EMPTY_BODY,
+  HISTORY_EMPTY_BUCKET_BODY,
+} from '@/lib/brand'
 import type { Database } from '@/types/database'
 
 // Pulled-back transaction shape, with bucket / member name joins.
@@ -249,8 +253,8 @@ export default function HistoryPage() {
           </p>
           <p className="mt-1 text-xs text-zinc-400">
             {bucketFilter
-              ? 'Move money in or out of this bucket and it will appear here.'
-              : 'Bucket moves and sends will show up here as you make them.'}
+              ? HISTORY_EMPTY_BUCKET_BODY
+              : HISTORY_EMPTY_BODY}
           </p>
         </div>
       ) : (

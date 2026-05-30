@@ -34,7 +34,11 @@ type Props = {
    *  one tap. */
   initialBucketId: string
   onClose: () => void
-  onMoved: () => void
+  onMoved: (move: {
+    fromBucketId: string | null
+    toBucketId: string | null
+    amount: number
+  }) => void | Promise<void>
 }
 
 export default function MoveMoneyDialog({
@@ -128,7 +132,13 @@ export default function MoveMoneyDialog({
         amount,
         note: note.trim() || null,
       })
-      onMoved()
+      await Promise.resolve(
+        onMoved({
+          fromBucketId: endpointFromKey(fromKey),
+          toBucketId: endpointFromKey(toKey),
+          amount,
+        }),
+      )
       onClose()
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))

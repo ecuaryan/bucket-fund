@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import PinInput from '@/components/ui/PinInput'
+import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import {
+  ADMIN_HOUSEHOLD_MEMBERS_DETAILS,
   ADMIN_HOUSEHOLD_MEMBERS_INTRO,
   ADMIN_HOUSEHOLD_MEMBERS_TITLE,
   ADMIN_LOADING_MEMBERS,
@@ -54,7 +56,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
   const [pinTarget, setPinTarget] = useState<Member | null>(null)
   const [pinValue, setPinValue] = useState('')
   const [savingPin, setSavingPin] = useState(false)
-  const [removingId, setRemovingId] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
 
   const loadMembers = useCallback(async () => {
     setLoadError(null)
@@ -79,19 +81,52 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     e.preventDefault()
     const name = newName.trim()
     if (!name) return
-    setCreating(true)
     setActionError(null)
     setInfo(null)
+    const familyId =
+      auth.status === 'signedIn' ? auth.member?.family_id ?? '' : ''
+    const tempId = `pending-${crypto.randomUUID()}`
+    const optimistic: Member = {
+      id: tempId,
+      name,
+      role: newRole,
+      avatar_url: null,
+      pin_locked: false,
+      pin_set_at: null,
+      pin_failed_attempts: 0,
+      created_at: new Date().toISOString(),
+      family_id: familyId,
+      user_id: null,
+    }
+    setMembers((prev) => [...(prev ?? []), optimistic])
+    setNewName('')
+    setCreating(true)
+    setRefreshing(true)
     try {
-      await createMember({ name, role: newRole })
-      setNewName('')
+      const created = await createMember({ name, role: newRole })
+      setMembers((prev) =>
+        prev
+          ? prev.map((m) =>
+              m.id === tempId
+                ? {
+                    ...m,
+                    id: created.id,
+                    name: created.name,
+                    role: created.role,
+                  }
+                : m,
+            )
+          : prev,
+      )
       setInfo(`Added ${name}. Set their PIN next.`)
       await loadMembers()
       onRosterChanged?.()
     } catch (err) {
+      setMembers((prev) => prev?.filter((m) => m.id !== tempId) ?? prev)
       setActionError(err instanceof Error ? err.message : String(err))
     } finally {
       setCreating(false)
+      setRefreshing(false)
     }
   }
 
@@ -114,7 +149,27 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
       )
       setPinTarget(null)
       setPinValue('')
-      await loadMembers()
+      const pinNow = new Date().toISOString()
+      setMembers((prev) =>
+        prev
+          ? prev.map((m) =>
+              m.id === pinTarget.id
+                ? {
+                    ...m,
+                    pin_set_at: pinNow,
+                    pin_locked: false,
+                    pin_failed_attempts: 0,
+                  }
+                : m,
+            )
+          : prev,
+      )
+      setRefreshing(true)
+      try {
+        await loadMembers()
+      } finally {
+        setRefreshing(false)
+      }
     } catch (err) {
       setActionError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -133,22 +188,25 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     )
     if (!ok) return
 
-    setRemovingId(m.id)
+    const snapshot = members
     setActionError(null)
     setInfo(null)
+    if (pinTarget?.id === m.id) {
+      setPinTarget(null)
+      setPinValue('')
+    }
+    setMembers((prev) => (prev ? prev.filter((x) => x.id !== m.id) : prev))
+    setRefreshing(true)
     try {
       await removeMember(m.id)
-      if (pinTarget?.id === m.id) {
-        setPinTarget(null)
-        setPinValue('')
-      }
       setInfo(`Removed ${m.name}.`)
       await loadMembers()
       onRosterChanged?.()
     } catch (err) {
+      setMembers(snapshot)
       setActionError(err instanceof Error ? err.message : String(err))
     } finally {
-      setRemovingId(null)
+      setRefreshing(false)
     }
   }
 
@@ -158,20 +216,41 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     try {
       await clearPinLockout(m.id)
       setInfo(`Lockout cleared for ${m.name}.`)
-      await loadMembers()
+      setMembers((prev) =>
+        prev
+          ? prev.map((row) =>
+              row.id === m.id
+                ? { ...row, pin_locked: false, pin_failed_attempts: 0 }
+                : row,
+            )
+          : prev,
+      )
+      setRefreshing(true)
+      try {
+        await loadMembers()
+      } finally {
+        setRefreshing(false)
+      }
     } catch (err) {
       setActionError(err instanceof Error ? err.message : String(err))
     }
   }
 
+  const sectionBusy = creating || savingPin || refreshing
+
   return (
+    <BusyOverlay busy={sectionBusy} label="Saving…">
     <section aria-label="Household members" className="space-y-4">
       <div>
         <h2 className="text-base font-semibold">{ADMIN_HOUSEHOLD_MEMBERS_TITLE}</h2>
         <p className="mt-1 text-xs text-zinc-400">
-          {ADMIN_HOUSEHOLD_MEMBERS_INTRO} Tell each person their PIN in
-          person—they cannot change it themselves.
+          {ADMIN_HOUSEHOLD_MEMBERS_INTRO}
         </p>
+        <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-zinc-400">
+          {ADMIN_HOUSEHOLD_MEMBERS_DETAILS.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
       </div>
 
       {loadError && (
@@ -272,10 +351,9 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
                   <button
                     type="button"
                     onClick={() => void onRemove(m)}
-                    disabled={removingId === m.id}
-                    className="rounded-lg border border-red-500/30 px-2 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+                    className="rounded-lg border border-red-500/30 px-2 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/10"
                   >
-                    {removingId === m.id ? 'Removing…' : 'Remove'}
+                    Remove
                   </button>
                 )}
               </div>
@@ -334,5 +412,6 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
         </div>
       )}
     </section>
+    </BusyOverlay>
   )
 }
