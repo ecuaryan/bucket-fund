@@ -5,6 +5,7 @@ import PageFallback from '@/components/PageFallback'
 import { APP_NAME } from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
 import { signedOutRedirectTarget } from '@/lib/authNavigation'
+import { HideAmountsProvider } from '@/lib/HideAmountsProvider'
 import { takeOrphanMemberNotice } from '@/lib/pinAuth'
 
 export default function RequireAuth({ children }: { children: ReactNode }) {
@@ -44,5 +45,25 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
     return <Navigate to="/login/reset" replace />
   }
 
-  return <>{children}</>
+  if (auth.status === 'signedIn' && auth.memberLoading) {
+    return (
+      <div className="flex min-h-svh flex-col bg-black">
+        <header className="border-b border-zinc-800 bg-zinc-900/80 px-4 py-3">
+          <p className="text-sm font-semibold text-zinc-300">{APP_NAME}</p>
+        </header>
+        <main className="mx-auto w-full max-w-md flex-1 px-4 pt-6">
+          <PageFallback />
+        </main>
+      </div>
+    )
+  }
+
+  const memberId =
+    auth.status === 'signedIn' ? (auth.member?.id ?? null) : null
+
+  return (
+    <HideAmountsProvider key={memberId ?? 'none'} memberId={memberId}>
+      {children}
+    </HideAmountsProvider>
+  )
 }

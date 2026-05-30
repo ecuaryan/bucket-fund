@@ -21,6 +21,9 @@ export const PWA_DESCRIPTION =
 /** Primary PWA icon (192×192) — also used in auth UI. */
 export const PWA_ICON_192 = '/icons/icon-192.png' as const
 
+/** Bucket mark for the Buckets nav tab (same asset as favicon-32). */
+export const APP_ICON_NAV = '/favicon-32.png' as const
+
 /** Sync with index.html `<meta name="description">`. */
 export const HTML_META_DESCRIPTION = `${APP_TAGLINE} ${PWA_DESCRIPTION}`
 
@@ -132,6 +135,16 @@ export function adminUnlinkInstitutionConfirm(
 
 export const ADMIN_LOADING_MEMBERS = 'Loading household members…'
 
+export const HIDE_AMOUNTS_LABEL = 'Hide amounts'
+export const HIDE_AMOUNTS_SHOW_LABEL = 'Show amounts'
+export const HIDE_AMOUNTS_DETAIL =
+  'Mask dollar amounts while someone watches you use the app. Bucket names and flows stay visible.'
+export const HIDE_AMOUNTS_SECTION_TITLE = 'Hide amounts'
+export const HIDE_AMOUNTS_ON_STATUS = 'Amounts are hidden.'
+export const HIDE_AMOUNTS_OFF_STATUS = 'Amounts are visible.'
+
+export const SETTINGS_PAGE_TITLE = 'Settings'
+
 export const ADMIN_ACCOUNT_TITLE = 'Admin sign-in'
 
 export const ADMIN_ACCOUNT_INTRO =
@@ -148,7 +161,9 @@ export const ADMIN_ACCOUNT_RESET_SENT =
 export const REMOVE_CHILD_ACCOUNTS_DETAIL =
   'Their buckets will be deleted. Any bank accounts assigned to them will count toward household unallocated. '
 
-// --- Home ---
+// --- Buckets (main tab) ---
+
+export const NAV_BUCKETS_LABEL = 'Buckets'
 
 export function homeChildUnallocatedHint(
   adminName: string | null | undefined,
@@ -184,10 +199,10 @@ export function homeMemberNoBucketsHint(
 // --- Send ---
 
 export const SEND_ADULT_INTRO =
-  'Fund a child’s unallocated from the balance adults share on Home.'
+  'Fund a child’s unallocated from the balance adults share in Buckets.'
 
 export const SEND_ADULT_NO_ACCOUNTS_BODY =
-  'Send uses cash from the household balance on Home. Link a bank account in Admin first so we know how much you can send.'
+  'Send uses cash from the household balance in Buckets. Link a bank account in Admin first so we know how much you can send.'
 
 export const SEND_CHILD_INTRO =
   'Send your unallocated to another household member.'
@@ -198,7 +213,7 @@ export const HISTORY_EMPTY_BUCKET_BODY =
   'Move money in or out of this bucket and it will appear here.'
 
 export const HISTORY_EMPTY_BODY =
-  'Move money between buckets and unallocated on Home—it will appear here.'
+  'Move money between buckets and unallocated in Buckets—it will appear here.'
 
 // --- PIN sign-in ---
 
@@ -211,5 +226,5 @@ export function pinNoMembersYet(adminName: string | null | undefined): string {
 export function adminLinkedAccountsMemberGate(
   adminName: string | null | undefined,
 ): string {
-  return `Only ${householdAdminLabel(adminName)} can link bank accounts and manage household settings here. Ask them to connect an account if Home is not showing balances yet.`
+  return `Only ${householdAdminLabel(adminName)} can link bank accounts and manage household settings here. Ask them to connect an account if Buckets is not showing balances yet.`
 }

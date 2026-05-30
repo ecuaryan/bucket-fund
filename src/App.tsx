@@ -12,6 +12,7 @@ const ResetPasswordPage = lazy(() => import('@/features/auth/ResetPasswordPage')
 const HomePage = lazy(() => import('@/features/buckets/HomePage'))
 const SendPage = lazy(() => import('@/features/sends/SendPage'))
 const HistoryPage = lazy(() => import('@/features/history/HistoryPage'))
+const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'))
 const AdminPage = lazy(() => import('@/features/admin/AdminPage'))
 
 function Lazy({ children }: { children: ReactNode }) {
@@ -83,6 +84,14 @@ export default function App() {
           element={
             <Lazy>
               <HistoryPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <Lazy>
+              <SettingsPage />
             </Lazy>
           }
         />

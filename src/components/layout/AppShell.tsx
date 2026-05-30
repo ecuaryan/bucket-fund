@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { BrandLogo } from '@/components/BrandLogo'
-import { APP_NAME } from '@/lib/brand'
+import NavTabIcon, { type NavTabId } from '@/components/layout/NavTabIcon'
+import { NAV_BUCKETS_LABEL } from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
 import { useSendRecipients } from '@/hooks/useSendRecipients'
 
@@ -10,7 +11,7 @@ export default function AppShell() {
   const [signingOut, setSigningOut] = useState(false)
 
   const member = auth.status === 'signedIn' ? auth.member : null
-  const familyName =
+  const memberDisplayName =
     member?.name ??
     (auth.status === 'signedIn' && auth.memberLoading
       ? '…'
@@ -34,18 +35,25 @@ export default function AppShell() {
     <div className="flex min-h-svh flex-col bg-black text-zinc-300">
       <header className="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-900/80 backdrop-blur">
         <div className="mx-auto flex max-w-md items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
+          <NavLink
+            to="/"
+            end
+            aria-label={NAV_BUCKETS_LABEL}
+            className={({ isActive }) =>
+              [
+                '-ml-1 flex min-w-0 max-w-[70%] items-center gap-2 rounded-lg py-0.5 pr-2 pl-1 transition',
+                isActive ? 'text-zinc-200' : 'text-zinc-300 hover:bg-zinc-800/60',
+              ].join(' ')
+            }
+          >
             <BrandLogo size={32} className="shrink-0 rounded-lg" />
-            <div className="leading-tight">
-              <p className="text-sm font-semibold">{APP_NAME}</p>
-              <p className="text-xs text-zinc-400">{familyName}</p>
-            </div>
-          </div>
+            <span className="truncate text-sm font-medium">{memberDisplayName}</span>
+          </NavLink>
           <button
             type="button"
             onClick={onSignOut}
             disabled={signingOut}
-            className="rounded-lg px-2 py-1 text-xs font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50"
+            className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50"
           >
             {signingOut ? 'Signing out…' : 'Sign out'}
           </button>
@@ -57,33 +65,44 @@ export default function AppShell() {
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 border-t border-zinc-800 bg-zinc-900/95 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] backdrop-blur">
-        <ul className="mx-auto flex max-w-md items-stretch justify-around px-4 py-2 text-xs font-medium">
-          <TabLink to="/" label="Home" />
-          {showSendNav && <TabLink to="/send" label="Send" />}
-          <TabLink to="/history" label="History" />
-          {isAdmin && <TabLink to="/admin" label="Admin" />}
+        <ul className="mx-auto flex max-w-md items-stretch px-1 py-1.5 sm:px-2">
+          <TabLink to="/" label={NAV_BUCKETS_LABEL} tab="buckets" />
+          {showSendNav && <TabLink to="/send" label="Send" tab="send" />}
+          <TabLink to="/history" label="History" tab="history" />
+          <TabLink to="/settings" label="Settings" tab="settings" />
+          {isAdmin && <TabLink to="/admin" label="Admin" tab="admin" />}
         </ul>
       </nav>
     </div>
   )
 }
 
-function TabLink({ to, label }: { to: string; label: string }) {
+function TabLink({
+  to,
+  label,
+  tab,
+}: {
+  to: string
+  label: string
+  tab: NavTabId
+}) {
   return (
-    <li className="flex-1">
+    <li className="min-w-0 flex-1">
       <NavLink
         to={to}
         end
+        aria-label={label}
         className={({ isActive }) =>
           [
-            'flex h-12 w-full items-center justify-center rounded-lg transition',
+            'flex h-[3.25rem] w-full flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 text-[10px] font-medium leading-none sm:text-[11px]',
             isActive
               ? 'bg-emerald-500/15 text-emerald-300'
               : 'text-zinc-400 hover:text-zinc-300',
           ].join(' ')
         }
       >
-        {label}
+        <NavTabIcon tab={tab} />
+        <span className="max-w-full truncate">{label}</span>
       </NavLink>
     </li>
   )

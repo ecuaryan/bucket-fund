@@ -42,16 +42,13 @@ import MoveMoneyDialog from '@/features/buckets/MoveMoneyDialog'
 import BucketActionsMenu from '@/features/buckets/BucketActionsMenu'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import { useFlipList } from '@/hooks/useFlipList'
+import { useHideAmounts } from '@/lib/HideAmountsProvider'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
 
-const currency = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-})
-
 export default function HomePage() {
+  const { formatMoney } = useHideAmounts()
   const auth = useAuth()
   const navigate = useNavigate()
   const [buckets, setBuckets] = useState<Bucket[] | null>(null)
@@ -261,7 +258,7 @@ export default function HomePage() {
     const allocated = Number(b.allocated_amount)
     const message =
       allocated > 0
-        ? `Delete "${b.name}"? Its ${currency.format(allocated)} will return to Unallocated.`
+        ? `Delete "${b.name}"? Its ${formatMoney(allocated)} will return to Unallocated.`
         : `Delete "${b.name}"?`
     if (!window.confirm(message)) return
     const snapshot = buckets
@@ -364,7 +361,7 @@ export default function HomePage() {
     showLinkBankCard || showBalanceBreakdown
       ? null
       : cashAccountsCount > 0
-        ? `${currency.format(balanceBreakdown.totalCash)} across ${cashAccountsCount} linked account${cashAccountsCount === 1 ? '' : 's'}`
+        ? `${formatMoney(balanceBreakdown.totalCash)} across ${cashAccountsCount} linked account${cashAccountsCount === 1 ? '' : 's'}`
         : isChild
           ? homeChildUnallocatedHint(householdAdminName)
           : null
@@ -397,7 +394,7 @@ export default function HomePage() {
           </p>
           {balanceBreakdown.bucketAllocated > 0 ? (
             <p className="mt-2 text-xs text-emerald-200/60">
-              {currency.format(balanceBreakdown.bucketAllocated)} allocated
+              {formatMoney(balanceBreakdown.bucketAllocated)} allocated
               across {buckets.length} bucket{buckets.length === 1 ? '' : 's'}.
             </p>
           ) : null}
@@ -419,7 +416,7 @@ export default function HomePage() {
             Unallocated
           </p>
           <p className="mt-1 text-3xl font-semibold tabular-nums">
-            {currency.format(unallocated)}
+            {formatMoney(unallocated)}
           </p>
           {unallocatedHint ? (
             <p className="mt-1 text-xs opacity-70">{unallocatedHint}</p>
@@ -429,7 +426,7 @@ export default function HomePage() {
               {isChild && childTotal > 0 ? (
                 <div className="flex justify-between gap-4 tabular-nums">
                   <dt>Total balance</dt>
-                  <dd>{currency.format(childTotal)}</dd>
+                  <dd>{formatMoney(childTotal)}</dd>
                 </div>
               ) : null}
               {!isChild && balanceBreakdown.totalCash > 0 ? (
@@ -440,13 +437,13 @@ export default function HomePage() {
                       ? ` (${cashAccountsCount} account${cashAccountsCount === 1 ? '' : 's'})`
                       : ''}
                   </dt>
-                  <dd>{currency.format(balanceBreakdown.totalCash)}</dd>
+                  <dd>{formatMoney(balanceBreakdown.totalCash)}</dd>
                 </div>
               ) : null}
               {balanceBreakdown.bucketAllocated > 0 ? (
                 <div className="flex justify-between gap-4 tabular-nums">
                   <dt>{isChild ? 'In your buckets' : 'Allocated to buckets'}</dt>
-                  <dd>−{currency.format(balanceBreakdown.bucketAllocated)}</dd>
+                  <dd>−{formatMoney(balanceBreakdown.bucketAllocated)}</dd>
                 </div>
               ) : null}
               {showAdultBreakdown
@@ -456,7 +453,7 @@ export default function HomePage() {
                       className="flex justify-between gap-4 tabular-nums"
                     >
                       <dt className="truncate">{child.name}</dt>
-                      <dd>−{currency.format(child.amount)}</dd>
+                      <dd>−{formatMoney(child.amount)}</dd>
                     </div>
                   ))
                 : null}
@@ -513,7 +510,7 @@ export default function HomePage() {
                         className="min-w-0 flex-1 rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-emerald-400 focus:outline focus:outline-2 focus:outline-emerald-400"
                       />
                       <p className="shrink-0 text-sm font-semibold tabular-nums text-zinc-500">
-                        {currency.format(Number(bucket.allocated_amount))}
+                        {formatMoney(Number(bucket.allocated_amount))}
                       </p>
                     </div>
                   ) : (
@@ -528,7 +525,7 @@ export default function HomePage() {
                         </p>
                       </div>
                       <p className="shrink-0 text-sm font-semibold tabular-nums text-zinc-300">
-                        {currency.format(Number(bucket.allocated_amount))}
+                        {formatMoney(Number(bucket.allocated_amount))}
                       </p>
                     </button>
                   )}
