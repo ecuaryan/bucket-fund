@@ -41,6 +41,7 @@ import type { Database } from '@/types/database'
 import MoveMoneyDialog from '@/features/buckets/MoveMoneyDialog'
 import BucketActionsMenu from '@/features/buckets/BucketActionsMenu'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
+import { useFlipList } from '@/hooks/useFlipList'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -82,6 +83,7 @@ export default function HomePage() {
   const canManageStructure = isAdmin || isChild
 
   const loadGeneration = useRef(0)
+  const { listRef, prepareFlip } = useFlipList(buckets)
 
   const loadData = useCallback(async () => {
     if (!familyId || !memberId) return
@@ -242,6 +244,7 @@ export default function HomePage() {
 
   async function handleReorder(id: string, direction: 'up' | 'down') {
     setActionError(null)
+    prepareFlip()
     const snapshot = buckets
     setBuckets((prev) => (prev ? swapBucketOrder(prev, id, direction) : prev))
     try {
@@ -482,12 +485,16 @@ export default function HomePage() {
             </p>
           </div>
         ) : (
-          <ul className="divide-y divide-zinc-800 rounded-2xl bg-zinc-900 ring-1 ring-zinc-800">
+          <ul
+            ref={listRef}
+            className="divide-y divide-zinc-800 rounded-2xl bg-zinc-900 ring-1 ring-zinc-800"
+          >
             {buckets.map((bucket, idx) => {
               const renaming = renamingId === bucket.id
               return (
                 <li
                   key={bucket.id}
+                  data-flip-id={bucket.id}
                   className="flex min-w-0 items-center gap-2 px-3 py-2"
                 >
                   {renaming ? (

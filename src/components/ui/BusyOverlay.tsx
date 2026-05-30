@@ -23,7 +23,7 @@ export function BusyOverlay({
       {children}
       {busy ? (
         <div
-          className="absolute inset-0 z-10 flex items-center justify-center rounded-[inherit] bg-zinc-950/70 backdrop-blur-[1px]"
+          className="busy-overlay absolute inset-0 z-10 flex items-center justify-center rounded-[inherit] bg-zinc-950/70 backdrop-blur-[1px]"
           role="status"
           aria-live="polite"
           aria-label={label}

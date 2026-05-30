@@ -195,7 +195,7 @@ export default function FamilyLoginPage() {
       <AuthShell title={selected.name} subtitle="Enter your 4-digit PIN">
         <form
           onSubmit={onPinSubmit}
-          className="space-y-4"
+          className="fade-in-enter space-y-4"
           autoComplete="off"
           data-bucketfund-form="family-pin"
         >
