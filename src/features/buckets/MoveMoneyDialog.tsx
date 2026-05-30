@@ -3,6 +3,7 @@ import { Sheet } from '@/components/ui/Sheet'
 import { AmountLimitHint } from '@/components/AmountLimitHint'
 import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
 import { moveMoney } from '@/lib/buckets'
+import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
 import type { Database } from '@/types/database'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
@@ -180,9 +181,11 @@ export default function MoveMoneyDialog({
               </div>
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
                   setFromKey(toKey)
                   setToKey(fromKey)
+                  amountRef.current?.focus()
                 }}
                 aria-label="Swap From and To"
                 title="Swap From and To"
@@ -224,6 +227,7 @@ export default function MoveMoneyDialog({
                   setAmountStr(e.target.value)
                   setError(null)
                 }}
+                onFocus={(e) => scrollFocusedIntoView(e.currentTarget)}
                 placeholder="0.00"
                 aria-invalid={overdraft || undefined}
                 aria-describedby={amountLimitDescribedBy(
@@ -253,6 +257,7 @@ export default function MoveMoneyDialog({
               type="text"
               value={note}
               onChange={(e) => setNote(e.target.value)}
+              onFocus={(e) => scrollFocusedIntoView(e.currentTarget)}
               maxLength={280}
               placeholder="What's this for?"
               className="w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-500 focus:outline focus:outline-2 focus:outline-emerald-400"

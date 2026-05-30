@@ -23,6 +23,7 @@ import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import { AmountLimitHint } from '@/components/AmountLimitHint'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
+import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
 import type { Database } from '@/types/database'
 
 type Member = Pick<
@@ -354,6 +355,7 @@ export default function SendPage() {
                   setAmountStr(e.target.value)
                   setSubmitError(null)
                 }}
+                onFocus={(e) => scrollFocusedIntoView(e.currentTarget)}
                 placeholder="0.00"
                 required
                 aria-invalid={overdraft || undefined}
@@ -385,6 +387,7 @@ export default function SendPage() {
               maxLength={280}
               value={note}
               onChange={(e) => setNote(e.target.value)}
+              onFocus={(e) => scrollFocusedIntoView(e.currentTarget)}
               placeholder="Lunch, allowance, …"
               className="mt-1 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />

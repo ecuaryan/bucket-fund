@@ -7,7 +7,10 @@ type Props = {
   children: ReactNode
 }
 
-/** Bottom sheet on mobile, centered panel on wider screens. Enter/exit motion via CSS. */
+/**
+ * Form dialog: top-aligned on phones (stable with the keyboard), centered on
+ * wider screens. Panel scrolls when content exceeds the visible viewport.
+ */
 export function Sheet({ open, onClose, 'aria-label': ariaLabel, children }: Props) {
   const [present, setPresent] = useState(open)
   const [shown, setShown] = useState(false)
@@ -40,14 +43,14 @@ export function Sheet({ open, onClose, 'aria-label': ariaLabel, children }: Prop
       aria-modal="true"
       aria-label={ariaLabel}
       className={
-        'sheet-backdrop fixed inset-0 z-50 flex items-end justify-center sm:items-center ' +
+        'sheet-backdrop fixed inset-0 z-50 flex justify-center px-4 sm:items-center sm:px-0 ' +
         (shown ? 'sheet-backdrop-open' : '')
       }
       onClick={onClose}
     >
       <div
         className={
-          'sheet-panel w-full max-w-md rounded-t-2xl bg-zinc-900 p-5 shadow-2xl ring-1 ring-zinc-800 sm:rounded-2xl ' +
+          'sheet-panel w-full max-w-md rounded-2xl bg-zinc-900 p-5 shadow-2xl ring-1 ring-zinc-800 ' +
           (shown ? 'sheet-panel-open' : '')
         }
         onClick={(e) => e.stopPropagation()}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import PinInput from '@/components/ui/PinInput'
+import { Sheet } from '@/components/ui/Sheet'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import {
   ADMIN_HOUSEHOLD_MEMBERS_DETAILS,
@@ -363,17 +364,18 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
       )}
 
       {pinTarget && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="pin-dialog-title"
+        <Sheet
+          open={pinTarget !== null}
+          onClose={() => {
+            setPinTarget(null)
+            setPinValue('')
+          }}
+          aria-label={`Set PIN for ${pinTarget.name}`}
         >
           <form
             onSubmit={onSavePin}
             autoComplete="off"
             data-bucketfund-form="admin-set-pin"
-            className="w-full max-w-sm rounded-2xl bg-zinc-900 p-6 ring-1 ring-zinc-800"
           >
             <h3 id="pin-dialog-title" className="text-lg font-semibold text-zinc-300">
               PIN for {pinTarget.name}
@@ -409,7 +411,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
               </button>
             </div>
           </form>
-        </div>
+        </Sheet>
       )}
     </section>
     </BusyOverlay>
