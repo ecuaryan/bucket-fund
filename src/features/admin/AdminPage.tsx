@@ -131,6 +131,9 @@ export default function AdminPage() {
   const [accounts, setAccounts] = useState<Account[] | null>(null)
   const [members, setMembers] = useState<FamilyMemberRow[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [enrollmentLoadError, setEnrollmentLoadError] = useState<string | null>(
+    null,
+  )
   const [assignError, setAssignError] = useState<string | null>(null)
   const [linkError, setLinkError] = useState<string | null>(null)
   const [linkInfo, setLinkInfo] = useState<string | null>(null)
@@ -170,11 +173,12 @@ export default function AdminPage() {
   }, [])
 
   const loadEnrollments = useCallback(async () => {
+    setEnrollmentLoadError(null)
     try {
       const enrollments = await listTellerEnrollments()
       setEnrollmentMeta(new Map(enrollments.map((e) => [e.id, e])))
     } catch (e) {
-      setLoadError(e instanceof Error ? e.message : String(e))
+      setEnrollmentLoadError(e instanceof Error ? e.message : String(e))
     }
   }, [])
 
@@ -355,6 +359,13 @@ export default function AdminPage() {
         {(linkError || teller.error || assignError) && (
           <p className="mb-3 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300 ring-1 ring-red-500/30">
             {linkError ?? teller.error ?? assignError}
+          </p>
+        )}
+        {enrollmentLoadError && (
+          <p className="mb-3 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-200 ring-1 ring-amber-500/30">
+            Could not load bank connection details ({enrollmentLoadError}). Linked
+            accounts still appear below; Reconnect may be unavailable until this
+            clears.
           </p>
         )}
         {linkInfo && (
