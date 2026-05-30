@@ -71,11 +71,15 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 
 ### Accounts
 - Only the **admin** links or unlinks banks (Teller Connect on **Admin → Linked accounts**).
-- **Link bank** adds a new institution (new Teller enrollment). **Reconnect** on an
-  existing bank card opens Teller Connect in update mode for that enrollment — use
-  this to add accounts, refresh credentials, or update balances at that bank.
-  Do not use Link bank for a bank already linked (Admin warns and groups the UI
-  by institution so split enrollments still appear as one card).
+- **Link bank** adds a new institution (new Teller enrollment). Select every account
+  you want to share at that bank in the Connect flow.
+- **Reconnect** on an existing bank card opens Teller Connect in update mode for that
+  enrollment — use when credentials expire, Teller reports the enrollment disconnected,
+  or you need a fresh balance pull. It does **not** reliably show an account picker on
+  an already-healthy link; do not use it to add or remove accounts.
+- **Change which accounts** at a bank are linked: **Unlink** the bank, then **Link bank**
+  again and select the full set you want. Child account assignments reset (new account rows).
+- Do not use **Link bank** for a bank already linked (Admin warns; UI groups by institution).
 - **New links** default to the **family pool** (`accounts.owner_member_id` null). The admin may
   assign an account to a **child** only (many accounts can belong to one child). Adults
   (admin and member) share the family pool on Home — assigning to a spouse is not in v1 UI.
@@ -87,6 +91,9 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 - Real balances are kept in sync via Teller webhooks (`transactions.processed` triggers a
   live balance fetch) and on enroll/reconnect
 - **RLS:** children see only accounts where `owner_member_id` is their member id; adults see all family accounts
+- **Deferred (pre-SaaS polish):** per-account **Remove** via Teller `DELETE /accounts/:id`
+  (drop one account without unlinking the whole bank). Confirm with Teller whether active
+  enrollments can grant additional accounts without a full unlink/relink.
 
 ---
 
