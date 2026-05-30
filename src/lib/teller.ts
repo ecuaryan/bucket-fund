@@ -103,9 +103,15 @@ async function authFetch(
   if (!accessToken) throw new Error('Not signed in')
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !anonKey) {
+    throw new Error('Missing Supabase environment variables')
+  }
+
   return fetch(`${supabaseUrl}/functions/v1/${path}`, {
     ...init,
     headers: {
+      apikey: anonKey,
       Authorization: `Bearer ${accessToken}`,
       ...(init?.headers ?? {}),
     },
