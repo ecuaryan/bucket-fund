@@ -162,6 +162,7 @@ checks are deferred until a possible paid SaaS phase.
 - Admin: assign linked bank accounts to children (family pool default)
 - Dark theme (pure black + zinc palette)
 - PWA icons, favicons, apple-touch-icon, offline fallback, service worker registration
+- Adult background sign-out (60s hidden → local sign-out; family PIN re-auth)
 
 ### Not yet built
 
