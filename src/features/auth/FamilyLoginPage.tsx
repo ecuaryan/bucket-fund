@@ -14,8 +14,9 @@ import {
   JOIN_CODE_LABEL,
   PIN_JOIN_PAGE_SUBTITLE,
   PIN_JOIN_PAGE_TITLE,
-  PIN_NO_MEMBERS_YET,
+  pinNoMembersYet,
 } from '@/lib/brand'
+import { pickHouseholdAdminName } from '@/lib/householdAdmin'
 import { useAuth } from '@/lib/auth'
 import {
   bindFamily,
@@ -33,6 +34,7 @@ import {
 import { clearPasswordRecoveryFlow } from '@/lib/passwordRecoveryFlow'
 import { takeOrphanMemberNotice } from '@/lib/pinAuth'
 import type { AuthLocationState } from '@/lib/authNavigation'
+import { postSignInPath } from '@/lib/authNavigation'
 import { setSignInPreference } from '@/lib/signInPreference'
 
 type LocationState = AuthLocationState
@@ -112,7 +114,16 @@ export default function FamilyLoginPage() {
   }, [refreshRoster])
 
   if (auth.status === 'signedIn') {
-    return <Navigate to={from} replace />
+    if (auth.memberLoading) {
+      return (
+        <AuthShell title={APP_NAME} subtitle="Signing you in…">
+          <p className="text-center text-sm text-zinc-500">One moment</p>
+        </AuthShell>
+      )
+    }
+    return (
+      <Navigate to={postSignInPath(from, auth.member?.role)} replace />
+    )
   }
 
   async function onBindCode(e: FormEvent) {
@@ -277,12 +288,13 @@ export default function FamilyLoginPage() {
   }
 
   const pinMembers = roster.members.filter((m) => m.hasPin)
+  const householdAdminName = pickHouseholdAdminName(roster.members)
 
   return (
     <AuthShell title={roster.familyName} subtitle="Who's signing in?">
       {pinMembers.length === 0 ? (
         <p className="text-sm text-zinc-400">
-          {PIN_NO_MEMBERS_YET}
+          {pinNoMembersYet(householdAdminName)}
         </p>
       ) : (
         <ul className="grid grid-cols-2 gap-3">

@@ -28,6 +28,26 @@ export function loginEmailFromQuery(
   return ''
 }
 
+/** Paths that require role=admin after sign-in (e.g. preserved across sign-out). */
+const ADMIN_ONLY_PATHS = ['/admin'] as const
+
+/**
+ * Where to send the user after auth. Strips admin-only destinations unless
+ * the signed-in member is the household admin.
+ */
+export function postSignInPath(
+  from: string | undefined,
+  role: string | null | undefined,
+): string {
+  const dest = from?.trim() || '/'
+  if (!dest.startsWith('/') || dest.startsWith('//')) return '/'
+  const adminOnly = ADMIN_ONLY_PATHS.some(
+    (p) => dest === p || dest.startsWith(`${p}/`),
+  )
+  if (adminOnly && role !== 'admin') return '/'
+  return dest
+}
+
 /** Where RequireAuth sends signed-out users. */
 export function signedOutRedirectTarget(
   pathname: string,

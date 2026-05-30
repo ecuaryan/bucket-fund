@@ -7,14 +7,16 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import {
-  HOME_ADULT_NO_ACCOUNTS_HINT,
-  HOME_CHILD_UNALLOCATED_HINT,
-  HOME_MEMBER_NO_ACCOUNTS_HINT,
-  HOME_MEMBER_NO_BUCKETS_HINT,
+  HOME_LINK_BANK_ADMIN_ACTION,
+  HOME_LINK_BANK_ADMIN_BODY,
+  HOME_LINK_BANK_TITLE,
+  homeChildUnallocatedHint,
+  homeLinkBankMemberBody,
+  homeMemberNoBucketsHint,
 } from '@/lib/brand'
 import HomePageSkeleton from '@/components/HomePageSkeleton'
 import {
@@ -49,6 +51,9 @@ export default function HomePage() {
   const [balanceBreakdown, setBalanceBreakdown] =
     useState<HomeBalanceBreakdown | null>(null)
   const [balanceUsesFallback, setBalanceUsesFallback] = useState(false)
+  const [householdAdminName, setHouseholdAdminName] = useState<string | null>(
+    null,
+  )
   const [loadError, setLoadError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
@@ -82,11 +87,13 @@ export default function HomePage() {
       setAccounts(data.accounts)
       setBalanceBreakdown(data.breakdown)
       setBalanceUsesFallback(data.usedFallback)
+      setHouseholdAdminName(data.householdAdminName)
       writeHomeCache(familyId, memberId, {
         buckets: data.buckets,
         accounts: data.accounts,
         breakdown: data.breakdown,
         balanceUsesFallback: data.usedFallback,
+        householdAdminName: data.householdAdminName,
       })
     } catch (e) {
       if (generation !== loadGeneration.current) return
@@ -123,6 +130,7 @@ export default function HomePage() {
       setBuckets(null)
       setAccounts(null)
       setBalanceBreakdown(null)
+      setHouseholdAdminName(null)
       return
     }
     const cached = readHomeCache(familyId, memberId)
@@ -131,6 +139,7 @@ export default function HomePage() {
       setAccounts(cached.accounts)
       setBalanceBreakdown(cached.breakdown)
       setBalanceUsesFallback(cached.balanceUsesFallback)
+      setHouseholdAdminName(cached.householdAdminName ?? null)
     }
   }, [familyId, memberId])
 
@@ -226,6 +235,10 @@ export default function HomePage() {
     if (!window.confirm(message)) return
     try {
       await deleteBucket(b.id)
+      if (renamingId === b.id) setRenamingId(null)
+      if (moveBucketId === b.id) setMoveBucketId(null)
+      setBuckets((prev) => (prev ? prev.filter((x) => x.id !== b.id) : prev))
+      void loadData()
     } catch (e) {
       setActionError(e instanceof Error ? e.message : String(e))
     }
@@ -295,6 +308,8 @@ export default function HomePage() {
     !balanceUsesFallback &&
     (childTotal > 0 || balanceBreakdown.bucketAllocated > 0)
   const showBalanceBreakdown = showAdultBreakdown || showChildBreakdown
+  const hasLinkedAccounts = accounts.length > 0
+  const showLinkBankCard = isAdult && !hasLinkedAccounts
   const unallocatedColor =
     unallocated >= 0
       ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30'
@@ -304,15 +319,14 @@ export default function HomePage() {
     (a) => a.current_balance !== null && Number(a.current_balance) > 0,
   ).length
 
-  const unallocatedHint = showBalanceBreakdown
-    ? null
-    : cashAccountsCount > 0
-      ? `${currency.format(balanceBreakdown.totalCash)} across ${cashAccountsCount} linked account${cashAccountsCount === 1 ? '' : 's'}`
-      : isChild
-        ? HOME_CHILD_UNALLOCATED_HINT
-        : isAdmin
-          ? HOME_ADULT_NO_ACCOUNTS_HINT
-          : HOME_MEMBER_NO_ACCOUNTS_HINT
+  const unallocatedHint =
+    showLinkBankCard || showBalanceBreakdown
+      ? null
+      : cashAccountsCount > 0
+        ? `${currency.format(balanceBreakdown.totalCash)} across ${cashAccountsCount} linked account${cashAccountsCount === 1 ? '' : 's'}`
+        : isChild
+          ? homeChildUnallocatedHint(householdAdminName)
+          : null
 
   return (
     <div className="space-y-6">
@@ -322,58 +336,91 @@ export default function HomePage() {
           Sends may be unavailable until migrations are applied.
         </p>
       )}
-      <section
-        className={`rounded-2xl px-4 py-5 ring-1 ${unallocatedColor}`}
-        aria-label="Unallocated balance"
-      >
-        <p className="text-xs font-medium uppercase tracking-wide opacity-70">
-          Unallocated
-        </p>
-        <p className="mt-1 text-3xl font-semibold tabular-nums">
-          {currency.format(unallocated)}
-        </p>
-        {unallocatedHint ? (
-          <p className="mt-1 text-xs opacity-70">{unallocatedHint}</p>
-        ) : null}
-        {showBalanceBreakdown && (
-          <dl className="mt-3 space-y-1 border-t border-current/10 pt-3 text-xs opacity-90">
-            {isChild && childTotal > 0 ? (
-              <div className="flex justify-between gap-4 tabular-nums">
-                <dt>Total balance</dt>
-                <dd>{currency.format(childTotal)}</dd>
-              </div>
-            ) : null}
-            {!isChild && balanceBreakdown.totalCash > 0 ? (
-              <div className="flex justify-between gap-4 tabular-nums">
-                <dt>
-                  Linked cash
-                  {cashAccountsCount > 0
-                    ? ` (${cashAccountsCount} account${cashAccountsCount === 1 ? '' : 's'})`
-                    : ''}
-                </dt>
-                <dd>{currency.format(balanceBreakdown.totalCash)}</dd>
-              </div>
-            ) : null}
-            {balanceBreakdown.bucketAllocated > 0 ? (
-              <div className="flex justify-between gap-4 tabular-nums">
-                <dt>{isChild ? 'In your buckets' : 'Allocated to buckets'}</dt>
-                <dd>−{currency.format(balanceBreakdown.bucketAllocated)}</dd>
-              </div>
-            ) : null}
-            {showAdultBreakdown
-              ? balanceBreakdown.children.map((child) => (
-                  <div
-                    key={child.memberId}
-                    className="flex justify-between gap-4 tabular-nums"
-                  >
-                    <dt className="truncate">{child.name}</dt>
-                    <dd>−{currency.format(child.amount)}</dd>
-                  </div>
-                ))
-              : null}
-          </dl>
-        )}
-      </section>
+      {showLinkBankCard ? (
+        <section
+          className="rounded-2xl bg-emerald-500/10 px-4 py-5 ring-1 ring-emerald-500/30"
+          aria-label="Link a bank account"
+        >
+          <p className="text-xs font-medium uppercase tracking-wide text-emerald-300/70">
+            Getting started
+          </p>
+          <h2 className="mt-1 text-lg font-semibold text-emerald-100">
+            {HOME_LINK_BANK_TITLE}
+          </h2>
+          <p className="mt-2 text-sm text-emerald-200/80">
+            {isAdmin
+              ? HOME_LINK_BANK_ADMIN_BODY
+              : homeLinkBankMemberBody(householdAdminName)}
+          </p>
+          {balanceBreakdown.bucketAllocated > 0 ? (
+            <p className="mt-2 text-xs text-emerald-200/60">
+              {currency.format(balanceBreakdown.bucketAllocated)} allocated
+              across {buckets.length} bucket{buckets.length === 1 ? '' : 's'}.
+            </p>
+          ) : null}
+          {isAdmin ? (
+            <Link
+              to="/admin"
+              className="mt-4 inline-flex rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
+            >
+              {HOME_LINK_BANK_ADMIN_ACTION}
+            </Link>
+          ) : null}
+        </section>
+      ) : (
+        <section
+          className={`rounded-2xl px-4 py-5 ring-1 ${unallocatedColor}`}
+          aria-label="Unallocated balance"
+        >
+          <p className="text-xs font-medium uppercase tracking-wide opacity-70">
+            Unallocated
+          </p>
+          <p className="mt-1 text-3xl font-semibold tabular-nums">
+            {currency.format(unallocated)}
+          </p>
+          {unallocatedHint ? (
+            <p className="mt-1 text-xs opacity-70">{unallocatedHint}</p>
+          ) : null}
+          {showBalanceBreakdown && (
+            <dl className="mt-3 space-y-1 border-t border-current/10 pt-3 text-xs opacity-90">
+              {isChild && childTotal > 0 ? (
+                <div className="flex justify-between gap-4 tabular-nums">
+                  <dt>Total balance</dt>
+                  <dd>{currency.format(childTotal)}</dd>
+                </div>
+              ) : null}
+              {!isChild && balanceBreakdown.totalCash > 0 ? (
+                <div className="flex justify-between gap-4 tabular-nums">
+                  <dt>
+                    Linked cash
+                    {cashAccountsCount > 0
+                      ? ` (${cashAccountsCount} account${cashAccountsCount === 1 ? '' : 's'})`
+                      : ''}
+                  </dt>
+                  <dd>{currency.format(balanceBreakdown.totalCash)}</dd>
+                </div>
+              ) : null}
+              {balanceBreakdown.bucketAllocated > 0 ? (
+                <div className="flex justify-between gap-4 tabular-nums">
+                  <dt>{isChild ? 'In your buckets' : 'Allocated to buckets'}</dt>
+                  <dd>−{currency.format(balanceBreakdown.bucketAllocated)}</dd>
+                </div>
+              ) : null}
+              {showAdultBreakdown
+                ? balanceBreakdown.children.map((child) => (
+                    <div
+                      key={child.memberId}
+                      className="flex justify-between gap-4 tabular-nums"
+                    >
+                      <dt className="truncate">{child.name}</dt>
+                      <dd>−{currency.format(child.amount)}</dd>
+                    </div>
+                  ))
+                : null}
+            </dl>
+          )}
+        </section>
+      )}
 
       <section aria-label="Buckets">
         <header className="mb-3 flex items-baseline justify-between">
@@ -391,7 +438,7 @@ export default function HomePage() {
             <p className="mt-1 text-xs text-zinc-400">
               {canCreateBuckets
                 ? 'Create your first one below.'
-                : HOME_MEMBER_NO_BUCKETS_HINT}
+                : homeMemberNoBucketsHint(householdAdminName)}
             </p>
           </div>
         ) : (

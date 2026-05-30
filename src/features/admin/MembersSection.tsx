@@ -3,6 +3,7 @@ import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import PinInput from '@/components/ui/PinInput'
 import {
+  ADMIN_HOUSEHOLD_MEMBERS_DETAILS,
   ADMIN_HOUSEHOLD_MEMBERS_INTRO,
   ADMIN_HOUSEHOLD_MEMBERS_TITLE,
   ADMIN_LOADING_MEMBERS,
@@ -169,9 +170,13 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
       <div>
         <h2 className="text-base font-semibold">{ADMIN_HOUSEHOLD_MEMBERS_TITLE}</h2>
         <p className="mt-1 text-xs text-zinc-400">
-          {ADMIN_HOUSEHOLD_MEMBERS_INTRO} Tell each person their PIN in
-          person—they cannot change it themselves.
+          {ADMIN_HOUSEHOLD_MEMBERS_INTRO}
         </p>
+        <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-zinc-400">
+          {ADMIN_HOUSEHOLD_MEMBERS_DETAILS.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
       </div>
 
       {loadError && (

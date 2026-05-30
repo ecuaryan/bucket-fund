@@ -5,9 +5,12 @@ import { accountAssignmentChildId } from '@/lib/accounts'
 import {
   ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL,
   ADMIN_LINKED_ACCOUNTS_INTRO,
+  adminLinkedAccountsMemberGate,
 } from '@/lib/brand'
+import { pickHouseholdAdminName } from '@/lib/householdAdmin'
 import { disconnectEnrollment, useTellerConnect } from '@/lib/teller'
 import AccountAssignmentSelect from '@/features/admin/AccountAssignmentSelect'
+import AdminAccountSection from '@/features/admin/AdminAccountSection'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
 import MembersSection from '@/features/admin/MembersSection'
 import type { Database } from '@/types/database'
@@ -165,6 +168,11 @@ export default function AdminPage() {
     [members],
   )
 
+  const householdAdminName = useMemo(
+    () => pickHouseholdAdminName(members ?? []),
+    [members],
+  )
+
   const groups = useMemo(
     () => (accounts ? groupByEnrollment(accounts) : []),
     [accounts],
@@ -221,11 +229,7 @@ export default function AdminPage() {
     return (
       <div className="rounded-2xl bg-amber-500/10 p-4 text-sm text-amber-200 ring-1 ring-amber-500/30">
         <p className="font-semibold">Admins only</p>
-        <p className="mt-1">
-          Linking bank accounts is restricted to the household admin. Ask the
-          person who set up this household to add the account, then they
-          can assign it to you.
-        </p>
+        <p className="mt-1">{adminLinkedAccountsMemberGate(householdAdminName)}</p>
       </div>
     )
   }
@@ -240,9 +244,6 @@ export default function AdminPage() {
           </p>
         </div>
       </header>
-
-      <FamilyJoinSection />
-      <MembersSection onRosterChanged={loadMembers} />
 
       <section aria-label="Linked accounts">
         <div className="mb-3 flex items-start justify-between gap-3">
@@ -289,7 +290,7 @@ export default function AdminPage() {
               No accounts linked yet
             </p>
             <p className="mt-1 text-xs text-zinc-400">
-              Tap &quot;Link bank&quot; to connect checking or savings.{' '}
+              Tap &quot;Link bank&quot; to connect one or more accounts.{' '}
               {ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL}
             </p>
           </div>
@@ -376,6 +377,11 @@ export default function AdminPage() {
           </ul>
         )}
       </section>
+
+      <MembersSection onRosterChanged={loadMembers} />
+      <FamilyJoinSection />
+
+      <AdminAccountSection />
     </div>
   )
 }
