@@ -1,11 +1,32 @@
 import { defineConfig } from 'vite'
+import { execSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { APP_NAME, PWA_DESCRIPTION } from './src/lib/brand'
 
+const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string }
+
+function resolveBuildId(): string {
+  const fromEnv =
+    process.env.VERCEL_GIT_COMMIT_SHA ??
+    process.env.GITHUB_SHA ??
+    process.env.VITE_APP_BUILD_SHA
+  if (fromEnv) return fromEnv.slice(0, 7)
+  try {
+    return execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim()
+  } catch {
+    return 'dev'
+  }
+}
+
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+    __APP_BUILD_ID__: JSON.stringify(resolveBuildId()),
+  },
   plugins: [
     react(),
     tailwindcss(),

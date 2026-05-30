@@ -13,6 +13,7 @@ import AccountAssignmentSelect from '@/features/admin/AccountAssignmentSelect'
 import AdminAccountSection from '@/features/admin/AdminAccountSection'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
 import MembersSection from '@/features/admin/MembersSection'
+import { formatAppVersion } from '@/lib/appVersion'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import type { Database } from '@/types/database'
 
@@ -400,6 +401,10 @@ export default function AdminPage() {
       <FamilyJoinSection />
 
       <AdminAccountSection />
+
+      <p className="pt-6 text-center text-xs text-zinc-600">
+        Version {formatAppVersion()}
+      </p>
     </div>
   )
 }
