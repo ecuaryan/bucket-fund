@@ -147,6 +147,12 @@ export function homeLinkBankMemberBody(
   return `No bank accounts are linked yet. Ask ${householdAdminLabel(adminName)} to connect a bank account so balances stay in sync with your buckets.`
 }
 
+export function sendLinkBankMemberBody(
+  adminName: string | null | undefined,
+): string {
+  return `No bank accounts are linked yet. Ask ${householdAdminLabel(adminName)} to connect one before you can send.`
+}
+
 export function homeMemberNoBucketsHint(
   adminName: string | null | undefined,
 ): string {
@@ -157,6 +163,9 @@ export function homeMemberNoBucketsHint(
 
 export const SEND_ADULT_INTRO =
   'Fund a child’s unallocated from the balance adults share on Home.'
+
+export const SEND_ADULT_NO_ACCOUNTS_BODY =
+  'Send uses cash from the household balance on Home. Link a bank account in Admin first so we know how much you can send.'
 
 export const SEND_CHILD_INTRO =
   'Send your unallocated to another household member.'

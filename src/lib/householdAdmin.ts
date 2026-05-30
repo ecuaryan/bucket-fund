@@ -15,6 +15,6 @@ export async function fetchHouseholdAdminName(): Promise<string | null> {
     .eq('role', 'admin')
     .limit(1)
     .maybeSingle()
-  if (error) throw new Error(error.message)
+  if (error) return null
   return data?.name ?? null
 }

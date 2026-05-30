@@ -13,6 +13,7 @@ import AccountAssignmentSelect from '@/features/admin/AccountAssignmentSelect'
 import AdminAccountSection from '@/features/admin/AdminAccountSection'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
 import MembersSection from '@/features/admin/MembersSection'
+import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import type { Database } from '@/types/database'
 
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -120,6 +121,7 @@ export default function AdminPage() {
   const [linkError, setLinkError] = useState<string | null>(null)
   const [linkInfo, setLinkInfo] = useState<string | null>(null)
   const [unlinkingId, setUnlinkingId] = useState<string | null>(null)
+  const [accountsSyncing, setAccountsSyncing] = useState(false)
 
   const isAdmin = member?.role === 'admin'
 
@@ -189,7 +191,8 @@ export default function AdminPage() {
             ? 'Linked, but no accounts came back. Try again.'
             : `Linked ${count} account${count === 1 ? '' : 's'}.`,
         )
-        void loadAccounts()
+        setAccountsSyncing(true)
+        void loadAccounts().finally(() => setAccountsSyncing(false))
       },
       onError: (msg) => setLinkError(msg),
     })
@@ -213,7 +216,17 @@ export default function AdminPage() {
           ? `Unlinked ${group.institutionName ?? 'enrollment'} cleanly.`
           : `Unlinked locally, but Teller-side disconnect failed: ${result.tellerError ?? 'unknown'}. You may want to remove this app from your bank's connected-apps list.`,
       )
-      await loadAccounts()
+      setAccounts((prev) =>
+        prev
+          ? prev.filter((a) => a.teller_enrollment_id !== group.enrollmentId)
+          : prev,
+      )
+      setAccountsSyncing(true)
+      try {
+        await loadAccounts()
+      } finally {
+        setAccountsSyncing(false)
+      }
     } catch (e) {
       setLinkError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -245,6 +258,10 @@ export default function AdminPage() {
         </div>
       </header>
 
+      <BusyOverlay
+        busy={unlinkingId !== null || teller.linking || accountsSyncing}
+        label={teller.linking ? 'Linking…' : 'Updating accounts…'}
+      >
       <section aria-label="Linked accounts">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -377,6 +394,7 @@ export default function AdminPage() {
           </ul>
         )}
       </section>
+      </BusyOverlay>
 
       <MembersSection onRosterChanged={loadMembers} />
       <FamilyJoinSection />

@@ -19,12 +19,17 @@ import {
   homeMemberNoBucketsHint,
 } from '@/lib/brand'
 import HomePageSkeleton from '@/components/HomePageSkeleton'
+import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import {
   childTotalBalance,
   type HomeBalanceBreakdown,
 } from '@/lib/availableBalance'
 import { readHomeCache, writeHomeCache } from '@/lib/homeCache'
 import { loadHomePage } from '@/lib/homePage'
+import {
+  renameBucketInList,
+  swapBucketOrder,
+} from '@/lib/homeOptimistic'
 import {
   deleteBucket,
   renameBucket,
@@ -62,6 +67,7 @@ export default function HomePage() {
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const [actionError, setActionError] = useState<string | null>(null)
+  const [syncing, setSyncing] = useState(false)
 
   const member = auth.status === 'signedIn' ? auth.member : null
   const accessToken =
@@ -203,10 +209,21 @@ export default function HomePage() {
       setRenamingId(null)
       return
     }
+    const previous = buckets?.find((b) => b.id === id)?.name
+    if (!previous || previous === next) {
+      setRenamingId(null)
+      return
+    }
+    setRenamingId(null)
+    setActionError(null)
+    setBuckets((prev) => (prev ? renameBucketInList(prev, id, next) : prev))
     try {
       await renameBucket(id, next)
-      setRenamingId(null)
+      void loadData()
     } catch (e) {
+      setBuckets((prev) =>
+        prev ? renameBucketInList(prev, id, previous) : prev,
+      )
       setActionError(e instanceof Error ? e.message : String(e))
     }
   }
@@ -218,9 +235,13 @@ export default function HomePage() {
 
   async function handleReorder(id: string, direction: 'up' | 'down') {
     setActionError(null)
+    const snapshot = buckets
+    setBuckets((prev) => (prev ? swapBucketOrder(prev, id, direction) : prev))
     try {
       await reorderBucket(id, direction)
+      void loadData()
     } catch (e) {
+      setBuckets(snapshot)
       setActionError(e instanceof Error ? e.message : String(e))
     }
   }
@@ -233,14 +254,19 @@ export default function HomePage() {
         ? `Delete "${b.name}"? Its ${currency.format(allocated)} will return to Unallocated.`
         : `Delete "${b.name}"?`
     if (!window.confirm(message)) return
+    const snapshot = buckets
+    if (renamingId === b.id) setRenamingId(null)
+    if (moveBucketId === b.id) setMoveBucketId(null)
+    setBuckets((prev) => (prev ? prev.filter((x) => x.id !== b.id) : prev))
+    setSyncing(true)
     try {
       await deleteBucket(b.id)
-      if (renamingId === b.id) setRenamingId(null)
-      if (moveBucketId === b.id) setMoveBucketId(null)
-      setBuckets((prev) => (prev ? prev.filter((x) => x.id !== b.id) : prev))
-      void loadData()
+      await loadData()
     } catch (e) {
+      setBuckets(snapshot)
       setActionError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -329,7 +355,9 @@ export default function HomePage() {
           : null
 
   return (
-    <div className="space-y-6">
+    <>
+      <BusyOverlay busy={syncing} label="Updating…">
+        <div className="space-y-6">
       {balanceUsesFallback && (
         <p className="rounded-2xl bg-amber-500/10 px-4 py-3 text-sm text-amber-200 ring-1 ring-amber-500/30">
           Balance is estimated from linked accounts only (database update pending).
@@ -530,6 +558,8 @@ export default function HomePage() {
           </>
         )}
       </section>
+        </div>
+      </BusyOverlay>
 
       <MoveMoneyDialog
         open={moveBucketId !== null}
@@ -537,12 +567,15 @@ export default function HomePage() {
         unallocated={unallocated}
         initialBucketId={moveBucketId ?? ''}
         onClose={() => setMoveBucketId(null)}
-        onMoved={() => {
-          // Realtime will refresh, but trigger an immediate fetch too
-          // so optimism kicks in before the WS round-trip.
-          void loadData()
+        onMoved={async () => {
+          setSyncing(true)
+          try {
+            await loadData()
+          } finally {
+            setSyncing(false)
+          }
         }}
       />
-    </div>
+    </>
   )
 }
