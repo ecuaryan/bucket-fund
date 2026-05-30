@@ -394,18 +394,14 @@ function TxItem({
             onClick={() => setNoteExpanded((v) => !v)}
             aria-expanded={noteExpanded}
             aria-label={noteExpanded ? 'Collapse note' : 'Expand note'}
-            className="mt-1 block w-full text-left text-xs italic text-zinc-400 transition hover:text-zinc-300 focus:outline-none focus-visible:text-zinc-300"
+            className={
+              'mt-1 block w-full text-left text-xs italic text-zinc-400 transition hover:text-zinc-300 focus:outline-none focus-visible:text-zinc-300 ' +
+              (noteExpanded
+                ? 'whitespace-pre-wrap break-words'
+                : 'truncate')
+            }
           >
-            <span
-              className={
-                'note-expand-text block overflow-hidden transition-[max-height] duration-200 ease-out ' +
-                (noteExpanded
-                  ? 'max-h-48 whitespace-pre-wrap break-words'
-                  : 'max-h-5 truncate')
-              }
-            >
-              “{row.note}”
-            </span>
+            “{row.note}”
           </button>
         )}
       </div>
