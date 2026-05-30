@@ -106,15 +106,15 @@ export const ADMIN_LINKED_ACCOUNTS_INTRO =
   'Read-only—we sync balances, not payments. BucketFund cannot move money at your bank.'
 
 export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT =
-  'Use Reconnect on a bank to add accounts, refresh credentials, or update balances. Link bank is only for a new institution.'
+  'Use Reconnect when a bank link breaks or balances need a fresh pull. Link bank is for a new institution. To change which accounts you share, Unlink that bank and link it again.'
 
 export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
-  'Choose one or more accounts at that bank—you can add more later with Reconnect. Balances count toward household unallocated until you assign an account to a child.'
+  'Choose the accounts to share at that bank. Balances count toward household unallocated until you assign an account to a child.'
 
 export function adminLinkBankConfirmMessage(): string {
   return (
     'Link bank is for a new institution.\n\n' +
-    'To add accounts at a bank you already linked, cancel and use Reconnect on that bank\'s card instead.\n\n' +
+    'To add or remove accounts at a bank you already linked, cancel, Unlink that bank, and link it again with the accounts you want.\n\n' +
     'Continue with Link bank anyway?'
   )
 }
@@ -159,7 +159,7 @@ export function homeChildUnallocatedHint(
 export const HOME_LINK_BANK_TITLE = 'Link a bank account'
 
 export const HOME_LINK_BANK_ADMIN_BODY =
-  'Link a new institution in Admin, or use Reconnect on an existing bank to add accounts. Read-only—we never move money at your bank.'
+  'Connect banks in Admin. To change which accounts you share at a bank, Unlink it and link again. Read-only—we never move money at your bank.'
 
 export const HOME_LINK_BANK_ADMIN_ACTION = 'Link in Admin'
 
