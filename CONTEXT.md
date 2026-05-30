@@ -73,8 +73,9 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 - Only the **admin** links or unlinks banks (Teller Connect on **Admin → Linked accounts**).
 - **Link bank** adds a new institution (new Teller enrollment). **Reconnect** on an
   existing bank card opens Teller Connect in update mode for that enrollment — use
-  this to refresh credentials and balances, or add/remove accounts at that bank.
-  Do not use Link bank to refresh an institution already linked.
+  this to add accounts, refresh credentials, or update balances at that bank.
+  Do not use Link bank for a bank already linked (Admin warns and groups the UI
+  by institution so split enrollments still appear as one card).
 - **New links** default to the **family pool** (`accounts.owner_member_id` null). The admin may
   assign an account to a **child** only (many accounts can belong to one child). Adults
   (admin and member) share the family pool on Home — assigning to a spouse is not in v1 UI.

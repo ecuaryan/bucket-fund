@@ -6,8 +6,14 @@ import {
   ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL,
   ADMIN_LINKED_ACCOUNTS_INTRO,
   ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT,
+  adminLinkBankConfirmMessage,
   adminLinkedAccountsMemberGate,
+  adminUnlinkInstitutionConfirm,
 } from '@/lib/brand'
+import {
+  groupAccountsByInstitution,
+  type InstitutionGroup,
+} from '@/lib/adminLinkedAccounts'
 import { pickHouseholdAdminName } from '@/lib/householdAdmin'
 import {
   disconnectEnrollment,
@@ -31,15 +37,6 @@ type FamilyMemberRow = {
   role: string
 }
 
-type EnrollmentGroup = {
-  enrollmentId: string
-  tellerConnectEnrollmentId: string | null
-  institutionName: string | null
-  accounts: Account[]
-  totalBalance: number
-  lastSyncedAt: string | null
-}
-
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -59,70 +56,6 @@ function formatLastSynced(iso: string | null): string {
   return dateFormat.format(d)
 }
 
-/** Stable list order (bulk enroll often shares the same created_at). */
-function sortAccountsStable(accounts: Account[]): Account[] {
-  return [...accounts].sort((a, b) => {
-    const byTime = a.created_at.localeCompare(b.created_at)
-    if (byTime !== 0) return byTime
-    return a.id.localeCompare(b.id)
-  })
-}
-
-function groupByEnrollment(
-  accounts: Account[],
-  enrollmentMeta: Map<string, TellerEnrollmentMeta>,
-): EnrollmentGroup[] {
-  const map = new Map<string, EnrollmentGroup>()
-  const orphans: Account[] = []
-  for (const a of sortAccountsStable(accounts)) {
-    if (!a.teller_enrollment_id) {
-      orphans.push(a)
-      continue
-    }
-    const existing = map.get(a.teller_enrollment_id)
-    if (existing) {
-      existing.accounts.push(a)
-      existing.totalBalance += Number(a.current_balance)
-      if (
-        a.last_synced_at &&
-        (!existing.lastSyncedAt || a.last_synced_at > existing.lastSyncedAt)
-      ) {
-        existing.lastSyncedAt = a.last_synced_at
-      }
-    } else {
-      const meta = enrollmentMeta.get(a.teller_enrollment_id)
-      map.set(a.teller_enrollment_id, {
-        enrollmentId: a.teller_enrollment_id,
-        tellerConnectEnrollmentId: meta?.enrollmentId ?? null,
-        institutionName: a.institution_name ?? meta?.institutionName ?? null,
-        accounts: [a],
-        totalBalance: Number(a.current_balance),
-        lastSyncedAt: a.last_synced_at,
-      })
-    }
-  }
-  const groups = Array.from(map.values()).sort((a, b) => {
-    const nameA = a.institutionName ?? ''
-    const nameB = b.institutionName ?? ''
-    if (nameA !== nameB) return nameA.localeCompare(nameB)
-    return a.enrollmentId.localeCompare(b.enrollmentId)
-  })
-  for (const group of groups) {
-    group.accounts = sortAccountsStable(group.accounts)
-  }
-  if (orphans.length > 0) {
-    groups.push({
-      enrollmentId: '',
-      tellerConnectEnrollmentId: null,
-      institutionName: 'Unlinked',
-      accounts: orphans,
-      totalBalance: orphans.reduce((s, a) => s + Number(a.current_balance), 0),
-      lastSyncedAt: null,
-    })
-  }
-  return groups
-}
-
 export default function AdminPage() {
   const auth = useAuth()
   const member = auth.status === 'signedIn' ? auth.member : null
@@ -137,8 +70,8 @@ export default function AdminPage() {
   const [assignError, setAssignError] = useState<string | null>(null)
   const [linkError, setLinkError] = useState<string | null>(null)
   const [linkInfo, setLinkInfo] = useState<string | null>(null)
-  const [unlinkingId, setUnlinkingId] = useState<string | null>(null)
-  const [reconnectingId, setReconnectingId] = useState<string | null>(null)
+  const [unlinkingKey, setUnlinkingKey] = useState<string | null>(null)
+  const [reconnectingKey, setReconnectingKey] = useState<string | null>(null)
   const [accountsSyncing, setAccountsSyncing] = useState(false)
   const [enrollmentMeta, setEnrollmentMeta] = useState<
     Map<string, TellerEnrollmentMeta>
@@ -210,8 +143,14 @@ export default function AdminPage() {
   )
 
   const groups = useMemo(
-    () => (accounts ? groupByEnrollment(accounts, enrollmentMeta) : []),
+    () =>
+      accounts ? groupAccountsByInstitution(accounts, enrollmentMeta) : [],
     [accounts, enrollmentMeta],
+  )
+
+  const hasLinkedBanks = useMemo(
+    () => groups.some((group) => group.enrollmentIds.length > 0),
+    [groups],
   )
 
   function afterLinkSuccess(count: number, verb: 'Linked' | 'Reconnected') {
@@ -227,6 +166,9 @@ export default function AdminPage() {
   }
 
   function onLink() {
+    if (hasLinkedBanks && !window.confirm(adminLinkBankConfirmMessage())) {
+      return
+    }
     setLinkError(null)
     setLinkInfo(null)
     teller.open({
@@ -235,52 +177,50 @@ export default function AdminPage() {
     })
   }
 
-  function onReconnect(group: EnrollmentGroup) {
+  function onReconnect(group: InstitutionGroup) {
     if (!group.tellerConnectEnrollmentId) {
       setLinkError('Missing enrollment id for reconnect.')
       return
     }
     setLinkError(null)
     setLinkInfo(null)
-    setReconnectingId(group.enrollmentId)
+    setReconnectingKey(group.groupKey)
     teller.open(
       {
         onLinked: (result) => {
-          setReconnectingId(null)
+          setReconnectingKey(null)
           afterLinkSuccess(result.accounts.length, 'Reconnected')
         },
         onError: (msg) => {
-          setReconnectingId(null)
+          setReconnectingKey(null)
           setLinkError(msg)
         },
-        onExit: () => setReconnectingId(null),
+        onExit: () => setReconnectingKey(null),
       },
       { enrollmentId: group.tellerConnectEnrollmentId },
     )
   }
 
-  async function onUnlink(group: EnrollmentGroup) {
-    if (!group.enrollmentId) return
+  async function onUnlink(group: InstitutionGroup) {
+    if (group.enrollmentIds.length === 0) return
     const ok = window.confirm(
-      `Unlink ${group.institutionName ?? 'this enrollment'}? ` +
-        `${group.accounts.length} account${group.accounts.length === 1 ? '' : 's'} will be removed.`,
+      adminUnlinkInstitutionConfirm(group.institutionName, group.accounts.length),
     )
     if (!ok) return
 
-    setUnlinkingId(group.enrollmentId)
+    setUnlinkingKey(group.groupKey)
     setLinkError(null)
     setLinkInfo(null)
     try {
-      const result = await disconnectEnrollment(group.enrollmentId)
+      let lastResult: Awaited<ReturnType<typeof disconnectEnrollment>> | null =
+        null
+      for (const enrollmentId of group.enrollmentIds) {
+        lastResult = await disconnectEnrollment(enrollmentId)
+      }
       setLinkInfo(
-        result.tellerDisconnected
-          ? `Unlinked ${group.institutionName ?? 'enrollment'} cleanly.`
-          : `Unlinked locally, but Teller-side disconnect failed: ${result.tellerError ?? 'unknown'}. You may want to remove this app from your bank's connected-apps list.`,
-      )
-      setAccounts((prev) =>
-        prev
-          ? prev.filter((a) => a.teller_enrollment_id !== group.enrollmentId)
-          : prev,
+        lastResult?.tellerDisconnected
+          ? `Unlinked ${group.institutionName ?? 'bank'} cleanly.`
+          : `Unlinked locally, but Teller-side disconnect may have failed: ${lastResult?.tellerError ?? 'unknown'}. You may want to remove this app from your bank's connected-apps list.`,
       )
       setAccountsSyncing(true)
       try {
@@ -291,7 +231,7 @@ export default function AdminPage() {
     } catch (e) {
       setLinkError(e instanceof Error ? e.message : String(e))
     } finally {
-      setUnlinkingId(null)
+      setUnlinkingKey(null)
     }
   }
 
@@ -321,14 +261,14 @@ export default function AdminPage() {
 
       <BusyOverlay
         busy={
-          unlinkingId !== null ||
-          reconnectingId !== null ||
+          unlinkingKey !== null ||
+          reconnectingKey !== null ||
           teller.linking ||
           accountsSyncing
         }
         label={
           teller.linking
-            ? reconnectingId
+            ? reconnectingKey
               ? 'Reconnecting…'
               : 'Linking…'
             : 'Updating accounts…'
@@ -394,7 +334,7 @@ export default function AdminPage() {
           <ul className="space-y-3">
             {groups.map((group) => (
               <li
-                key={group.enrollmentId || 'orphans'}
+                key={group.groupKey}
                 className="overflow-hidden rounded-2xl bg-zinc-900 ring-1 ring-zinc-800"
               >
                 <header className="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3">
@@ -409,7 +349,7 @@ export default function AdminPage() {
                       {formatLastSynced(group.lastSyncedAt)}
                     </p>
                   </div>
-                  {group.enrollmentId && (
+                  {group.enrollmentIds.length > 0 && (
                     <div className="flex shrink-0 items-center gap-2">
                       {group.tellerConnectEnrollmentId && (
                         <button
@@ -418,12 +358,12 @@ export default function AdminPage() {
                           disabled={
                             !teller.ready ||
                             teller.linking ||
-                            unlinkingId === group.enrollmentId ||
-                            reconnectingId === group.enrollmentId
+                            unlinkingKey === group.groupKey ||
+                            reconnectingKey === group.groupKey
                           }
                           className="rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {reconnectingId === group.enrollmentId
+                          {reconnectingKey === group.groupKey
                             ? 'Reconnecting…'
                             : 'Reconnect'}
                         </button>
@@ -431,10 +371,10 @@ export default function AdminPage() {
                       <button
                         type="button"
                         onClick={() => onUnlink(group)}
-                        disabled={unlinkingId === group.enrollmentId}
+                        disabled={unlinkingKey === group.groupKey}
                         className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {unlinkingId === group.enrollmentId
+                        {unlinkingKey === group.groupKey
                           ? 'Unlinking…'
                           : 'Unlink'}
                       </button>
