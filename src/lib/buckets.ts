@@ -1,5 +1,17 @@
 import { supabase } from '@/lib/supabase'
 
+/** Short labels — leave room for amounts like $999,999.99 and row actions. */
+export const BUCKET_NAME_MAX_LENGTH = 40
+
+export function validateBucketName(name: string): string | null {
+  const trimmed = name.trim()
+  if (!trimmed) return 'Name cannot be empty.'
+  if (trimmed.length > BUCKET_NAME_MAX_LENGTH) {
+    return `Keep the name to ${BUCKET_NAME_MAX_LENGTH} characters or fewer.`
+  }
+  return null
+}
+
 export type MoveMoneyArgs = {
   fromBucketId: string | null
   toBucketId: string | null
@@ -39,7 +51,8 @@ export async function renameBucket(
   name: string,
 ): Promise<void> {
   const trimmed = name.trim()
-  if (!trimmed) throw new Error('Name cannot be empty.')
+  const invalid = validateBucketName(trimmed)
+  if (invalid) throw new Error(invalid)
   const { error } = await supabase
     .from('buckets')
     .update({ name: trimmed })

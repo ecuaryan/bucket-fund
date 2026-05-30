@@ -14,9 +14,8 @@ Entry point for AI coding agents (and humans) working in this repo.
    conventions that Cursor auto-loads. Currently:
    - `tailwind-v4.mdc` — this project uses Tailwind v4 (CSS-first config,
      no `tailwind.config.ts`). Do not generate v3 patterns.
-4. **[README.md](./README.md)** — dev setup, scripts, and the
-   "Before connecting real Teller data" TODO list. The items in that
-   list are security-critical.
+   - `production-database.mdc` — no destructive hosted SQL; local Docker for data.
+4. **[README.md](./README.md)** — dev setup, scripts, security TODOs (Teller + production database).
 5. **[docs/BRAND.md](./docs/BRAND.md)** — product voice, positioning (solo +
    household), and display-name candidates. User-facing strings live in
    `src/lib/brand.ts`.
@@ -47,6 +46,8 @@ Entry point for AI coding agents (and humans) working in this repo.
 - **Server secrets stay on the server.** `TELLER_SIGNING_SECRET` and the
   Supabase service role key live in Edge Function env only — never
   prefixed with `VITE_`, never imported by client code.
+- **Hosted database:** keep prod unlinked on dev machines; no bulk DELETE via CLI
+  or agents. See `production-database.mdc` and README § Production database.
 - **Auth sign-in routing.** Post-sign-out paths and email vs PIN preference
   live in [`src/lib/authNavigation.ts`](./src/lib/authNavigation.ts) and
   [`src/lib/signInPreference.ts`](./src/lib/signInPreference.ts). Use router

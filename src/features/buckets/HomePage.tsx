@@ -32,8 +32,10 @@ import {
 } from '@/lib/homeOptimistic'
 import {
   deleteBucket,
+  BUCKET_NAME_MAX_LENGTH,
   renameBucket,
   reorderBucket,
+  validateBucketName,
 } from '@/lib/buckets'
 import type { Database } from '@/types/database'
 import MoveMoneyDialog from '@/features/buckets/MoveMoneyDialog'
@@ -209,6 +211,11 @@ export default function HomePage() {
       setRenamingId(null)
       return
     }
+    const invalid = validateBucketName(next)
+    if (invalid) {
+      setActionError(invalid)
+      return
+    }
     const previous = buckets?.find((b) => b.id === id)?.name
     if (!previous || previous === next) {
       setRenamingId(null)
@@ -275,6 +282,11 @@ export default function HomePage() {
     if (!member) return
     const name = newBucketName.trim()
     if (!name) return
+    const invalid = validateBucketName(name)
+    if (invalid) {
+      setCreateError(invalid)
+      return
+    }
 
     setCreating(true)
     setCreateError(null)
@@ -476,21 +488,22 @@ export default function HomePage() {
               return (
                 <li
                   key={bucket.id}
-                  className="flex items-center gap-2 px-3 py-2"
+                  className="flex min-w-0 items-center gap-2 px-3 py-2"
                 >
                   {renaming ? (
-                    <div className="flex flex-1 items-center gap-2">
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
                       <input
                         autoFocus
                         type="text"
                         value={renameValue}
+                        maxLength={BUCKET_NAME_MAX_LENGTH}
                         onChange={(e) => setRenameValue(e.target.value)}
                         onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                           if (e.key === 'Enter') void commitRename(bucket.id)
                           if (e.key === 'Escape') cancelRename()
                         }}
                         onBlur={() => void commitRename(bucket.id)}
-                        className="flex-1 rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-emerald-400 focus:outline focus:outline-2 focus:outline-emerald-400"
+                        className="min-w-0 flex-1 rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-emerald-400 focus:outline focus:outline-2 focus:outline-emerald-400"
                       />
                       <p className="shrink-0 text-sm font-semibold tabular-nums text-zinc-500">
                         {currency.format(Number(bucket.allocated_amount))}
@@ -500,9 +513,9 @@ export default function HomePage() {
                     <button
                       type="button"
                       onClick={() => setMoveBucketId(bucket.id)}
-                      className="-ml-1 flex flex-1 items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-zinc-800/60 focus:bg-zinc-800/60 focus:outline-none"
+                      className="-ml-1 flex min-w-0 flex-1 items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-zinc-800/60 focus:bg-zinc-800/60 focus:outline-none"
                     >
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-zinc-300">
                           {bucket.name}
                         </p>
@@ -540,6 +553,7 @@ export default function HomePage() {
               <input
                 type="text"
                 value={newBucketName}
+                maxLength={BUCKET_NAME_MAX_LENGTH}
                 onChange={(e) => setNewBucketName(e.target.value)}
                 placeholder="New bucket name"
                 className="flex-1 rounded-lg border-0 bg-zinc-900 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-500 focus:outline focus:outline-2 focus:outline-emerald-400"

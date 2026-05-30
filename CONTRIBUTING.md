@@ -126,9 +126,11 @@ If production shows a missing RPC or old Edge Function behavior, check the lates
 npx supabase link
 npx supabase db push
 npx supabase functions deploy
+npx supabase unlink
 ```
 
 Edge Function **secrets** (`TELLER_SIGNING_SECRET`, service role, etc.) stay in the
 Supabase dashboard / `supabase secrets set` — deploy only ships function code.
 
 See [README.md § Before connecting real Teller data](./README.md) for security TODOs.
+See [README.md § Production database](./README.md#production-database) for hosted DB access.
