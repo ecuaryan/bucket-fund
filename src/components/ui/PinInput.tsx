@@ -2,8 +2,10 @@ import {
   forwardRef,
   useLayoutEffect,
   useRef,
+  type FocusEvent,
   type InputHTMLAttributes,
 } from 'react'
+import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
 
 type PinInputProps = Omit<
   InputHTMLAttributes<HTMLInputElement>,
@@ -29,6 +31,7 @@ const PinInput = forwardRef<HTMLInputElement, PinInputProps>(function PinInput(
     className = '',
     autoFocus,
     id,
+    onFocus,
     ...rest
   },
   forwardedRef,
@@ -42,6 +45,11 @@ const PinInput = forwardRef<HTMLInputElement, PinInputProps>(function PinInput(
     } else if (forwardedRef) {
       forwardedRef.current = el
     }
+  }
+
+  function handleFocus(e: FocusEvent<HTMLInputElement>) {
+    scrollFocusedIntoView(e.currentTarget)
+    onFocus?.(e)
   }
 
   useLayoutEffect(() => {
@@ -73,6 +81,7 @@ const PinInput = forwardRef<HTMLInputElement, PinInputProps>(function PinInput(
       onChange={(e) =>
         onChange(e.target.value.replace(/\D/g, '').slice(0, maxLength))
       }
+      onFocus={handleFocus}
       className={`pin-mask ${className}`.trim()}
     />
   )

@@ -11,6 +11,7 @@
  */
 :root {
   color-scheme: dark;
+  --keyboard-inset: 0px;
 }
 html,
 body {
@@ -68,6 +69,10 @@ body {
   .sheet-backdrop {
     background-color: rgb(0 0 0 / 0);
     transition: background-color 200ms ease;
+    align-items: flex-start;
+    overflow-y: auto;
+    padding-top: max(1rem, env(safe-area-inset-top, 0px));
+    padding-bottom: max(1rem, var(--keyboard-inset, 0px));
   }
 
   .sheet-backdrop-open {
@@ -76,7 +81,13 @@ body {
 
   .sheet-panel {
     opacity: 0;
-    transform: translateY(100%);
+    transform: translateY(-12px);
+    max-height: min(
+      calc(100dvh - 2rem - var(--keyboard-inset, 0px)),
+      85dvh
+    );
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     transition:
       transform 250ms cubic-bezier(0.16, 1, 0.3, 1),
       opacity 200ms ease;
@@ -88,8 +99,16 @@ body {
   }
 
   @media (min-width: 640px) {
+    .sheet-backdrop {
+      align-items: center;
+      overflow-y: hidden;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+
     .sheet-panel {
-      transform: translateY(1rem);
+      transform: translateY(12px);
+      max-height: min(85dvh, calc(100dvh - 4rem));
     }
 
     .sheet-panel-open {
