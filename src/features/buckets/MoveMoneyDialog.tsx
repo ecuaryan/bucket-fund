@@ -3,6 +3,7 @@ import { Sheet } from '@/components/ui/Sheet'
 import { AmountLimitHint } from '@/components/AmountLimitHint'
 import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
 import { moveMoney } from '@/lib/buckets'
+import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
 import type { Database } from '@/types/database'
 
@@ -11,11 +12,6 @@ type Bucket = Database['public']['Tables']['buckets']['Row']
 type Endpoint = { id: string | null; label: string; balance: number | null }
 
 const UNALLOCATED_ID = '__unallocated__'
-
-const currency = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-})
 
 function endpointKey(id: string | null): string {
   return id ?? UNALLOCATED_ID
@@ -51,6 +47,7 @@ export default function MoveMoneyDialog({
   onClose,
   onMoved,
 }: Props) {
+  const { formatMoney } = useHideAmounts()
   const [fromKey, setFromKey] = useState<string>(UNALLOCATED_ID)
   const [toKey, setToKey] = useState<string>(initialBucketId)
   const [amountStr, setAmountStr] = useState('')
@@ -101,14 +98,14 @@ export default function MoveMoneyDialog({
     amount > fromBalance
   const overdraftMessage =
     overdraft && fromBalance !== null && fromBalance !== undefined
-      ? `You can only move up to ${currency.format(fromBalance)}.`
+      ? `You can only move up to ${formatMoney(fromBalance)}.`
       : null
   const moveAvailableHint =
     fromEndpoint &&
     fromBalance !== null &&
     fromBalance !== undefined &&
     !overdraft
-      ? `${fromEndpoint.label} has ${currency.format(fromBalance)} available.`
+      ? `${fromEndpoint.label} has ${formatMoney(fromBalance)} available.`
       : null
   const canSubmit = amountValid && !sameEndpoint && !overdraft && !submitting
 
@@ -293,7 +290,7 @@ export default function MoveMoneyDialog({
               {submitting
                 ? 'Moving…'
                 : amountValid && toEndpoint
-                  ? `Move ${currency.format(amount)} to ${toEndpoint.label}`
+                  ? `Move ${formatMoney(amount)} to ${toEndpoint.label}`
                   : 'Move'}
             </button>
           </div>
@@ -317,6 +314,7 @@ function Picker({
   embedded?: boolean
   hideLabel?: boolean
 }) {
+  const { formatMoney } = useHideAmounts()
   return (
     <label className="block min-w-0">
       {!hideLabel && (
@@ -338,7 +336,7 @@ function Picker({
           const key = endpointKey(e.id)
           const balance =
             e.balance !== null && e.balance !== undefined
-              ? ` — ${currency.format(e.balance)}`
+              ? ` — ${formatMoney(e.balance)}`
               : ''
           return (
             <option key={key} value={key}>

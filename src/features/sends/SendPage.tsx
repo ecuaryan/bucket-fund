@@ -24,6 +24,7 @@ import { AmountLimitHint } from '@/components/AmountLimitHint'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
+import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import type { Database } from '@/types/database'
 
 type Member = Pick<
@@ -32,12 +33,8 @@ type Member = Pick<
 >
 type Account = Database['public']['Tables']['accounts']['Row']
 
-const currency = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-})
-
 export default function SendPage() {
+  const { formatMoney } = useHideAmounts()
   const auth = useAuth()
   const member = auth.status === 'signedIn' ? auth.member : null
   const accessToken =
@@ -168,11 +165,11 @@ export default function SendPage() {
     amountValid && available !== null && amount > available
   const overdraftMessage =
     overdraft && available !== null
-      ? `You can only send up to ${currency.format(available)}.`
+      ? `You can only send up to ${formatMoney(available)}.`
       : null
   const sendAvailableHint =
     available !== null && !overdraft
-      ? `You have ${currency.format(available)} available to send.`
+      ? `You have ${formatMoney(available)} available to send.`
       : null
 
   async function onSubmit(e: FormEvent) {
@@ -203,8 +200,8 @@ export default function SendPage() {
       const recipient = recipients.find((m) => m.id === toMemberId)
       setSuccess(
         recipient
-          ? `Sent ${currency.format(amount)} to ${recipient.name}.`
-          : `Sent ${currency.format(amount)}.`,
+          ? `Sent ${formatMoney(amount)} to ${recipient.name}.`
+          : `Sent ${formatMoney(amount)}.`,
       )
       setAmountStr('')
       setNote('')
@@ -288,20 +285,20 @@ export default function SendPage() {
             You can send
           </p>
           <p className="mt-1 text-2xl font-semibold tabular-nums">
-            {currency.format(available)}
+            {formatMoney(available)}
           </p>
           {showChildBreakdown && balanceBreakdown ? (
             <dl className="mt-3 space-y-1 border-t border-current/10 pt-3 text-xs opacity-90">
               {childTotal > 0 ? (
                 <div className="flex justify-between gap-4 tabular-nums">
                   <dt>Total balance</dt>
-                  <dd>{currency.format(childTotal)}</dd>
+                  <dd>{formatMoney(childTotal)}</dd>
                 </div>
               ) : null}
               {balanceBreakdown.bucketAllocated > 0 ? (
                 <div className="flex justify-between gap-4 tabular-nums">
                   <dt>In your buckets</dt>
-                  <dd>−{currency.format(balanceBreakdown.bucketAllocated)}</dd>
+                  <dd>−{formatMoney(balanceBreakdown.bucketAllocated)}</dd>
                 </div>
               ) : null}
             </dl>

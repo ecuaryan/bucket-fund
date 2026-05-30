@@ -7,6 +7,7 @@ import {
   HISTORY_EMPTY_BODY,
   HISTORY_EMPTY_BUCKET_BODY,
 } from '@/lib/brand'
+import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import type { Database } from '@/types/database'
 
 // Pulled-back transaction shape, with bucket / member name joins.
@@ -46,11 +47,6 @@ const MORE_PAGE_SIZE = 50
 // constant so every page fetch uses the exact same shape.
 const TX_SELECT =
   '*, from_bucket:buckets!from_bucket_id(name), to_bucket:buckets!to_bucket_id(name), from_member:family_members!from_member_id(name), to_member:family_members!to_member_id(name)'
-
-const currency = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-})
 
 const dayFormatter = new Intl.DateTimeFormat('en-US', {
   weekday: 'short',
@@ -360,8 +356,9 @@ function TxItem({
   row: TxRow
   currentMemberId: string
 }) {
+  const { formatMoney } = useHideAmounts()
   const [noteExpanded, setNoteExpanded] = useState(false)
-  const amount = currency.format(Number(row.amount))
+  const amount = formatMoney(Number(row.amount))
   const time = timeFormatter.format(new Date(row.created_at))
 
   let title: string

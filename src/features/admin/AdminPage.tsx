@@ -26,6 +26,7 @@ import AdminAccountSection from '@/features/admin/AdminAccountSection'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
 import MembersSection from '@/features/admin/MembersSection'
 import { formatAppVersion } from '@/lib/appVersion'
+import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import type { Database } from '@/types/database'
 
@@ -36,11 +37,6 @@ type FamilyMemberRow = {
   name: string
   role: string
 }
-
-const currency = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-})
 
 const dateFormat = new Intl.DateTimeFormat('en-US', {
   month: 'short',
@@ -57,6 +53,7 @@ function formatLastSynced(iso: string | null): string {
 }
 
 export default function AdminPage() {
+  const { formatMoney } = useHideAmounts()
   const auth = useAuth()
   const member = auth.status === 'signedIn' ? auth.member : null
   const teller = useTellerConnect()
@@ -345,7 +342,7 @@ export default function AdminPage() {
                     <p className="text-xs text-zinc-400">
                       {group.accounts.length} account
                       {group.accounts.length === 1 ? '' : 's'} ·{' '}
-                      {currency.format(group.totalBalance)} · last synced{' '}
+                      {formatMoney(group.totalBalance)} · last synced{' '}
                       {formatLastSynced(group.lastSyncedAt)}
                     </p>
                   </div>
@@ -421,7 +418,7 @@ export default function AdminPage() {
                           onError={setAssignError}
                         />
                         <p className="text-sm font-medium tabular-nums text-zinc-300">
-                          {currency.format(Number(a.current_balance))}
+                          {formatMoney(Number(a.current_balance))}
                         </p>
                       </div>
                     </li>
