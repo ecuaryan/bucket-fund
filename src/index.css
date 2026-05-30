@@ -106,10 +106,6 @@ body {
     animation: fade-in 200ms ease both;
   }
 
-  .note-expand-text {
-    transition: max-height 200ms ease;
-  }
-
   .busy-overlay {
     animation: busy-overlay-in 150ms ease both;
   }
@@ -161,9 +157,5 @@ body {
   .menu-popover-enter,
   .fade-in-enter {
     animation: none !important;
-  }
-
-  .note-expand-text {
-    transition: none !important;
   }
 }
