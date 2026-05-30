@@ -7,10 +7,12 @@ export function useVisualViewportInset(): void {
     const vv = window.visualViewport
 
     function update() {
+      const inset = keyboardInsetPx()
       document.documentElement.style.setProperty(
         '--keyboard-inset',
-        `${keyboardInsetPx()}px`,
+        `${inset}px`,
       )
+      document.documentElement.classList.toggle('keyboard-open', inset > 0)
     }
 
     update()
@@ -23,6 +25,7 @@ export function useVisualViewportInset(): void {
       vv?.removeEventListener('scroll', update)
       window.removeEventListener('resize', update)
       document.documentElement.style.removeProperty('--keyboard-inset')
+      document.documentElement.classList.remove('keyboard-open')
     }
   }, [])
 }

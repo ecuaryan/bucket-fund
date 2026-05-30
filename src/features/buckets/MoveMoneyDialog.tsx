@@ -185,7 +185,6 @@ export default function MoveMoneyDialog({
                 onClick={() => {
                   setFromKey(toKey)
                   setToKey(fromKey)
-                  amountRef.current?.focus()
                 }}
                 aria-label="Swap From and To"
                 title="Swap From and To"
