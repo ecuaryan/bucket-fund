@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { Sheet } from '@/components/ui/Sheet'
 import { AmountLimitHint } from '@/components/AmountLimitHint'
 import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
 import { moveMoney } from '@/lib/buckets'
@@ -69,16 +70,6 @@ export default function MoveMoneyDialog({
     setTimeout(() => amountRef.current?.focus(), 0)
   }, [open, initialBucketId])
 
-  // Close on Escape.
-  useEffect(() => {
-    if (!open) return
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
-
   const endpoints = useMemo<Endpoint[]>(() => {
     const list: Endpoint[] = [
       {
@@ -147,33 +138,21 @@ export default function MoveMoneyDialog({
     }
   }
 
-  if (!open) return null
-
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Move money"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 sm:items-center"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md rounded-t-2xl bg-zinc-900 p-5 shadow-2xl ring-1 ring-zinc-800 sm:rounded-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="mb-4 flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold text-zinc-300">Move money</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300"
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </header>
+    <Sheet open={open} onClose={onClose} aria-label="Move money">
+      <header className="mb-4 flex items-baseline justify-between">
+        <h2 className="text-lg font-semibold text-zinc-300">Move money</h2>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300"
+          aria-label="Close"
+        >
+          ×
+        </button>
+      </header>
 
-        <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={onSubmit} className="space-y-4">
           <div className="rounded-xl bg-zinc-950 p-3 ring-1 ring-inset ring-zinc-700">
             <div className="flex items-stretch gap-2">
               <div className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-3">
@@ -315,8 +294,7 @@ export default function MoveMoneyDialog({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Sheet>
   )
 }
 

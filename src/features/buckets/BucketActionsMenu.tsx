@@ -88,7 +88,7 @@ export default function BucketActionsMenu({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-lg bg-zinc-900 py-1 text-sm shadow-xl ring-1 ring-zinc-700"
+          className="menu-popover-enter absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-lg bg-zinc-900 py-1 text-sm shadow-xl ring-1 ring-zinc-700"
         >
           <MenuItem onClick={fire(onViewHistory)}>View history</MenuItem>
           {canManageStructure && (
