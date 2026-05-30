@@ -59,10 +59,12 @@ export default function FamilyLoginPage() {
   const [submitting, setSubmitting] = useState(false)
   const [pinError, setPinError] = useState<string | null>(null)
   const pinInputRef = useRef<HTMLInputElement>(null)
+  const pinSubmitInFlight = useRef(false)
 
   function selectMember(member: JoinMember) {
     setPin('')
     setPinError(null)
+    pinSubmitInFlight.current = false
     flushSync(() => setSelected(member))
     // iOS only opens the keyboard when focus runs in the same user-gesture
     // turn as the tap that revealed the field (autoFocus alone is unreliable).
@@ -113,6 +115,39 @@ export default function FamilyLoginPage() {
     }
   }, [refreshRoster])
 
+  const submitPin = useCallback(
+    async (pinValue: string) => {
+      if (!selected || !roster || pinSubmitInFlight.current) return
+      const familyId = getBoundFamilyId()
+      if (!familyId) return
+
+      if (!/^\d{4}$/.test(pinValue)) {
+        setPinError('Enter your 4-digit PIN.')
+        return
+      }
+
+      pinSubmitInFlight.current = true
+      setSubmitting(true)
+      setPinError(null)
+      try {
+        const tokens = await exchangePinForSession({
+          familyId,
+          memberId: selected.id,
+          pin: pinValue,
+        })
+        clearPasswordRecoveryFlow()
+        await auth.signInWithSession(tokens)
+        setSignInPreference('pin')
+      } catch (err) {
+        pinSubmitInFlight.current = false
+        setPinError(err instanceof Error ? err.message : 'Sign-in failed')
+        setPin('')
+        setSubmitting(false)
+      }
+    },
+    [auth, roster, selected],
+  )
+
   if (auth.status === 'signedIn') {
     if (auth.memberLoading) {
       return (
@@ -145,31 +180,13 @@ export default function FamilyLoginPage() {
 
   async function onPinSubmit(e: FormEvent) {
     e.preventDefault()
-    if (!selected || !roster) return
-    const familyId = getBoundFamilyId()
-    if (!familyId) return
+    await submitPin(pin)
+  }
 
-    setPinError(null)
-    if (!/^\d{4}$/.test(pin)) {
-      setPinError('Enter your 4-digit PIN.')
-      return
-    }
-
-    setSubmitting(true)
-    setPinError(null)
-    try {
-      const tokens = await exchangePinForSession({
-        familyId,
-        memberId: selected.id,
-        pin,
-      })
-      clearPasswordRecoveryFlow()
-      await auth.signInWithSession(tokens)
-      setSignInPreference('pin')
-    } catch (err) {
-      setPinError(err instanceof Error ? err.message : 'Sign-in failed')
-      setPin('')
-      setSubmitting(false)
+  function onPinChange(next: string) {
+    setPin(next)
+    if (next.length === 4) {
+      void submitPin(next)
     }
   }
 
@@ -178,6 +195,7 @@ export default function FamilyLoginPage() {
     setRoster(null)
     setSelected(null)
     setPin('')
+    pinSubmitInFlight.current = false
     setBindError(null)
     setRestoreNotice(null)
   }
@@ -204,7 +222,7 @@ export default function FamilyLoginPage() {
             autoFocus
             aria-label="4-digit PIN"
             value={pin}
-            onChange={setPin}
+            onChange={onPinChange}
             placeholder="····"
             className="block w-full rounded-xl border-0 bg-zinc-950 px-4 py-4 text-center text-2xl tracking-[0.5em] text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-600 focus:outline focus:outline-2 focus:outline-emerald-400"
           />
@@ -226,6 +244,7 @@ export default function FamilyLoginPage() {
               setSelected(null)
               setPin('')
               setPinError(null)
+              pinSubmitInFlight.current = false
             }}
             className="w-full text-sm text-zinc-400 hover:text-zinc-300"
           >
