@@ -11,9 +11,11 @@ export function keyboardInsetPx(): number {
 
 /** Keep focused fields visible above the keyboard and fixed chrome. */
 export function scrollFocusedIntoView(element: HTMLElement): void {
+  if (keyboardInsetPx() === 0) return
+
   requestAnimationFrame(() => {
     element.scrollIntoView({
-      block: 'center',
+      block: 'nearest',
       behavior: prefersReducedMotion() ? 'auto' : 'smooth',
     })
   })
