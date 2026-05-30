@@ -252,9 +252,11 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
 - **Lockout:** 6 failed PIN attempts → locked until admin clears.
 - **Join code rotation:** admin can rotate; only affects **new** device binds.
 - **Sessions:** independent per person — logout on one device does not sign out others.
-- **Shared / kiosk devices:** PIN sign-in is aimed at children (and adults using
-  join code + PIN). If kids can see Home balances, hiding admin email on Admin
-  adds little; Admin tab remains admin-role-only.
+- **Shared phones:** adult sessions (`admin`, `member`) sign out locally after **60 seconds**
+  hidden (browser tab or installed PWA via `visibilitychange`; elapsed time checked on
+  return because mobile OSes suspend background timers). Re-auth via family PIN when the
+  device has a join code. Child sessions are unchanged. Manual header Sign out remains
+  available.
 - **Home bucket visibility:** admin and member see family-pool + adult-owned buckets
   only (not children's buckets). Each adult orders that list independently via
   `member_bucket_order`. Children see only their own buckets.

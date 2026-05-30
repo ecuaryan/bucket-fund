@@ -20,6 +20,7 @@ import {
   markPasswordRecoveryFlow,
 } from '@/lib/passwordRecoveryFlow'
 import { isPasswordRecoverySession } from '@/lib/recoverySession'
+import { useAdultBackgroundSignOut } from '@/hooks/useAdultBackgroundSignOut'
 import { supabase } from '@/lib/supabase'
 import { withTimeout } from '@/lib/timeout'
 import type { Database } from '@/types/database'
@@ -68,6 +69,11 @@ async function fetchMember(userId: string): Promise<FamilyMember | null> {
     return null
   }
   return data
+}
+
+function AuthSessionEffects() {
+  useAdultBackgroundSignOut()
+  return null
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -240,7 +246,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ],
   )
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={value}>
+      <AuthSessionEffects />
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 // Hook lives with provider for fast refresh; only the provider is a "component".
