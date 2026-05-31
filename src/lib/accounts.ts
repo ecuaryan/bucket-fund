@@ -40,7 +40,7 @@ export async function assignAccountOwner(
 // real, allocatable cash on hand. Everything else (credit cards,
 // loans, investments, etc.) is excluded from the unallocated pool —
 // you can't allocate borrowed money or unrealised stock gains into a
-// "groceries" envelope.
+// "groceries" bucket.
 //
 // Reference: https://teller.io/docs/api/account
 export const CASH_ACCOUNT_SUBTYPES = new Set<string>([

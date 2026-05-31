@@ -20,7 +20,7 @@ export const APP_TAGLINE =
 
 /** Install / share sheet blurb (may echo the tagline). */
 export const PWA_DESCRIPTION =
-  'Envelope budgeting on your real bank balance. Solo or with your household.'
+  'Bucket budgeting on your real bank balance. Solo or with your household.'
 
 /** Primary PWA icon (192×192) — also used in auth UI. */
 export const PWA_ICON_192 = '/icons/icon-192.png' as const

@@ -15,7 +15,7 @@ Auth redirect URLs, Teller allowed origins (if applicable), and any
 bookmarked join links; join QR codes use `window.location.origin` so they
 will pick up the new host automatically after deploy.
 
-Bucket My Money is a **bank-agnostic virtual envelope budgeting PWA** for **you alone or a shared household**. It sits on top of real bank accounts (read via Teller API) and provides a fast mental accounting layer: label cash with buckets, see what is still unallocated, and when the bank balance moves, decide which bucket covers it (negative unallocated → move money from buckets on purpose). Brand voice and naming notes live in [docs/BRAND.md](./docs/BRAND.md); user-facing strings in `src/lib/brand.ts` (`APP_TAGLINE`, login copy).
+Bucket My Money is a **bank-agnostic virtual bucket budgeting PWA** for **you alone or a shared household**. It sits on top of real bank accounts (read via Teller API) and provides a fast mental accounting layer: label cash with buckets, see what is still unallocated, and when the bank balance moves, decide which bucket covers it (negative unallocated → move money from buckets on purpose). Brand voice and naming notes live in [docs/BRAND.md](./docs/BRAND.md); user-facing strings in `src/lib/brand.ts` (`APP_TAGLINE`, login copy).
 
 The primary use case is: **open app → move money from one bucket to another → done. Target: 4 taps from a cold open.**
 
@@ -199,7 +199,7 @@ system-error banner.
 Two different situations — do not conflate them in UX or docs.
 
 **1. Budgeting gap (normal, user-facing)**  
-Bank balance changed; envelope labels did not. Home shows negative unallocated
+Bank balance changed; bucket labels did not. Home shows negative unallocated
 (when accounts are linked). The user fixes it with bucket moves. No extra
 “integrity” modal. With no linked accounts, Home shows the link-bank CTA instead.
 
@@ -282,7 +282,7 @@ unallocated (`src/lib/accounts.ts` — credit cards are ignored on Home; they
 may still be stored in `accounts` if enrolled). Decide later:
 
 - **Exclude entirely** — do not persist or display credit/loan accounts at
-  all during Teller enroll (simplest mental model: envelopes = cash only).
+  all during Teller enroll (simplest mental model: buckets = cash only).
 - **Integrate as liabilities** — show them separately and adjust unallocated,
   e.g. treat credit card balance as debt that **reduces** effective unallocated
   (or available-to-allocate) so the family pool reflects “cash minus what you
