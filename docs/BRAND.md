@@ -38,11 +38,10 @@ label it; buckets are how you **decide** where money is reserved. The payoff:
 
 **Product:** `Bucket My Money` (`APP_NAME` in `brand.ts`).
 
-**Domain:** [bucketmymoney.com](https://bucketmymoney.com) — wire DNS to Vercel,
-then update Supabase Auth redirect URLs and Teller allowed origins. Until then,
-production may still serve from `bucket-fund.vercel.app`.
+**Domain:** [bucketmymoney.com](https://bucketmymoney.com) — production frontend on Vercel.
+Supabase Auth Site URL and Teller allowed origins use the same origin.
 
-**Repo / package:** `bucket-my-money` (GitHub rename preserves history).
+**Repo / package:** [`bucket-my-money`](https://github.com/ecuaryan/bucket-my-money) on GitHub; npm package name `bucket-my-money`.
 
 **PWA short name:** `BucketMyMoney` (`APP_SHORT_NAME`).
 

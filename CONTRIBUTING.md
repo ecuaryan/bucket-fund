@@ -6,11 +6,13 @@ How we ship changes safely: branches, CI, GitHub, and Vercel.
 
 | Environment | Frontend | Database |
 | ----------- | -------- | -------- |
-| **Production** | [bucket-fund.vercel.app](https://bucket-fund.vercel.app) | Hosted Supabase (dashboard project) |
+| **Production** | [bucketmymoney.com](https://bucketmymoney.com) | Hosted Supabase (dashboard project) |
 | **Local dev** | `npm run dev` (:5173) | Docker via `npm run db:start` |
 | **CI** | Built in Actions (placeholder or local Supabase env) | Throwaway Supabase in the runner only |
 
-Pushes and CI **do not** reset or seed production. Migrations reach production only when you run `supabase db push` (or equivalent) against the hosted project.
+Pushes and CI **do not** reset or seed production. Migrations and Edge Functions
+reach production via **[`deploy-supabase.yml`](./.github/workflows/deploy-supabase.yml)**
+after green CI on `main` (see [README § Production Supabase deploy](./README.md#production-supabase-deploy-one-time-secrets)).
 
 ## Branch workflow
 
@@ -55,7 +57,7 @@ a **new** branch based on up-to-date `origin/main`, not a stale or merged branch
 
 **Configured on this repo** (ruleset + classic protection):
 
-- **Repository ruleset** [`main`](https://github.com/ecuaryan/bucket-fund/rules/16950243): PR required, three status checks, no force-push, no branch delete.
+- **Repository ruleset** [`main`](https://github.com/ecuaryan/bucket-my-money/rules/16950243): PR required, three status checks, no force-push, no branch delete.
 - **Classic branch protection**: same three checks (strict), PR required (0 approvals), **including administrators**.
 
 Required check names (must match [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) job names exactly):
