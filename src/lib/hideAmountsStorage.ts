@@ -1,4 +1,4 @@
-export const HIDE_AMOUNTS_STORAGE_PREFIX = 'bucketfund_hide_amounts:'
+export const HIDE_AMOUNTS_STORAGE_PREFIX = 'bucketmymoney_hide_amounts:'
 
 export function hideAmountsStorageKey(memberId: string): string {
   return `${HIDE_AMOUNTS_STORAGE_PREFIX}${memberId}`

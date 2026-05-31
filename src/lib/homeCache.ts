@@ -13,7 +13,7 @@ export type HomePageCache = {
   savedAt: number
 }
 
-const CACHE_PREFIX = 'bucketfund:home:'
+const CACHE_PREFIX = 'bucketmymoney:home:'
 const MAX_AGE_MS = 5 * 60 * 1000
 
 function cacheKey(familyId: string, memberId: string): string {

@@ -1,8 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  isHumanAuthEmail,
-  passwordResetRedirectUrl,
-} from '@/lib/passwordReset'
+import { isHumanAuthEmail, passwordResetRedirectUrl } from '@/lib/passwordReset'
+import { PIN_AUTH_EMAIL_SUFFIX } from '@/lib/pinAuthDomain'
 
 describe('passwordResetRedirectUrl', () => {
   afterEach(() => {
@@ -26,7 +24,7 @@ describe('isHumanAuthEmail', () => {
 
   it('rejects internal PIN-only auth addresses', () => {
     expect(
-      isHumanAuthEmail('00000000-0000-4000-8000-000000000001@pin.bucketfund.internal'),
+      isHumanAuthEmail(`00000000-0000-4000-8000-000000000001${PIN_AUTH_EMAIL_SUFFIX}`),
     ).toBe(false)
   })
 })

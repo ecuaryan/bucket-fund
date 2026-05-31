@@ -1,6 +1,6 @@
 import { isPinBoundDevice } from '@/lib/familyDevice'
 
-const KEY = 'bucketfund_sign_in_preference'
+const KEY = 'bucketmymoney_sign_in_preference'
 
 export type SignInPreference = 'email' | 'pin'
 

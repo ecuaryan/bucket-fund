@@ -1,4 +1,4 @@
-const KEY = 'bucketfund:password_recovery_flow'
+const KEY = 'bucketmymoney:password_recovery_flow'
 
 /** Set when Supabase emits PASSWORD_RECOVERY (reset email link), not PIN login. */
 export function markPasswordRecoveryFlow(): void {

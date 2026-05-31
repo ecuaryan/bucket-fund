@@ -1,4 +1,4 @@
-# Contributing to BucketFund
+# Contributing to Bucket My Money
 
 How we ship changes safely: branches, CI, GitHub, and Vercel.
 

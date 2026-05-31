@@ -5,7 +5,7 @@ import { fileURLToPath, URL } from 'node:url'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
-import { APP_NAME, PWA_DESCRIPTION } from './src/lib/brand'
+import { APP_NAME, APP_SHORT_NAME, PWA_DESCRIPTION } from './src/lib/brand'
 
 const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string }
 
@@ -47,7 +47,7 @@ export default defineConfig({
       },
       manifest: {
         name: APP_NAME,
-        short_name: APP_NAME,
+        short_name: APP_SHORT_NAME,
         description: PWA_DESCRIPTION,
         theme_color: '#000000',
         background_color: '#000000',

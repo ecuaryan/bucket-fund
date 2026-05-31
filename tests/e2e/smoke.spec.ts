@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test'
-import { APP_TAGLINE } from '../../src/lib/brand'
+import { APP_NAME, APP_TAGLINE } from '../../src/lib/brand'
 import { createAdminFamily, insertBucket, serviceClient } from '../db/fixtures'
 
 test.describe('smoke', () => {
   test('redirects unauthenticated users to login', async ({ page }) => {
     await page.goto('/')
     await expect(page).toHaveURL(/\/login/)
-    await expect(page.getByRole('heading', { name: 'BucketFund' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: APP_NAME })).toBeVisible()
     await expect(page.getByText(APP_TAGLINE)).toBeVisible()
     await expect(
       page.getByRole('button', { name: 'Get started' }),

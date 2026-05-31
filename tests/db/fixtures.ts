@@ -1,4 +1,8 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import {
+  PIN_AUTH_EMAIL_SUFFIX,
+  TEST_AUTH_EMAIL_DOMAIN,
+} from '@/lib/pinAuthDomain'
 import type { Database } from '@/types/database'
 import { requireDbEnv } from './env'
 
@@ -37,7 +41,7 @@ export async function createAdminFamily(
   label: string,
 ): Promise<FamilyFixture> {
   const svc = serviceClient()
-  const adminEmail = `admin-${label}-${crypto.randomUUID().slice(0, 8)}@test.bucketfund.local`
+  const adminEmail = `admin-${label}-${crypto.randomUUID().slice(0, 8)}${TEST_AUTH_EMAIL_DOMAIN}`
 
   const { data: userData, error: userError } = await svc.auth.admin.createUser({
     email: adminEmail,
@@ -73,7 +77,7 @@ export async function addMember(
   name: string,
 ): Promise<{ memberId: string; email: string; password: string }> {
   const svc = serviceClient()
-  const email = `${role}-${crypto.randomUUID().slice(0, 8)}@pin.bucketfund.internal`
+  const email = `${role}-${crypto.randomUUID().slice(0, 8)}${PIN_AUTH_EMAIL_SUFFIX}`
 
   const { data: userData, error: userError } = await svc.auth.admin.createUser({
     email,

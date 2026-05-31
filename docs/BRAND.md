@@ -34,27 +34,24 @@ label it; buckets are how you **decide** where money is reserved. The payoff:
   assignment dropdowns (`HOUSEHOLD_LABEL`, not “pool” in user copy).
 - Child-facing copy: **adult**, not “parent,” unless you mean a specific person.
 
-## Display name (open)
+## Display name
 
-**Current:** `BucketFund` (repo: `bucket-fund`, domain idea: `bucketfund.me`).
+**Product:** `Bucket My Money` (`APP_NAME` in `brand.ts`).
 
-Candidates to pressure-test:
+**Domain:** [bucketmymoney.com](https://bucketmymoney.com) — wire DNS to Vercel,
+then update Supabase Auth redirect URLs and Teller allowed origins. Until then,
+production may still serve from `bucket-fund.vercel.app`.
 
-| Name | Pros | Cons |
-|------|------|------|
-| **SpendFrom** | Matches “where does this spend come from?” | Sounds like a payment app |
-| **PullFrom** | Active, bucket-oriented | Informal |
-| **Envelope** | Familiar category | Generic, SEO noise |
-| **Intent** | Decision-focused | Vague, crowded |
-| **BucketFund** | Clear buckets + money | “Fund” implies family/savings product |
+**Repo / package:** `bucket-my-money` (GitHub rename preserves history).
 
-When you pick a name: update `APP_NAME` in `brand.ts`, PWA manifest (via
-`vite.config.ts`), `index.html`, e2e heading assertion, and CONTEXT/README
-titles. Internal keys (`family_id`, `bucketfund:` cache prefixes) can wait.
+**PWA short name:** `BucketMyMoney` (`APP_SHORT_NAME`).
+
+**Internal storage keys:** `bucketmymoney_*` and `bucketmymoney:` prefixes
+(legacy `bucketfund_*` keys migrate on first load via `localStorageMigrate.ts`).
 
 ## Bank link (read-only — must stay accurate)
 
-BucketFund uses [Teller](https://teller.io) with Connect products **`balance`**
+Bucket My Money uses [Teller](https://teller.io) with Connect products **`balance`**
 and **`transactions`** only. Our server calls Teller **GET** endpoints for
 accounts and balances; webhooks refresh balances when activity posts. We do
 **not** use Teller payment initiation or any API that moves money at the bank.
@@ -62,7 +59,7 @@ accounts and balances; webhooks refresh balances when activity posts. We do
 **`send_money` and `move_money` are virtual** — labels inside the app only.
 
 User-facing reassurance: `BANK_LINK_READ_ONLY`, `ADMIN_LINKED_ACCOUNTS_INTRO`,
-`HOME_LINK_BANK_*` in `brand.ts` — read-only, no payments, BucketFund cannot
+`HOME_LINK_BANK_*` in `brand.ts` — read-only, no payments, Bucket My Money cannot
 move money at the bank. Do not promise “we never see transactions” if we later
 fetch transaction history; today we mainly use the transactions product for
 balance sync webhooks.

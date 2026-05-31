@@ -5,8 +5,10 @@ import { registerSW } from 'virtual:pwa-register'
 import App from './App.tsx'
 import KeyboardViewport from '@/components/KeyboardViewport'
 import { AuthProvider } from '@/lib/auth'
+import { migrateLegacyStorageKeys } from '@/lib/localStorageMigrate'
 import './index.css'
 
+migrateLegacyStorageKeys()
 registerSW({ immediate: true })
 
 createRoot(document.getElementById('root')!).render(

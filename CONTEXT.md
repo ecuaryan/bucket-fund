@@ -1,20 +1,21 @@
-# BucketFund — Project Context for Cursor
+# Bucket My Money — Project Context for Cursor
 
-This document contains the full product brief, technical stack, architecture decisions, and build instructions for BucketFund. Feed this into Cursor at the start of every session to maintain full context.
+This document contains the full product brief, technical stack, architecture decisions, and build instructions for Bucket My Money. Feed this into Cursor at the start of every session to maintain full context.
 
 ---
 
-## What Is BucketFund?
+## What Is Bucket My Money?
 
 **Production URL (current):** https://bucket-fund.vercel.app — deployed on
-Vercel’s default project subdomain. No custom domain purchased yet.
+Vercel’s default project subdomain until [bucketmymoney.com](https://bucketmymoney.com)
+DNS is wired to the same project.
 
-**Domain (planned):** bucketfund.me — when DNS is wired up, update Supabase
+**Custom domain:** bucketmymoney.com — when DNS is wired up, update Supabase
 Auth redirect URLs, Teller allowed origins (if applicable), and any
 bookmarked join links; join QR codes use `window.location.origin` so they
 will pick up the new host automatically after deploy.
 
-BucketFund is a **bank-agnostic virtual envelope budgeting PWA** for **you alone or a shared household**. It sits on top of real bank accounts (read via Teller API) and provides a fast mental accounting layer: label cash with buckets, see what is still unallocated, and when the bank balance moves, decide which bucket covers it (negative unallocated → move money from buckets on purpose). Brand voice and naming notes live in [docs/BRAND.md](./docs/BRAND.md); user-facing strings in `src/lib/brand.ts` (`APP_TAGLINE`, login copy).
+Bucket My Money is a **bank-agnostic virtual envelope budgeting PWA** for **you alone or a shared household**. It sits on top of real bank accounts (read via Teller API) and provides a fast mental accounting layer: label cash with buckets, see what is still unallocated, and when the bank balance moves, decide which bucket covers it (negative unallocated → move money from buckets on purpose). Brand voice and naming notes live in [docs/BRAND.md](./docs/BRAND.md); user-facing strings in `src/lib/brand.ts` (`APP_TAGLINE`, login copy).
 
 The primary use case is: **open app → move money from one bucket to another → done. Target: 4 taps from a cold open.**
 
@@ -244,7 +245,7 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
   Devices with a stored join code redirect to `/login/family` when signed out
   (email `/login` remains for account setup and `?signup=1`).
   Each person gets an `auth.users` row. **PIN-only members and children** use
-  an internal `{memberId}@pin.bucketfund.internal` address (never shown in UI).
+  an internal `{memberId}@pin.bucketmymoney.internal` address (never shown in UI).
   **Admin PIN login** still uses the admin’s real email — the `pin-login` Edge
   Function issues a session via magic link without rotating the email password.
 - **PIN management:** admin only — set/reset PIN verbally; no self-service PIN
@@ -303,7 +304,7 @@ math; do not change the invariant without an explicit product decision.
 | Styling | Tailwind CSS | Fast, consistent |
 | Backend / DB | Supabase | Auth + Postgres + Realtime + Edge Functions, free tier |
 | Bank sync | Teller API | Read-only, webhook support |
-| Hosting | Vercel (free tier) | Production: `bucket-fund.vercel.app`; `vercel.json` rewrites all routes to `index.html` for SPA deep links |
+| Hosting | Vercel (free tier) | Production: `bucket-fund.vercel.app` (→ `bucketmymoney.com`); `vercel.json` rewrites all routes to `index.html` for SPA deep links |
 | PWA | vite-plugin-pwa | Service worker, installable, offline fallback |
 | Auth | Supabase Auth + PIN + WebAuthn | Covers all member types and device scenarios |
 
@@ -311,7 +312,7 @@ math; do not change the invariant without an explicit product decision.
 
 ### Architecture
 ```
-React PWA (Vercel — bucket-fund.vercel.app)
+React PWA (Vercel — bucket-fund.vercel.app → bucketmymoney.com)
     ↕
 Supabase (Auth + Postgres + Realtime + Edge Functions)
     ↕
@@ -322,11 +323,11 @@ Teller API (webhooks → Edge Function → Supabase DB)
 
 | Environment | URL | Notes |
 |---|---|---|
-| Production (live) | https://bucket-fund.vercel.app | Auto-deploy from `main` on GitHub |
+| Production (live) | https://bucket-fund.vercel.app (→ bucketmymoney.com) | Auto-deploy from `main` on GitHub |
 | Local dev | http://localhost:5173 | `npm run dev` |
 
 - **SPA routing:** Client routes (`/login`, `/login/family`, `/join`, `/admin`, etc.) require `vercel.json` rewrites; without them, refreshing a deep link returns 404 from Vercel.
-- **Supabase Auth:** Site URL and redirect allow list must include `https://bucket-fund.vercel.app` (and `http://localhost:5173` for local dev) until a custom domain replaces it. Add **`/login/reset`** to redirect URLs for admin forgot-password emails.
+- **Supabase Auth:** Site URL and redirect allow list must include `https://bucket-fund.vercel.app`, `https://bucketmymoney.com` (when live), and `http://localhost:5173` for local dev. Add **`/login/reset`** to redirect URLs for admin forgot-password emails.
 - **Family join links:** Admin QR / copy-link use the current origin, e.g. `https://bucket-fund.vercel.app/join?code=…`.
 
 ### Free Tier Limits (all sufficient for personal/early SaaS use)
@@ -424,7 +425,7 @@ admin / member / child.
 ## Folder Structure
 
 ```
-bucketfund/
+bucket-my-money/
 ├── public/
 │   ├── icons/              # PWA icons (all required sizes)
 │   └── offline.html        # PWA offline fallback
@@ -513,7 +514,7 @@ Implemented in `src/features/buckets/HomePage.tsx` and
 - Service worker: network-first for API calls, cache-first for static assets
 - Offline fallback page
 - Tested installable on iOS and Android
-- Install from production: https://bucket-fund.vercel.app (Add to Home Screen on mobile)
+- Install from production: https://bucket-fund.vercel.app or https://bucketmymoney.com (Add to Home Screen on mobile)
 
 ---
 
@@ -521,7 +522,7 @@ Implemented in `src/features/buckets/HomePage.tsx` and
 
 Use this to kick off the build:
 
-> I am building a PWA called BucketFund. Full context is in the attached `bucketfund-context.md`. Please scaffold the complete project using the stack and folder structure defined in that document. Start with:
+> I am building a PWA called Bucket My Money. Full context is in the attached `CONTEXT.md`. Please scaffold the complete project using the stack and folder structure defined in that document. Start with:
 > 1. Initialize Vite + React + TypeScript
 > 2. Install and configure Tailwind CSS
 > 3. Install and configure vite-plugin-pwa with manifest.json and service worker
