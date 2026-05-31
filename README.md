@@ -1,6 +1,6 @@
 # Bucket My Money
 
-A bank-agnostic virtual envelope budgeting PWA—for solo use or a shared
+A bank-agnostic virtual bucket budgeting PWA—for solo use or a shared
 household. Sits on top of real bank accounts (read via Teller) so you can
 label cash with buckets, and decide which bucket covers it when the bank balance
 moves. Tagline and auth copy live in `src/lib/brand.ts`; see
@@ -144,7 +144,7 @@ High-level snapshot of what exists on `main` today. Product truth lives in
 this section tracks build progress only.
 
 **Rollout:** Builder’s family is the first beta. Negative unallocated on Home
-is the user-facing “rebalance your envelopes” signal. Automated operator ledger
+is the user-facing “rebalance your buckets” signal. Automated operator ledger
 checks are deferred until a possible paid SaaS phase.
 
 ### Shipped
