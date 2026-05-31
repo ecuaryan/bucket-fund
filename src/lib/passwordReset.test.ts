@@ -9,10 +9,10 @@ describe('passwordResetRedirectUrl', () => {
 
   it('points at /login/reset on the current origin', () => {
     vi.stubGlobal('location', {
-      origin: 'https://bucket-fund.vercel.app',
+      origin: 'https://bucketmymoney.com',
     } as Location)
     expect(passwordResetRedirectUrl()).toBe(
-      'https://bucket-fund.vercel.app/login/reset',
+      'https://bucketmymoney.com/login/reset',
     )
   })
 })

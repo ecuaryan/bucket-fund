@@ -6,14 +6,11 @@ This document contains the full product brief, technical stack, architecture dec
 
 ## What Is Bucket My Money?
 
-**Production URL (current):** https://bucket-fund.vercel.app — deployed on
-Vercel’s default project subdomain until [bucketmymoney.com](https://bucketmymoney.com)
-DNS is wired to the same project.
+**Production URL:** https://bucketmymoney.com — custom domain on Vercel. The legacy
+`bucket-fund.vercel.app` hostname 308-redirects to the apex domain.
 
-**Custom domain:** bucketmymoney.com — when DNS is wired up, update Supabase
-Auth redirect URLs, Teller allowed origins (if applicable), and any
-bookmarked join links; join QR codes use `window.location.origin` so they
-will pick up the new host automatically after deploy.
+**Registrar / DNS:** Cloudflare → Vercel (A + CNAME). Supabase Auth Site URL and
+Teller allowed origins should use `https://bucketmymoney.com`.
 
 Bucket My Money is a **bank-agnostic virtual bucket budgeting PWA** for **you alone or a shared household**. It sits on top of real bank accounts (read via Teller API) and provides a fast mental accounting layer: label cash with buckets, see what is still unallocated, and when the bank balance moves, decide which bucket covers it (negative unallocated → move money from buckets on purpose). Brand voice and naming notes live in [docs/BRAND.md](./docs/BRAND.md); user-facing strings in `src/lib/brand.ts` (`APP_TAGLINE`, login copy).
 
@@ -304,7 +301,7 @@ math; do not change the invariant without an explicit product decision.
 | Styling | Tailwind CSS | Fast, consistent |
 | Backend / DB | Supabase | Auth + Postgres + Realtime + Edge Functions, free tier |
 | Bank sync | Teller API | Read-only, webhook support |
-| Hosting | Vercel (free tier) | Production: `bucket-fund.vercel.app` (→ `bucketmymoney.com`); `vercel.json` rewrites all routes to `index.html` for SPA deep links |
+| Hosting | Vercel (free tier) | Production: [bucketmymoney.com](https://bucketmymoney.com); `vercel.json` rewrites all routes to `index.html` for SPA deep links |
 | PWA | vite-plugin-pwa | Service worker, installable, offline fallback |
 | Auth | Supabase Auth + PIN + WebAuthn | Covers all member types and device scenarios |
 
@@ -312,7 +309,7 @@ math; do not change the invariant without an explicit product decision.
 
 ### Architecture
 ```
-React PWA (Vercel — bucket-fund.vercel.app → bucketmymoney.com)
+React PWA (Vercel — bucketmymoney.com)
     ↕
 Supabase (Auth + Postgres + Realtime + Edge Functions)
     ↕
@@ -323,12 +320,14 @@ Teller API (webhooks → Edge Function → Supabase DB)
 
 | Environment | URL | Notes |
 |---|---|---|
-| Production (live) | https://bucket-fund.vercel.app (→ bucketmymoney.com) | Auto-deploy from `main` on GitHub |
+| Production (live) | https://bucketmymoney.com | Auto-deploy from `main` on GitHub |
 | Local dev | http://localhost:5173 | `npm run dev` |
 
 - **SPA routing:** Client routes (`/login`, `/login/family`, `/join`, `/admin`, etc.) require `vercel.json` rewrites; without them, refreshing a deep link returns 404 from Vercel.
-- **Supabase Auth:** Site URL and redirect allow list must include `https://bucket-fund.vercel.app`, `https://bucketmymoney.com` (when live), and `http://localhost:5173` for local dev. Add **`/login/reset`** to redirect URLs for admin forgot-password emails.
-- **Family join links:** Admin QR / copy-link use the current origin, e.g. `https://bucket-fund.vercel.app/join?code=…`.
+- **Supabase Auth:** Site URL `https://bucketmymoney.com`. Redirect allow list:
+  `https://bucketmymoney.com/**` and `http://localhost:5173/**` (covers `/login/reset`).
+- **Family join links:** Admin QR / copy-link use the current origin, e.g.
+  `https://bucketmymoney.com/join?code=…`.
 
 ### Free Tier Limits (all sufficient for personal/early SaaS use)
 | Service | Relevant Limit |
@@ -514,7 +513,7 @@ Implemented in `src/features/buckets/HomePage.tsx` and
 - Service worker: network-first for API calls, cache-first for static assets
 - Offline fallback page
 - Tested installable on iOS and Android
-- Install from production: https://bucket-fund.vercel.app or https://bucketmymoney.com (Add to Home Screen on mobile)
+- Install from production: https://bucketmymoney.com (Add to Home Screen on mobile)
 
 ---
 
