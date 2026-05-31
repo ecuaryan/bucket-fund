@@ -9,6 +9,7 @@ import {
   ADMIN_HOUSEHOLD_MEMBERS_INTRO,
   ADMIN_HOUSEHOLD_MEMBERS_TITLE,
   ADMIN_LOADING_MEMBERS,
+  APP_FORM_DATA_ATTR,
   REMOVE_CHILD_ACCOUNTS_DETAIL,
 } from '@/lib/brand'
 import {
@@ -375,7 +376,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
           <form
             onSubmit={onSavePin}
             autoComplete="off"
-            data-bucketfund-form="admin-set-pin"
+            {...{ [APP_FORM_DATA_ATTR]: 'admin-set-pin' }}
           >
             <h3 id="pin-dialog-title" className="text-lg font-semibold text-zinc-300">
               PIN for {pinTarget.name}

@@ -15,7 +15,7 @@ export async function verifyPin(pin: string, hash: string): Promise<boolean> {
   return bcrypt.compare(pin, hash)
 }
 
-const PIN_EMAIL_DOMAIN = '@pin.bucketfund.internal'
+const PIN_EMAIL_DOMAIN = '@pin.bucketmymoney.internal'
 
 /** Internal auth email for PIN-only members (never shown to users). */
 export function memberAuthEmail(memberId: string): string {

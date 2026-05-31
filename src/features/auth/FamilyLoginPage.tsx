@@ -9,6 +9,7 @@ import { flushSync } from 'react-dom'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { AuthShell } from '@/components/AuthShell'
 import {
+  APP_FORM_DATA_ATTR,
   APP_NAME,
   JOIN_CODE_ENTER_PROMPT,
   JOIN_CODE_LABEL,
@@ -215,7 +216,7 @@ export default function FamilyLoginPage() {
           onSubmit={onPinSubmit}
           className="fade-in-enter space-y-4"
           autoComplete="off"
-          data-bucketfund-form="family-pin"
+          {...{ [APP_FORM_DATA_ATTR]: 'family-pin' }}
         >
           <PinInput
             ref={pinInputRef}

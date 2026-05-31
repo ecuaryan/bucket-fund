@@ -1,5 +1,5 @@
-const FAMILY_ID_KEY = 'bucketfund_family_id'
-const JOIN_CODE_KEY = 'bucketfund_join_code'
+const FAMILY_ID_KEY = 'bucketmymoney_family_id'
+const JOIN_CODE_KEY = 'bucketmymoney_join_code'
 
 export function getBoundFamilyId(): string | null {
   try {

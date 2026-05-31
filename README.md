@@ -1,4 +1,4 @@
-# BucketFund
+# Bucket My Money
 
 A bank-agnostic virtual envelope budgeting PWA—for solo use or a shared
 household. Sits on top of real bank accounts (read via Teller) so you can
@@ -303,4 +303,4 @@ Full list and behavior matrix: <https://teller.io/docs/guides/sandbox>
 
 ## License
 
-[MIT](./LICENSE)
+Proprietary — all rights reserved. See [LICENSE](./LICENSE).

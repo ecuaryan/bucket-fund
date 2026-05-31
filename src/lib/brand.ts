@@ -1,14 +1,18 @@
 /**
  * User-facing brand strings. Import from here instead of hard-coding copy.
  *
- * Display name may change — see docs/BRAND.md. Repo/package URLs can stay
- * bucket-fund until a rename is decided.
- *
  * Static HTML cannot import this module — keep these in sync manually:
  * `HTML_META_DESCRIPTION` → index.html meta description;
- * `OFFLINE_PAGE_BODY` → public/offline.html main paragraph.
+ * `OFFLINE_PAGE_BODY` → public/offline.html main paragraph;
+ * `APP_NAME` → index.html `<title>` and offline.html title.
  */
-export const APP_NAME = 'BucketFund' as const
+export const APP_NAME = 'Bucket My Money' as const
+
+/** PWA install sheet / home-screen label (keep short). */
+export const APP_SHORT_NAME = 'BucketMyMoney' as const
+
+/** Stable hook for e2e and form tests (`data-bucketmymoney-form`). */
+export const APP_FORM_DATA_ATTR = 'data-bucketmymoney-form' as const
 
 /** Primary promise on auth and marketing surfaces. */
 export const APP_TAGLINE =
@@ -29,7 +33,7 @@ export const HTML_META_DESCRIPTION = `${APP_TAGLINE} ${PWA_DESCRIPTION}`
 
 /** Sync with public/offline.html main `<p>`. */
 export const OFFLINE_PAGE_BODY =
-  'BucketFund needs a connection to sync with your bank and household. Your last-seen balances may still be visible in the app.'
+  'Bucket My Money needs a connection to sync with your bank and household. Your last-seen balances may still be visible in the app.'
 
 /** Above “Get started” on the login screen. */
 export const LOGIN_NEW_HERE_INTRO =
@@ -39,7 +43,7 @@ export const LOGIN_ALREADY_HAVE_ACCOUNT = 'Already have an account?'
 
 /** Login/sign-up footnote. Fact-checked against our Teller usage (see docs/BRAND.md). */
 export const BANK_LINK_READ_ONLY =
-  'Read-only bank connection—we sync balances, not payments. BucketFund cannot move money or pay bills from your account.'
+  'Read-only bank connection—we sync balances, not payments. Bucket My Money cannot move money or pay bills from your account.'
 
 export const LOGIN_GET_STARTED = 'Get started'
 
@@ -106,7 +110,7 @@ export function householdAdminLabel(
 }
 
 export const ADMIN_LINKED_ACCOUNTS_INTRO =
-  'Read-only—we sync balances, not payments. BucketFund cannot move money at your bank.'
+  'Read-only—we sync balances, not payments. Bucket My Money cannot move money at your bank.'
 
 export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT =
   'Use Reconnect when a bank link breaks or balances need a fresh pull. Link bank is for a new institution. To change which accounts you share, Unlink that bank and link it again.'
@@ -129,7 +133,7 @@ export function adminUnlinkInstitutionConfirm(
   const label = institutionName ?? 'this bank'
   return (
     `Unlink ${label}? ` +
-    `${accountCount} account${accountCount === 1 ? '' : 's'} will be removed from BucketFund.`
+    `${accountCount} account${accountCount === 1 ? '' : 's'} will be removed from Bucket My Money.`
   )
 }
 
