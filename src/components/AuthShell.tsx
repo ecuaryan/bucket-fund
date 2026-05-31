@@ -17,7 +17,7 @@ export function AuthShell({
   children,
 }: AuthShellProps) {
   return (
-    <div className="flex min-h-svh flex-col overflow-y-auto bg-black px-4 pb-[max(1.5rem,var(--keyboard-inset,0px))] pt-[max(2rem,env(safe-area-inset-top,0px))] sm:justify-center sm:py-12">
+    <div className="flex min-h-svh flex-col items-center overflow-y-auto bg-black px-4 pb-[max(1.5rem,var(--keyboard-inset,0px))] pt-[max(2rem,env(safe-area-inset-top,0px))] sm:justify-center sm:py-12">
       <div className="w-full max-w-sm">
         {showHeader ? (
           <>
