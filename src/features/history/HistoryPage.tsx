@@ -6,9 +6,16 @@ import { useAuth } from '@/lib/auth'
 import {
   HISTORY_EMPTY_BODY,
   HISTORY_EMPTY_BUCKET_BODY,
+  HISTORY_EMPTY_SENDS_BODY,
 } from '@/lib/brand'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import type { Database } from '@/types/database'
+import {
+  filterFromSearchParams,
+  searchParamsForFilter,
+  SEND_FILTER_VALUE,
+  type HistoryFilter,
+} from '@/features/history/historyFilters'
 
 // Pulled-back transaction shape, with bucket / member name joins.
 // We don't lean on the generated Database type here because PostgREST's
@@ -62,7 +69,7 @@ const timeFormatter = new Intl.DateTimeFormat('en-US', {
 export default function HistoryPage() {
   const auth = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
-  const bucketFilter = searchParams.get('bucket')
+  const filter = filterFromSearchParams(searchParams)
 
   const [rows, setRows] = useState<TxRow[] | null>(null)
   const [buckets, setBuckets] = useState<Bucket[] | null>(null)
@@ -93,9 +100,11 @@ export default function HistoryPage() {
         .order('created_at', { ascending: false })
         .limit(limit)
       if (beforeCreatedAt) query = query.lt('created_at', beforeCreatedAt)
-      if (bucketFilter) {
+      if (filter.kind === 'send') {
+        query = query.eq('type', 'send')
+      } else if (filter.kind === 'bucket') {
         query = query.or(
-          `from_bucket_id.eq.${bucketFilter},to_bucket_id.eq.${bucketFilter}`,
+          `from_bucket_id.eq.${filter.bucketId},to_bucket_id.eq.${filter.bucketId}`,
         )
       }
       const { data, error } = await query
@@ -105,7 +114,7 @@ export default function HistoryPage() {
       }
       return (data ?? []) as unknown as TxRow[]
     },
-    [bucketFilter],
+    [filter],
   )
 
   // Initial load (also re-runs on filter change). Replaces the list.
@@ -194,19 +203,13 @@ export default function HistoryPage() {
   const grouped = useMemo(() => groupByDay(rows ?? []), [rows])
 
   const filteredBucketName = useMemo(() => {
-    if (!bucketFilter || !buckets) return null
-    const found = buckets.find((b) => b.id === bucketFilter)
+    if (filter.kind !== 'bucket' || !buckets) return null
+    const found = buckets.find((b) => b.id === filter.bucketId)
     return found?.name ?? null
-  }, [bucketFilter, buckets])
+  }, [filter, buckets])
 
-  function setBucketFilter(next: string | null) {
-    if (next) {
-      setSearchParams({ bucket: next })
-    } else {
-      // Clear: replace search with empty params so we don't leave a
-      // stale ?bucket= in the URL.
-      setSearchParams({})
-    }
+  function setFilter(next: HistoryFilter) {
+    setSearchParams(searchParamsForFilter(next))
   }
 
   if (!member) return null
@@ -228,16 +231,20 @@ export default function HistoryPage() {
           {rows === null
             ? 'Loading…'
             : rows.length === 0
-              ? 'No transactions yet'
-              : `${rows.length}${hasMore ? '+' : ''} ${rows.length === 1 ? 'transaction' : 'transactions'}`}
+              ? filter.kind === 'send'
+                ? 'No sends yet'
+                : 'No transactions yet'
+              : filter.kind === 'send'
+                ? `${rows.length}${hasMore ? '+' : ''} ${rows.length === 1 ? 'send' : 'sends'}`
+                : `${rows.length}${hasMore ? '+' : ''} ${rows.length === 1 ? 'transaction' : 'transactions'}`}
         </p>
       </header>
 
       <FilterBar
         buckets={buckets ?? []}
-        activeBucketId={bucketFilter}
+        filter={filter}
         activeBucketName={filteredBucketName}
-        onChange={setBucketFilter}
+        onChange={setFilter}
       />
 
       {rows === null ? (
@@ -245,12 +252,18 @@ export default function HistoryPage() {
       ) : rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-zinc-700 p-6 text-center">
           <p className="text-sm font-medium text-zinc-300">
-            {bucketFilter ? 'No moves for this bucket yet' : 'Nothing here yet'}
+            {filter.kind === 'send'
+              ? 'No sends yet'
+              : filter.kind === 'bucket'
+                ? 'No moves for this bucket yet'
+                : 'Nothing here yet'}
           </p>
           <p className="mt-1 text-xs text-zinc-400">
-            {bucketFilter
-              ? HISTORY_EMPTY_BUCKET_BODY
-              : HISTORY_EMPTY_BODY}
+            {filter.kind === 'send'
+              ? HISTORY_EMPTY_SENDS_BODY
+              : filter.kind === 'bucket'
+                ? HISTORY_EMPTY_BUCKET_BODY
+                : HISTORY_EMPTY_BODY}
           </p>
         </div>
       ) : (
@@ -288,64 +301,96 @@ export default function HistoryPage() {
 
 function FilterBar({
   buckets,
-  activeBucketId,
+  filter,
   activeBucketName,
   onChange,
 }: {
   buckets: Bucket[]
-  activeBucketId: string | null
+  filter: HistoryFilter
   activeBucketName: string | null
-  onChange: (id: string | null) => void
+  onChange: (filter: HistoryFilter) => void
 }) {
+  const selectValue =
+    filter.kind === 'send'
+      ? SEND_FILTER_VALUE
+      : filter.kind === 'bucket'
+        ? filter.bucketId
+        : ''
+
   // When the URL has a bucket id that's no longer in our local list
   // (e.g., deleted), surface that gracefully instead of vanishing.
   const showOrphanedFilter =
-    activeBucketId !== null && activeBucketName === null
+    filter.kind === 'bucket' && activeBucketName === null
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <label className="text-xs font-medium text-zinc-400" htmlFor="bucket-filter">
+      <label className="text-xs font-medium text-zinc-400" htmlFor="history-filter">
         Filter
       </label>
       <select
-        id="bucket-filter"
-        value={activeBucketId ?? ''}
-        onChange={(e) => onChange(e.target.value === '' ? null : e.target.value)}
+        id="history-filter"
+        value={selectValue}
+        onChange={(e) => {
+          const value = e.target.value
+          if (value === '') onChange({ kind: 'all' })
+          else if (value === SEND_FILTER_VALUE) onChange({ kind: 'send' })
+          else onChange({ kind: 'bucket', bucketId: value })
+        }}
         className="rounded-lg border-0 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
       >
         <option value="">All transactions</option>
+        <option value={SEND_FILTER_VALUE}>Sends only</option>
         {buckets.map((b) => (
           <option key={b.id} value={b.id}>
             {b.name}
           </option>
         ))}
         {showOrphanedFilter && (
-          <option value={activeBucketId ?? ''}>(deleted bucket)</option>
+          <option value={filter.bucketId}>(deleted bucket)</option>
         )}
       </select>
 
-      {activeBucketId && (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300 ring-1 ring-emerald-500/30">
-          {activeBucketName ?? 'Deleted bucket'}
-          <button
-            type="button"
-            aria-label="Clear filter"
-            onClick={() => onChange(null)}
-            className="-mr-0.5 flex h-4 w-4 items-center justify-center rounded-full text-emerald-300 hover:bg-emerald-500/20"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-              className="h-3 w-3"
-            >
-              <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-            </svg>
-          </button>
-        </span>
+      {filter.kind === 'send' && (
+        <ActiveFilterChip label="Sends only" onClear={() => onChange({ kind: 'all' })} />
+      )}
+
+      {filter.kind === 'bucket' && (
+        <ActiveFilterChip
+          label={activeBucketName ?? 'Deleted bucket'}
+          onClear={() => onChange({ kind: 'all' })}
+        />
       )}
     </div>
+  )
+}
+
+function ActiveFilterChip({
+  label,
+  onClear,
+}: {
+  label: string
+  onClear: () => void
+}) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300 ring-1 ring-emerald-500/30">
+      {label}
+      <button
+        type="button"
+        aria-label="Clear filter"
+        onClick={onClear}
+        className="-mr-0.5 flex h-4 w-4 items-center justify-center rounded-full text-emerald-300 hover:bg-emerald-500/20"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          aria-hidden="true"
+          className="h-3 w-3"
+        >
+          <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+        </svg>
+      </button>
+    </span>
   )
 }
 
