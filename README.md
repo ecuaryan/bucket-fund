@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="https://bucketmymoney.com">
+    <img src="public/icons/icon-192.png" alt="Bucket My Money" width="128" height="128" />
+  </a>
+</p>
+
 # Bucket My Money
 
 A bank-agnostic virtual bucket budgeting PWA—for solo use or a shared
@@ -85,6 +91,10 @@ Every push to `main` and every pull request runs
 After CI **succeeds on `main`**, [`.github/workflows/deploy-supabase.yml`](./.github/workflows/deploy-supabase.yml)
 applies pending SQL migrations (`supabase db push`) and deploys Edge Functions to the
 hosted project. PRs do not touch production.
+
+See [CONTRIBUTING § Production deploy sequence](./CONTRIBUTING.md#production-deploy-sequence)
+for the full timeline (Vercel vs Supabase), troubleshooting when the frontend
+updates before migrations land, and where to confirm migrations in the dashboard.
 
 **Quick setup:** GitHub → **Branches** → protect `main` (require PR + the three CI checks above).
 Vercel → **Deployment Protection** → production waits for the same checks.
