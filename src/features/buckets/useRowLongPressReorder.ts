@@ -11,8 +11,10 @@ import {
 import {
   ROW_LONG_PRESS_MS,
   autoScrollSpeed,
-  bucketIndexForRowDrag,
   clampPointerYForRowDrag,
+  closestRowCenterIndex,
+  rowCenterOffsets,
+  rowDragCenterY,
   rowDragOverlayTop,
   shouldCancelRowPress,
   shouldOpenMoveMoneyOnRelease,
@@ -153,6 +155,8 @@ export function useRowLongPressReorder({
   const releaseHandledRef = useRef(false)
   const rafRef = useRef<number | null>(null)
   const lastClientYRef = useRef(0)
+  // Resting row centers (offsets from list top), snapshotted when the drag arms.
+  const rowCentersRef = useRef<number[]>([])
 
   useEffect(() => {
     manualDragRef.current = manualDrag
@@ -198,12 +202,17 @@ export function useRowLongPressReorder({
           prev.rowHeight,
           bounds,
         )
-        const rects = getRowRects(listRef.current)
-        const overIndex = bucketIndexForRowDrag(rects, {
-          clientY: nextY,
-          grabOffsetY: prev.grabOffsetY,
-          rowHeight: prev.rowHeight,
-        })
+        // Hit-test the ghost center against the resting snapshot (not live rects).
+        const centerOffset =
+          rowDragCenterY({
+            clientY: nextY,
+            grabOffsetY: prev.grabOffsetY,
+            rowHeight: prev.rowHeight,
+          }) - bounds.top
+        const overIndex = closestRowCenterIndex(
+          rowCentersRef.current,
+          centerOffset,
+        )
         return { ...prev, clientY: nextY, listBounds: bounds, overIndex }
       })
     },
@@ -298,12 +307,19 @@ export function useRowLongPressReorder({
         listBounds,
       )
       lastClientYRef.current = clientY
-      const rects = getRowRects(listRef.current)
-      const overIndex = bucketIndexForRowDrag(rects, {
-        clientY,
-        grabOffsetY: rowMetrics.grabOffsetY,
-        rowHeight: rowMetrics.rowHeight,
-      })
+      // Snapshot resting row centers once; reused for all hit-tests this drag.
+      const centers = rowCenterOffsets(
+        getRowRects(listRef.current),
+        listBounds.top,
+      )
+      rowCentersRef.current = centers
+      const centerOffset =
+        rowDragCenterY({
+          clientY,
+          grabOffsetY: rowMetrics.grabOffsetY,
+          rowHeight: rowMetrics.rowHeight,
+        }) - listBounds.top
+      const overIndex = closestRowCenterIndex(centers, centerOffset)
       const next: ManualDrag = {
         bucketId: press.bucketId,
         pointerId: press.pointerId,

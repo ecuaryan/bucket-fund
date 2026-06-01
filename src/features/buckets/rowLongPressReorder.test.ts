@@ -5,11 +5,11 @@ import {
   ROW_PRESS_CANCEL_MOVE_PX,
   ROW_TAP_MOVE_MAX_PX,
   autoScrollSpeed,
-  bucketIndexAtClosestCenter,
-  bucketIndexForRowDrag,
   clampClientY,
   clampPointerYForRowDrag,
+  closestRowCenterIndex,
   manualSortableShiftY,
+  rowCenterOffsets,
   rowDragCenterY,
   rowDragOverlayTop,
   shouldCancelRowPress,
@@ -100,22 +100,29 @@ describe('clampPointerYForRowDrag', () => {
   })
 })
 
-describe('bucketIndexAtClosestCenter', () => {
-  const rects = [
-    { top: 0, bottom: 50 },
-    { top: 50, bottom: 100 },
-    { top: 100, bottom: 150 },
-  ]
+describe('rowCenterOffsets', () => {
+  it('returns row centers relative to the list top', () => {
+    const rects = [
+      { top: 100, bottom: 150 },
+      { top: 150, bottom: 200 },
+      { top: 200, bottom: 250 },
+    ]
+    expect(rowCenterOffsets(rects, 100)).toEqual([25, 75, 125])
+  })
+})
 
-  it('picks the row whose center is nearest', () => {
-    expect(bucketIndexAtClosestCenter(rects, 10)).toBe(0)
-    expect(bucketIndexAtClosestCenter(rects, 60)).toBe(1)
-    expect(bucketIndexAtClosestCenter(rects, 95)).toBe(1)
-    expect(bucketIndexAtClosestCenter(rects, 120)).toBe(2)
+describe('closestRowCenterIndex', () => {
+  const centers = [25, 75, 125]
+
+  it('picks the row whose resting center is nearest', () => {
+    expect(closestRowCenterIndex(centers, 10)).toBe(0)
+    expect(closestRowCenterIndex(centers, 60)).toBe(1)
+    expect(closestRowCenterIndex(centers, 95)).toBe(1)
+    expect(closestRowCenterIndex(centers, 120)).toBe(2)
   })
 
   it('returns -1 for empty list', () => {
-    expect(bucketIndexAtClosestCenter([], 50)).toBe(-1)
+    expect(closestRowCenterIndex([], 50)).toBe(-1)
   })
 })
 
@@ -150,18 +157,17 @@ describe('manualSortableShiftY', () => {
   })
 })
 
-describe('bucketIndexForRowDrag', () => {
-  const rects = [
-    { top: 0, bottom: 50 },
-    { top: 50, bottom: 100 },
-    { top: 100, bottom: 150 },
-  ]
+describe('row drag hit-testing uses the ghost center, not raw finger Y', () => {
+  // Resting centers for three 50px rows from list top.
+  const centers = [25, 75, 125]
 
-  it('uses row center instead of raw finger Y at the bottom of the ghost', () => {
-    const drag = { clientY: 80, grabOffsetY: 40, rowHeight: 50 }
-    expect(bucketIndexForRowDrag(rects, drag)).toBe(1)
-    expect(bucketIndexAtClosestCenter(rects, drag.clientY)).toBe(1)
-    expect(rowDragCenterY(drag)).toBe(65)
+  it('targets by ghost center so a low grab point does not skip a row', () => {
+    // Finger near the bottom of a 50px row; ghost center sits 15px higher.
+    const drag = { clientY: 101, grabOffsetY: 40, rowHeight: 50 }
+    expect(rowDragCenterY(drag)).toBe(86)
+    expect(closestRowCenterIndex(centers, rowDragCenterY(drag))).toBe(1)
+    // Raw finger Y would have landed on row 2.
+    expect(closestRowCenterIndex(centers, drag.clientY)).toBe(2)
   })
 })
 

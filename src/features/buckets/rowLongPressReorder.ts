@@ -111,28 +111,30 @@ export function rowDragCenterY(args: {
   return args.clientY - args.grabOffsetY + args.rowHeight / 2
 }
 
-/** Bucket index under the floating row center (closest row center — matches grip drag). */
-export function bucketIndexForRowDrag(
+/**
+ * Resting center of each row as an offset from the list's top edge. Captured once
+ * when a drag arms so hit-testing ignores the in-flight slide transforms (the live
+ * rects move as rows shift, which otherwise causes target flip-flop / jitter).
+ */
+export function rowCenterOffsets(
   rowRects: Array<{ top: number; bottom: number }>,
-  drag: { clientY: number; grabOffsetY: number; rowHeight: number },
-): number {
-  return bucketIndexAtClosestCenter(rowRects, rowDragCenterY(drag))
+  listTop: number,
+): number[] {
+  return rowRects.map((r) => (r.top + r.bottom) / 2 - listTop)
 }
 
-/** Closest row center to Y — same idea as dnd-kit `closestCenter` on a vertical list. */
-export function bucketIndexAtClosestCenter(
-  rowRects: Array<{ top: number; bottom: number }>,
-  clientY: number,
-): number {
-  if (rowRects.length === 0) return -1
+/**
+ * Closest row to a list-relative Y, using the stable center snapshot — the
+ * equivalent of dnd-kit's `closestCenter` against measured (resting) rects.
+ */
+export function closestRowCenterIndex(centers: number[], y: number): number {
+  if (centers.length === 0) return -1
 
   let closestIndex = 0
   let closestDistance = Infinity
 
-  for (let i = 0; i < rowRects.length; i++) {
-    const { top, bottom } = rowRects[i]
-    const center = top + (bottom - top) / 2
-    const distance = Math.abs(clientY - center)
+  for (let i = 0; i < centers.length; i++) {
+    const distance = Math.abs(y - centers[i])
     if (distance < closestDistance) {
       closestDistance = distance
       closestIndex = i
