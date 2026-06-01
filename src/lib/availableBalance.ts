@@ -1,4 +1,4 @@
-import { sumCashBalance } from '@/lib/accounts'
+import { latestCashSyncAt, sumCashBalance } from '@/lib/accounts'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database'
 import type { Json } from '@/types/database'
@@ -26,6 +26,8 @@ export type HomeBalanceBreakdown = {
   bucketAllocated: number
   childrenSetAside: number
   children: ChildSetAsideLine[]
+  /** Family-wide latest bank sync (ISO), or null when nothing is synced. */
+  bankLastSyncedAt: string | null
 }
 
 /** Net sends for a child (positive when funded by family). */
@@ -61,12 +63,17 @@ export function parseBreakdownRow(data: Json): HomeBalanceBreakdown | null {
   const row = data as Record<string, unknown>
   const num = (key: string) => Number(row[key] ?? 0)
   const children = parseChildLines(row.children)
+  const bankLastSyncedAt =
+    typeof row.bank_last_synced_at === 'string'
+      ? row.bank_last_synced_at
+      : null
   return {
     unallocated: num('unallocated'),
     totalCash: num('total_cash'),
     bucketAllocated: num('bucket_allocated'),
     childrenSetAside: num('children_set_aside'),
     children,
+    bankLastSyncedAt,
   }
 }
 
@@ -100,6 +107,7 @@ function clientBreakdownFallback(
     bucketAllocated,
     childrenSetAside: 0,
     children: [],
+    bankLastSyncedAt: latestCashSyncAt(accounts),
   }
 }
 

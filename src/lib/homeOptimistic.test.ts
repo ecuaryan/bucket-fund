@@ -24,6 +24,7 @@ const breakdown = (over: Partial<HomeBalanceBreakdown> = {}): HomeBalanceBreakdo
   bucketAllocated: 100,
   childrenSetAside: 0,
   children: [],
+  bankLastSyncedAt: null,
   ...over,
 })
 

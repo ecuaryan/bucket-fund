@@ -24,6 +24,7 @@ import {
   type HomeBalanceBreakdown,
 } from '@/lib/availableBalance'
 import { readHomeCache, writeHomeCache } from '@/lib/homeCache'
+import { formatRelativeTime } from '@/lib/relativeTime'
 import { loadHomePage } from '@/lib/homePage'
 import {
   renameBucketInList,
@@ -372,6 +373,10 @@ export default function HomePage() {
     (a) => a.current_balance !== null && Number(a.current_balance) > 0,
   ).length
 
+  // Family-wide bank sync time. Comes from the breakdown RPC so every role —
+  // including children, who can't read the accounts table — sees the same value.
+  const bankSyncedLabel = formatRelativeTime(balanceBreakdown.bankLastSyncedAt)
+
   const unallocatedHint =
     showLinkBankCard || showBalanceBreakdown
       ? null
@@ -474,6 +479,11 @@ export default function HomePage() {
                 : null}
             </dl>
           )}
+          {bankSyncedLabel ? (
+            <p className="mt-2 text-[11px] opacity-50">
+              Bank updated {bankSyncedLabel}
+            </p>
+          ) : null}
         </section>
       )}
 
