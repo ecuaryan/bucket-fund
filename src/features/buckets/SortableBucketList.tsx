@@ -23,6 +23,8 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import DragHandle from '@/components/ui/DragHandle'
 import BucketActionsMenu from '@/features/buckets/BucketActionsMenu'
+import { ReorderGripPopover } from '@/features/buckets/ReorderHint'
+import { useReorderHint } from '@/features/buckets/ReorderHintContext'
 import { BUCKET_NAME_MAX_LENGTH } from '@/lib/buckets'
 import { prefersReducedMotion } from '@/lib/motion'
 import type { Database } from '@/types/database'
@@ -67,6 +69,7 @@ export default function SortableBucketList({
   onDragReorder,
 }: Props) {
   const [activeId, setActiveId] = useState<string | null>(null)
+  const { notifyDragStarted } = useReorderHint()
   const dragEnabled = buckets.length >= 2 && renamingId === null
   const bucketIds = useMemo(() => buckets.map((b) => b.id), [buckets])
 
@@ -83,6 +86,7 @@ export default function SortableBucketList({
     : null
 
   function handleDragStart(event: DragStartEvent) {
+    notifyDragStarted()
     setActiveId(String(event.active.id))
   }
 
@@ -209,6 +213,7 @@ type RowProps = {
 
 function SortableBucketRow(props: RowProps) {
   const { bucket } = props
+  const { mergeGripListeners, onGripFocus, onGripBlur } = useReorderHint()
   const {
     attributes,
     listeners,
@@ -224,6 +229,8 @@ function SortableBucketRow(props: RowProps) {
     transition,
   }
 
+  const mergedListeners = mergeGripListeners(bucket.id, listeners)
+
   return (
     <li
       ref={setNodeRef}
@@ -234,12 +241,17 @@ function SortableBucketRow(props: RowProps) {
         (isDragging ? 'opacity-40' : '')
       }
     >
-      <DragHandle
-        ref={setActivatorNodeRef}
-        {...attributes}
-        {...listeners}
-        onClick={(e) => e.stopPropagation()}
-      />
+      <div className="relative shrink-0">
+        <DragHandle
+          ref={setActivatorNodeRef}
+          {...attributes}
+          {...mergedListeners}
+          onFocus={() => onGripFocus(bucket.id)}
+          onBlur={() => onGripBlur()}
+          onClick={(e) => e.stopPropagation()}
+        />
+        <ReorderGripPopover bucketId={bucket.id} />
+      </div>
       <BucketRowContent {...props} />
     </li>
   )

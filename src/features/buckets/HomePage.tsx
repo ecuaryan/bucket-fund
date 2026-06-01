@@ -41,6 +41,7 @@ import {
 import type { Database } from '@/types/database'
 import MoveMoneyDialog from '@/features/buckets/MoveMoneyDialog'
 import SortableBucketList from '@/features/buckets/SortableBucketList'
+import { ReorderHintProvider } from '@/features/buckets/ReorderHintContext'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import { useFlipList } from '@/hooks/useFlipList'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
@@ -476,6 +477,9 @@ export default function HomePage() {
         </section>
       )}
 
+      <ReorderHintProvider
+        reorderable={buckets.length >= 2 && renamingId === null}
+      >
       <section aria-label="Buckets">
         <header className="mb-3 flex items-baseline justify-between">
           <h2 className="text-lg font-semibold">Buckets</h2>
@@ -544,6 +548,7 @@ export default function HomePage() {
           </>
         )}
       </section>
+      </ReorderHintProvider>
         </div>
       </BusyOverlay>
 

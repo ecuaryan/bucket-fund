@@ -169,6 +169,10 @@ export const REMOVE_CHILD_ACCOUNTS_DETAIL =
 
 export const NAV_BUCKETS_LABEL = 'Buckets'
 
+/** Screen-reader label for the reorder grip popover (visual uses the grip icon). */
+export const HOME_BUCKET_REORDER_POPOVER_LABEL =
+  'Press and hold the reorder grip, then drag'
+
 export function homeChildUnallocatedHint(
   adminName: string | null | undefined,
 ): string {
