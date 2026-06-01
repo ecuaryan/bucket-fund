@@ -2,6 +2,8 @@
  * Pure logic for row long-press reorder (grip drag stays in bucketReorderSensors +
  * dnd-kit). Unit-test everything here; useRowLongPressReorder wires DOM events.
  */
+import { arrayMove } from '@dnd-kit/sortable'
+
 /** Row long-press before manual drag mode (~450ms; near native mobile haptic). */
 export const ROW_LONG_PRESS_MS = 450
 
@@ -142,6 +144,21 @@ export function closestRowCenterIndex(centers: number[], y: number): number {
   }
 
   return closestIndex
+}
+
+/**
+ * New id order when a manually dragged row is dropped on `overIndex`, or null when
+ * nothing should change (row not found, out of range, or dropped on its own slot).
+ */
+export function reorderedIdsForDrag(
+  ids: string[],
+  bucketId: string,
+  overIndex: number,
+): string[] | null {
+  const fromIndex = ids.indexOf(bucketId)
+  if (fromIndex < 0 || overIndex < 0 || overIndex >= ids.length) return null
+  if (fromIndex === overIndex) return null
+  return arrayMove(ids, fromIndex, overIndex)
 }
 
 /**
