@@ -1,15 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   REORDER_GRIP_ACTIVATION_PX,
-  REORDER_ROW_PRESS_MS,
-  REORDER_ROW_TOLERANCE_PX,
-  REORDER_ROW_TOUCH_TOLERANCE_PX,
   isReorderGripTarget,
-  isReorderRowTarget,
-  isRowDelayConstraint,
   reorderActivationConstraintForTarget,
   resolveReorderEventElement,
-  shouldTriggerReorderDragHaptic,
 } from '@/features/buckets/bucketReorderSensors'
 
 function el(tag: string, attrs: Record<string, string> = {}): HTMLElement {
@@ -20,12 +14,11 @@ function el(tag: string, attrs: Record<string, string> = {}): HTMLElement {
 
 describe('resolveReorderEventElement', () => {
   it('returns parent element for text nodes', () => {
-    const row = el('button', { 'data-reorder-row': '' })
-    const label = el('p')
-    row.appendChild(label)
-    const text = label.appendChild(document.createTextNode('Groceries'))
-    expect(resolveReorderEventElement(text)).toBe(label)
-    expect(isReorderRowTarget(text)).toBe(true)
+    const grip = el('button', { 'data-reorder-grip': '' })
+    const icon = el('span')
+    grip.appendChild(icon)
+    const text = icon.appendChild(document.createTextNode('…'))
+    expect(resolveReorderEventElement(text)).toBe(icon)
   })
 })
 
@@ -34,24 +27,6 @@ describe('reorderActivationConstraintForTarget', () => {
     const grip = el('button', { 'data-reorder-grip': '' })
     expect(reorderActivationConstraintForTarget(grip)).toEqual({
       distance: REORDER_GRIP_ACTIVATION_PX,
-    })
-  })
-
-  it('uses delay for row targets', () => {
-    const row = el('button', { 'data-reorder-row': '' })
-    expect(reorderActivationConstraintForTarget(row)).toEqual({
-      delay: REORDER_ROW_PRESS_MS,
-      tolerance: REORDER_ROW_TOLERANCE_PX,
-    })
-  })
-
-  it('uses wider touch tolerance for row targets', () => {
-    const row = el('button', { 'data-reorder-row': '' })
-    expect(
-      reorderActivationConstraintForTarget(row, { isCoarsePointer: true }),
-    ).toEqual({
-      delay: REORDER_ROW_PRESS_MS,
-      tolerance: REORDER_ROW_TOUCH_TOLERANCE_PX,
     })
   })
 
@@ -65,46 +40,10 @@ describe('reorderActivationConstraintForTarget', () => {
     })
   })
 
-  it('finds row inside nested element', () => {
-    const row = el('button', { 'data-reorder-row': '' })
-    const label = el('p')
-    row.appendChild(label)
-    expect(isReorderRowTarget(label)).toBe(true)
-  })
-
-  it('fail-closes unknown targets', () => {
+  it('fail-closes non-grip targets', () => {
     const other = el('div')
     expect(reorderActivationConstraintForTarget(other)).toEqual({
       distance: Number.MAX_SAFE_INTEGER,
     })
-  })
-})
-
-describe('shouldTriggerReorderDragHaptic', () => {
-  it('is true when drag started from a row target', () => {
-    const row = el('button', { 'data-reorder-row': '' })
-    expect(
-      shouldTriggerReorderDragHaptic({
-        active: { id: 'b1' },
-        activatorEvent: { target: row } as Event,
-      }),
-    ).toBe(true)
-  })
-
-  it('is false when drag started from the grip', () => {
-    const grip = el('button', { 'data-reorder-grip': '' })
-    expect(
-      shouldTriggerReorderDragHaptic({
-        active: { id: 'b1' },
-        activatorEvent: { target: grip } as Event,
-      }),
-    ).toBe(false)
-  })
-})
-
-describe('isRowDelayConstraint', () => {
-  it('detects delay constraints', () => {
-    expect(isRowDelayConstraint({ delay: 450, tolerance: 8 })).toBe(true)
-    expect(isRowDelayConstraint({ distance: 8 })).toBe(false)
   })
 })

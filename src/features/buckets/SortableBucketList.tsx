@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type KeyboardEvent,
-  type RefObject,
-} from 'react'
+import { useMemo, useState, type KeyboardEvent, type RefObject } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -15,7 +8,6 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
-  type DragPendingEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
@@ -29,20 +21,15 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import DragHandle from '@/components/ui/DragHandle'
 import BucketActionsMenu from '@/features/buckets/BucketActionsMenu'
-import {
-  BucketReorderPointerSensor,
-  isRowDelayConstraint,
-  mergeRowDragListeners,
-} from '@/features/buckets/bucketReorderSensors'
-import {
-  clearReorderTouchLock,
-  setReorderTouchLock,
-} from '@/features/buckets/bucketReorderTouchLock'
+import { BucketReorderPointerSensor } from '@/features/buckets/bucketReorderSensors'
+import { setReorderTouchLock } from '@/features/buckets/bucketReorderTouchLock'
 import {
   shouldShowGripPopoverOnFocus,
 } from '@/features/buckets/reorderHintLogic'
 import { ReorderGripPopover } from '@/features/buckets/ReorderHint'
 import { useReorderHint } from '@/features/buckets/ReorderHintContext'
+import { useRowLongPressReorder } from '@/features/buckets/useRowLongPressReorder'
+import { manualSortableShiftY } from '@/features/buckets/rowLongPressReorder'
 import { BUCKET_NAME_MAX_LENGTH } from '@/lib/buckets'
 import { prefersReducedMotion } from '@/lib/motion'
 import type { Database } from '@/types/database'
@@ -87,12 +74,25 @@ export default function SortableBucketList({
   onDragReorder,
 }: Props) {
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [pendingRowDragId, setPendingRowDragId] = useState<string | null>(
-    null,
-  )
   const { notifyDragStarted } = useReorderHint()
   const dragEnabled = buckets.length >= 2 && renamingId === null
   const bucketIds = useMemo(() => buckets.map((b) => b.id), [buckets])
+
+  const {
+    pendingBucketId,
+    manualDragBucketId,
+    manualDragRowHeight,
+    manualDragOverlay,
+    manualDragOverIndex,
+    getRowHandlers,
+  } = useRowLongPressReorder({
+    listRef,
+    bucketIds,
+    onMoveMoney,
+    onDragReorder,
+    notifyDragStarted,
+    disabled: !dragEnabled,
+  })
 
   const sensors = useSensors(
     useSensor(BucketReorderPointerSensor),
@@ -105,29 +105,34 @@ export default function SortableBucketList({
     ? buckets.find((b) => b.id === activeId) ?? null
     : null
 
-  useEffect(() => () => clearReorderTouchLock(), [])
+  const manualDragBucket = manualDragBucketId
+    ? buckets.find((b) => b.id === manualDragBucketId) ?? null
+    : null
 
-  function clearPendingRowDrag() {
-    setPendingRowDragId(null)
-  }
+  const manualActiveIndex =
+    manualDragBucketId != null
+      ? buckets.findIndex((b) => b.id === manualDragBucketId)
+      : -1
 
-  function handleDragPending(event: DragPendingEvent) {
-    if (isRowDelayConstraint(event.constraint)) {
-      setReorderTouchLock(true)
-      setPendingRowDragId(String(event.id))
-    }
-  }
+  const manualSortableActive =
+    manualActiveIndex >= 0 &&
+    manualDragOverIndex != null &&
+    manualDragOverIndex >= 0
+
+  const manualSortableTransition = prefersReducedMotion()
+    ? undefined
+    : 'transform 250ms ease'
+
+  const manualRowHeight = manualDragRowHeight ?? 0
 
   function handleDragStart(event: DragStartEvent) {
     setReorderTouchLock(true)
-    clearPendingRowDrag()
     notifyDragStarted()
     setActiveId(String(event.active.id))
   }
 
   function handleDragEnd(event: DragEndEvent) {
     setReorderTouchLock(false)
-    clearPendingRowDrag()
     setActiveId(null)
     const { active, over } = event
     if (!over || active.id === over.id) return
@@ -142,7 +147,6 @@ export default function SortableBucketList({
 
   function handleDragCancel() {
     setReorderTouchLock(false)
-    clearPendingRowDrag()
     setActiveId(null)
   }
 
@@ -188,52 +192,82 @@ export default function SortableBucketList({
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      modifiers={[restrictToVerticalAxis]}
-      measuring={{
-        droppable: { strategy: MeasuringStrategy.Always },
-      }}
-      autoScroll={{
-        threshold: { x: 0, y: 0.2 },
-        acceleration: 12,
-        interval: 5,
-        layoutShiftCompensation: false,
-      }}
-      onDragPending={handleDragPending}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragCancel={handleDragCancel}
-      onDragAbort={() => {
-        clearPendingRowDrag()
-        setReorderTouchLock(false)
-      }}
-    >
-      <SortableContext items={bucketIds} strategy={verticalListSortingStrategy}>
-        <ul
-          ref={listRef}
-          className="divide-y divide-zinc-800 rounded-2xl bg-zinc-900 ring-1 ring-zinc-800"
+    <>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        modifiers={[restrictToVerticalAxis]}
+        measuring={{
+          droppable: { strategy: MeasuringStrategy.Always },
+        }}
+        autoScroll={{
+          threshold: { x: 0, y: 0.2 },
+          acceleration: 12,
+          interval: 5,
+          layoutShiftCompensation: false,
+        }}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+        onDragAbort={() => setReorderTouchLock(false)}
+      >
+        <SortableContext items={bucketIds} strategy={verticalListSortingStrategy}>
+          <ul
+            ref={listRef}
+            className="divide-y divide-zinc-800 rounded-2xl bg-zinc-900 ring-1 ring-zinc-800"
+          >
+            {buckets.map((bucket, idx) => (
+              <SortableBucketRow
+                key={bucket.id}
+                bucket={bucket}
+                idx={idx}
+                isLast={idx === buckets.length - 1}
+                renaming={renamingId === bucket.id}
+                rowPressPending={pendingBucketId === bucket.id}
+                manualDragging={manualDragBucketId === bucket.id}
+                manualSortableShiftY={
+                  manualSortableActive
+                    ? manualSortableShiftY(
+                        idx,
+                        manualActiveIndex,
+                        manualDragOverIndex,
+                        manualRowHeight,
+                      )
+                    : undefined
+                }
+                manualSortableTransition={
+                  manualSortableActive ? manualSortableTransition : undefined
+                }
+                rowHandlers={getRowHandlers(bucket.id)}
+                {...rowProps}
+              />
+            ))}
+          </ul>
+        </SortableContext>
+        <DragOverlay dropAnimation={prefersReducedMotion() ? null : undefined}>
+          {activeBucket ? (
+            <BucketRowOverlay bucket={activeBucket} formatMoney={formatMoney} />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+      {/* Row long-press uses a fixed overlay (dnd-kit cannot arm from touch delay on Android). */}
+      {manualDragBucket && manualDragOverlay ? (
+        <div
+          className="pointer-events-none fixed z-[999]"
+          style={{
+            left: manualDragOverlay.left,
+            width: manualDragOverlay.width,
+            top: manualDragOverlay.top,
+          }}
         >
-          {buckets.map((bucket, idx) => (
-            <SortableBucketRow
-              key={bucket.id}
-              bucket={bucket}
-              idx={idx}
-              isLast={idx === buckets.length - 1}
-              renaming={renamingId === bucket.id}
-              rowPressPending={pendingRowDragId === bucket.id}
-              {...rowProps}
-            />
-          ))}
-        </ul>
-      </SortableContext>
-      <DragOverlay dropAnimation={prefersReducedMotion() ? null : undefined}>
-        {activeBucket ? (
-          <BucketRowOverlay bucket={activeBucket} formatMoney={formatMoney} />
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+          <BucketRowOverlay
+            bucket={manualDragBucket}
+            formatMoney={formatMoney}
+            className="w-full"
+          />
+        </div>
+      ) : null}
+    </>
   )
 }
 
@@ -243,6 +277,10 @@ type RowProps = {
   isLast: boolean
   renaming: boolean
   rowPressPending?: boolean
+  manualDragging?: boolean
+  manualSortableShiftY?: number
+  manualSortableTransition?: string
+  rowHandlers?: Record<string, unknown>
   renameValue: string
   canManageStructure: boolean
   formatMoney: (amount: number) => string
@@ -260,7 +298,6 @@ type RowProps = {
 function SortableBucketRow(props: RowProps) {
   const { bucket } = props
   const { mergeGripListeners, onGripFocus, onGripBlur } = useReorderHint()
-  const [suppressMoveClick, setSuppressMoveClick] = useState(false)
   const {
     attributes,
     listeners,
@@ -271,21 +308,24 @@ function SortableBucketRow(props: RowProps) {
     isDragging,
   } = useSortable({ id: bucket.id })
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
-
-  const onRowPressStart = useCallback(() => setSuppressMoveClick(false), [])
-  const onRowPressEnd = useCallback((movedBeyondTolerance: boolean) => {
-    if (movedBeyondTolerance) setSuppressMoveClick(true)
-  }, [])
-
   const mergedGripListeners = mergeGripListeners(bucket.id, listeners)
-  const mergedRowListeners = useMemo(
-    () => mergeRowDragListeners(listeners, onRowPressStart, onRowPressEnd),
-    [listeners, onRowPressStart, onRowPressEnd],
-  )
+  const hiddenDuringManualDrag = props.manualDragging === true
+  const dimmedDuringGripDrag = isDragging && !hiddenDuringManualDrag
+  const useManualSortable = props.manualSortableShiftY !== undefined
+  const manualShiftY = props.manualSortableShiftY ?? 0
+
+  const style = useManualSortable
+    ? {
+        transform:
+          manualShiftY !== 0
+            ? CSS.Translate.toString({ x: 0, y: manualShiftY, scaleX: 1, scaleY: 1 })
+            : undefined,
+        transition: props.manualSortableTransition,
+      }
+    : {
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }
 
   return (
     <li
@@ -294,7 +334,8 @@ function SortableBucketRow(props: RowProps) {
       data-flip-id={bucket.id}
       className={
         'flex min-w-0 items-center gap-1 px-2 py-2 ' +
-        (isDragging ? 'opacity-40' : '')
+        (hiddenDuringManualDrag ? 'pointer-events-none opacity-0 ' : '') +
+        (dimmedDuringGripDrag ? 'opacity-40 ' : '')
       }
     >
       <div className="relative shrink-0">
@@ -314,19 +355,17 @@ function SortableBucketRow(props: RowProps) {
       </div>
       <BucketRowContent
         {...props}
-        rowDragListeners={mergedRowListeners}
-        suppressMoveClick={suppressMoveClick}
-        onClearSuppressMoveClick={() => setSuppressMoveClick(false)}
-        rowTouchLocked={isDragging || props.rowPressPending === true}
+        rowTouchLocked={
+          isDragging ||
+          props.rowPressPending === true ||
+          props.manualDragging === true
+        }
       />
     </li>
   )
 }
 
 type BucketRowContentProps = RowProps & {
-  rowDragListeners?: Record<string, unknown>
-  suppressMoveClick?: boolean
-  onClearSuppressMoveClick?: () => void
   rowTouchLocked?: boolean
 }
 
@@ -348,9 +387,7 @@ function BucketRowContent({
   onMoveUp,
   onMoveDown,
   onDelete,
-  rowDragListeners,
-  suppressMoveClick = false,
-  onClearSuppressMoveClick,
+  rowHandlers,
   rowTouchLocked = false,
 }: BucketRowContentProps) {
   if (renaming) {
@@ -395,21 +432,10 @@ function BucketRowContent({
         role="button"
         tabIndex={0}
         data-reorder-row=""
-        {...rowDragListeners}
-        onClick={() => {
-          if (suppressMoveClick) {
-            onClearSuppressMoveClick?.()
-            return
-          }
-          onMoveMoney(bucket.id)
-        }}
+        {...rowHandlers}
         onKeyDown={(e) => {
           if (e.key !== 'Enter' && e.key !== ' ') return
           e.preventDefault()
-          if (suppressMoveClick) {
-            onClearSuppressMoveClick?.()
-            return
-          }
           onMoveMoney(bucket.id)
         }}
         className={
@@ -447,12 +473,19 @@ function BucketRowContent({
 function BucketRowOverlay({
   bucket,
   formatMoney,
+  className = '',
 }: {
   bucket: Bucket
   formatMoney: (amount: number) => string
+  className?: string
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-1 rounded-2xl bg-zinc-900 px-2 py-2 shadow-lg ring-1 ring-zinc-700">
+    <div
+      className={
+        'flex min-w-0 items-center gap-1 rounded-2xl bg-zinc-900 px-2 py-2 shadow-lg ring-2 ring-emerald-400 ' +
+        className
+      }
+    >
       <DragHandle className="cursor-grabbing text-zinc-400" tabIndex={-1} />
       <div className="flex min-w-0 flex-1 items-center justify-between gap-3 px-2 py-1.5">
         <p className="truncate text-sm font-medium text-zinc-300">
