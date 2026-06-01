@@ -79,6 +79,16 @@ export async function reorderBucket(
   if (error) throw new Error(error.message)
 }
 
+/** Set full bucket display order (top to bottom). Used by drag reorder. */
+export async function reorderBuckets(
+  orderedBucketIds: string[],
+): Promise<void> {
+  const { error } = await supabase.rpc('reorder_buckets', {
+    p_ordered_bucket_ids: orderedBucketIds,
+  })
+  if (error) throw new Error(error.message)
+}
+
 // The Postgres function raises with codes + English messages. Map a
 // few of the common ones to friendlier strings; pass the rest through.
 function humaniseMoveError(msg: string): string {
