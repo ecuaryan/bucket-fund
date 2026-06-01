@@ -19,7 +19,7 @@ const DragHandle = forwardRef<HTMLButtonElement, Props>(function DragHandle(
       data-reorder-grip=""
       aria-label={label}
       className={
-        'flex h-8 w-7 shrink-0 touch-none items-center justify-center rounded-md text-zinc-500 transition hover:bg-zinc-800/60 hover:text-zinc-400 focus:outline focus:outline-2 focus:outline-emerald-400 active:cursor-grabbing ' +
+        'flex h-8 w-7 shrink-0 touch-none items-center justify-center rounded-md text-zinc-500 transition hover:bg-zinc-800/60 hover:text-zinc-400 focus:outline focus:outline-2 focus:outline-emerald-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 active:cursor-grabbing ' +
         className
       }
       {...props}

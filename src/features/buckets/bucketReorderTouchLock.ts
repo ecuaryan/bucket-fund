@@ -12,3 +12,12 @@ export function setReorderTouchLock(locked: boolean): void {
 export function clearReorderTouchLock(): void {
   setReorderTouchLock(false)
 }
+
+/** Drop touch focus ring from a grip when interaction moves to a row. */
+export function blurFocusedReorderGrip(): void {
+  if (typeof document === 'undefined') return
+  const active = document.activeElement
+  if (active instanceof HTMLElement && active.closest('[data-reorder-grip]')) {
+    active.blur()
+  }
+}
