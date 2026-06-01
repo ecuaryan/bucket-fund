@@ -21,6 +21,7 @@ import {
 } from '@/lib/passwordRecoveryFlow'
 import { isPasswordRecoverySession } from '@/lib/recoverySession'
 import { useAdultBackgroundSignOut } from '@/hooks/useAdultBackgroundSignOut'
+import { classifyMemberFetch, type MemberFetchOutcome } from '@/lib/memberFetch'
 import { supabase } from '@/lib/supabase'
 import { withTimeout } from '@/lib/timeout'
 import type { Database } from '@/types/database'
@@ -28,13 +29,27 @@ import type { Database } from '@/types/database'
 export type FamilyMember = Database['public']['Tables']['family_members']['Row']
 
 type AuthState =
-  | { status: 'loading'; session: null; member: null; memberLoading: false }
-  | { status: 'signedOut'; session: null; member: null; memberLoading: false }
+  | {
+      status: 'loading'
+      session: null
+      member: null
+      memberLoading: false
+      memberError: false
+    }
+  | {
+      status: 'signedOut'
+      session: null
+      member: null
+      memberLoading: false
+      memberError: false
+    }
   | {
       status: 'signedIn'
       session: Session
       member: FamilyMember | null
       memberLoading: boolean
+      /** The membership lookup failed (transient) — not proof of removal. */
+      memberError: boolean
     }
 
 type AuthContextValue = AuthState & {
@@ -57,7 +72,9 @@ type AuthContextValue = AuthState & {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-async function fetchMember(userId: string): Promise<FamilyMember | null> {
+async function fetchMemberOutcome(
+  userId: string,
+): Promise<MemberFetchOutcome<FamilyMember>> {
   const { data, error } = await supabase
     .from('family_members')
     .select('*')
@@ -66,9 +83,8 @@ async function fetchMember(userId: string): Promise<FamilyMember | null> {
 
   if (error) {
     console.error('Failed to load family_member for user', userId, error)
-    return null
   }
-  return data
+  return classifyMemberFetch(data, error)
 }
 
 function AuthSessionEffects() {
@@ -82,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session: null,
     member: null,
     memberLoading: false,
+    memberError: false,
   })
 
   const applySession = useCallback(async (session: Session | null) => {
@@ -95,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session: null,
         member: null,
         memberLoading: false,
+        memberError: false,
       })
       return
     }
@@ -103,29 +121,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       member: null,
       memberLoading: true,
+      memberError: false,
     })
-    const member = await fetchMember(session.user.id)
-    if (!member && isPinAuthEmail(session.user.email ?? undefined)) {
-      stashOrphanMemberNotice(ORPHAN_MEMBER_MESSAGE)
-      clearLocalAuthSession()
-      try {
-        await supabase.auth.signOut({ scope: 'local' })
-      } catch {
-        // Best effort — session is unusable without a membership row.
-      }
+
+    const outcome = await fetchMemberOutcome(session.user.id)
+
+    if (outcome.status === 'error') {
+      // A failed lookup (network, expired token, RLS hiccup) is NOT proof the
+      // member was removed. Surface a retryable error instead of the orphan
+      // screen, which would wrongly tell the user they lost household access.
       setState({
-        status: 'signedOut',
-        session: null,
+        status: 'signedIn',
+        session,
         member: null,
         memberLoading: false,
+        memberError: true,
       })
       return
     }
+
+    if (outcome.status === 'absent') {
+      // The row genuinely does not exist — the user was removed.
+      if (isPinAuthEmail(session.user.email ?? undefined)) {
+        stashOrphanMemberNotice(ORPHAN_MEMBER_MESSAGE)
+        clearLocalAuthSession()
+        try {
+          await supabase.auth.signOut({ scope: 'local' })
+        } catch {
+          // Best effort — session is unusable without a membership row.
+        }
+        setState({
+          status: 'signedOut',
+          session: null,
+          member: null,
+          memberLoading: false,
+          memberError: false,
+        })
+        return
+      }
+      setState({
+        status: 'signedIn',
+        session,
+        member: null,
+        memberLoading: false,
+        memberError: false,
+      })
+      return
+    }
+
     setState({
       status: 'signedIn',
       session,
-      member,
+      member: outcome.member,
       memberLoading: false,
+      memberError: false,
     })
   }, [])
 
@@ -214,12 +263,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshMember = useCallback(async () => {
     if (state.status !== 'signedIn') return
-    const member = await fetchMember(state.session.user.id)
-    setState((prev) =>
-      prev.status === 'signedIn'
-        ? { ...prev, member, memberLoading: false }
-        : prev,
-    )
+    const outcome = await fetchMemberOutcome(state.session.user.id)
+    setState((prev) => {
+      if (prev.status !== 'signedIn') return prev
+      if (outcome.status === 'error') {
+        return { ...prev, memberLoading: false, memberError: true }
+      }
+      if (outcome.status === 'absent') {
+        return { ...prev, member: null, memberLoading: false, memberError: false }
+      }
+      return {
+        ...prev,
+        member: outcome.member,
+        memberLoading: false,
+        memberError: false,
+      }
+    })
   }, [state])
 
   const isPasswordRecovery =
