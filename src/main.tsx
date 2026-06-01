@@ -6,10 +6,16 @@ import App from './App.tsx'
 import KeyboardViewport from '@/components/KeyboardViewport'
 import { AuthProvider } from '@/lib/auth'
 import { migrateLegacyStorageKeys } from '@/lib/localStorageMigrate'
+import { registerPwaUpdateChecks } from '@/lib/pwaUpdate'
 import './index.css'
 
 migrateLegacyStorageKeys()
-registerSW({ immediate: true })
+registerSW({
+  immediate: true,
+  onRegisteredSW(_swUrl, registration) {
+    registerPwaUpdateChecks(registration)
+  },
+})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
