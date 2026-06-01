@@ -75,10 +75,11 @@ body {
     cursor: pointer;
   }
 
-  /* Bucket reorder drag — grabbing hand everywhere (grip or row long-press). */
+  /* Bucket reorder — block scroll and show grabbing cursor during pending/drag. */
   body[data-bucket-dragging],
   body[data-bucket-dragging] * {
     cursor: grabbing !important;
+    touch-action: none !important;
   }
 }
 
