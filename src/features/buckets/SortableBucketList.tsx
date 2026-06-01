@@ -439,7 +439,7 @@ function BucketRowContent({
           onMoveMoney(bucket.id)
         }}
         className={
-          'flex min-w-0 flex-1 select-none items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-zinc-800/60 focus:bg-zinc-800/60 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 ' +
+          'flex min-w-0 flex-1 select-none items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-zinc-800/60 focus:bg-zinc-800/60 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 [-webkit-touch-callout:none] ' +
           (rowTouchLocked ? 'touch-none ' : 'touch-pan-y ') +
           (rowPressPending
             ? 'bg-zinc-800/70 ring-2 ring-emerald-400/45 ring-inset'
