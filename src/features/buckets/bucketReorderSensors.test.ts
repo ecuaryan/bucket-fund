@@ -47,7 +47,9 @@ describe('reorderActivationConstraintForTarget', () => {
 
   it('uses wider touch tolerance for row targets', () => {
     const row = el('button', { 'data-reorder-row': '' })
-    expect(reorderActivationConstraintForTarget(row, { isTouch: true })).toEqual({
+    expect(
+      reorderActivationConstraintForTarget(row, { isCoarsePointer: true }),
+    ).toEqual({
       delay: REORDER_ROW_PRESS_MS,
       tolerance: REORDER_ROW_TOUCH_TOLERANCE_PX,
     })

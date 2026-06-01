@@ -35,6 +35,10 @@ import {
   mergeRowDragListeners,
 } from '@/features/buckets/bucketReorderSensors'
 import {
+  clearReorderTouchLock,
+  setReorderTouchLock,
+} from '@/features/buckets/bucketReorderTouchLock'
+import {
   shouldShowGripPopoverOnFocus,
 } from '@/features/buckets/reorderHintLogic'
 import { ReorderGripPopover } from '@/features/buckets/ReorderHint'
@@ -101,17 +105,7 @@ export default function SortableBucketList({
     ? buckets.find((b) => b.id === activeId) ?? null
     : null
 
-  useEffect(
-    () => () => {
-      delete document.body.dataset.bucketDragging
-    },
-    [],
-  )
-
-  function setBodyReorderTouchLock(locked: boolean) {
-    if (locked) document.body.dataset.bucketDragging = ''
-    else delete document.body.dataset.bucketDragging
-  }
+  useEffect(() => () => clearReorderTouchLock(), [])
 
   function clearPendingRowDrag() {
     setPendingRowDragId(null)
@@ -119,20 +113,20 @@ export default function SortableBucketList({
 
   function handleDragPending(event: DragPendingEvent) {
     if (isRowDelayConstraint(event.constraint)) {
-      setBodyReorderTouchLock(true)
+      setReorderTouchLock(true)
       setPendingRowDragId(String(event.id))
     }
   }
 
   function handleDragStart(event: DragStartEvent) {
-    setBodyReorderTouchLock(true)
+    setReorderTouchLock(true)
     clearPendingRowDrag()
     notifyDragStarted()
     setActiveId(String(event.active.id))
   }
 
   function handleDragEnd(event: DragEndEvent) {
-    setBodyReorderTouchLock(false)
+    setReorderTouchLock(false)
     clearPendingRowDrag()
     setActiveId(null)
     const { active, over } = event
@@ -147,7 +141,7 @@ export default function SortableBucketList({
   }
 
   function handleDragCancel() {
-    setBodyReorderTouchLock(false)
+    setReorderTouchLock(false)
     clearPendingRowDrag()
     setActiveId(null)
   }
@@ -213,7 +207,7 @@ export default function SortableBucketList({
       onDragCancel={handleDragCancel}
       onDragAbort={() => {
         clearPendingRowDrag()
-        setBodyReorderTouchLock(false)
+        setReorderTouchLock(false)
       }}
     >
       <SortableContext items={bucketIds} strategy={verticalListSortingStrategy}>
@@ -397,8 +391,9 @@ function BucketRowContent({
 
   return (
     <>
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         data-reorder-row=""
         {...rowDragListeners}
         onClick={() => {
@@ -408,8 +403,17 @@ function BucketRowContent({
           }
           onMoveMoney(bucket.id)
         }}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter' && e.key !== ' ') return
+          e.preventDefault()
+          if (suppressMoveClick) {
+            onClearSuppressMoveClick?.()
+            return
+          }
+          onMoveMoney(bucket.id)
+        }}
         className={
-          'flex min-w-0 flex-1 select-none items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-zinc-800/60 focus:bg-zinc-800/60 focus:outline-none ' +
+          'flex min-w-0 flex-1 select-none items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-zinc-800/60 focus:bg-zinc-800/60 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 ' +
           (rowTouchLocked ? 'touch-none ' : 'touch-pan-y ') +
           (rowPressPending
             ? 'bg-zinc-800/70 ring-2 ring-emerald-400/45 ring-inset'
@@ -424,7 +428,7 @@ function BucketRowContent({
         <p className="shrink-0 text-sm font-semibold tabular-nums text-zinc-300">
           {formatMoney(Number(bucket.allocated_amount))}
         </p>
-      </button>
+      </div>
       <BucketActionsMenu
         isFirst={idx === 0}
         isLast={isLast}
