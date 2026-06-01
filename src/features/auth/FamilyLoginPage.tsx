@@ -158,7 +158,7 @@ export default function FamilyLoginPage() {
       )
     }
     return (
-      <Navigate to={postSignInPath(from, auth.member?.role)} replace />
+      <Navigate to={postSignInPath()} replace />
     )
   }
 
