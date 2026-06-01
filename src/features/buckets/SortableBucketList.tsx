@@ -309,8 +309,8 @@ function SortableBucketRow(props: RowProps) {
   } = useSortable({ id: bucket.id })
 
   const mergedGripListeners = mergeGripListeners(bucket.id, listeners)
-  const hiddenDuringManualDrag = props.manualDragging === true
-  const dimmedDuringGripDrag = isDragging && !hiddenDuringManualDrag
+  const isManualActiveRow = props.manualDragging === true
+  const dimmed = isDragging || isManualActiveRow
   const useManualSortable = props.manualSortableShiftY !== undefined
   const manualShiftY = props.manualSortableShiftY ?? 0
 
@@ -334,8 +334,7 @@ function SortableBucketRow(props: RowProps) {
       data-flip-id={bucket.id}
       className={
         'flex min-w-0 items-center gap-1 px-2 py-2 ' +
-        (hiddenDuringManualDrag ? 'pointer-events-none opacity-0 ' : '') +
-        (dimmedDuringGripDrag ? 'opacity-40 ' : '')
+        (dimmed ? 'opacity-40 ' : '')
       }
     >
       <div className="relative shrink-0">

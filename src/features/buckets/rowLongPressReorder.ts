@@ -114,6 +114,9 @@ export function bucketIndexAtClosestCenter(
 /**
  * Vertical shift for sortable list items while a row is manually dragged —
  * mirrors @dnd-kit/sortable displacement during grip drag.
+ *
+ * The active row moves to the drop slot (so its dimmed placeholder reads as the
+ * "shadow row", like grip drag); the rows it passes shift to open the gap.
  */
 export function manualSortableShiftY(
   index: number,
@@ -122,7 +125,7 @@ export function manualSortableShiftY(
   rowHeight: number,
 ): number {
   if (activeIndex < 0 || overIndex < 0 || activeIndex === overIndex) return 0
-  if (index === activeIndex) return 0
+  if (index === activeIndex) return (overIndex - activeIndex) * rowHeight
 
   if (activeIndex < overIndex) {
     if (index > activeIndex && index <= overIndex) return -rowHeight

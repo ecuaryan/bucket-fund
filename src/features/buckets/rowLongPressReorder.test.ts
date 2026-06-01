@@ -120,18 +120,31 @@ describe('bucketIndexAtClosestCenter', () => {
 describe('manualSortableShiftY', () => {
   const rowHeight = 50
 
-  it('shifts rows up when dragging down', () => {
-    expect(manualSortableShiftY(0, 0, 2, rowHeight)).toBe(0)
+  it('moves the active row to the drop slot when dragging down', () => {
+    expect(manualSortableShiftY(0, 0, 2, rowHeight)).toBe(100)
     expect(manualSortableShiftY(1, 0, 2, rowHeight)).toBe(-50)
     expect(manualSortableShiftY(2, 0, 2, rowHeight)).toBe(-50)
     expect(manualSortableShiftY(3, 0, 2, rowHeight)).toBe(0)
   })
 
-  it('shifts rows down when dragging up', () => {
+  it('moves the active row to the drop slot when dragging up', () => {
     expect(manualSortableShiftY(0, 3, 1, rowHeight)).toBe(0)
     expect(manualSortableShiftY(1, 3, 1, rowHeight)).toBe(50)
     expect(manualSortableShiftY(2, 3, 1, rowHeight)).toBe(50)
-    expect(manualSortableShiftY(3, 3, 1, rowHeight)).toBe(0)
+    expect(manualSortableShiftY(3, 3, 1, rowHeight)).toBe(-100)
+  })
+
+  it('produces the post-move layout order (active row lands on its slot)', () => {
+    // Drag index 0 → 2: rows 1,2 slide up, row 0 lands at slot 2 → order 1,2,0,3.
+    const finalTop = [0, 1, 2, 3].map(
+      (i) => i * rowHeight + manualSortableShiftY(i, 0, 2, rowHeight),
+    )
+    expect(finalTop).toEqual([100, 0, 50, 150])
+  })
+
+  it('no shift when active equals over', () => {
+    expect(manualSortableShiftY(1, 1, 1, rowHeight)).toBe(0)
+    expect(manualSortableShiftY(0, 1, 1, rowHeight)).toBe(0)
   })
 })
 
