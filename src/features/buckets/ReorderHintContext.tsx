@@ -10,8 +10,10 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 
-/** Same threshold as dnd-kit Pointer/TouchSensor activation on the grip. */
-export const REORDER_GRIP_ACTIVATION_PX = 8
+import {
+  shouldDismissGripPopoverOnPointerDown,
+  shouldShowGripPopoverAfterPointerUp,
+} from '@/features/buckets/reorderHintLogic'
 
 type GripPointer = { x: number; y: number }
 
@@ -76,9 +78,7 @@ export function ReorderHintProvider({
     if (!gripPopoverBucketId) return
 
     function onPointerDown(e: PointerEvent) {
-      const target = e.target
-      if (!(target instanceof Element)) return
-      if (target.closest('[data-reorder-grip]')) return
+      if (!shouldDismissGripPopoverOnPointerDown(e.target)) return
       dismissGripPopover()
     }
 
@@ -95,14 +95,20 @@ export function ReorderHintProvider({
 
   const onGripPointerUp = useCallback(
     (bucketId: string, e: ReactPointerEvent) => {
-      if (!reorderable) return
       const start = pointerStart.current
       pointerStart.current = null
-      if (!start || dragStarted.current) return
 
-      const dx = e.clientX - start.x
-      const dy = e.clientY - start.y
-      if (Math.hypot(dx, dy) >= REORDER_GRIP_ACTIVATION_PX) return
+      if (
+        !shouldShowGripPopoverAfterPointerUp({
+          reorderable,
+          dragStarted: dragStarted.current,
+          hadPointerStart: start !== null,
+          dx: start ? e.clientX - start.x : 0,
+          dy: start ? e.clientY - start.y : 0,
+        })
+      ) {
+        return
+      }
 
       showGripPopoverForBucket(bucketId)
     },
