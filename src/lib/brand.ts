@@ -51,6 +51,12 @@ export const BANK_LINK_READ_ONLY = `Read-only bank connection—${BANK_READ_ONLY
 export const SESSION_EXPIRED_MESSAGE =
   'Your session expired. Please sign out and sign back in, then try again.'
 
+/** Membership lookup failed transiently — distinct from being removed. */
+export const MEMBER_LOAD_ERROR_TITLE = "Couldn't load your profile"
+export const MEMBER_LOAD_ERROR_BODY =
+  'This is usually a brief connection hiccup. Try again—if it keeps happening, sign out and sign back in.'
+export const MEMBER_LOAD_ERROR_RETRY = 'Try again'
+
 export const LOGIN_GET_STARTED = 'Get started'
 
 export const LOGIN_SIGNUP_TITLE = 'Create your account'

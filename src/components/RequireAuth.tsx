@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
+import MemberLoadError from '@/components/MemberLoadError'
 import OrphanMemberNotice from '@/components/OrphanMemberNotice'
 import PageFallback from '@/components/PageFallback'
 import { APP_NAME } from '@/lib/brand'
@@ -38,6 +39,11 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
     !auth.memberLoading &&
     !auth.member
   ) {
+    // A failed lookup is not proof of removal — offer a retry instead of the
+    // orphan notice, which would wrongly say the user lost household access.
+    if (auth.memberError) {
+      return <MemberLoadError />
+    }
     return <OrphanMemberNotice />
   }
 
