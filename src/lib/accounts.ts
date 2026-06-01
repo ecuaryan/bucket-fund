@@ -62,3 +62,19 @@ export function sumCashBalance(accounts: Account[]): number {
     .filter(isCashAccount)
     .reduce((sum, a) => sum + Number(a.current_balance), 0)
 }
+
+/** Most recent sync time across cash accounts (ISO), or null if none synced. */
+export function latestCashSyncAt(accounts: Account[]): string | null {
+  let latest: string | null = null
+  let latestMs = -Infinity
+  for (const a of accounts) {
+    if (!isCashAccount(a) || !a.last_synced_at) continue
+    const ms = Date.parse(a.last_synced_at)
+    if (Number.isNaN(ms)) continue
+    if (ms > latestMs) {
+      latestMs = ms
+      latest = a.last_synced_at
+    }
+  }
+  return latest
+}

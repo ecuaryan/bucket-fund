@@ -3,6 +3,7 @@ import {
   accountAssignmentChildId,
   isCashAccount,
   isFamilyPoolAccount,
+  latestCashSyncAt,
   sumCashBalance,
 } from '@/lib/accounts'
 import type { Database } from '@/types/database'
@@ -77,5 +78,35 @@ describe('sumCashBalance', () => {
       account({ current_balance: 999, account_type: 'credit_card' }),
     ])
     expect(total).toBe(150)
+  })
+})
+
+describe('latestCashSyncAt', () => {
+  it('returns the newest sync time among cash accounts', () => {
+    const latest = latestCashSyncAt([
+      account({ current_balance: 10, last_synced_at: '2026-05-01T00:00:00Z' }),
+      account({ current_balance: 10, last_synced_at: '2026-06-01T08:30:00Z' }),
+      account({ current_balance: 10, last_synced_at: '2026-04-15T00:00:00Z' }),
+    ])
+    expect(latest).toBe('2026-06-01T08:30:00Z')
+  })
+
+  it('ignores non-cash accounts even if synced more recently', () => {
+    const latest = latestCashSyncAt([
+      account({ current_balance: 10, last_synced_at: '2026-05-01T00:00:00Z' }),
+      account({
+        current_balance: 10,
+        account_type: 'credit_card',
+        last_synced_at: '2026-06-01T00:00:00Z',
+      }),
+    ])
+    expect(latest).toBe('2026-05-01T00:00:00Z')
+  })
+
+  it('returns null when no cash account has synced', () => {
+    expect(latestCashSyncAt([])).toBeNull()
+    expect(
+      latestCashSyncAt([account({ current_balance: 10, last_synced_at: null })]),
+    ).toBeNull()
   })
 })
