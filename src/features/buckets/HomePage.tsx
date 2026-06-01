@@ -19,6 +19,7 @@ import {
 } from '@/lib/brand'
 import HomePageSkeleton from '@/components/HomePageSkeleton'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
+import RefreshIconButton from '@/components/ui/RefreshIconButton'
 import {
   childTotalBalance,
   type HomeBalanceBreakdown,
@@ -46,6 +47,7 @@ import { ReorderHintProvider } from '@/features/buckets/ReorderHintContext'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import { useFlipList } from '@/hooks/useFlipList'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
+import { refreshBalances } from '@/lib/teller'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -70,6 +72,7 @@ export default function HomePage() {
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const [actionError, setActionError] = useState<string | null>(null)
+  const [refreshError, setRefreshError] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
 
   const member = auth.status === 'signedIn' ? auth.member : null
@@ -266,6 +269,19 @@ export default function HomePage() {
     } catch (e) {
       setBuckets(snapshot)
       setActionError(e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  async function handleRefreshBalances() {
+    setRefreshError(null)
+    setSyncing(true)
+    try {
+      await refreshBalances()
+      await loadData()
+    } catch (e) {
+      setRefreshError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -479,10 +495,24 @@ export default function HomePage() {
                 : null}
             </dl>
           )}
-          {bankSyncedLabel ? (
-            <p className="mt-2 text-[11px] opacity-50">
-              Balances refreshed {bankSyncedLabel}
-            </p>
+          {bankSyncedLabel || (isAdult && hasLinkedAccounts) ? (
+            <div className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+              {bankSyncedLabel ? (
+                <p className="text-[11px] opacity-50">
+                  Balances refreshed {bankSyncedLabel}
+                </p>
+              ) : null}
+              {isAdult && hasLinkedAccounts ? (
+                <RefreshIconButton
+                  busy={syncing}
+                  disabled={syncing}
+                  onClick={() => void handleRefreshBalances()}
+                />
+              ) : null}
+              {refreshError ? (
+                <p className="w-full text-[11px] text-red-300/80">{refreshError}</p>
+              ) : null}
+            </div>
           ) : null}
         </section>
       )}

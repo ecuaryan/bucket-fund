@@ -6,23 +6,33 @@ Working notes for product name and user-facing copy. Code imports strings from
 ## What we’re selling
 
 Not “every dollar lives in a bucket.” Cash sits in **unallocated** until you
-label it; buckets are how you **decide** where money is reserved. The payoff:
+label it; buckets are how you **organize** the money you already have — label
+and reserve it for an at-a-glance view that helps you make day-to-day decisions.
+
+The payoff:
 
 - **Accountability after the bank moves** — Teller updates cash; buckets stay
   until you move money. You pick which bucket (or unallocated cushion) covers it.
-
-**Canonical tagline (`APP_TAGLINE`):** *Bank balance moved? Pick which bucket covers it.*
+- **Intentional friction** — minimal automation by design. When you overspend,
+  you come in and consciously move money from a bucket into unallocated;
+  confronting the trade-off is the value, not a chore to automate away. The
+  at-a-glance view surfaces reality so you *decide*; it does not auto-fix.
 - **Tradeoffs** — negative unallocated means it is time to pull from buckets
   on purpose, not that income “came from” somewhere new.
 - **Works alone or together** — one person with buckets, or a household sharing
   unallocated and optional member PINs.
 
+**Canonical tagline (`APP_TAGLINE`):** *Bank balance moved? Pick which bucket covers it.*
+
 ## Voice
 
 - Plain, direct, no finance jargon.
 - **Do not name Teller** (or other vendors) in user-facing UI — say read-only
-  bank connection / sync balances. Teller stays accurate in this doc and
-  `docs/BRAND.md` § Bank link for implementers.
+  bank connection. For balance freshness say **refresh** (e.g. "Balances refreshed
+  5m ago", Refresh button); reserve **read** for the safety assurance
+  (`BANK_READ_ONLY_ASSURANCE`: we read balances—we can't transfer, send, or
+  withdraw money). Teller stays accurate in this doc and § Bank link for
+  implementers.
 - Emphasize **which bucket covers a bank move**, not “families only” or income tracing.
 - Say **household** in UI when meaning “your group”; **family** is fine in
   internal/schema terms (`family_id`, routes like `/login/family`).
@@ -57,11 +67,12 @@ accounts and balances; webhooks refresh balances when activity posts. We do
 
 **`send_money` and `move_money` are virtual** — labels inside the app only.
 
-User-facing reassurance: `BANK_LINK_READ_ONLY`, `ADMIN_LINKED_ACCOUNTS_INTRO`,
-`HOME_LINK_BANK_*` in `brand.ts` — read-only, no payments, Bucket My Money cannot
-move money at the bank. Do not promise “we never see transactions” if we later
-fetch transaction history; today we mainly use the transactions product for
-balance sync webhooks.
+User-facing reassurance: `BANK_READ_ONLY_ASSURANCE`, `BANK_LINK_READ_ONLY`,
+`ADMIN_LINKED_ACCOUNTS_INTRO`, `HOME_LINK_BANK_*` in `brand.ts` — read-only;
+we read balances and cannot transfer, send, or withdraw money at the bank.
+Balance freshness uses **Refresh** (on-demand re-pull), not background polling.
+Do not promise “we never see transactions” if we later fetch transaction history;
+today we mainly use the transactions product for balance sync webhooks.
 
 Link copy: **one or more accounts**; **cash account types** count toward
 unallocated (see `CASH_ACCOUNT_SUBTYPES` in `src/lib/accounts.ts`) — do not
@@ -76,7 +87,7 @@ limit UI to “checking or savings” only.
 | Returning sign-in divider | `LOGIN_ALREADY_HAVE_ACCOUNT` |
 | Sign-up | `LOGIN_SIGNUP_*`, `LOGIN_HOUSEHOLD_*` |
 | PIN path | `LOGIN_SHARED_*` |
-| Bank read-only note | `BANK_LINK_READ_ONLY` |
+| Bank read-only note | `BANK_LINK_READ_ONLY`, `BANK_READ_ONLY_ASSURANCE` |
 | Join code (Admin + PIN) | `JOIN_CODE_*`, `ADMIN_JOIN_CODE_*` |
 | Admin people & roles | `ADMIN_HOUSEHOLD_MEMBERS_*`, `memberRoles.ts` |
 | Admin linked accounts | `ADMIN_LINKED_ACCOUNTS_*` |

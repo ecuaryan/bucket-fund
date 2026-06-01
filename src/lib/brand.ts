@@ -42,8 +42,10 @@ export const LOGIN_NEW_HERE_INTRO =
 export const LOGIN_ALREADY_HAVE_ACCOUNT = 'Already have an account?'
 
 /** Login/sign-up footnote. Fact-checked against our Teller usage (see docs/BRAND.md). */
-export const BANK_LINK_READ_ONLY =
-  'Read-only bank connection—we sync balances, not payments. Bucket My Money cannot move money or pay bills from your account.'
+export const BANK_READ_ONLY_ASSURANCE =
+  "we read balances—we can't transfer, send, or withdraw money"
+
+export const BANK_LINK_READ_ONLY = `Read-only bank connection—${BANK_READ_ONLY_ASSURANCE}.`
 
 export const LOGIN_GET_STARTED = 'Get started'
 
@@ -109,11 +111,10 @@ export function householdAdminLabel(
   return trimmed || HOUSEHOLD_ADMIN_PHRASE
 }
 
-export const ADMIN_LINKED_ACCOUNTS_INTRO =
-  'Read-only—we sync balances, not payments. Bucket My Money cannot move money at your bank.'
+export const ADMIN_LINKED_ACCOUNTS_INTRO = `Read-only—${BANK_READ_ONLY_ASSURANCE}.`
 
 export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT =
-  'Use Reconnect when a bank link breaks or balances need a fresh pull. Link bank is for a new institution. To change which accounts you share, Unlink that bank and link it again.'
+  'Use Reconnect when a bank link breaks. Use Refresh to pull the latest balances. Link bank is for a new institution. To change which accounts you share, Unlink that bank and link it again.'
 
 export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
   'Choose the accounts to share at that bank. Balances count toward household unallocated until you assign an account to a child.'
@@ -182,7 +183,7 @@ export function homeChildUnallocatedHint(
 export const HOME_LINK_BANK_TITLE = 'Link a bank account'
 
 export const HOME_LINK_BANK_ADMIN_BODY =
-  'Connect banks in Admin. To change which accounts you share at a bank, Unlink it and link again. Read-only—we never move money at your bank.'
+  `Connect banks in Admin. To change which accounts you share at a bank, Unlink it and link again. Read-only—${BANK_READ_ONLY_ASSURANCE}.`
 
 export const HOME_LINK_BANK_ADMIN_ACTION = 'Link in Admin'
 

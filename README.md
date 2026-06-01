@@ -8,9 +8,9 @@
 
 A bank-agnostic virtual bucket budgeting PWA—for solo use or a shared
 household. Sits on top of real bank accounts (read via Teller) so you can
-label cash with buckets, and decide which bucket covers it when the bank balance
-moves. Tagline and auth copy live in `src/lib/brand.ts`; see
-[docs/BRAND.md](./docs/BRAND.md) for voice and naming.
+organize your cash into buckets for an at-a-glance view, and decide which bucket
+covers it when the bank balance moves. Tagline and auth copy live in
+`src/lib/brand.ts`; see [docs/BRAND.md](./docs/BRAND.md) for voice and naming.
 
 See [CONTEXT.md](./CONTEXT.md) for the full product brief, balance model,
 and architecture. See [AGENTS.md](./AGENTS.md) for AI agent / contributor
@@ -23,7 +23,7 @@ entry points.
 - `vite-plugin-pwa` (manifest + service worker + offline fallback)
 - React Router 7
 - Supabase (Auth + Postgres + Realtime + Edge Functions)
-- Teller API (read-only bank sync via webhooks)
+- Teller API (read-only bank connection; on-demand refresh + webhooks)
 
 > Note on Tailwind: this project uses **v4**. Configuration lives in
 > `src/index.css` via `@import "tailwindcss";` (and `@theme { ... }` blocks
