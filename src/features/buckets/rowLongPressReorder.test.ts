@@ -9,6 +9,7 @@ import {
   clampPointerYForRowDrag,
   closestRowCenterIndex,
   manualSortableShiftY,
+  reorderedIdsForDrag,
   rowCenterOffsets,
   rowDragCenterY,
   rowDragOverlayTop,
@@ -154,6 +155,35 @@ describe('manualSortableShiftY', () => {
   it('no shift when active equals over', () => {
     expect(manualSortableShiftY(1, 1, 1, rowHeight)).toBe(0)
     expect(manualSortableShiftY(0, 1, 1, rowHeight)).toBe(0)
+  })
+})
+
+describe('reorderedIdsForDrag', () => {
+  const ids = ['a', 'b', 'c', 'd']
+
+  it('moves a row down to the drop index', () => {
+    expect(reorderedIdsForDrag(ids, 'a', 2)).toEqual(['b', 'c', 'a', 'd'])
+  })
+
+  it('moves a row up to the drop index', () => {
+    expect(reorderedIdsForDrag(ids, 'd', 1)).toEqual(['a', 'd', 'b', 'c'])
+  })
+
+  it('returns null when nothing moves or input is invalid', () => {
+    expect(reorderedIdsForDrag(ids, 'a', 0)).toBeNull()
+    expect(reorderedIdsForDrag(ids, 'missing', 1)).toBeNull()
+    expect(reorderedIdsForDrag(ids, 'a', -1)).toBeNull()
+    expect(reorderedIdsForDrag(ids, 'a', 99)).toBeNull()
+  })
+
+  it('commit order matches the visual shift target (down)', () => {
+    // Visual: dragging index 0 → 2 lands the row on slot 2 (order b,c,a,d).
+    const overIndex = 2
+    const visualOrder = [0, 1, 2, 3]
+      .map((i) => ({ i, top: i * 50 + manualSortableShiftY(i, 0, overIndex, 50) }))
+      .sort((x, y) => x.top - y.top)
+      .map(({ i }) => ids[i])
+    expect(reorderedIdsForDrag(ids, 'a', overIndex)).toEqual(visualOrder)
   })
 })
 

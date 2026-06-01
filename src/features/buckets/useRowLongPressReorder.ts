@@ -1,6 +1,5 @@
 /** Row long-press reorder: pointer handlers + manual drag session (grip uses dnd-kit). */
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
-import { arrayMove } from '@dnd-kit/sortable'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 
 import {
@@ -13,6 +12,7 @@ import {
   autoScrollSpeed,
   clampPointerYForRowDrag,
   closestRowCenterIndex,
+  reorderedIdsForDrag,
   rowCenterOffsets,
   rowDragCenterY,
   rowDragOverlayTop,
@@ -223,11 +223,8 @@ export function useRowLongPressReorder({
     const drag = manualDragRef.current
     if (!drag) return
 
-    const fromIndex = bucketIds.indexOf(drag.bucketId)
-    const toIndex = drag.overIndex
-    if (fromIndex >= 0 && toIndex >= 0 && fromIndex !== toIndex) {
-      onDragReorder(arrayMove(bucketIds, fromIndex, toIndex))
-    }
+    const next = reorderedIdsForDrag(bucketIds, drag.bucketId, drag.overIndex)
+    if (next) onDragReorder(next)
   }, [bucketIds, onDragReorder])
 
   const endManualDragSession = useCallback(() => {
