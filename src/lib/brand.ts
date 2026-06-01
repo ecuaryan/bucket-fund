@@ -47,6 +47,10 @@ export const BANK_READ_ONLY_ASSURANCE =
 
 export const BANK_LINK_READ_ONLY = `Read-only bank connection—${BANK_READ_ONLY_ASSURANCE}.`
 
+/** Shown when a stored session can no longer be refreshed (dead refresh token). */
+export const SESSION_EXPIRED_MESSAGE =
+  'Your session expired. Please sign out and sign back in, then try again.'
+
 export const LOGIN_GET_STARTED = 'Get started'
 
 export const LOGIN_SIGNUP_TITLE = 'Create your account'
