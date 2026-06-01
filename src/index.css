@@ -76,10 +76,11 @@ body {
   }
 
   /* Bucket reorder — block scroll and show grabbing cursor during pending/drag. */
-  body[data-bucket-dragging],
-  body[data-bucket-dragging] * {
+  html[data-bucket-dragging],
+  html[data-bucket-dragging] * {
     cursor: grabbing !important;
     touch-action: none !important;
+    overscroll-behavior: none !important;
   }
 }
 
