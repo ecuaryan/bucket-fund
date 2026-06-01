@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  AUTO_SCROLL_MAX_SPEED_PX,
   ROW_LONG_PRESS_MS,
   ROW_PRESS_CANCEL_MOVE_PX,
   ROW_TAP_MOVE_MAX_PX,
+  autoScrollSpeed,
   bucketIndexAtClosestCenter,
   bucketIndexForRowDrag,
   clampClientY,
@@ -160,6 +162,27 @@ describe('bucketIndexForRowDrag', () => {
     expect(bucketIndexForRowDrag(rects, drag)).toBe(1)
     expect(bucketIndexAtClosestCenter(rects, drag.clientY)).toBe(1)
     expect(rowDragCenterY(drag)).toBe(65)
+  })
+})
+
+describe('autoScrollSpeed', () => {
+  const vh = 800
+  const edge = 72
+
+  it('does not scroll in the middle dead zone', () => {
+    expect(autoScrollSpeed(400, vh, edge)).toBe(0)
+    expect(autoScrollSpeed(edge, vh, edge)).toBe(0)
+    expect(autoScrollSpeed(vh - edge, vh, edge)).toBe(0)
+  })
+
+  it('scrolls up near the top and down near the bottom', () => {
+    expect(autoScrollSpeed(10, vh, edge)).toBeLessThan(0)
+    expect(autoScrollSpeed(vh - 10, vh, edge)).toBeGreaterThan(0)
+  })
+
+  it('ramps to max speed at the very edge', () => {
+    expect(autoScrollSpeed(0, vh, edge)).toBe(-AUTO_SCROLL_MAX_SPEED_PX)
+    expect(autoScrollSpeed(vh, vh, edge)).toBe(AUTO_SCROLL_MAX_SPEED_PX)
   })
 })
 

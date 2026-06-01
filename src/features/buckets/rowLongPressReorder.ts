@@ -11,6 +11,37 @@ export const ROW_TAP_MOVE_MAX_PX = 12
 /** Cancel long-press if the finger drifts this far before arming (scroll intent). */
 export const ROW_PRESS_CANCEL_MOVE_PX = 20
 
+/** Distance from a viewport edge (px) where an active drag starts auto-scrolling. */
+export const AUTO_SCROLL_EDGE_PX = 72
+
+/** Max auto-scroll speed (px per animation frame). */
+export const AUTO_SCROLL_MAX_SPEED_PX = 16
+
+function clamp01(n: number): number {
+  return Math.min(1, Math.max(0, n))
+}
+
+/**
+ * Auto-scroll speed for a finger near the viewport edges during an active drag.
+ * Negative scrolls up, positive scrolls down, 0 in the dead zone.
+ */
+export function autoScrollSpeed(
+  clientY: number,
+  viewportHeight: number,
+  edge: number = AUTO_SCROLL_EDGE_PX,
+  maxSpeed: number = AUTO_SCROLL_MAX_SPEED_PX,
+): number {
+  if (clientY < edge) {
+    return -Math.ceil(clamp01((edge - clientY) / edge) * maxSpeed)
+  }
+  if (clientY > viewportHeight - edge) {
+    return Math.ceil(
+      clamp01((clientY - (viewportHeight - edge)) / edge) * maxSpeed,
+    )
+  }
+  return 0
+}
+
 export type PressPoint = { x: number; y: number }
 
 export function pressDistance(a: PressPoint, b: PressPoint): number {

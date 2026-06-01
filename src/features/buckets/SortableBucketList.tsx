@@ -354,11 +354,7 @@ function SortableBucketRow(props: RowProps) {
       </div>
       <BucketRowContent
         {...props}
-        rowTouchLocked={
-          isDragging ||
-          props.rowPressPending === true ||
-          props.manualDragging === true
-        }
+        rowTouchLocked={isDragging || props.manualDragging === true}
       />
     </li>
   )
