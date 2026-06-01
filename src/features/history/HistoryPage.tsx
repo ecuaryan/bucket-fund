@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
@@ -17,26 +17,9 @@ import {
   SEND_FILTER_VALUE,
   type HistoryFilter,
 } from '@/features/history/historyFilters'
+import { fetchHistoryPage, type HistoryTxRow } from '@/features/history/historyQueries'
 
-// Pulled-back transaction shape, with bucket / member name joins.
-// We don't lean on the generated Database type here because PostgREST's
-// embedded-resource syntax returns shapes the generator doesn't infer.
-type TxRow = {
-  id: string
-  family_id: string
-  type: 'bucket_move' | 'send'
-  amount: string | number
-  from_bucket_id: string | null
-  to_bucket_id: string | null
-  from_member_id: string | null
-  to_member_id: string | null
-  note: string | null
-  created_at: string
-  from_bucket: { name: string } | null
-  to_bucket: { name: string } | null
-  from_member: { name: string } | null
-  to_member: { name: string } | null
-}
+type TxRow = HistoryTxRow
 
 type Bucket = Pick<
   Database['public']['Tables']['buckets']['Row'],
@@ -51,11 +34,6 @@ type Bucket = Pick<
 const INITIAL_PAGE_SIZE = 10
 const MORE_PAGE_SIZE = 50
 
-// PostgREST select expression for the embedded joins. Pulled out as a
-// constant so every page fetch uses the exact same shape.
-const TX_SELECT =
-  '*, from_bucket:buckets!from_bucket_id(name), to_bucket:buckets!to_bucket_id(name), from_member:family_members!from_member_id(name), to_member:family_members!to_member_id(name)'
-
 const dayFormatter = new Intl.DateTimeFormat('en-US', {
   weekday: 'short',
   month: 'short',
@@ -67,102 +45,78 @@ const timeFormatter = new Intl.DateTimeFormat('en-US', {
   minute: '2-digit',
 })
 
+function filterForKey(filterKey: string): HistoryFilter {
+  return filterFromSearchParams(new URLSearchParams(filterKey))
+}
+
 export default function HistoryPage() {
   const auth = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const filterKey = historyFilterSearchKey(searchParams)
-  const filter = useMemo(
-    () => filterFromSearchParams(new URLSearchParams(filterKey)),
-    [filterKey],
-  )
+  const filter = useMemo(() => filterForKey(filterKey), [filterKey])
 
   const [rows, setRows] = useState<TxRow[] | null>(null)
   const [buckets, setBuckets] = useState<Bucket[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
+
+  // Bump when family or filter changes so stale async work cannot mutate state.
+  const listGeneration = useRef(0)
 
   const member = auth.status === 'signedIn' ? auth.member : null
   const accessToken =
     auth.status === 'signedIn' ? auth.session.access_token : null
   const familyId = member?.family_id ?? null
 
-  // PostgREST embedded resources: alias:table!fk_column(cols). Two FKs
-  // to the same target table (buckets), so we disambiguate by FK column
-  // name. RLS scopes everything to this family already.
-  //
-  // The same base query is used by all three loaders below; the filter
-  // (when set) matches transactions where the bucket is either the
-  // source or the destination.
-  const fetchPage = useCallback(
-    async (
-      activeFilter: HistoryFilter,
-      beforeCreatedAt: string | null,
-      limit: number,
-    ): Promise<TxRow[] | null> => {
-      let query = supabase
-        .from('transactions')
-        .select(TX_SELECT)
-        .order('created_at', { ascending: false })
-        .limit(limit)
-      if (beforeCreatedAt) query = query.lt('created_at', beforeCreatedAt)
-      if (activeFilter.kind === 'send') {
-        query = query.eq('type', 'send')
-      } else if (activeFilter.kind === 'bucket') {
-        query = query.or(
-          `from_bucket_id.eq.${activeFilter.bucketId},to_bucket_id.eq.${activeFilter.bucketId}`,
-        )
-      }
-      const { data, error } = await query
-      if (error) {
-        setLoadError(error.message)
-        return null
-      }
-      return (data ?? []) as unknown as TxRow[]
-    },
-    [],
-  )
-
-  // Load older rows beneath the current oldest. Cursor pagination on
-  // created_at (rather than OFFSET) avoids skipping/duplicating rows
-  // when Realtime inserts new transactions while the user is paging.
   const loadMore = useCallback(async () => {
     if (loadingMore || rows === null || rows.length === 0) return
+
+    const generation = listGeneration.current
+    const activeFilter = filterForKey(filterKey)
+
     setLoadingMore(true)
-    const next = await fetchPage(
-      filter,
+    setLoadMoreError(null)
+
+    const result = await fetchHistoryPage(
+      activeFilter,
       rows[rows.length - 1].created_at,
       MORE_PAGE_SIZE,
     )
-    setLoadingMore(false)
-    if (!next) return
-    setRows((prev) => (prev ? [...prev, ...next] : next))
-    setHasMore(next.length === MORE_PAGE_SIZE)
-  }, [fetchPage, filter, loadingMore, rows])
 
-  // Realtime handler. Re-fetches only the head and merges with any
-  // older rows the user already paginated to, so we don't blow away
-  // their scroll state on a new insert.
+    setLoadingMore(false)
+    if (generation !== listGeneration.current) return
+
+    if (!result.ok) {
+      setLoadMoreError(result.error)
+      return
+    }
+
+    setRows((prev) => (prev ? [...prev, ...result.rows] : result.rows))
+    setHasMore(result.rows.length === MORE_PAGE_SIZE)
+  }, [filterKey, loadingMore, rows])
+
   const refreshHead = useCallback(async () => {
-    const head = await fetchPage(filter, null, INITIAL_PAGE_SIZE)
-    if (!head) return
+    const generation = listGeneration.current
+    const activeFilter = filterForKey(filterKey)
+    const result = await fetchHistoryPage(activeFilter, null, INITIAL_PAGE_SIZE)
+
+    if (generation !== listGeneration.current) return
+    if (!result.ok) return
+
     setRows((prev) => {
-      if (!prev) return head
-      if (head.length === 0) return prev
-      const headIds = new Set(head.map((r) => r.id))
-      const oldestInHead = head[head.length - 1].created_at
-      // Keep older paginated rows; the head replaces everything within
-      // its time window.
+      if (!prev) return result.rows
+      if (result.rows.length === 0) return prev
+      const headIds = new Set(result.rows.map((r) => r.id))
+      const oldestInHead = result.rows[result.rows.length - 1].created_at
       const tail = prev.filter(
         (r) => !headIds.has(r.id) && r.created_at < oldestInHead,
       )
-      return [...head, ...tail]
+      return [...result.rows, ...tail]
     })
-  }, [fetchPage, filter])
+  }, [filterKey])
 
-  // Bucket list is for the filter picker. We don't need it for
-  // rendering rows (the row query already joins names) but it lets
-  // us populate the dropdown and resolve the active filter's name.
   const loadBuckets = useCallback(async () => {
     const { data, error } = await supabase
       .from('buckets')
@@ -176,25 +130,26 @@ export default function HistoryPage() {
   useEffect(() => {
     if (!familyId) return
 
-    let cancelled = false
-    const activeFilter = filterFromSearchParams(new URLSearchParams(filterKey))
+    const generation = ++listGeneration.current
+    const activeFilter = filterForKey(filterKey)
 
     setLoadError(null)
+    setLoadMoreError(null)
     setRows(null)
     setHasMore(true)
     setLoadingMore(false)
 
     void (async () => {
-      const next = await fetchPage(activeFilter, null, INITIAL_PAGE_SIZE)
-      if (cancelled || !next) return
-      setRows(next)
-      setHasMore(next.length === INITIAL_PAGE_SIZE)
+      const result = await fetchHistoryPage(activeFilter, null, INITIAL_PAGE_SIZE)
+      if (generation !== listGeneration.current) return
+      if (!result.ok) {
+        setLoadError(result.error)
+        return
+      }
+      setRows(result.rows)
+      setHasMore(result.rows.length === INITIAL_PAGE_SIZE)
     })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [familyId, filterKey, fetchPage])
+  }, [familyId, filterKey])
 
   useEffect(() => {
     if (!familyId) return
@@ -219,7 +174,7 @@ export default function HistoryPage() {
   const grouped = useMemo(() => groupByDay(rows ?? []), [rows])
 
   const filteredBucketName = useMemo(() => {
-    const activeFilter = filterFromSearchParams(new URLSearchParams(filterKey))
+    const activeFilter = filterForKey(filterKey)
     if (activeFilter.kind !== 'bucket' || !buckets) return null
     const found = buckets.find((b) => b.id === activeFilter.bucketId)
     return found?.name ?? null
@@ -231,7 +186,7 @@ export default function HistoryPage() {
 
   if (!member) return null
 
-  if (loadError) {
+  if (loadError && rows === null) {
     return (
       <div className="rounded-2xl bg-red-500/10 p-4 text-sm text-red-300 ring-1 ring-red-500/30">
         <p className="font-semibold">Could not load history</p>
@@ -300,6 +255,10 @@ export default function HistoryPage() {
             </section>
           ))}
 
+          {loadMoreError && (
+            <p className="text-center text-xs text-red-300">{loadMoreError}</p>
+          )}
+
           {hasMore && (
             <button
               type="button"
@@ -334,8 +293,6 @@ function FilterBar({
         ? filter.bucketId
         : ''
 
-  // When the URL has a bucket id that's no longer in our local list
-  // (e.g., deleted), surface that gracefully instead of vanishing.
   const showOrphanedFilter =
     filter.kind === 'bucket' && activeBucketName === null
 
@@ -476,13 +433,7 @@ function bucketEndpointLabel(
   joined: { name: string } | null,
 ): string {
   if (joined?.name) return joined.name
-  // FK still set but join missed (RLS scoping). Fall back gracefully.
   if (id) return 'Bucket'
-  // FK is NULL: either it was always Unallocated, or the bucket was
-  // since deleted (ON DELETE SET NULL). We can't tell them apart
-  // without denormalising the name; "Unallocated" is the right read
-  // for fresh data, and historical orphan rows are rare enough to
-  // accept the ambiguity.
   return 'Unallocated'
 }
 
