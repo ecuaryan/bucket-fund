@@ -17,3 +17,8 @@ export function searchParamsForFilter(filter: HistoryFilter): Record<string, str
   if (filter.kind === 'bucket') return { bucket: filter.bucketId }
   return {}
 }
+
+/** Stable string for effect / fetch deps — avoids re-fetch loops from object identity. */
+export function historyFilterSearchKey(params: URLSearchParams): string {
+  return params.toString()
+}

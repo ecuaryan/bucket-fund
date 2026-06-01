@@ -12,6 +12,7 @@ import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import type { Database } from '@/types/database'
 import {
   filterFromSearchParams,
+  historyFilterSearchKey,
   searchParamsForFilter,
   SEND_FILTER_VALUE,
   type HistoryFilter,
@@ -69,7 +70,11 @@ const timeFormatter = new Intl.DateTimeFormat('en-US', {
 export default function HistoryPage() {
   const auth = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
-  const filter = filterFromSearchParams(searchParams)
+  const filterKey = historyFilterSearchKey(searchParams)
+  const filter = useMemo(
+    () => filterFromSearchParams(new URLSearchParams(filterKey)),
+    [filterKey],
+  )
 
   const [rows, setRows] = useState<TxRow[] | null>(null)
   const [buckets, setBuckets] = useState<Bucket[] | null>(null)
@@ -91,6 +96,7 @@ export default function HistoryPage() {
   // source or the destination.
   const fetchPage = useCallback(
     async (
+      activeFilter: HistoryFilter,
       beforeCreatedAt: string | null,
       limit: number,
     ): Promise<TxRow[] | null> => {
@@ -100,11 +106,11 @@ export default function HistoryPage() {
         .order('created_at', { ascending: false })
         .limit(limit)
       if (beforeCreatedAt) query = query.lt('created_at', beforeCreatedAt)
-      if (filter.kind === 'send') {
+      if (activeFilter.kind === 'send') {
         query = query.eq('type', 'send')
-      } else if (filter.kind === 'bucket') {
+      } else if (activeFilter.kind === 'bucket') {
         query = query.or(
-          `from_bucket_id.eq.${filter.bucketId},to_bucket_id.eq.${filter.bucketId}`,
+          `from_bucket_id.eq.${activeFilter.bucketId},to_bucket_id.eq.${activeFilter.bucketId}`,
         )
       }
       const { data, error } = await query
@@ -114,17 +120,8 @@ export default function HistoryPage() {
       }
       return (data ?? []) as unknown as TxRow[]
     },
-    [filter],
+    [],
   )
-
-  // Initial load (also re-runs on filter change). Replaces the list.
-  const loadFirstPage = useCallback(async () => {
-    setLoadError(null)
-    const next = await fetchPage(null, INITIAL_PAGE_SIZE)
-    if (!next) return
-    setRows(next)
-    setHasMore(next.length === INITIAL_PAGE_SIZE)
-  }, [fetchPage])
 
   // Load older rows beneath the current oldest. Cursor pagination on
   // created_at (rather than OFFSET) avoids skipping/duplicating rows
@@ -133,6 +130,7 @@ export default function HistoryPage() {
     if (loadingMore || rows === null || rows.length === 0) return
     setLoadingMore(true)
     const next = await fetchPage(
+      filter,
       rows[rows.length - 1].created_at,
       MORE_PAGE_SIZE,
     )
@@ -140,13 +138,13 @@ export default function HistoryPage() {
     if (!next) return
     setRows((prev) => (prev ? [...prev, ...next] : next))
     setHasMore(next.length === MORE_PAGE_SIZE)
-  }, [fetchPage, loadingMore, rows])
+  }, [fetchPage, filter, loadingMore, rows])
 
   // Realtime handler. Re-fetches only the head and merges with any
   // older rows the user already paginated to, so we don't blow away
   // their scroll state on a new insert.
   const refreshHead = useCallback(async () => {
-    const head = await fetchPage(null, INITIAL_PAGE_SIZE)
+    const head = await fetchPage(filter, null, INITIAL_PAGE_SIZE)
     if (!head) return
     setRows((prev) => {
       if (!prev) return head
@@ -160,7 +158,7 @@ export default function HistoryPage() {
       )
       return [...head, ...tail]
     })
-  }, [fetchPage])
+  }, [fetchPage, filter])
 
   // Bucket list is for the filter picker. We don't need it for
   // rendering rows (the row query already joins names) but it lets
@@ -177,8 +175,26 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (!familyId) return
-    void loadFirstPage()
-  }, [familyId, loadFirstPage])
+
+    let cancelled = false
+    const activeFilter = filterFromSearchParams(new URLSearchParams(filterKey))
+
+    setLoadError(null)
+    setRows(null)
+    setHasMore(true)
+    setLoadingMore(false)
+
+    void (async () => {
+      const next = await fetchPage(activeFilter, null, INITIAL_PAGE_SIZE)
+      if (cancelled || !next) return
+      setRows(next)
+      setHasMore(next.length === INITIAL_PAGE_SIZE)
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [familyId, filterKey, fetchPage])
 
   useEffect(() => {
     if (!familyId) return
@@ -203,10 +219,11 @@ export default function HistoryPage() {
   const grouped = useMemo(() => groupByDay(rows ?? []), [rows])
 
   const filteredBucketName = useMemo(() => {
-    if (filter.kind !== 'bucket' || !buckets) return null
-    const found = buckets.find((b) => b.id === filter.bucketId)
+    const activeFilter = filterFromSearchParams(new URLSearchParams(filterKey))
+    if (activeFilter.kind !== 'bucket' || !buckets) return null
+    const found = buckets.find((b) => b.id === activeFilter.bucketId)
     return found?.name ?? null
-  }, [filter, buckets])
+  }, [filterKey, buckets])
 
   function setFilter(next: HistoryFilter) {
     setSearchParams(searchParamsForFilter(next))
