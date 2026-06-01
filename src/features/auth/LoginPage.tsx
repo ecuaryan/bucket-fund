@@ -91,7 +91,7 @@ export default function LoginPage() {
       )
     }
     return (
-      <Navigate to={postSignInPath(from, auth.member?.role)} replace />
+      <Navigate to={postSignInPath()} replace />
     )
   }
 

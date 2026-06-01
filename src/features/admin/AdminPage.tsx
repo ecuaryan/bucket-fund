@@ -73,6 +73,7 @@ export default function AdminPage() {
   const [enrollmentMeta, setEnrollmentMeta] = useState<
     Map<string, TellerEnrollmentMeta>
   >(new Map())
+  const [enrollmentsLoaded, setEnrollmentsLoaded] = useState(false)
 
   const isAdmin = member?.role === 'admin'
 
@@ -104,11 +105,14 @@ export default function AdminPage() {
 
   const loadEnrollments = useCallback(async () => {
     setEnrollmentLoadError(null)
+    setEnrollmentsLoaded(false)
     try {
       const enrollments = await listTellerEnrollments()
       setEnrollmentMeta(new Map(enrollments.map((e) => [e.id, e])))
     } catch (e) {
       setEnrollmentLoadError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setEnrollmentsLoaded(true)
     }
   }, [])
 
@@ -348,17 +352,22 @@ export default function AdminPage() {
                   </div>
                   {group.enrollmentIds.length > 0 && (
                     <div className="flex shrink-0 items-center gap-2">
-                      {group.tellerConnectEnrollmentId && (
+                      {(group.tellerConnectEnrollmentId || !enrollmentsLoaded) && (
                         <button
                           type="button"
                           onClick={() => onReconnect(group)}
                           disabled={
+                            !group.tellerConnectEnrollmentId ||
                             !teller.ready ||
                             teller.linking ||
                             unlinkingKey === group.groupKey ||
                             reconnectingKey === group.groupKey
                           }
-                          className="rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-hidden={!group.tellerConnectEnrollmentId}
+                          tabIndex={group.tellerConnectEnrollmentId ? 0 : -1}
+                          className={`rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 ${
+                            group.tellerConnectEnrollmentId ? '' : 'invisible'
+                          }`}
                         >
                           {reconnectingKey === group.groupKey
                             ? 'Reconnecting…'
