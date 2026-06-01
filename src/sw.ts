@@ -10,7 +10,7 @@
  *     per-route NetworkFirst copy that can reference deleted JS chunks).
  *   - Supabase auth is network-only — never cache tokens or session checks.
  *   - Other Supabase calls are network-first with a short timeout for offline.
- *   - Static hashed assets are cache-first.
+ *   - Images/fonts only in runtime cache-first (JS/CSS come from precache).
  *
  * Keep this file small and avoid importing app code — it runs in the
  * Service Worker global scope, not in a window.
@@ -59,10 +59,10 @@ registerRoute(
   }),
 )
 
-// Static assets: cache-first.
+// Hashed build assets are precached above. Cache only long-lived media here —
+// never script/style (stale chunks after deploy) or auth/API responses.
 registerRoute(
-  ({ request }) =>
-    ['image', 'font', 'style', 'script'].includes(request.destination),
+  ({ request }) => ['image', 'font'].includes(request.destination),
   new CacheFirst({
     cacheName: 'static-assets',
     plugins: [

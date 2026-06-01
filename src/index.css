@@ -19,6 +19,12 @@ body {
   color: #d4d4d8; /* zinc-300 — soft white, less laser-bright for long sessions */
   /* App-like PWA: no pinch/double-tap zoom (viewport also sets maximum-scale=1). */
   touch-action: manipulation;
+  /*
+   * Installed PWA pull-to-refresh on Android can reload outside standalone
+   * chrome and fight service-worker autoUpdate. Updates ship via autoUpdate;
+   * users should not need to pull-to-refresh after a deploy.
+   */
+  overscroll-behavior-y: none;
 }
 
 /*
