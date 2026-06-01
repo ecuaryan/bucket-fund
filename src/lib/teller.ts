@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { SESSION_EXPIRED_MESSAGE } from '@/lib/brand'
+import { getFreshAccessToken, refreshAccessToken } from '@/lib/sessionToken'
 
 const TELLER_CONNECT_SRC = 'https://cdn.teller.io/connect/connect.js'
 
@@ -94,28 +95,48 @@ export type TellerConnectOpenOptions = {
   enrollmentId?: string
 }
 
+/** Thrown when the session can't be refreshed; surfaced to the user verbatim. */
+export class SessionExpiredError extends Error {
+  constructor() {
+    super(SESSION_EXPIRED_MESSAGE)
+    this.name = 'SessionExpiredError'
+  }
+}
+
 async function authFetch(
   path: string,
   init?: RequestInit,
 ): Promise<Response> {
-  const { data: sessionData } = await supabase.auth.getSession()
-  const accessToken = sessionData.session?.access_token
-  if (!accessToken) throw new Error('Not signed in')
-
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
   const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
   if (!supabaseUrl || !anonKey) {
     throw new Error('Missing Supabase environment variables')
   }
 
-  return fetch(`${supabaseUrl}/functions/v1/${path}`, {
-    ...init,
-    headers: {
-      apikey: anonKey,
-      Authorization: `Bearer ${accessToken}`,
-      ...(init?.headers ?? {}),
-    },
-  })
+  const accessToken = await getFreshAccessToken()
+  if (!accessToken) throw new SessionExpiredError()
+
+  const send = (token: string) =>
+    fetch(`${supabaseUrl}/functions/v1/${path}`, {
+      ...init,
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${token}`,
+        ...(init?.headers ?? {}),
+      },
+    })
+
+  const res = await send(accessToken)
+  // A 401 means the token was rejected despite looking fresh (clock skew, a
+  // revoked token, etc.). Force one refresh and retry before giving up.
+  if (res.status !== 401) return res
+
+  const retryToken = await refreshAccessToken()
+  if (!retryToken) throw new SessionExpiredError()
+
+  const retryRes = await send(retryToken)
+  if (retryRes.status === 401) throw new SessionExpiredError()
+  return retryRes
 }
 
 async function postEnrollment(
