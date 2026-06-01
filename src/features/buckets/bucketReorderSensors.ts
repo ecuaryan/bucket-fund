@@ -96,7 +96,7 @@ export class BucketReorderPointerSensor extends PointerSensor {
   }
 }
 
-/** Best-effort haptic on drag-mode entry (Android). iOS uses native long-press buzz. */
+/** @deprecated Row drag relies on native long-press haptic; avoid navigator.vibrate (double buzz). */
 export function triggerReorderDragHaptic(): void {
   if (typeof navigator === 'undefined' || !('vibrate' in navigator)) return
   try {

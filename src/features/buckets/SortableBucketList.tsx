@@ -33,8 +33,6 @@ import {
   BucketReorderPointerSensor,
   isRowDelayConstraint,
   mergeRowDragListeners,
-  shouldTriggerReorderDragHaptic,
-  triggerReorderDragHaptic,
 } from '@/features/buckets/bucketReorderSensors'
 import {
   shouldShowGripPopoverOnFocus,
@@ -103,13 +101,17 @@ export default function SortableBucketList({
     ? buckets.find((b) => b.id === activeId) ?? null
     : null
 
-  useEffect(() => {
-    if (!activeId) return
-    document.body.dataset.bucketDragging = ''
-    return () => {
+  useEffect(
+    () => () => {
       delete document.body.dataset.bucketDragging
-    }
-  }, [activeId])
+    },
+    [],
+  )
+
+  function setBodyReorderTouchLock(locked: boolean) {
+    if (locked) document.body.dataset.bucketDragging = ''
+    else delete document.body.dataset.bucketDragging
+  }
 
   function clearPendingRowDrag() {
     setPendingRowDragId(null)
@@ -117,20 +119,20 @@ export default function SortableBucketList({
 
   function handleDragPending(event: DragPendingEvent) {
     if (isRowDelayConstraint(event.constraint)) {
+      setBodyReorderTouchLock(true)
       setPendingRowDragId(String(event.id))
     }
   }
 
   function handleDragStart(event: DragStartEvent) {
+    setBodyReorderTouchLock(true)
     clearPendingRowDrag()
-    if (shouldTriggerReorderDragHaptic(event)) {
-      triggerReorderDragHaptic()
-    }
     notifyDragStarted()
     setActiveId(String(event.active.id))
   }
 
   function handleDragEnd(event: DragEndEvent) {
+    setBodyReorderTouchLock(false)
     clearPendingRowDrag()
     setActiveId(null)
     const { active, over } = event
@@ -145,6 +147,7 @@ export default function SortableBucketList({
   }
 
   function handleDragCancel() {
+    setBodyReorderTouchLock(false)
     clearPendingRowDrag()
     setActiveId(null)
   }
@@ -208,7 +211,10 @@ export default function SortableBucketList({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
-      onDragAbort={clearPendingRowDrag}
+      onDragAbort={() => {
+        clearPendingRowDrag()
+        setBodyReorderTouchLock(false)
+      }}
     >
       <SortableContext items={bucketIds} strategy={verticalListSortingStrategy}>
         <ul
@@ -317,6 +323,7 @@ function SortableBucketRow(props: RowProps) {
         rowDragListeners={mergedRowListeners}
         suppressMoveClick={suppressMoveClick}
         onClearSuppressMoveClick={() => setSuppressMoveClick(false)}
+        rowTouchLocked={isDragging || props.rowPressPending === true}
       />
     </li>
   )
@@ -326,6 +333,7 @@ type BucketRowContentProps = RowProps & {
   rowDragListeners?: Record<string, unknown>
   suppressMoveClick?: boolean
   onClearSuppressMoveClick?: () => void
+  rowTouchLocked?: boolean
 }
 
 function BucketRowContent({
@@ -349,6 +357,7 @@ function BucketRowContent({
   rowDragListeners,
   suppressMoveClick = false,
   onClearSuppressMoveClick,
+  rowTouchLocked = false,
 }: BucketRowContentProps) {
   if (renaming) {
     return (
@@ -400,9 +409,10 @@ function BucketRowContent({
           onMoveMoney(bucket.id)
         }}
         className={
-          'flex min-w-0 flex-1 touch-pan-y select-none items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-zinc-800/60 focus:bg-zinc-800/60 focus:outline-none ' +
+          'flex min-w-0 flex-1 select-none items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-zinc-800/60 focus:bg-zinc-800/60 focus:outline-none ' +
+          (rowTouchLocked ? 'touch-none ' : 'touch-pan-y ') +
           (rowPressPending
-            ? 'touch-none bg-zinc-800/70 ring-2 ring-emerald-400/45 ring-inset'
+            ? 'bg-zinc-800/70 ring-2 ring-emerald-400/45 ring-inset'
             : '')
         }
       >
