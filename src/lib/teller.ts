@@ -258,6 +258,49 @@ export type DisconnectResult = {
   tellerError: string | null
 }
 
+export type RefreshBalancesResult = {
+  ok: true
+  refreshed: boolean
+  accountsUpdated: number
+  bankLastSyncedAt: string | null
+  errors: string[]
+}
+
+/**
+ * Re-pull balances from the bank for the caller's family (adults only).
+ * Optional enrollmentIds scopes to one institution's enrollments.
+ */
+export async function refreshBalances(
+  enrollmentIds?: string[],
+): Promise<RefreshBalancesResult> {
+  const res = await authFetch('teller-refresh', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(
+      enrollmentIds?.length ? { enrollmentIds } : {},
+    ),
+  })
+
+  const body = (await res.json().catch(() => ({}))) as Partial<
+    RefreshBalancesResult
+  > & { error?: string; details?: string }
+
+  if (!res.ok) {
+    const detail = body.details ? `: ${body.details}` : ''
+    const msg = body.error
+      ? `${body.error}${detail}`
+      : `Refresh failed: ${res.status}`
+    if (res.status === 503) {
+      throw new Error(
+        `${msg}. For local dev, run \`npm run functions:serve\` in a second terminal (needs \`supabase/functions/.env\`).`,
+      )
+    }
+    throw new Error(msg)
+  }
+
+  return body as RefreshBalancesResult
+}
+
 /**
  * Disconnects an enrollment on Teller's side and wipes its local
  * `teller_enrollments` + `accounts` rows. Used by the admin "Unlink"

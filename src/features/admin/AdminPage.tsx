@@ -18,9 +18,11 @@ import { pickHouseholdAdminName } from '@/lib/householdAdmin'
 import {
   disconnectEnrollment,
   listTellerEnrollments,
+  refreshBalances,
   type TellerEnrollmentMeta,
   useTellerConnect,
 } from '@/lib/teller'
+import RefreshIconButton from '@/components/ui/RefreshIconButton'
 import AccountAssignmentSelect from '@/features/admin/AccountAssignmentSelect'
 import AdminAccountSection from '@/features/admin/AdminAccountSection'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
@@ -69,6 +71,7 @@ export default function AdminPage() {
   const [linkInfo, setLinkInfo] = useState<string | null>(null)
   const [unlinkingKey, setUnlinkingKey] = useState<string | null>(null)
   const [reconnectingKey, setReconnectingKey] = useState<string | null>(null)
+  const [refreshingKey, setRefreshingKey] = useState<string | null>(null)
   const [accountsSyncing, setAccountsSyncing] = useState(false)
   const [enrollmentMeta, setEnrollmentMeta] = useState<
     Map<string, TellerEnrollmentMeta>
@@ -202,6 +205,22 @@ export default function AdminPage() {
     )
   }
 
+  async function onRefresh(group: InstitutionGroup) {
+    if (group.enrollmentIds.length === 0) return
+    setLinkError(null)
+    setRefreshingKey(group.groupKey)
+    setAccountsSyncing(true)
+    try {
+      await refreshBalances(group.enrollmentIds)
+      await Promise.all([loadAccounts(), loadEnrollments()])
+    } catch (e) {
+      setLinkError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setRefreshingKey(null)
+      setAccountsSyncing(false)
+    }
+  }
+
   async function onUnlink(group: InstitutionGroup) {
     if (group.enrollmentIds.length === 0) return
     const ok = window.confirm(
@@ -264,6 +283,7 @@ export default function AdminPage() {
         busy={
           unlinkingKey !== null ||
           reconnectingKey !== null ||
+          refreshingKey !== null ||
           teller.linking ||
           accountsSyncing
         }
@@ -272,7 +292,9 @@ export default function AdminPage() {
             ? reconnectingKey
               ? 'Reconnecting…'
               : 'Linking…'
-            : 'Updating accounts…'
+            : refreshingKey
+              ? 'Refreshing balances…'
+              : 'Updating accounts…'
         }
       >
       <section aria-label="Linked accounts">
@@ -346,12 +368,23 @@ export default function AdminPage() {
                     <p className="text-xs text-zinc-400">
                       {group.accounts.length} account
                       {group.accounts.length === 1 ? '' : 's'} ·{' '}
-                      {formatMoney(group.totalBalance)} · last synced{' '}
+                      {formatMoney(group.totalBalance)} · last refreshed{' '}
                       {formatLastSynced(group.lastSyncedAt)}
                     </p>
                   </div>
                   {group.enrollmentIds.length > 0 && (
                     <div className="flex shrink-0 items-center gap-2">
+                      <RefreshIconButton
+                        busy={refreshingKey === group.groupKey}
+                        disabled={
+                          refreshingKey === group.groupKey ||
+                          teller.linking ||
+                          unlinkingKey === group.groupKey ||
+                          reconnectingKey === group.groupKey
+                        }
+                        onClick={() => void onRefresh(group)}
+                        className="text-zinc-400 hover:text-zinc-200"
+                      />
                       {(group.tellerConnectEnrollmentId || !enrollmentsLoaded) && (
                         <button
                           type="button"
@@ -361,7 +394,8 @@ export default function AdminPage() {
                             !teller.ready ||
                             teller.linking ||
                             unlinkingKey === group.groupKey ||
-                            reconnectingKey === group.groupKey
+                            reconnectingKey === group.groupKey ||
+                            refreshingKey === group.groupKey
                           }
                           aria-hidden={!group.tellerConnectEnrollmentId}
                           tabIndex={group.tellerConnectEnrollmentId ? 0 : -1}
@@ -377,7 +411,10 @@ export default function AdminPage() {
                       <button
                         type="button"
                         onClick={() => onUnlink(group)}
-                        disabled={unlinkingKey === group.groupKey}
+                        disabled={
+                          unlinkingKey === group.groupKey ||
+                          refreshingKey === group.groupKey
+                        }
                         className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {unlinkingKey === group.groupKey
