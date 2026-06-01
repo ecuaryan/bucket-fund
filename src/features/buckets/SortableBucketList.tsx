@@ -1,15 +1,22 @@
-import { useMemo, useState, type KeyboardEvent, type RefObject } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type RefObject,
+} from 'react'
 import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
   MeasuringStrategy,
-  PointerSensor,
-  TouchSensor,
   closestCenter,
   useSensor,
   useSensors,
+  type DragAbortEvent,
   type DragEndEvent,
+  type DragPendingEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
@@ -23,6 +30,14 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import DragHandle from '@/components/ui/DragHandle'
 import BucketActionsMenu from '@/features/buckets/BucketActionsMenu'
+import {
+  BucketReorderPointerSensor,
+  BucketReorderTouchSensor,
+  isRowDelayConstraint,
+  mergeRowDragListeners,
+  shouldTriggerReorderDragHaptic,
+  triggerReorderDragHaptic,
+} from '@/features/buckets/bucketReorderSensors'
 import { ReorderGripPopover } from '@/features/buckets/ReorderHint'
 import { useReorderHint } from '@/features/buckets/ReorderHintContext'
 import { BUCKET_NAME_MAX_LENGTH } from '@/lib/buckets'
@@ -69,13 +84,16 @@ export default function SortableBucketList({
   onDragReorder,
 }: Props) {
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [pendingRowDragId, setPendingRowDragId] = useState<string | null>(
+    null,
+  )
   const { notifyDragStarted } = useReorderHint()
   const dragEnabled = buckets.length >= 2 && renamingId === null
   const bucketIds = useMemo(() => buckets.map((b) => b.id), [buckets])
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(BucketReorderPointerSensor),
+    useSensor(BucketReorderTouchSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
@@ -85,12 +103,35 @@ export default function SortableBucketList({
     ? buckets.find((b) => b.id === activeId) ?? null
     : null
 
+  useEffect(() => {
+    if (!activeId) return
+    document.body.dataset.bucketDragging = ''
+    return () => {
+      delete document.body.dataset.bucketDragging
+    }
+  }, [activeId])
+
+  function clearPendingRowDrag() {
+    setPendingRowDragId(null)
+  }
+
+  function handleDragPending(event: DragPendingEvent) {
+    if (isRowDelayConstraint(event.constraint)) {
+      setPendingRowDragId(String(event.id))
+    }
+  }
+
   function handleDragStart(event: DragStartEvent) {
+    clearPendingRowDrag()
+    if (shouldTriggerReorderDragHaptic(event)) {
+      triggerReorderDragHaptic()
+    }
     notifyDragStarted()
     setActiveId(String(event.active.id))
   }
 
   function handleDragEnd(event: DragEndEvent) {
+    clearPendingRowDrag()
     setActiveId(null)
     const { active, over } = event
     if (!over || active.id === over.id) return
@@ -104,7 +145,12 @@ export default function SortableBucketList({
   }
 
   function handleDragCancel() {
+    clearPendingRowDrag()
     setActiveId(null)
+  }
+
+  function handleDragAbort(_event: DragAbortEvent) {
+    clearPendingRowDrag()
   }
 
   const rowProps = {
@@ -162,9 +208,11 @@ export default function SortableBucketList({
         interval: 5,
         layoutShiftCompensation: false,
       }}
+      onDragPending={handleDragPending}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
+      onDragAbort={handleDragAbort}
     >
       <SortableContext items={bucketIds} strategy={verticalListSortingStrategy}>
         <ul
@@ -178,6 +226,7 @@ export default function SortableBucketList({
               idx={idx}
               isLast={idx === buckets.length - 1}
               renaming={renamingId === bucket.id}
+              rowPressPending={pendingRowDragId === bucket.id}
               {...rowProps}
             />
           ))}
@@ -197,6 +246,7 @@ type RowProps = {
   idx: number
   isLast: boolean
   renaming: boolean
+  rowPressPending?: boolean
   renameValue: string
   canManageStructure: boolean
   formatMoney: (amount: number) => string
@@ -214,6 +264,7 @@ type RowProps = {
 function SortableBucketRow(props: RowProps) {
   const { bucket } = props
   const { mergeGripListeners, onGripFocus, onGripBlur } = useReorderHint()
+  const suppressMoveClickRef = useRef(false)
   const {
     attributes,
     listeners,
@@ -229,7 +280,20 @@ function SortableBucketRow(props: RowProps) {
     transition,
   }
 
-  const mergedListeners = mergeGripListeners(bucket.id, listeners)
+  const mergedGripListeners = mergeGripListeners(bucket.id, listeners)
+  const mergedRowListeners = useMemo(
+    () =>
+      mergeRowDragListeners(
+        listeners,
+        () => {
+          suppressMoveClickRef.current = false
+        },
+        (movedBeyondTolerance) => {
+          if (movedBeyondTolerance) suppressMoveClickRef.current = true
+        },
+      ),
+    [listeners],
+  )
 
   return (
     <li
@@ -245,16 +309,25 @@ function SortableBucketRow(props: RowProps) {
         <DragHandle
           ref={setActivatorNodeRef}
           {...attributes}
-          {...mergedListeners}
+          {...mergedGripListeners}
           onFocus={() => onGripFocus(bucket.id)}
           onBlur={() => onGripBlur()}
           onClick={(e) => e.stopPropagation()}
         />
         <ReorderGripPopover bucketId={bucket.id} />
       </div>
-      <BucketRowContent {...props} />
+      <BucketRowContent
+        {...props}
+        rowDragListeners={mergedRowListeners}
+        suppressMoveClickRef={suppressMoveClickRef}
+      />
     </li>
   )
+}
+
+type BucketRowContentProps = RowProps & {
+  rowDragListeners?: Record<string, unknown>
+  suppressMoveClickRef?: RefObject<boolean>
 }
 
 function BucketRowContent({
@@ -262,6 +335,7 @@ function BucketRowContent({
   idx,
   isLast,
   renaming,
+  rowPressPending = false,
   renameValue,
   canManageStructure,
   formatMoney,
@@ -274,7 +348,9 @@ function BucketRowContent({
   onMoveUp,
   onMoveDown,
   onDelete,
-}: RowProps) {
+  rowDragListeners,
+  suppressMoveClickRef,
+}: BucketRowContentProps) {
   if (renaming) {
     return (
       <>
@@ -315,8 +391,21 @@ function BucketRowContent({
     <>
       <button
         type="button"
-        onClick={() => onMoveMoney(bucket.id)}
-        className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-zinc-800/60 focus:bg-zinc-800/60 focus:outline-none"
+        data-reorder-row=""
+        {...rowDragListeners}
+        onClick={() => {
+          if (suppressMoveClickRef?.current) {
+            suppressMoveClickRef.current = false
+            return
+          }
+          onMoveMoney(bucket.id)
+        }}
+        className={
+          'flex min-w-0 flex-1 select-none items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-zinc-800/60 focus:bg-zinc-800/60 focus:outline-none ' +
+          (rowPressPending
+            ? 'bg-zinc-800/70 ring-2 ring-emerald-400/45 ring-inset'
+            : '')
+        }
       >
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-zinc-300">

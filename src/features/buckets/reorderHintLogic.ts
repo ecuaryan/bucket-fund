@@ -1,5 +1,6 @@
-/** Same threshold as dnd-kit Pointer/TouchSensor activation on the grip. */
-export const REORDER_GRIP_ACTIVATION_PX = 8
+import { REORDER_GRIP_ACTIVATION_PX } from '@/features/buckets/bucketReorderSensors'
+
+export { REORDER_GRIP_ACTIVATION_PX }
 
 /** True when a grip pointer-up should open the reorder hint (tap, not drag). */
 export function shouldShowGripPopoverAfterPointerUp(args: {
