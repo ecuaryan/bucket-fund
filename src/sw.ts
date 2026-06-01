@@ -6,18 +6,22 @@
  *
  * Strategy:
  *   - Precache the built assets so the shell loads offline.
- *   - For navigation requests that miss the cache, fall back to /offline.html.
- *   - For Supabase API calls, prefer the network with a short timeout and
- *     fall back to cache when offline.
- *   - For static assets (fonts, images, scripts, styles), serve from cache
- *     first.
+ *   - SPA navigations always serve the precached index.html (never a stale
+ *     per-route NetworkFirst copy that can reference deleted JS chunks).
+ *   - Supabase auth is network-only — never cache tokens or session checks.
+ *   - Other Supabase calls are network-first with a short timeout for offline.
+ *   - Images/fonts only in runtime cache-first (JS/CSS come from precache).
  *
  * Keep this file small and avoid importing app code — it runs in the
  * Service Worker global scope, not in a window.
  */
-import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching'
+import {
+  cleanupOutdatedCaches,
+  createHandlerBoundToURL,
+  precacheAndRoute,
+} from 'workbox-precaching'
 import { NavigationRoute, registerRoute } from 'workbox-routing'
-import { CacheFirst, NetworkFirst } from 'workbox-strategies'
+import { CacheFirst, NetworkFirst, NetworkOnly } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 
@@ -26,19 +30,20 @@ declare const self: ServiceWorkerGlobalScope
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
 
-// Navigation fallback: when a navigation request can't be satisfied from
-// the network or the precache, show the offline page.
+// SPA shell: one precached index.html for every in-app route. Avoids stale
+// /send or /history navigation cache entries after a deploy changes chunk hashes.
+const navigationHandler = createHandlerBoundToURL('/index.html')
 registerRoute(
-  new NavigationRoute(
-    new NetworkFirst({
-      cacheName: 'navigations',
-      networkTimeoutSeconds: 3,
-      plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })],
-    }),
-    {
-      denylist: [/^\/api/, /^\/auth/],
-    },
-  ),
+  new NavigationRoute(navigationHandler, {
+    denylist: [/^\/api/, /^\/auth/, /^\/offline\.html$/],
+  }),
+)
+
+// Auth endpoints must never be cached — stale responses look like sign-out.
+registerRoute(
+  ({ url }) =>
+    url.hostname.endsWith('.supabase.co') && url.pathname.startsWith('/auth/'),
+  new NetworkOnly(),
 )
 
 // Supabase REST + Realtime: network-first with a short timeout.
@@ -54,10 +59,10 @@ registerRoute(
   }),
 )
 
-// Static assets: cache-first.
+// Hashed build assets are precached above. Cache only long-lived media here —
+// never script/style (stale chunks after deploy) or auth/API responses.
 registerRoute(
-  ({ request }) =>
-    ['image', 'font', 'style', 'script'].includes(request.destination),
+  ({ request }) => ['image', 'font'].includes(request.destination),
   new CacheFirst({
     cacheName: 'static-assets',
     plugins: [
