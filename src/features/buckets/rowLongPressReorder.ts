@@ -4,8 +4,12 @@
  */
 import { arrayMove } from '@dnd-kit/sortable'
 
-/** Row long-press before manual drag mode (~450ms; near native mobile haptic). */
-export const ROW_LONG_PRESS_MS = 450
+/**
+ * Long-press before manual drag arms. Tuned to ~400ms to line up with Android's
+ * native long-press haptic (which we can't suppress on web) so the row-lift
+ * coincides with the buzz instead of trailing it by ~50ms.
+ */
+export const ROW_LONG_PRESS_MS = 400
 
 /** Max movement (px) to still count as a tap → Move money. */
 export const ROW_TAP_MOVE_MAX_PX = 12
