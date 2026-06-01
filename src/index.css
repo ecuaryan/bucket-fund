@@ -74,6 +74,12 @@ body {
   input[type="file"]:not(:disabled) {
     cursor: pointer;
   }
+
+  /* Bucket reorder drag — grabbing hand everywhere (grip or row long-press). */
+  body[data-bucket-dragging],
+  body[data-bucket-dragging] * {
+    cursor: grabbing !important;
+  }
 }
 
 /* User-initiated motion — disabled when the OS prefers reduced motion. */
