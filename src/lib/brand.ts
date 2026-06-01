@@ -113,8 +113,12 @@ export function householdAdminLabel(
 
 export const ADMIN_LINKED_ACCOUNTS_INTRO = `Read-only—${BANK_READ_ONLY_ASSURANCE}.`
 
-export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT =
-  'Use Reconnect when a bank link breaks. Use Refresh to pull the latest balances. Link bank is for a new institution. To change which accounts you share, Unlink that bank and link it again.'
+export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_PREFIX =
+  'Use Reconnect when a bank link breaks. Use '
+
+/** Follows the inline refresh icon in Admin linked-accounts intro. */
+export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_SUFFIX =
+  ' to pull the latest balances. Link bank is for a new institution. To change which accounts you share, Unlink that bank and link it again.'
 
 export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
   'Choose the accounts to share at that bank. Balances count toward household unallocated until you assign an account to a child.'

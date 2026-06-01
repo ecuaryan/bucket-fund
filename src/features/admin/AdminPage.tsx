@@ -5,7 +5,8 @@ import { accountAssignmentChildId } from '@/lib/accounts'
 import {
   ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL,
   ADMIN_LINKED_ACCOUNTS_INTRO,
-  ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT,
+  ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_PREFIX,
+  ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_SUFFIX,
   adminLinkBankConfirmMessage,
   adminLinkedAccountsMemberGate,
   adminUnlinkInstitutionConfirm,
@@ -23,6 +24,7 @@ import {
   useTellerConnect,
 } from '@/lib/teller'
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
+import RefreshIcon from '@/components/ui/RefreshIcon'
 import AccountAssignmentSelect from '@/features/admin/AccountAssignmentSelect'
 import AdminAccountSection from '@/features/admin/AdminAccountSection'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
@@ -302,7 +304,15 @@ export default function AdminPage() {
           <div className="min-w-0">
             <h2 className="text-base font-semibold">Linked accounts</h2>
             <p className="mt-1 text-xs text-zinc-400">
-              {ADMIN_LINKED_ACCOUNTS_INTRO} {ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT}
+              {ADMIN_LINKED_ACCOUNTS_INTRO}{' '}
+              {ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_PREFIX}
+              <span
+                className="mx-0.5 inline-flex align-text-bottom"
+                aria-hidden="true"
+              >
+                <RefreshIcon className="h-3 w-3" />
+              </span>
+              {ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_SUFFIX}
             </p>
           </div>
           <button
