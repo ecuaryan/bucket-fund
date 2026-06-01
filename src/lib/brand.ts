@@ -219,6 +219,9 @@ export const HISTORY_EMPTY_BUCKET_BODY =
 export const HISTORY_EMPTY_BODY =
   'Move money between buckets and unallocated in Buckets—it will appear here.'
 
+export const HISTORY_EMPTY_SENDS_BODY =
+  'Send money to a household member and it will appear here.'
+
 // --- PIN sign-in ---
 
 export function pinNoMembersYet(adminName: string | null | undefined): string {
