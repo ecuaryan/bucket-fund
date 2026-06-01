@@ -5,7 +5,8 @@ Entry point for AI coding agents (and humans) working in this repo.
 ## Read before starting
 
 1. **[CONTRIBUTING.md](./CONTRIBUTING.md)** — branch/PR workflow, CI check names,
-   Vercel gating, environments (do not push directly to `main`).
+   Vercel gating, **production deploy sequence** (CI → Deploy Supabase → Vercel
+   timing), environments (do not push directly to `main`).
 2. **[CONTEXT.md](./CONTEXT.md)** — full product brief: problem, users
    and roles, balance model and invariant, schema, security model, and
    what's intentionally out of scope. This is the source of product

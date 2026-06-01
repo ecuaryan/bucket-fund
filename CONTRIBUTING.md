@@ -116,13 +116,63 @@ Local Supabase env: `source scripts/env-local.sh` (see [README.md](./README.md))
 
 ## Deploying backend changes
 
-- **Frontend:** merges to `main` → Vercel (after CI, if configured).
-- **Hosted Supabase:** after CI passes on `main`, GitHub Actions runs
-  [`.github/workflows/deploy-supabase.yml`](./.github/workflows/deploy-supabase.yml)
-  (`db push` + `functions deploy`). One-time setup: [README § Production Supabase deploy](./README.md#production-supabase-deploy-one-time-secrets).
+Frontend and hosted Supabase are **separate pipelines**. Vercel finishing does
+not mean migrations are live yet.
 
-If production shows a missing RPC or old Edge Function behavior, check the latest
-**Deploy Supabase** workflow on `main`. Manual fallback:
+### Production deploy sequence
+
+```mermaid
+sequenceDiagram
+  participant Merge as Merge_to_main
+  participant CI as CI_workflow
+  participant Vercel
+  participant Deploy as Deploy_Supabase
+  participant Supabase
+
+  Merge->>CI: push triggers CI
+  Merge->>Vercel: production build (may wait for CI)
+  CI->>CI: lint, unit, build
+  CI->>CI: database RLS tests
+  CI->>CI: e2e smoke tests
+  alt CI success
+    CI-->>Deploy: workflow_run completed
+    Deploy->>Supabase: supabase db push
+    Deploy->>Supabase: supabase functions deploy
+  else CI failed
+    Note over Deploy: Deploy Supabase skipped
+  end
+  Vercel-->>Merge: new frontend live
+  Deploy-->>Supabase: migrations visible in dashboard
+```
+
+| Step | Workflow | What it touches |
+| ---- | -------- | --------------- |
+| 1 | [**CI**](./.github/workflows/ci.yml) | Lint, tests, build; local throwaway Supabase in the runner only |
+| 2 | [**Deploy Supabase**](./.github/workflows/deploy-supabase.yml) | Hosted Postgres migrations + Edge Functions (runs only after green CI on `main`) |
+| 3 | **Vercel** | Static frontend at [bucketmymoney.com](https://bucketmymoney.com) |
+
+**Typical timing:** merge → CI runs several minutes → **Deploy Supabase** starts
+when CI completes → check **Database → Migrations** in the Supabase dashboard
+for the new file. The Vercel deployment can look “done” while CI or Deploy
+Supabase is still running.
+
+**PRs never touch production** — only merges to `main` trigger hosted deploys.
+
+### If frontend and backend are out of sync
+
+Symptoms: new UI calls a missing RPC, or Edge Function behavior is stale while
+the site already updated.
+
+| Check | Action |
+| ----- | ------ |
+| CI still running on `main` | Wait — Deploy Supabase has not started |
+| CI failed | Fix and merge a follow-up; Deploy Supabase will not run |
+| **Deploy Supabase** failed | Open that workflow run on GitHub; fix secrets or `db push` errors |
+| Deploy succeeded | Confirm migration in Supabase → **Database → Migrations** |
+
+One-time GitHub **production** environment secrets: [README § Production Supabase deploy](./README.md#production-supabase-deploy-one-time-secrets).
+
+Manual fallback (hosted DB — use with care):
 
 ```bash
 npx supabase link
