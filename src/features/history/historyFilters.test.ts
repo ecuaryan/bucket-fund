@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   filterFromSearchParams,
+  historyFilterSearchKey,
   searchParamsForFilter,
 } from './historyFilters'
 
@@ -30,5 +31,11 @@ describe('historyFilters', () => {
     expect(
       searchParamsForFilter({ kind: 'bucket', bucketId: 'abc' }),
     ).toEqual({ bucket: 'abc' })
+  })
+
+  it('uses URL string as stable filter key', () => {
+    expect(
+      historyFilterSearchKey(new URLSearchParams('type=send&bucket=ignored')),
+    ).toBe('type=send&bucket=ignored')
   })
 })
