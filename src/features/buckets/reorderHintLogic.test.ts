@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   REORDER_GRIP_ACTIVATION_PX,
+  shouldDismissGripPopoverOnBlur,
   shouldDismissGripPopoverOnPointerDown,
   shouldShowGripPopoverOnFocus,
   shouldShowGripPopoverAfterPointerUp,
@@ -99,5 +100,30 @@ describe('shouldDismissGripPopoverOnPointerDown', () => {
 
   it('ignores non-element targets', () => {
     expect(shouldDismissGripPopoverOnPointerDown(null)).toBe(false)
+  })
+})
+
+describe('shouldDismissGripPopoverOnBlur', () => {
+  function grip() {
+    const el = document.createElement('button')
+    el.setAttribute('data-reorder-grip', '')
+    return el
+  }
+
+  it('keeps open when focus moves to another grip (relatedTarget)', () => {
+    expect(shouldDismissGripPopoverOnBlur(grip())).toBe(false)
+  })
+
+  it('keeps open when activeElement is a grip (deferred blur on touch)', () => {
+    expect(shouldDismissGripPopoverOnBlur(null, grip())).toBe(false)
+  })
+
+  it('dismisses when focus leaves the grip row', () => {
+    const row = document.createElement('button')
+    expect(shouldDismissGripPopoverOnBlur(row, row)).toBe(true)
+  })
+
+  it('dismisses when blur has no related target and focus is lost', () => {
+    expect(shouldDismissGripPopoverOnBlur(null, null)).toBe(true)
   })
 })

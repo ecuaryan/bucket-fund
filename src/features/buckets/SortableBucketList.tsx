@@ -347,7 +347,7 @@ function SortableBucketRow(props: RowProps) {
               onGripFocus(bucket.id)
             }
           }}
-          onBlur={() => onGripBlur()}
+          onBlur={(e) => onGripBlur(e.relatedTarget)}
           onClick={(e) => e.stopPropagation()}
         />
         <ReorderGripPopover bucketId={bucket.id} />

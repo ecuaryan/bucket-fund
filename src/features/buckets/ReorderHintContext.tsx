@@ -11,6 +11,7 @@ import {
 } from 'react'
 
 import {
+  shouldDismissGripPopoverOnBlur,
   shouldDismissGripPopoverOnPointerDown,
   shouldShowGripPopoverAfterPointerUp,
 } from '@/features/buckets/reorderHintLogic'
@@ -26,7 +27,7 @@ type ReorderHintContextValue = {
     dndListeners: Record<string, unknown> | undefined,
   ) => Record<string, unknown>
   onGripFocus: (bucketId: string) => void
-  onGripBlur: () => void
+  onGripBlur: (relatedTarget: EventTarget | null) => void
 }
 
 const ReorderHintContext = createContext<ReorderHintContextValue | null>(null)
@@ -70,9 +71,25 @@ export function ReorderHintProvider({
     dismissGripPopover()
   }, [dismissGripPopover])
 
-  const onGripBlur = useCallback(() => {
-    dismissGripPopover()
-  }, [dismissGripPopover])
+  const onGripBlur = useCallback(
+    (relatedTarget: EventTarget | null) => {
+      if (!shouldDismissGripPopoverOnBlur(relatedTarget)) return
+
+      // Touch often omits relatedTarget and defers blur until after pointer-up.
+      requestAnimationFrame(() => {
+        if (
+          !shouldDismissGripPopoverOnBlur(
+            relatedTarget,
+            document.activeElement,
+          )
+        ) {
+          return
+        }
+        dismissGripPopover()
+      })
+    },
+    [dismissGripPopover],
+  )
 
   useEffect(() => {
     if (!gripPopoverBucketId) return
