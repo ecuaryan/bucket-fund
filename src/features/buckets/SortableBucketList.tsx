@@ -36,6 +36,9 @@ import {
   shouldTriggerReorderDragHaptic,
   triggerReorderDragHaptic,
 } from '@/features/buckets/bucketReorderSensors'
+import {
+  shouldShowGripPopoverOnFocus,
+} from '@/features/buckets/reorderHintLogic'
 import { ReorderGripPopover } from '@/features/buckets/ReorderHint'
 import { useReorderHint } from '@/features/buckets/ReorderHintContext'
 import { BUCKET_NAME_MAX_LENGTH } from '@/lib/buckets'
@@ -299,7 +302,11 @@ function SortableBucketRow(props: RowProps) {
           ref={setActivatorNodeRef}
           {...attributes}
           {...mergedGripListeners}
-          onFocus={() => onGripFocus(bucket.id)}
+          onFocus={(e) => {
+            if (shouldShowGripPopoverOnFocus(e.currentTarget)) {
+              onGripFocus(bucket.id)
+            }
+          }}
           onBlur={() => onGripBlur()}
           onClick={(e) => e.stopPropagation()}
         />

@@ -86,9 +86,9 @@ function withReorderActivationConstraint(
 /**
  * Pointer-only sensor: grip = distance, row = long-press delay.
  *
- * TouchSensor is intentionally omitted — on iOS it attaches touchmove to the
- * row <button>, which prevents reliable long-press activation and drag. Pointer
- * events use document-level listeners (same as grip drag, which works on phone).
+ * TouchSensor is intentionally omitted — on touch devices it attaches touchmove
+ * to the row <button>, which blocks reliable long-press drag (seen on Android
+ * and iOS). Pointer events use document-level listeners (same as grip drag).
  */
 export class BucketReorderPointerSensor extends PointerSensor {
   constructor(props: PointerSensorProps) {
