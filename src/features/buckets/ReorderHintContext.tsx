@@ -10,8 +10,9 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 
-/** Same threshold as dnd-kit Pointer/TouchSensor activation on the grip. */
-export const REORDER_GRIP_ACTIVATION_PX = 8
+import {
+  REORDER_GRIP_ACTIVATION_PX,
+} from '@/features/buckets/bucketReorderSensors'
 
 type GripPointer = { x: number; y: number }
 
