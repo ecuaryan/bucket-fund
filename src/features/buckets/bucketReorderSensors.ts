@@ -5,7 +5,10 @@ import {
   type PointerActivationConstraint,
   type PointerSensorProps,
 } from '@dnd-kit/core'
-import type { PointerEvent as ReactPointerEvent, TouchEvent as ReactTouchEvent } from 'react'
+import type {
+  PointerEvent as ReactPointerEvent,
+  TouchEvent as ReactTouchEvent,
+} from 'react'
 
 /** Immediate drag from the grip after this much movement (px). */
 export const REORDER_GRIP_ACTIVATION_PX = 8

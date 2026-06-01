@@ -1,7 +1,7 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type KeyboardEvent,
   type RefObject,
@@ -14,7 +14,6 @@ import {
   closestCenter,
   useSensor,
   useSensors,
-  type DragAbortEvent,
   type DragEndEvent,
   type DragPendingEvent,
   type DragStartEvent,
@@ -149,10 +148,6 @@ export default function SortableBucketList({
     setActiveId(null)
   }
 
-  function handleDragAbort(_event: DragAbortEvent) {
-    clearPendingRowDrag()
-  }
-
   const rowProps = {
     renamingId,
     renameValue,
@@ -212,7 +207,7 @@ export default function SortableBucketList({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
-      onDragAbort={handleDragAbort}
+      onDragAbort={clearPendingRowDrag}
     >
       <SortableContext items={bucketIds} strategy={verticalListSortingStrategy}>
         <ul
@@ -264,7 +259,7 @@ type RowProps = {
 function SortableBucketRow(props: RowProps) {
   const { bucket } = props
   const { mergeGripListeners, onGripFocus, onGripBlur } = useReorderHint()
-  const suppressMoveClickRef = useRef(false)
+  const [suppressMoveClick, setSuppressMoveClick] = useState(false)
   const {
     attributes,
     listeners,
@@ -280,19 +275,15 @@ function SortableBucketRow(props: RowProps) {
     transition,
   }
 
+  const onRowPressStart = useCallback(() => setSuppressMoveClick(false), [])
+  const onRowPressEnd = useCallback((movedBeyondTolerance: boolean) => {
+    if (movedBeyondTolerance) setSuppressMoveClick(true)
+  }, [])
+
   const mergedGripListeners = mergeGripListeners(bucket.id, listeners)
   const mergedRowListeners = useMemo(
-    () =>
-      mergeRowDragListeners(
-        listeners,
-        () => {
-          suppressMoveClickRef.current = false
-        },
-        (movedBeyondTolerance) => {
-          if (movedBeyondTolerance) suppressMoveClickRef.current = true
-        },
-      ),
-    [listeners],
+    () => mergeRowDragListeners(listeners, onRowPressStart, onRowPressEnd),
+    [listeners, onRowPressStart, onRowPressEnd],
   )
 
   return (
@@ -319,7 +310,8 @@ function SortableBucketRow(props: RowProps) {
       <BucketRowContent
         {...props}
         rowDragListeners={mergedRowListeners}
-        suppressMoveClickRef={suppressMoveClickRef}
+        suppressMoveClick={suppressMoveClick}
+        onClearSuppressMoveClick={() => setSuppressMoveClick(false)}
       />
     </li>
   )
@@ -327,7 +319,8 @@ function SortableBucketRow(props: RowProps) {
 
 type BucketRowContentProps = RowProps & {
   rowDragListeners?: Record<string, unknown>
-  suppressMoveClickRef?: RefObject<boolean>
+  suppressMoveClick?: boolean
+  onClearSuppressMoveClick?: () => void
 }
 
 function BucketRowContent({
@@ -349,7 +342,8 @@ function BucketRowContent({
   onMoveDown,
   onDelete,
   rowDragListeners,
-  suppressMoveClickRef,
+  suppressMoveClick = false,
+  onClearSuppressMoveClick,
 }: BucketRowContentProps) {
   if (renaming) {
     return (
@@ -394,8 +388,8 @@ function BucketRowContent({
         data-reorder-row=""
         {...rowDragListeners}
         onClick={() => {
-          if (suppressMoveClickRef?.current) {
-            suppressMoveClickRef.current = false
+          if (suppressMoveClick) {
+            onClearSuppressMoveClick?.()
             return
           }
           onMoveMoney(bucket.id)
