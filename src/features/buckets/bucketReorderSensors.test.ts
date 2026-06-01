@@ -3,10 +3,12 @@ import {
   REORDER_GRIP_ACTIVATION_PX,
   REORDER_ROW_PRESS_MS,
   REORDER_ROW_TOLERANCE_PX,
+  REORDER_ROW_TOUCH_TOLERANCE_PX,
   isReorderGripTarget,
   isReorderRowTarget,
   isRowDelayConstraint,
   reorderActivationConstraintForTarget,
+  resolveReorderEventElement,
   shouldTriggerReorderDragHaptic,
 } from '@/features/buckets/bucketReorderSensors'
 
@@ -15,6 +17,17 @@ function el(tag: string, attrs: Record<string, string> = {}): HTMLElement {
   for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v)
   return node
 }
+
+describe('resolveReorderEventElement', () => {
+  it('returns parent element for text nodes', () => {
+    const row = el('button', { 'data-reorder-row': '' })
+    const label = el('p')
+    row.appendChild(label)
+    const text = label.appendChild(document.createTextNode('Groceries'))
+    expect(resolveReorderEventElement(text)).toBe(label)
+    expect(isReorderRowTarget(text)).toBe(true)
+  })
+})
 
 describe('reorderActivationConstraintForTarget', () => {
   it('uses distance for grip targets', () => {
@@ -29,6 +42,14 @@ describe('reorderActivationConstraintForTarget', () => {
     expect(reorderActivationConstraintForTarget(row)).toEqual({
       delay: REORDER_ROW_PRESS_MS,
       tolerance: REORDER_ROW_TOLERANCE_PX,
+    })
+  })
+
+  it('uses wider touch tolerance for row targets', () => {
+    const row = el('button', { 'data-reorder-row': '' })
+    expect(reorderActivationConstraintForTarget(row, { isTouch: true })).toEqual({
+      delay: REORDER_ROW_PRESS_MS,
+      tolerance: REORDER_ROW_TOUCH_TOLERANCE_PX,
     })
   })
 

@@ -31,7 +31,6 @@ import DragHandle from '@/components/ui/DragHandle'
 import BucketActionsMenu from '@/features/buckets/BucketActionsMenu'
 import {
   BucketReorderPointerSensor,
-  BucketReorderTouchSensor,
   isRowDelayConstraint,
   mergeRowDragListeners,
   shouldTriggerReorderDragHaptic,
@@ -92,7 +91,6 @@ export default function SortableBucketList({
 
   const sensors = useSensors(
     useSensor(BucketReorderPointerSensor),
-    useSensor(BucketReorderTouchSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
@@ -395,9 +393,9 @@ function BucketRowContent({
           onMoveMoney(bucket.id)
         }}
         className={
-          'flex min-w-0 flex-1 select-none items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-zinc-800/60 focus:bg-zinc-800/60 focus:outline-none ' +
+          'flex min-w-0 flex-1 touch-pan-y select-none items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-zinc-800/60 focus:bg-zinc-800/60 focus:outline-none ' +
           (rowPressPending
-            ? 'bg-zinc-800/70 ring-2 ring-emerald-400/45 ring-inset'
+            ? 'touch-none bg-zinc-800/70 ring-2 ring-emerald-400/45 ring-inset'
             : '')
         }
       >
