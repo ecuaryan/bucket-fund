@@ -309,8 +309,8 @@ function SortableBucketRow(props: RowProps) {
   } = useSortable({ id: bucket.id })
 
   const mergedGripListeners = mergeGripListeners(bucket.id, listeners)
-  const hiddenDuringManualDrag = props.manualDragging === true
-  const dimmedDuringGripDrag = isDragging && !hiddenDuringManualDrag
+  const isManualActiveRow = props.manualDragging === true
+  const dimmed = isDragging || isManualActiveRow
   const useManualSortable = props.manualSortableShiftY !== undefined
   const manualShiftY = props.manualSortableShiftY ?? 0
 
@@ -334,8 +334,7 @@ function SortableBucketRow(props: RowProps) {
       data-flip-id={bucket.id}
       className={
         'flex min-w-0 items-center gap-1 px-2 py-2 ' +
-        (hiddenDuringManualDrag ? 'pointer-events-none opacity-0 ' : '') +
-        (dimmedDuringGripDrag ? 'opacity-40 ' : '')
+        (dimmed ? 'opacity-40 ' : '')
       }
     >
       <div className="relative shrink-0">
@@ -355,11 +354,7 @@ function SortableBucketRow(props: RowProps) {
       </div>
       <BucketRowContent
         {...props}
-        rowTouchLocked={
-          isDragging ||
-          props.rowPressPending === true ||
-          props.manualDragging === true
-        }
+        rowTouchLocked={isDragging || props.manualDragging === true}
       />
     </li>
   )
@@ -439,7 +434,7 @@ function BucketRowContent({
           onMoveMoney(bucket.id)
         }}
         className={
-          'flex min-w-0 flex-1 select-none items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-zinc-800/60 focus:bg-zinc-800/60 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 ' +
+          'flex min-w-0 flex-1 select-none items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-zinc-800/60 focus:bg-zinc-800/60 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 [-webkit-touch-callout:none] ' +
           (rowTouchLocked ? 'touch-none ' : 'touch-pan-y ') +
           (rowPressPending
             ? 'bg-zinc-800/70 ring-2 ring-emerald-400/45 ring-inset'

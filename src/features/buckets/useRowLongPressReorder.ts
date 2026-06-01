@@ -10,8 +10,11 @@ import {
 } from '@/features/buckets/bucketReorderTouchLock'
 import {
   ROW_LONG_PRESS_MS,
-  bucketIndexForRowDrag,
+  autoScrollSpeed,
   clampPointerYForRowDrag,
+  closestRowCenterIndex,
+  rowCenterOffsets,
+  rowDragCenterY,
   rowDragOverlayTop,
   shouldCancelRowPress,
   shouldOpenMoveMoneyOnRelease,
@@ -34,6 +37,8 @@ type PressState = {
   pointerId: number
   start: PressPoint
   startTime: number
+  isTouch: boolean
+  rowEl: HTMLElement | null
 }
 
 function getListBounds(listEl: HTMLUListElement | null): ListBounds | null {
@@ -81,7 +86,7 @@ function capturePointer(node: EventTarget, pointerId: number) {
   }
 }
 
-function releasePointer(node: EventTarget, pointerId: number) {
+function releasePointer(node: EventTarget | null, pointerId: number) {
   if (!(node instanceof Element)) return
   try {
     if (node.hasPointerCapture(pointerId)) {
@@ -89,6 +94,36 @@ function releasePointer(node: EventTarget, pointerId: number) {
     }
   } catch {
     // Pointer may already be released.
+  }
+}
+
+type TouchTracking = {
+  onMove: (clientY: number, clientX: number, e: TouchEvent) => void
+  onEnd: (clientY: number, clientX: number) => void
+}
+
+function attachDocumentTouchTracking(handlers: TouchTracking): () => void {
+  function onTouchMove(e: TouchEvent) {
+    const touch = e.touches[0]
+    if (!touch) return
+    handlers.onMove(touch.clientY, touch.clientX, e)
+  }
+
+  function onTouchEnd(e: TouchEvent) {
+    const touch = e.changedTouches[0]
+    if (!touch) return
+    handlers.onEnd(touch.clientY, touch.clientX)
+  }
+
+  // Non-passive so an armed drag can preventDefault to take over from scroll.
+  document.addEventListener('touchmove', onTouchMove, { passive: false, capture: true })
+  document.addEventListener('touchend', onTouchEnd, { capture: true })
+  document.addEventListener('touchcancel', onTouchEnd, { capture: true })
+
+  return () => {
+    document.removeEventListener('touchmove', onTouchMove, { capture: true })
+    document.removeEventListener('touchend', onTouchEnd, { capture: true })
+    document.removeEventListener('touchcancel', onTouchEnd, { capture: true })
   }
 }
 
@@ -116,12 +151,16 @@ export function useRowLongPressReorder({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dragArmedRef = useRef(false)
   const manualDragRef = useRef<ManualDrag | null>(null)
+  const touchDetachRef = useRef<(() => void) | null>(null)
+  const releaseHandledRef = useRef(false)
+  const rafRef = useRef<number | null>(null)
+  const lastClientYRef = useRef(0)
+  // Resting row centers (offsets from list top), snapshotted when the drag arms.
+  const rowCentersRef = useRef<number[]>([])
 
   useEffect(() => {
     manualDragRef.current = manualDrag
   }, [manualDrag])
-
-  useEffect(() => () => clearReorderTouchLock(), [])
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -130,12 +169,55 @@ export function useRowLongPressReorder({
     }
   }, [])
 
+  const detachTouchTracking = useCallback(() => {
+    touchDetachRef.current?.()
+    touchDetachRef.current = null
+  }, [])
+
+  const stopAutoScroll = useCallback(() => {
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = null
+    }
+  }, [])
+
   const resetPress = useCallback(() => {
     clearTimer()
+    detachTouchTracking()
     pressRef.current = null
     dragArmedRef.current = false
     setPendingBucketId(null)
-  }, [clearTimer])
+  }, [clearTimer, detachTouchTracking])
+
+  const updateManualDragPosition = useCallback(
+    (clientY: number) => {
+      lastClientYRef.current = clientY
+      setManualDrag((prev) => {
+        if (!prev) return prev
+        // Recompute bounds each move so clamping stays correct while the page scrolls.
+        const bounds = getListBounds(listRef.current) ?? prev.listBounds
+        const nextY = clampPointerYForRowDrag(
+          clientY,
+          prev.grabOffsetY,
+          prev.rowHeight,
+          bounds,
+        )
+        // Hit-test the ghost center against the resting snapshot (not live rects).
+        const centerOffset =
+          rowDragCenterY({
+            clientY: nextY,
+            grabOffsetY: prev.grabOffsetY,
+            rowHeight: prev.rowHeight,
+          }) - bounds.top
+        const overIndex = closestRowCenterIndex(
+          rowCentersRef.current,
+          centerOffset,
+        )
+        return { ...prev, clientY: nextY, listBounds: bounds, overIndex }
+      })
+    },
+    [listRef],
+  )
 
   const commitManualDrag = useCallback(() => {
     const drag = manualDragRef.current
@@ -150,114 +232,221 @@ export function useRowLongPressReorder({
 
   const endManualDragSession = useCallback(() => {
     commitManualDrag()
+    stopAutoScroll()
     setManualDrag(null)
     manualDragRef.current = null
     resetPress()
     clearReorderTouchLock()
-  }, [commitManualDrag, resetPress])
+  }, [commitManualDrag, resetPress, stopAutoScroll])
 
+  // Single guarded release path shared by touch and pointer end events.
+  const finishRelease = useCallback(
+    (end: PressPoint) => {
+      if (releaseHandledRef.current) return
+      releaseHandledRef.current = true
+
+      if (manualDragRef.current || dragArmedRef.current) {
+        endManualDragSession()
+        return
+      }
+
+      const press = pressRef.current
+      if (
+        press &&
+        shouldOpenMoveMoneyOnRelease({
+          durationMs: Date.now() - press.startTime,
+          start: press.start,
+          end,
+          dragArmed: false,
+          dragCommitted: false,
+        })
+      ) {
+        onMoveMoney(press.bucketId)
+      }
+
+      const rowEl = press?.rowEl ?? null
+      const pointerId = press?.pointerId ?? -1
+      resetPress()
+      clearReorderTouchLock()
+      releasePointer(rowEl, pointerId)
+    },
+    [endManualDragSession, onMoveMoney, resetPress],
+  )
+
+  const cancelPress = useCallback(() => {
+    const rowEl = pressRef.current?.rowEl ?? null
+    const pointerId = pressRef.current?.pointerId ?? -1
+    resetPress()
+    clearReorderTouchLock()
+    releasePointer(rowEl, pointerId)
+  }, [resetPress])
+
+  const armManualDrag = useCallback(
+    (press: PressState) => {
+      const listBounds = getListBounds(listRef.current)
+      const rowMetrics = getSourceRowMetrics(
+        listRef.current,
+        press.bucketId,
+        press.start.y,
+      )
+      if (!listBounds || !rowMetrics) {
+        cancelPress()
+        return
+      }
+
+      dragArmedRef.current = true
+      notifyDragStarted()
+      // Lock scroll only now that the drag is committed — keeps the page
+      // scrollable during the pending hold (no touch-start dead zone).
+      setReorderTouchLock(true)
+
+      const clientY = clampPointerYForRowDrag(
+        press.start.y,
+        rowMetrics.grabOffsetY,
+        rowMetrics.rowHeight,
+        listBounds,
+      )
+      lastClientYRef.current = clientY
+      // Snapshot resting row centers once; reused for all hit-tests this drag.
+      const centers = rowCenterOffsets(
+        getRowRects(listRef.current),
+        listBounds.top,
+      )
+      rowCentersRef.current = centers
+      const centerOffset =
+        rowDragCenterY({
+          clientY,
+          grabOffsetY: rowMetrics.grabOffsetY,
+          rowHeight: rowMetrics.rowHeight,
+        }) - listBounds.top
+      const overIndex = closestRowCenterIndex(centers, centerOffset)
+      const next: ManualDrag = {
+        bucketId: press.bucketId,
+        pointerId: press.pointerId,
+        clientY,
+        grabOffsetY: rowMetrics.grabOffsetY,
+        rowHeight: rowMetrics.rowHeight,
+        listBounds,
+        overIndex,
+      }
+      manualDragRef.current = next
+      setManualDrag(next)
+      setPendingBucketId(null)
+    },
+    [listRef, notifyDragStarted, cancelPress],
+  )
+
+  // Auto-scroll the page while dragging near a viewport edge.
   useEffect(() => {
     if (!manualDrag) return
 
+    function tick() {
+      rafRef.current = null
+      if (!manualDragRef.current) return
+      const speed = autoScrollSpeed(lastClientYRef.current, window.innerHeight)
+      if (speed !== 0) {
+        window.scrollBy(0, speed)
+        updateManualDragPosition(lastClientYRef.current)
+      }
+      rafRef.current = requestAnimationFrame(tick)
+    }
+
+    rafRef.current = requestAnimationFrame(tick)
+    return () => {
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current)
+        rafRef.current = null
+      }
+    }
+  }, [manualDrag, updateManualDragPosition])
+
+  // Mouse/pen drag is driven by document pointer events once armed.
+  useEffect(() => {
+    if (!manualDrag) return
     const pointerId = manualDrag.pointerId
 
     function onMove(e: PointerEvent) {
       if (e.pointerId !== pointerId) return
-      setManualDrag((prev) => {
-        if (!prev || prev.pointerId !== pointerId) return prev
-        const clientY = clampPointerYForRowDrag(
-          e.clientY,
-          prev.grabOffsetY,
-          prev.rowHeight,
-          prev.listBounds,
-        )
-        const rects = getRowRects(listRef.current)
-        const overIndex = bucketIndexForRowDrag(rects, {
-          clientY,
-          grabOffsetY: prev.grabOffsetY,
-          rowHeight: prev.rowHeight,
-        })
-        return { ...prev, clientY, overIndex }
-      })
+      updateManualDragPosition(e.clientY)
     }
-
     function onEnd(e: PointerEvent) {
       if (e.pointerId !== pointerId) return
-      endManualDragSession()
+      finishRelease({ x: e.clientX, y: e.clientY })
     }
 
+    // Intentionally no pointercancel — Android fires it at native long-press.
     document.addEventListener('pointermove', onMove)
     document.addEventListener('pointerup', onEnd)
-    document.addEventListener('pointercancel', onEnd)
     return () => {
       document.removeEventListener('pointermove', onMove)
       document.removeEventListener('pointerup', onEnd)
-      document.removeEventListener('pointercancel', onEnd)
     }
-  }, [manualDrag, listRef, endManualDragSession])
+  }, [manualDrag, finishRelease, updateManualDragPosition])
+
+  useEffect(
+    () => () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current)
+      touchDetachRef.current?.()
+      clearReorderTouchLock()
+    },
+    [],
+  )
 
   const getRowHandlers = useCallback(
     (bucketId: string) => ({
       onPointerDown: (e: ReactPointerEvent) => {
         if (disabled || e.button !== 0 || pressRef.current) return
 
-        e.preventDefault()
+        const isTouch = e.pointerType === 'touch'
+        // Don't preventDefault on touch — that would block the pending-hold scroll.
+        if (!isTouch) e.preventDefault()
         blurFocusedReorderGrip()
 
+        const rowEl =
+          e.currentTarget instanceof HTMLElement ? e.currentTarget : null
         const start = { x: e.clientX, y: e.clientY }
+        releaseHandledRef.current = false
         pressRef.current = {
           bucketId,
           pointerId: e.pointerId,
           start,
           startTime: Date.now(),
+          isTouch,
+          rowEl,
         }
         dragArmedRef.current = false
-
-        setReorderTouchLock(true)
         setPendingBucketId(bucketId)
-        capturePointer(e.currentTarget, e.pointerId)
+
+        if (isTouch) {
+          touchDetachRef.current = attachDocumentTouchTracking({
+            onMove: (clientY, clientX, ev) => {
+              const press = pressRef.current
+              if (!press || press.bucketId !== bucketId) return
+
+              if (dragArmedRef.current || manualDragRef.current) {
+                ev.preventDefault()
+                updateManualDragPosition(clientY)
+                return
+              }
+
+              // Pending hold: let the page scroll; bail out if it's a scroll gesture.
+              if (shouldCancelRowPress(press.start, { x: clientX, y: clientY })) {
+                cancelPress()
+              }
+            },
+            onEnd: (clientY, clientX) => {
+              finishRelease({ x: clientX, y: clientY })
+            },
+          })
+        } else {
+          capturePointer(e.currentTarget, e.pointerId)
+        }
 
         timerRef.current = setTimeout(() => {
           timerRef.current = null
           const press = pressRef.current
           if (!press || press.bucketId !== bucketId) return
-
-          dragArmedRef.current = true
-          notifyDragStarted()
-
-          const listBounds = getListBounds(listRef.current)
-          const rowMetrics = getSourceRowMetrics(
-            listRef.current,
-            bucketId,
-            press.start.y,
-          )
-          if (!listBounds || !rowMetrics) return
-
-          const clientY = clampPointerYForRowDrag(
-            press.start.y,
-            rowMetrics.grabOffsetY,
-            rowMetrics.rowHeight,
-            listBounds,
-          )
-          const rects = getRowRects(listRef.current)
-          const dragMetrics = {
-            clientY,
-            grabOffsetY: rowMetrics.grabOffsetY,
-            rowHeight: rowMetrics.rowHeight,
-          }
-          const overIndex = bucketIndexForRowDrag(rects, dragMetrics)
-          const next: ManualDrag = {
-            bucketId,
-            pointerId: press.pointerId,
-            clientY,
-            grabOffsetY: rowMetrics.grabOffsetY,
-            rowHeight: rowMetrics.rowHeight,
-            listBounds,
-            overIndex,
-          }
-          manualDragRef.current = next
-          setManualDrag(next)
-          setPendingBucketId(null)
+          armManualDrag(press)
         }, ROW_LONG_PRESS_MS)
       },
 
@@ -265,6 +454,7 @@ export function useRowLongPressReorder({
         const press = pressRef.current
         if (
           !press ||
+          press.isTouch ||
           press.bucketId !== bucketId ||
           press.pointerId !== e.pointerId ||
           dragArmedRef.current
@@ -272,12 +462,8 @@ export function useRowLongPressReorder({
           return
         }
 
-        if (
-          shouldCancelRowPress(press.start, { x: e.clientX, y: e.clientY })
-        ) {
-          resetPress()
-          clearReorderTouchLock()
-          releasePointer(e.currentTarget, e.pointerId)
+        if (shouldCancelRowPress(press.start, { x: e.clientX, y: e.clientY })) {
+          cancelPress()
         }
       },
 
@@ -285,55 +471,20 @@ export function useRowLongPressReorder({
         const press = pressRef.current
         if (
           !press ||
+          press.isTouch ||
           press.bucketId !== bucketId ||
-          press.pointerId !== e.pointerId
+          press.pointerId !== e.pointerId ||
+          dragArmedRef.current ||
+          manualDragRef.current
         ) {
           return
         }
-
-        if (dragArmedRef.current || manualDragRef.current) {
-          return
-        }
-
-        clearTimer()
-        const duration = Date.now() - press.startTime
-        const end = { x: e.clientX, y: e.clientY }
-
-        if (
-          shouldOpenMoveMoneyOnRelease({
-            durationMs: duration,
-            start: press.start,
-            end,
-            dragArmed: dragArmedRef.current,
-            dragCommitted: false,
-          })
-        ) {
-          onMoveMoney(bucketId)
-        }
-
-        resetPress()
-        clearReorderTouchLock()
-        releasePointer(e.currentTarget, e.pointerId)
+        finishRelease({ x: e.clientX, y: e.clientY })
       },
 
       onPointerCancel: (e: ReactPointerEvent) => {
-        const press = pressRef.current
-        if (
-          !press ||
-          press.bucketId !== bucketId ||
-          press.pointerId !== e.pointerId
-        ) {
-          return
-        }
-
-        if (dragArmedRef.current || manualDragRef.current) {
-          endManualDragSession()
-          return
-        }
-
-        resetPress()
-        clearReorderTouchLock()
-        releasePointer(e.currentTarget, e.pointerId)
+        // Android native long-press fires pointercancel; touch listeners continue.
+        e.preventDefault()
       },
 
       onContextMenu: (e: React.SyntheticEvent) => {
@@ -342,12 +493,10 @@ export function useRowLongPressReorder({
     }),
     [
       disabled,
-      listRef,
-      notifyDragStarted,
-      onMoveMoney,
-      resetPress,
-      clearTimer,
-      endManualDragSession,
+      armManualDrag,
+      cancelPress,
+      finishRelease,
+      updateManualDragPosition,
     ],
   )
 

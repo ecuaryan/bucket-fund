@@ -11,6 +11,37 @@ export const ROW_TAP_MOVE_MAX_PX = 12
 /** Cancel long-press if the finger drifts this far before arming (scroll intent). */
 export const ROW_PRESS_CANCEL_MOVE_PX = 20
 
+/** Distance from a viewport edge (px) where an active drag starts auto-scrolling. */
+export const AUTO_SCROLL_EDGE_PX = 72
+
+/** Max auto-scroll speed (px per animation frame). */
+export const AUTO_SCROLL_MAX_SPEED_PX = 16
+
+function clamp01(n: number): number {
+  return Math.min(1, Math.max(0, n))
+}
+
+/**
+ * Auto-scroll speed for a finger near the viewport edges during an active drag.
+ * Negative scrolls up, positive scrolls down, 0 in the dead zone.
+ */
+export function autoScrollSpeed(
+  clientY: number,
+  viewportHeight: number,
+  edge: number = AUTO_SCROLL_EDGE_PX,
+  maxSpeed: number = AUTO_SCROLL_MAX_SPEED_PX,
+): number {
+  if (clientY < edge) {
+    return -Math.ceil(clamp01((edge - clientY) / edge) * maxSpeed)
+  }
+  if (clientY > viewportHeight - edge) {
+    return Math.ceil(
+      clamp01((clientY - (viewportHeight - edge)) / edge) * maxSpeed,
+    )
+  }
+  return 0
+}
+
 export type PressPoint = { x: number; y: number }
 
 export function pressDistance(a: PressPoint, b: PressPoint): number {
@@ -80,28 +111,30 @@ export function rowDragCenterY(args: {
   return args.clientY - args.grabOffsetY + args.rowHeight / 2
 }
 
-/** Bucket index under the floating row center (closest row center — matches grip drag). */
-export function bucketIndexForRowDrag(
+/**
+ * Resting center of each row as an offset from the list's top edge. Captured once
+ * when a drag arms so hit-testing ignores the in-flight slide transforms (the live
+ * rects move as rows shift, which otherwise causes target flip-flop / jitter).
+ */
+export function rowCenterOffsets(
   rowRects: Array<{ top: number; bottom: number }>,
-  drag: { clientY: number; grabOffsetY: number; rowHeight: number },
-): number {
-  return bucketIndexAtClosestCenter(rowRects, rowDragCenterY(drag))
+  listTop: number,
+): number[] {
+  return rowRects.map((r) => (r.top + r.bottom) / 2 - listTop)
 }
 
-/** Closest row center to Y — same idea as dnd-kit `closestCenter` on a vertical list. */
-export function bucketIndexAtClosestCenter(
-  rowRects: Array<{ top: number; bottom: number }>,
-  clientY: number,
-): number {
-  if (rowRects.length === 0) return -1
+/**
+ * Closest row to a list-relative Y, using the stable center snapshot — the
+ * equivalent of dnd-kit's `closestCenter` against measured (resting) rects.
+ */
+export function closestRowCenterIndex(centers: number[], y: number): number {
+  if (centers.length === 0) return -1
 
   let closestIndex = 0
   let closestDistance = Infinity
 
-  for (let i = 0; i < rowRects.length; i++) {
-    const { top, bottom } = rowRects[i]
-    const center = top + (bottom - top) / 2
-    const distance = Math.abs(clientY - center)
+  for (let i = 0; i < centers.length; i++) {
+    const distance = Math.abs(y - centers[i])
     if (distance < closestDistance) {
       closestDistance = distance
       closestIndex = i
@@ -114,6 +147,9 @@ export function bucketIndexAtClosestCenter(
 /**
  * Vertical shift for sortable list items while a row is manually dragged —
  * mirrors @dnd-kit/sortable displacement during grip drag.
+ *
+ * The active row moves to the drop slot (so its dimmed placeholder reads as the
+ * "shadow row", like grip drag); the rows it passes shift to open the gap.
  */
 export function manualSortableShiftY(
   index: number,
@@ -122,7 +158,7 @@ export function manualSortableShiftY(
   rowHeight: number,
 ): number {
   if (activeIndex < 0 || overIndex < 0 || activeIndex === overIndex) return 0
-  if (index === activeIndex) return 0
+  if (index === activeIndex) return (overIndex - activeIndex) * rowHeight
 
   if (activeIndex < overIndex) {
     if (index > activeIndex && index <= overIndex) return -rowHeight

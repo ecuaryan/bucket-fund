@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
+  AUTO_SCROLL_MAX_SPEED_PX,
   ROW_LONG_PRESS_MS,
   ROW_PRESS_CANCEL_MOVE_PX,
   ROW_TAP_MOVE_MAX_PX,
-  bucketIndexAtClosestCenter,
-  bucketIndexForRowDrag,
+  autoScrollSpeed,
   clampClientY,
   clampPointerYForRowDrag,
+  closestRowCenterIndex,
   manualSortableShiftY,
+  rowCenterOffsets,
   rowDragCenterY,
   rowDragOverlayTop,
   shouldCancelRowPress,
@@ -98,55 +100,95 @@ describe('clampPointerYForRowDrag', () => {
   })
 })
 
-describe('bucketIndexAtClosestCenter', () => {
-  const rects = [
-    { top: 0, bottom: 50 },
-    { top: 50, bottom: 100 },
-    { top: 100, bottom: 150 },
-  ]
+describe('rowCenterOffsets', () => {
+  it('returns row centers relative to the list top', () => {
+    const rects = [
+      { top: 100, bottom: 150 },
+      { top: 150, bottom: 200 },
+      { top: 200, bottom: 250 },
+    ]
+    expect(rowCenterOffsets(rects, 100)).toEqual([25, 75, 125])
+  })
+})
 
-  it('picks the row whose center is nearest', () => {
-    expect(bucketIndexAtClosestCenter(rects, 10)).toBe(0)
-    expect(bucketIndexAtClosestCenter(rects, 60)).toBe(1)
-    expect(bucketIndexAtClosestCenter(rects, 95)).toBe(1)
-    expect(bucketIndexAtClosestCenter(rects, 120)).toBe(2)
+describe('closestRowCenterIndex', () => {
+  const centers = [25, 75, 125]
+
+  it('picks the row whose resting center is nearest', () => {
+    expect(closestRowCenterIndex(centers, 10)).toBe(0)
+    expect(closestRowCenterIndex(centers, 60)).toBe(1)
+    expect(closestRowCenterIndex(centers, 95)).toBe(1)
+    expect(closestRowCenterIndex(centers, 120)).toBe(2)
   })
 
   it('returns -1 for empty list', () => {
-    expect(bucketIndexAtClosestCenter([], 50)).toBe(-1)
+    expect(closestRowCenterIndex([], 50)).toBe(-1)
   })
 })
 
 describe('manualSortableShiftY', () => {
   const rowHeight = 50
 
-  it('shifts rows up when dragging down', () => {
-    expect(manualSortableShiftY(0, 0, 2, rowHeight)).toBe(0)
+  it('moves the active row to the drop slot when dragging down', () => {
+    expect(manualSortableShiftY(0, 0, 2, rowHeight)).toBe(100)
     expect(manualSortableShiftY(1, 0, 2, rowHeight)).toBe(-50)
     expect(manualSortableShiftY(2, 0, 2, rowHeight)).toBe(-50)
     expect(manualSortableShiftY(3, 0, 2, rowHeight)).toBe(0)
   })
 
-  it('shifts rows down when dragging up', () => {
+  it('moves the active row to the drop slot when dragging up', () => {
     expect(manualSortableShiftY(0, 3, 1, rowHeight)).toBe(0)
     expect(manualSortableShiftY(1, 3, 1, rowHeight)).toBe(50)
     expect(manualSortableShiftY(2, 3, 1, rowHeight)).toBe(50)
-    expect(manualSortableShiftY(3, 3, 1, rowHeight)).toBe(0)
+    expect(manualSortableShiftY(3, 3, 1, rowHeight)).toBe(-100)
+  })
+
+  it('produces the post-move layout order (active row lands on its slot)', () => {
+    // Drag index 0 → 2: rows 1,2 slide up, row 0 lands at slot 2 → order 1,2,0,3.
+    const finalTop = [0, 1, 2, 3].map(
+      (i) => i * rowHeight + manualSortableShiftY(i, 0, 2, rowHeight),
+    )
+    expect(finalTop).toEqual([100, 0, 50, 150])
+  })
+
+  it('no shift when active equals over', () => {
+    expect(manualSortableShiftY(1, 1, 1, rowHeight)).toBe(0)
+    expect(manualSortableShiftY(0, 1, 1, rowHeight)).toBe(0)
   })
 })
 
-describe('bucketIndexForRowDrag', () => {
-  const rects = [
-    { top: 0, bottom: 50 },
-    { top: 50, bottom: 100 },
-    { top: 100, bottom: 150 },
-  ]
+describe('row drag hit-testing uses the ghost center, not raw finger Y', () => {
+  // Resting centers for three 50px rows from list top.
+  const centers = [25, 75, 125]
 
-  it('uses row center instead of raw finger Y at the bottom of the ghost', () => {
-    const drag = { clientY: 80, grabOffsetY: 40, rowHeight: 50 }
-    expect(bucketIndexForRowDrag(rects, drag)).toBe(1)
-    expect(bucketIndexAtClosestCenter(rects, drag.clientY)).toBe(1)
-    expect(rowDragCenterY(drag)).toBe(65)
+  it('targets by ghost center so a low grab point does not skip a row', () => {
+    // Finger near the bottom of a 50px row; ghost center sits 15px higher.
+    const drag = { clientY: 101, grabOffsetY: 40, rowHeight: 50 }
+    expect(rowDragCenterY(drag)).toBe(86)
+    expect(closestRowCenterIndex(centers, rowDragCenterY(drag))).toBe(1)
+    // Raw finger Y would have landed on row 2.
+    expect(closestRowCenterIndex(centers, drag.clientY)).toBe(2)
+  })
+})
+
+describe('autoScrollSpeed', () => {
+  const vh = 800
+  const edge = 72
+
+  it('does not scroll in the middle dead zone', () => {
+    expect(autoScrollSpeed(400, vh, edge)).toBe(0)
+    expect(autoScrollSpeed(edge, vh, edge)).toBe(0)
+    expect(autoScrollSpeed(vh - edge, vh, edge)).toBe(0)
+  })
+
+  it('scrolls up near the top and down near the bottom', () => {
+    expect(autoScrollSpeed(10, vh, edge)).toBeLessThan(0)
+    expect(autoScrollSpeed(vh - 10, vh, edge)).toBeGreaterThan(0)
+  })
+
+  it('ramps to max speed at the very edge', () => {
+    expect(autoScrollSpeed(0, vh, edge)).toBe(-AUTO_SCROLL_MAX_SPEED_PX)
+    expect(autoScrollSpeed(vh, vh, edge)).toBe(AUTO_SCROLL_MAX_SPEED_PX)
   })
 })
 
