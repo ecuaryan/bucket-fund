@@ -24,7 +24,7 @@ body {
 /*
  * Installed PWA only: pull-to-refresh on Android can reload outside
  * standalone chrome and fight service-worker autoUpdate. Browser tabs
- * keep native PTR for users who want a manual refresh.
+ * keep native pull-to-refresh for users who want a manual refresh.
  */
 @media (display-mode: standalone) {
   html,
