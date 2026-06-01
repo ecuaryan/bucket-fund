@@ -5,7 +5,6 @@ import {
   useRef,
   useState,
   type FormEvent,
-  type KeyboardEvent,
 } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
@@ -28,6 +27,7 @@ import { readHomeCache, writeHomeCache } from '@/lib/homeCache'
 import { loadHomePage } from '@/lib/homePage'
 import {
   renameBucketInList,
+  reorderBucketList,
   swapBucketOrder,
 } from '@/lib/homeOptimistic'
 import {
@@ -35,11 +35,12 @@ import {
   BUCKET_NAME_MAX_LENGTH,
   renameBucket,
   reorderBucket,
+  reorderBuckets,
   validateBucketName,
 } from '@/lib/buckets'
 import type { Database } from '@/types/database'
 import MoveMoneyDialog from '@/features/buckets/MoveMoneyDialog'
-import BucketActionsMenu from '@/features/buckets/BucketActionsMenu'
+import SortableBucketList from '@/features/buckets/SortableBucketList'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import { useFlipList } from '@/hooks/useFlipList'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
@@ -246,6 +247,19 @@ export default function HomePage() {
     setBuckets((prev) => (prev ? swapBucketOrder(prev, id, direction) : prev))
     try {
       await reorderBucket(id, direction)
+      void loadData()
+    } catch (e) {
+      setBuckets(snapshot)
+      setActionError(e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  async function handleDragReorder(orderedIds: string[]) {
+    setActionError(null)
+    const snapshot = buckets
+    setBuckets((prev) => (prev ? reorderBucketList(prev, orderedIds) : prev))
+    try {
+      await reorderBuckets(orderedIds)
       void loadData()
     } catch (e) {
       setBuckets(snapshot)
@@ -482,70 +496,24 @@ export default function HomePage() {
             </p>
           </div>
         ) : (
-          <ul
-            ref={listRef}
-            className="divide-y divide-zinc-800 rounded-2xl bg-zinc-900 ring-1 ring-zinc-800"
-          >
-            {buckets.map((bucket, idx) => {
-              const renaming = renamingId === bucket.id
-              return (
-                <li
-                  key={bucket.id}
-                  data-flip-id={bucket.id}
-                  className="flex min-w-0 items-center gap-2 px-3 py-2"
-                >
-                  {renaming ? (
-                    <div className="flex min-w-0 flex-1 items-center gap-2">
-                      <input
-                        autoFocus
-                        type="text"
-                        value={renameValue}
-                        maxLength={BUCKET_NAME_MAX_LENGTH}
-                        onChange={(e) => setRenameValue(e.target.value)}
-                        onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
-                          if (e.key === 'Enter') void commitRename(bucket.id)
-                          if (e.key === 'Escape') cancelRename()
-                        }}
-                        onBlur={() => void commitRename(bucket.id)}
-                        className="min-w-0 flex-1 rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-emerald-400 focus:outline focus:outline-2 focus:outline-emerald-400"
-                      />
-                      <p className="shrink-0 text-sm font-semibold tabular-nums text-zinc-500">
-                        {formatMoney(Number(bucket.allocated_amount))}
-                      </p>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setMoveBucketId(bucket.id)}
-                      className="-ml-1 flex min-w-0 flex-1 items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-zinc-800/60 focus:bg-zinc-800/60 focus:outline-none"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-zinc-300">
-                          {bucket.name}
-                        </p>
-                      </div>
-                      <p className="shrink-0 text-sm font-semibold tabular-nums text-zinc-300">
-                        {formatMoney(Number(bucket.allocated_amount))}
-                      </p>
-                    </button>
-                  )}
-                  <BucketActionsMenu
-                    isFirst={idx === 0}
-                    isLast={idx === buckets.length - 1}
-                    hasAllocation={Number(bucket.allocated_amount) > 0}
-                    canManageStructure={canManageStructure}
-                    onViewHistory={() =>
-                      navigate(`/history?bucket=${bucket.id}`)
-                    }
-                    onRename={() => startRename(bucket.id, bucket.name)}
-                    onMoveUp={() => void handleReorder(bucket.id, 'up')}
-                    onMoveDown={() => void handleReorder(bucket.id, 'down')}
-                    onDelete={() => void handleDelete(bucket)}
-                  />
-                </li>
-              )
-            })}
-          </ul>
+          <SortableBucketList
+            buckets={buckets}
+            listRef={listRef}
+            renamingId={renamingId}
+            renameValue={renameValue}
+            canManageStructure={canManageStructure}
+            formatMoney={formatMoney}
+            onRenameValueChange={setRenameValue}
+            onCommitRename={commitRename}
+            onCancelRename={cancelRename}
+            onMoveMoney={setMoveBucketId}
+            onViewHistory={(id) => navigate(`/history?bucket=${id}`)}
+            onRename={startRename}
+            onMoveUp={(id) => void handleReorder(id, 'up')}
+            onMoveDown={(id) => void handleReorder(id, 'down')}
+            onDelete={handleDelete}
+            onDragReorder={(ids) => void handleDragReorder(ids)}
+          />
         )}
         {actionError && (
           <p className="mt-2 text-xs text-red-300">{actionError}</p>

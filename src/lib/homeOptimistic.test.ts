@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   applyBucketMove,
   renameBucketInList,
+  reorderBucketList,
   swapBucketOrder,
 } from '@/lib/homeOptimistic'
 import type { HomeBalanceBreakdown } from '@/lib/availableBalance'
@@ -24,6 +25,23 @@ const breakdown = (over: Partial<HomeBalanceBreakdown> = {}): HomeBalanceBreakdo
   childrenSetAside: 0,
   children: [],
   ...over,
+})
+
+describe('reorderBucketList', () => {
+  const buckets = [bucket('a', 'A', 0), bucket('b', 'B', 0), bucket('c', 'C', 0)]
+
+  it('reorders by id list', () => {
+    const next = reorderBucketList(buckets, ['c', 'a', 'b'])
+    expect(next.map((b) => b.id)).toEqual(['c', 'a', 'b'])
+  })
+
+  it('returns original when an id is unknown', () => {
+    expect(reorderBucketList(buckets, ['a', 'b', 'x'])).toBe(buckets)
+  })
+
+  it('returns original when length differs', () => {
+    expect(reorderBucketList(buckets, ['a', 'b'])).toBe(buckets)
+  })
 })
 
 describe('swapBucketOrder', () => {

@@ -3,6 +3,22 @@ import type { Database } from '@/types/database'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
 
+/** Apply a full bucket order from an ordered id list (drag reorder). */
+export function reorderBucketList(
+  buckets: Bucket[],
+  orderedIds: string[],
+): Bucket[] {
+  if (orderedIds.length !== buckets.length) return buckets
+  const byId = new Map(buckets.map((b) => [b.id, b]))
+  const next: Bucket[] = []
+  for (const id of orderedIds) {
+    const bucket = byId.get(id)
+    if (!bucket) return buckets
+    next.push(bucket)
+  }
+  return next
+}
+
 export function swapBucketOrder(
   buckets: Bucket[],
   id: string,

@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -148,39 +143,6 @@ export type Database = {
           },
         ]
       }
-      member_bucket_order: {
-        Row: {
-          bucket_id: string
-          display_order: number
-          member_id: string
-        }
-        Insert: {
-          bucket_id: string
-          display_order: number
-          member_id: string
-        }
-        Update: {
-          bucket_id?: string
-          display_order?: number
-          member_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "member_bucket_order_bucket_id_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_bucket_order_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "family_members"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       families: {
         Row: {
           created_at: string
@@ -192,7 +154,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          join_code?: string
+          join_code: string
           name: string
           plan?: string
         }
@@ -251,6 +213,39 @@ export type Database = {
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_bucket_order: {
+        Row: {
+          bucket_id: string
+          display_order: number
+          member_id: string
+        }
+        Insert: {
+          bucket_id: string
+          display_order: number
+          member_id: string
+        }
+        Update: {
+          bucket_id?: string
+          display_order?: number
+          member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_bucket_order_bucket_id_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_bucket_order_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
             referencedColumns: ["id"]
           },
         ]
@@ -427,6 +422,32 @@ export type Database = {
       auth_family_id: { Args: never; Returns: string }
       auth_member_id: { Args: never; Returns: string }
       auth_role: { Args: never; Returns: string }
+      bucket_move_is_child_internal: {
+        Args: {
+          p_from_bucket_id: string
+          p_from_member_id: string
+          p_to_bucket_id: string
+        }
+        Returns: boolean
+      }
+      bucket_visible_to_adults: {
+        Args: { p_bucket_id: string }
+        Returns: boolean
+      }
+      ensure_member_bucket_orders: { Args: never; Returns: undefined }
+      generate_join_code: { Args: never; Returns: string }
+      get_available_balance: { Args: never; Returns: number }
+      get_home_balance_breakdown: { Args: never; Returns: Json }
+      get_home_page_data: { Args: never; Returns: Json }
+      is_cash_account_type: { Args: { p_type: string }; Returns: boolean }
+      member_available_balance: {
+        Args: { p_member_id: string }
+        Returns: number
+      }
+      member_child_virtual_balance: {
+        Args: { p_child_member_id: string }
+        Returns: number
+      }
       move_money: {
         Args: {
           p_amount: number
@@ -436,27 +457,19 @@ export type Database = {
         }
         Returns: string
       }
-      send_money: {
-        Args: {
-          p_amount: number
-          p_note?: string
-          p_to_member_id: string
-        }
-        Returns: string
-      }
-      get_available_balance: { Args: never; Returns: number }
-      get_home_balance_breakdown: { Args: never; Returns: Json }
-      get_home_page_data: { Args: never; Returns: Json }
-      member_available_balance: {
-        Args: { p_member_id: string }
-        Returns: number
-      }
       reorder_bucket: {
         Args: { p_bucket_id: string; p_direction: string }
         Returns: undefined
       }
-      ensure_member_bucket_orders: { Args: never; Returns: undefined }
+      reorder_buckets: {
+        Args: { p_ordered_bucket_ids: string[] }
+        Returns: undefined
+      }
       rotate_family_join_code: { Args: never; Returns: string }
+      send_money: {
+        Args: { p_amount: number; p_note?: string; p_to_member_id: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
@@ -592,3 +605,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
