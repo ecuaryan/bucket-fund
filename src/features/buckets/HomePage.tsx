@@ -481,7 +481,7 @@ export default function HomePage() {
           )}
           {bankSyncedLabel ? (
             <p className="mt-2 text-[11px] opacity-50">
-              Bank updated {bankSyncedLabel}
+              Balances refreshed {bankSyncedLabel}
             </p>
           ) : null}
         </section>
