@@ -257,6 +257,10 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
   return because mobile OSes suspend background timers). Re-auth via family PIN when the
   device has a join code. Child sessions are unchanged. Manual header Sign out remains
   available.
+- **Kill / cold start:** auth tokens are stored in `sessionStorage`, not `localStorage`, so
+  force-quitting or reopening the PWA after the process ends requires sign-in again (tab
+  reload keeps the session). Legacy `localStorage` tokens are migrated only on reload, not on
+  navigate.
 - **Home bucket visibility:** admin and member see family-pool + adult-owned buckets
   only (not children's buckets). Each adult orders that list independently via
   `member_bucket_order`. Children see only their own buckets.
