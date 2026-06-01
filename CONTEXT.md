@@ -170,7 +170,9 @@ system-error banner.
 ---
 
 ### Transaction History
-- **Admin** sees every transaction in the family.
+- **Admin** sees all `send` rows in the family plus `bucket_move` that are not a
+  child's internal moves (unallocated ↔ their buckets). Adult-initiated moves
+  involving a child's bucket (e.g. funding from the family pool) remain visible.
 - **Member** sees all `send` rows in the family plus `bucket_move` on family-pool
   and adult-owned buckets (each other's moves included). Children's bucket moves
   stay hidden.
