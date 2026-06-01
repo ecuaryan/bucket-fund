@@ -2,8 +2,27 @@ import { describe, expect, it } from 'vitest'
 import {
   REORDER_GRIP_ACTIVATION_PX,
   shouldDismissGripPopoverOnPointerDown,
+  shouldShowGripPopoverOnFocus,
   shouldShowGripPopoverAfterPointerUp,
 } from '@/features/buckets/reorderHintLogic'
+
+describe('shouldShowGripPopoverOnFocus', () => {
+  it('shows when the grip matches :focus-visible (keyboard)', () => {
+    const grip = document.createElement('button')
+    grip.matches = (sel) => sel === ':focus-visible'
+    expect(shouldShowGripPopoverOnFocus(grip)).toBe(true)
+  })
+
+  it('does not show for touch focus without :focus-visible', () => {
+    const grip = document.createElement('button')
+    grip.matches = () => false
+    expect(shouldShowGripPopoverOnFocus(grip)).toBe(false)
+  })
+
+  it('returns false for a null target', () => {
+    expect(shouldShowGripPopoverOnFocus(null)).toBe(false)
+  })
+})
 
 describe('shouldShowGripPopoverAfterPointerUp', () => {
   const tap = {

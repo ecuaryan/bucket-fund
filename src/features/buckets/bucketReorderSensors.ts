@@ -1,6 +1,5 @@
 import {
   PointerSensor,
-  TouchSensor,
   type DragStartEvent,
   type PointerActivationConstraint,
   type PointerSensorProps,
@@ -19,19 +18,41 @@ export const REORDER_GRIP_ACTIVATION_PX = 8
  */
 export const REORDER_ROW_PRESS_MS = 450
 
-/** Cancel row long-press if the finger moves beyond this (px) — allows scroll. */
+/** Cancel row long-press if the finger moves beyond this (px) — mouse / pen. */
 export const REORDER_ROW_TOLERANCE_PX = 8
 
+/**
+ * Touch screens need more slack — finger jitter during a 450ms hold easily
+ * exceeds 8px and was aborting row drag on iOS before activation.
+ */
+export const REORDER_ROW_TOUCH_TOLERANCE_PX = 16
+
+/** Resolve an event target to an Element (handles nested text nodes on Safari). */
+export function resolveReorderEventElement(
+  target: EventTarget | null,
+): Element | null {
+  if (target instanceof Element) return target
+  if (target instanceof Node && target.parentElement) return target.parentElement
+  return null
+}
+
 export function isReorderGripTarget(target: EventTarget | null): boolean {
-  return target instanceof Element && target.closest('[data-reorder-grip]') !== null
+  const el = resolveReorderEventElement(target)
+  return el?.closest('[data-reorder-grip]') !== null
 }
 
 export function isReorderRowTarget(target: EventTarget | null): boolean {
-  return target instanceof Element && target.closest('[data-reorder-row]') !== null
+  const el = resolveReorderEventElement(target)
+  return el?.closest('[data-reorder-row]') !== null
+}
+
+function isTouchPointerEvent(event: Event): boolean {
+  return 'pointerType' in event && (event as PointerEvent).pointerType === 'touch'
 }
 
 export function reorderActivationConstraintForTarget(
   target: EventTarget | null,
+  options?: { isTouch?: boolean },
 ): PointerActivationConstraint {
   if (isReorderGripTarget(target)) {
     return { distance: REORDER_GRIP_ACTIVATION_PX }
@@ -39,7 +60,9 @@ export function reorderActivationConstraintForTarget(
   if (isReorderRowTarget(target)) {
     return {
       delay: REORDER_ROW_PRESS_MS,
-      tolerance: REORDER_ROW_TOLERANCE_PX,
+      tolerance: options?.isTouch
+        ? REORDER_ROW_TOUCH_TOLERANCE_PX
+        : REORDER_ROW_TOLERANCE_PX,
     }
   }
   return { distance: Number.MAX_SAFE_INTEGER }
@@ -54,18 +77,20 @@ function withReorderActivationConstraint(
       ...props.options,
       activationConstraint: reorderActivationConstraintForTarget(
         props.event.target,
+        { isTouch: isTouchPointerEvent(props.event) },
       ),
     },
   }
 }
 
+/**
+ * Pointer-only sensor: grip = distance, row = long-press delay.
+ *
+ * TouchSensor is intentionally omitted — on touch devices it attaches touchmove
+ * to the row <button>, which blocks reliable long-press drag (seen on Android
+ * and iOS). Pointer events use document-level listeners (same as grip drag).
+ */
 export class BucketReorderPointerSensor extends PointerSensor {
-  constructor(props: PointerSensorProps) {
-    super(withReorderActivationConstraint(props))
-  }
-}
-
-export class BucketReorderTouchSensor extends TouchSensor {
   constructor(props: PointerSensorProps) {
     super(withReorderActivationConstraint(props))
   }
@@ -99,7 +124,7 @@ function pressPointFromTouch(e: ReactTouchEvent): PressPoint | null {
 
 function movedBeyondTolerance(start: PressPoint, end: PressPoint): boolean {
   return (
-    Math.hypot(end.x - start.x, end.y - start.y) >= REORDER_ROW_TOLERANCE_PX
+    Math.hypot(end.x - start.x, end.y - start.y) >= REORDER_ROW_TOUCH_TOLERANCE_PX
   )
 }
 

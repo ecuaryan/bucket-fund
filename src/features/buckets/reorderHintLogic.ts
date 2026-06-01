@@ -2,6 +2,16 @@ import { REORDER_GRIP_ACTIVATION_PX } from '@/features/buckets/bucketReorderSens
 
 export { REORDER_GRIP_ACTIVATION_PX }
 
+/** True when keyboard focus should open the grip popover (not touch tap-and-hold). */
+export function shouldShowGripPopoverOnFocus(target: Element | null): boolean {
+  if (!target) return false
+  try {
+    return target.matches(':focus-visible')
+  } catch {
+    return false
+  }
+}
+
 /** True when a grip pointer-up should open the reorder hint (tap, not drag). */
 export function shouldShowGripPopoverAfterPointerUp(args: {
   reorderable: boolean
