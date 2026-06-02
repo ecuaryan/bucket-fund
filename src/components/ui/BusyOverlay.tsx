@@ -35,7 +35,7 @@ export function BusyOverlay({
             className="absolute inset-0 bg-zinc-950/70 backdrop-blur-[1px]"
             aria-hidden="true"
           />
-          <div className="sticky top-4 z-20 flex justify-center px-4 pt-2">
+          <div className="sticky top-16 z-20 flex justify-center px-4 pt-4">
             <LoadingStatus label={label} layout="inline" />
           </div>
         </div>
