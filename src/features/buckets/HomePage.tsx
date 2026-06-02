@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -48,6 +49,16 @@ import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import { useFlipList } from '@/hooks/useFlipList'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { refreshBalances } from '@/lib/teller'
+import {
+  buildUnallocatedLines,
+  formatBucketsHeaderSubtitle,
+  formatUnallocatedSummary,
+  unallocatedSummary,
+} from '@/lib/unallocatedBreakdown'
+import {
+  readUnallocatedDetailsOpen,
+  writeUnallocatedDetailsOpen,
+} from '@/lib/unallocatedDetailsStorage'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -74,12 +85,22 @@ export default function HomePage() {
   const [actionError, setActionError] = useState<string | null>(null)
   const [refreshError, setRefreshError] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [prevDetailsMemberId, setPrevDetailsMemberId] = useState<string | null>(
+    null,
+  )
 
   const member = auth.status === 'signedIn' ? auth.member : null
   const accessToken =
     auth.status === 'signedIn' ? auth.session.access_token : null
   const familyId = member?.family_id ?? null
   const memberId = member?.id ?? null
+
+  if (memberId !== prevDetailsMemberId) {
+    setPrevDetailsMemberId(memberId)
+    setDetailsOpen(memberId ? readUnallocatedDetailsOpen(memberId) : false)
+  }
+
   const isAdmin = member?.role === 'admin'
   const isChild = member?.role === 'child'
   const canCreateBuckets = isAdmin || isChild
@@ -87,6 +108,7 @@ export default function HomePage() {
 
   const loadGeneration = useRef(0)
   const { listRef, prepareFlip } = useFlipList(buckets)
+  const detailsPanelId = useId()
 
   const loadData = useCallback(async () => {
     if (!familyId || !memberId) return
@@ -402,6 +424,23 @@ export default function HomePage() {
           ? homeChildUnallocatedHint(householdAdminName)
           : null
 
+  const breakdownOpts = {
+    isChild,
+    cashAccountsCount,
+    childTotal,
+  }
+  const breakdownLines = buildUnallocatedLines(balanceBreakdown, breakdownOpts)
+  const collapsedSummary = unallocatedSummary(balanceBreakdown, breakdownOpts)
+
+  function toggleDetailsOpen() {
+    if (!memberId) return
+    setDetailsOpen((prev) => {
+      const next = !prev
+      writeUnallocatedDetailsOpen(memberId, next)
+      return next
+    })
+  }
+
   return (
     <>
       <BusyOverlay busy={syncing} label="Updating…">
@@ -458,42 +497,72 @@ export default function HomePage() {
             <p className="mt-1 text-xs opacity-70">{unallocatedHint}</p>
           ) : null}
           {showBalanceBreakdown && (
-            <dl className="mt-3 space-y-1 border-t border-current/10 pt-3 text-xs opacity-90">
-              {isChild && childTotal > 0 ? (
-                <div className="flex justify-between gap-4 tabular-nums">
-                  <dt>Total balance</dt>
-                  <dd>{formatMoney(childTotal)}</dd>
+            <>
+              <button
+                type="button"
+                aria-expanded={detailsOpen}
+                aria-controls={detailsPanelId}
+                onClick={toggleDetailsOpen}
+                className="mt-2 flex w-full items-center justify-between gap-2 rounded-lg py-1 text-left text-xs opacity-70 transition hover:opacity-90 focus:outline focus:outline-2 focus:outline-emerald-400"
+              >
+                <span className="min-w-0 truncate">
+                  {detailsOpen
+                    ? 'Breakdown'
+                    : collapsedSummary
+                      ? formatUnallocatedSummary(collapsedSummary, formatMoney)
+                      : 'Breakdown'}
+                </span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                  className={
+                    'h-4 w-4 shrink-0 motion-safe:transition-transform motion-safe:duration-200 ' +
+                    (detailsOpen ? 'rotate-180' : '')
+                  }
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+              <div
+                id={detailsPanelId}
+                className={
+                  'grid motion-safe:transition-[grid-template-rows] motion-safe:duration-200 ' +
+                  (detailsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')
+                }
+              >
+                <div className="min-h-0 overflow-hidden">
+                  <dl className="space-y-1 border-t border-current/10 pt-3 text-xs opacity-90">
+                    {breakdownLines.map((line) => (
+                      <div
+                        key={line.key}
+                        className={
+                          'flex justify-between gap-4 tabular-nums ' +
+                          (line.indent ? 'pl-4' : '')
+                        }
+                      >
+                        <dt
+                          className={
+                            'truncate ' + (line.indent ? 'opacity-80' : '')
+                          }
+                        >
+                          {line.label}
+                        </dt>
+                        <dd>
+                          {line.kind === 'subtract' ? '−' : ''}
+                          {formatMoney(line.amount)}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
                 </div>
-              ) : null}
-              {!isChild && balanceBreakdown.totalCash > 0 ? (
-                <div className="flex justify-between gap-4 tabular-nums">
-                  <dt>
-                    Linked cash
-                    {cashAccountsCount > 0
-                      ? ` (${cashAccountsCount} account${cashAccountsCount === 1 ? '' : 's'})`
-                      : ''}
-                  </dt>
-                  <dd>{formatMoney(balanceBreakdown.totalCash)}</dd>
-                </div>
-              ) : null}
-              {balanceBreakdown.bucketAllocated > 0 ? (
-                <div className="flex justify-between gap-4 tabular-nums">
-                  <dt>{isChild ? 'In your buckets' : 'Allocated to buckets'}</dt>
-                  <dd>−{formatMoney(balanceBreakdown.bucketAllocated)}</dd>
-                </div>
-              ) : null}
-              {showAdultBreakdown
-                ? balanceBreakdown.children.map((child) => (
-                    <div
-                      key={child.memberId}
-                      className="flex justify-between gap-4 tabular-nums"
-                    >
-                      <dt className="truncate">{child.name}</dt>
-                      <dd>−{formatMoney(child.amount)}</dd>
-                    </div>
-                  ))
-                : null}
-            </dl>
+              </div>
+            </>
           )}
           {bankSyncedLabel || (isAdult && hasLinkedAccounts) ? (
             <div className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
@@ -521,10 +590,14 @@ export default function HomePage() {
         reorderable={buckets.length >= 2 && renamingId === null}
       >
       <section aria-label="Buckets">
-        <header className="mb-3 flex items-baseline justify-between">
+        <header className="mb-3 flex items-baseline justify-between gap-3">
           <h2 className="text-lg font-semibold">Buckets</h2>
-          <span className="text-xs text-zinc-400">
-            {buckets.length} bucket{buckets.length === 1 ? '' : 's'}
+          <span className="text-right text-xs text-zinc-400">
+            {formatBucketsHeaderSubtitle(
+              buckets.length,
+              balanceBreakdown.bucketAllocated,
+              formatMoney,
+            )}
           </span>
         </header>
 
