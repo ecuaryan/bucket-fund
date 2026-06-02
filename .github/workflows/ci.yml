@@ -11,6 +11,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: detect changed scope
+    runs-on: ubuntu-latest
+    outputs:
+      run_db: ${{ steps.scope.outputs.run_db }}
+      run_e2e: ${{ steps.scope.outputs.run_e2e }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Classify changed files
+        id: scope
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+            HEAD="${{ github.sha }}"
+          fi
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            echo "run_db=true" >> "$GITHUB_OUTPUT"
+            echo "run_e2e=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git diff --name-only "$BASE" "$HEAD" | node scripts/ciChangedScope.mjs >> "$GITHUB_OUTPUT"
+
   unit:
     name: lint, unit test, build
     runs-on: ubuntu-latest
@@ -47,27 +75,39 @@ jobs:
 
   db:
     name: database RLS tests
+    needs: changes
+    if: always()
     runs-on: ubuntu-latest
 
     steps:
+      - name: Skip (no db-relevant files changed)
+        if: needs.changes.outputs.run_db == 'false'
+        run: echo "Skipping database RLS tests — change set cannot affect Postgres RLS or RPCs."
+
       - uses: actions/checkout@v4
+        if: needs.changes.outputs.run_db != 'false'
 
       - uses: actions/setup-node@v4
+        if: needs.changes.outputs.run_db != 'false'
         with:
           node-version: '22'
           cache: npm
 
       - uses: supabase/setup-cli@v1
+        if: needs.changes.outputs.run_db != 'false'
         with:
           version: 2.101.0
 
       - name: Install dependencies
+        if: needs.changes.outputs.run_db != 'false'
         run: npm ci
 
       - name: Start Supabase
+        if: needs.changes.outputs.run_db != 'false'
         run: supabase start
 
       - name: Database RLS tests
+        if: needs.changes.outputs.run_db != 'false'
         run: npm run test:db
         env:
           CI: true
@@ -75,36 +115,50 @@ jobs:
 
   e2e:
     name: e2e smoke tests
+    needs: changes
+    if: always()
     runs-on: ubuntu-latest
 
     steps:
+      - name: Skip (docs-only change)
+        if: needs.changes.outputs.run_e2e == 'false'
+        run: echo "Skipping e2e smoke tests — docs-only change."
+
       - uses: actions/checkout@v4
+        if: needs.changes.outputs.run_e2e != 'false'
 
       - uses: actions/setup-node@v4
+        if: needs.changes.outputs.run_e2e != 'false'
         with:
           node-version: '22'
           cache: npm
 
       - uses: supabase/setup-cli@v1
+        if: needs.changes.outputs.run_e2e != 'false'
         with:
           version: 2.101.0
 
       - name: Install dependencies
+        if: needs.changes.outputs.run_e2e != 'false'
         run: npm ci
 
       - uses: actions/cache@v4
+        if: needs.changes.outputs.run_e2e != 'false'
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
       - name: Install Playwright browser
+        if: needs.changes.outputs.run_e2e != 'false'
         run: npx playwright install chromium --with-deps
 
       - name: Start Supabase
+        if: needs.changes.outputs.run_e2e != 'false'
         run: supabase start
 
       - name: E2E smoke tests
+        if: needs.changes.outputs.run_e2e != 'false'
         run: npm run test:e2e
         env:
           CI: true
