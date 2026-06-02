@@ -18,6 +18,9 @@ export const APP_FORM_DATA_ATTR = 'data-bucketmymoney-form' as const
 export const APP_TAGLINE =
   'Bank balance moved? Pick which bucket covers it.'
 
+/** Default label beside the shared loading spinner (pages, overlays, auth). */
+export const LOADING_STATUS_LABEL = 'Loading…'
+
 /** Install / share sheet blurb (may echo the tagline). */
 export const PWA_DESCRIPTION =
   'Bucket budgeting on your real bank balance. Solo or with your household.'

@@ -24,6 +24,7 @@ import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import { AmountLimitHint } from '@/components/AmountLimitHint'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
+import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
@@ -228,7 +229,7 @@ export default function SendPage() {
   }
 
   if (members === null || available === null || accounts === null) {
-    return <p className="text-sm text-zinc-400">Loading…</p>
+    return <LoadingStatus className="py-8" />
   }
 
   if (recipients.length === 0) {
