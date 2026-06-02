@@ -441,6 +441,27 @@ export default function HomePage() {
     })
   }
 
+  const freshnessFooter =
+    bankSyncedLabel || (isAdult && hasLinkedAccounts) ? (
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+        {bankSyncedLabel ? (
+          <p className="text-[11px] opacity-50">
+            Balances refreshed {bankSyncedLabel}
+          </p>
+        ) : null}
+        {isAdult && hasLinkedAccounts ? (
+          <RefreshIconButton
+            busy={syncing}
+            disabled={syncing}
+            onClick={() => void handleRefreshBalances()}
+          />
+        ) : null}
+        {refreshError ? (
+          <p className="w-full text-[11px] text-red-300/80">{refreshError}</p>
+        ) : null}
+      </div>
+    ) : null
+
   return (
     <>
       <BusyOverlay busy={syncing} label="Updating…">
@@ -503,7 +524,7 @@ export default function HomePage() {
                 aria-expanded={detailsOpen}
                 aria-controls={detailsPanelId}
                 onClick={toggleDetailsOpen}
-                className="mt-2 flex w-full items-center justify-between gap-2 rounded-lg py-1 text-left text-xs opacity-70 transition hover:opacity-90 focus:outline focus:outline-2 focus:outline-emerald-400"
+                className="mt-2 flex w-full items-center justify-between gap-2 rounded-lg py-1 text-left text-xs opacity-70 transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
               >
                 <span className="min-w-0 truncate">
                   {detailsOpen
@@ -560,28 +581,17 @@ export default function HomePage() {
                       </div>
                     ))}
                   </dl>
+                  {freshnessFooter ? (
+                    <div className="mt-3 border-t border-current/10 pt-2">
+                      {freshnessFooter}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </>
           )}
-          {bankSyncedLabel || (isAdult && hasLinkedAccounts) ? (
-            <div className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-              {bankSyncedLabel ? (
-                <p className="text-[11px] opacity-50">
-                  Balances refreshed {bankSyncedLabel}
-                </p>
-              ) : null}
-              {isAdult && hasLinkedAccounts ? (
-                <RefreshIconButton
-                  busy={syncing}
-                  disabled={syncing}
-                  onClick={() => void handleRefreshBalances()}
-                />
-              ) : null}
-              {refreshError ? (
-                <p className="w-full text-[11px] text-red-300/80">{refreshError}</p>
-              ) : null}
-            </div>
+          {!showBalanceBreakdown && freshnessFooter ? (
+            <div className="mt-2">{freshnessFooter}</div>
           ) : null}
         </section>
       )}
