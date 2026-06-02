@@ -7,7 +7,10 @@ import {
   HISTORY_EMPTY_BODY,
   HISTORY_EMPTY_BUCKET_BODY,
   HISTORY_EMPTY_SENDS_BODY,
+  LOADING_STATUS_LABEL,
 } from '@/lib/brand'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import type { Database } from '@/types/database'
 import {
@@ -201,7 +204,7 @@ export default function HistoryPage() {
         <h1 className="text-lg font-semibold">History</h1>
         <p className="mt-0.5 text-xs text-zinc-400">
           {rows === null
-            ? 'Loading…'
+            ? LOADING_STATUS_LABEL
             : rows.length === 0
               ? filter.kind === 'send'
                 ? 'No sends yet'
@@ -220,7 +223,7 @@ export default function HistoryPage() {
       />
 
       {rows === null ? (
-        <p className="text-sm text-zinc-400">Loading…</p>
+        <LoadingStatus className="py-8" />
       ) : rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-zinc-700 p-6 text-center">
           <p className="text-sm font-medium text-zinc-300">
@@ -266,7 +269,14 @@ export default function HistoryPage() {
               disabled={loadingMore}
               className="w-full rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-300 ring-1 ring-zinc-800 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loadingMore ? 'Loading…' : 'Load older'}
+              {loadingMore ? (
+                <span className="inline-flex items-center justify-center gap-2">
+                  <LoadingSpinner className="h-3.5 w-3.5" />
+                  {LOADING_STATUS_LABEL}
+                </span>
+              ) : (
+                'Load older'
+              )}
             </button>
           )}
         </div>

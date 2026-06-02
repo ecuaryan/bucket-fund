@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthShell } from '@/components/AuthShell'
+import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import { markRequireFreshSignIn } from '@/lib/freshSignIn'
 import { clearPasswordRecoveryFlow } from '@/lib/passwordRecoveryFlow'
 import { setSignInPreference } from '@/lib/signInPreference'
@@ -124,7 +125,7 @@ export default function ResetPasswordPage() {
   if (checking) {
     return (
       <AuthShell title="Reset password" subtitle="Verifying your link…">
-        <p className="text-sm text-zinc-500">One moment</p>
+        <LoadingStatus label="Verifying link…" className="py-4" />
       </AuthShell>
     )
   }

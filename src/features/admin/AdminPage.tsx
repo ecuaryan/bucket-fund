@@ -39,6 +39,7 @@ import MembersSection from '@/features/admin/MembersSection'
 import { formatAppVersion } from '@/lib/appVersion'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
+import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import type { Database } from '@/types/database'
 
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -306,7 +307,7 @@ export default function AdminPage() {
   }
 
   if (!member) {
-    return <p className="text-sm text-zinc-400">Loading household…</p>
+    return <LoadingStatus label="Loading household…" className="py-8" />
   }
 
   if (!isAdmin) {
@@ -430,7 +431,7 @@ export default function AdminPage() {
             {loadError}
           </p>
         ) : accounts === null ? (
-          <p className="text-sm text-zinc-400">Loading accounts…</p>
+          <LoadingStatus label="Loading accounts…" className="py-6" />
         ) : groups.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-zinc-700 p-6 text-center">
             <p className="text-sm font-medium text-zinc-300">

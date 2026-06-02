@@ -8,6 +8,7 @@ import {
 import { flushSync } from 'react-dom'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { AuthShell } from '@/components/AuthShell'
+import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import {
   APP_FORM_DATA_ATTR,
   APP_NAME,
@@ -153,7 +154,7 @@ export default function FamilyLoginPage() {
     if (auth.memberLoading) {
       return (
         <AuthShell title={APP_NAME} subtitle="Signing you in…">
-          <p className="text-center text-sm text-zinc-500">One moment</p>
+          <LoadingStatus className="py-4" />
         </AuthShell>
       )
     }
@@ -204,7 +205,7 @@ export default function FamilyLoginPage() {
   if (selected && submitting) {
     return (
       <AuthShell title={selected.name} subtitle="Signing you in…">
-        <p className="text-center text-sm text-zinc-500">One moment</p>
+        <LoadingStatus className="py-4" />
       </AuthShell>
     )
   }
@@ -259,7 +260,7 @@ export default function FamilyLoginPage() {
   if (loading) {
     return (
       <AuthShell title={APP_NAME} subtitle="Loading household…">
-        <p className="text-sm text-zinc-500">One moment</p>
+        <LoadingStatus label="Loading household…" className="py-4" />
       </AuthShell>
     )
   }

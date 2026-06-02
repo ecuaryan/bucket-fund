@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import PinInput from '@/components/ui/PinInput'
 import { Sheet } from '@/components/ui/Sheet'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
+import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import {
   ADMIN_HOUSEHOLD_MEMBERS_DETAILS,
   ADMIN_HOUSEHOLD_MEMBERS_INTRO,
@@ -305,7 +306,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
       </form>
 
       {members === null ? (
-        <p className="text-sm text-zinc-400">{ADMIN_LOADING_MEMBERS}</p>
+        <LoadingStatus label={ADMIN_LOADING_MEMBERS} className="py-6" />
       ) : (
         <ul className="divide-y divide-zinc-800 overflow-hidden rounded-2xl bg-zinc-900 ring-1 ring-zinc-800">
           {members.map((m) => (
