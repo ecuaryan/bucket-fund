@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -21,6 +22,7 @@ import {
 } from '@/lib/passwordRecoveryFlow'
 import { isPasswordRecoverySession } from '@/lib/recoverySession'
 import { useAdultBackgroundSignOut } from '@/hooks/useAdultBackgroundSignOut'
+import { canReuseLoadedMember } from '@/lib/authSessionReuse'
 import { classifyMemberFetch, type MemberFetchOutcome } from '@/lib/memberFetch'
 import { supabase } from '@/lib/supabase'
 import { withTimeout } from '@/lib/timeout'
@@ -101,6 +103,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     memberError: false,
   })
 
+  // Mirror of `state` for `applySession` to read without being a dependency,
+  // so the onAuthStateChange subscription stays stable.
+  const stateRef = useRef(state)
+  useEffect(() => {
+    stateRef.current = state
+  }, [state])
+
   const applySession = useCallback(async (session: Session | null) => {
     // Sync JWT for Realtime; do not block sign-in on this — a wedged
     // websocket can hang `setAuth` and leave the app on "Loading…".
@@ -116,6 +125,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       return
     }
+
+    // Supabase re-emits SIGNED_IN / TOKEN_REFRESHED on every tab/PWA refocus.
+    // When it is the same user we already have loaded, swap the token in place
+    // instead of blanking `member` — otherwise RequireAuth flashes the loading
+    // screen, unmounting the app tree (and any open dialog/form). See
+    // canReuseLoadedMember.
+    const prev = stateRef.current
+    if (
+      prev.status === 'signedIn' &&
+      canReuseLoadedMember(
+        prev.session.user.id,
+        prev.member !== null,
+        prev.memberError,
+        session.user.id,
+      )
+    ) {
+      setState({
+        status: 'signedIn',
+        session,
+        member: prev.member,
+        memberLoading: false,
+        memberError: false,
+      })
+      return
+    }
+
     setState({
       status: 'signedIn',
       session,
