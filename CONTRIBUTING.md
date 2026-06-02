@@ -89,9 +89,11 @@ Every push to `main` and every pull request runs [`.github/workflows/ci.yml`](./
 
 | Job | What it runs |
 | --- | ------------ |
-| `lint, unit test, build` | ESLint, Vitest unit tests, production build |
-| `database RLS tests` | Local Supabase + `tests/db/*.test.ts` |
-| `e2e smoke tests` | Local Supabase + Playwright (`tests/e2e/`) |
+| `lint, unit test, build` | ESLint, Vitest unit tests, production build (always full) |
+| `database RLS tests` | Local Supabase + `tests/db/*.test.ts` when the diff can affect Postgres (RLS, RPCs, `src/lib`, migrations, etc.). Pure UI/docs changes skip the heavy steps but the job still reports so required checks pass. |
+| `e2e smoke tests` | Local Supabase + Playwright (`tests/e2e/`) when the diff is not docs-only. Docs-only changes skip the heavy steps but the job still reports. |
+
+A lightweight `detect changed scope` job classifies the git diff ([`scripts/ciChangedScope.mjs`](./scripts/ciChangedScope.mjs)); when uncertain, both expensive jobs run (fail-safe). Required check **names** are unchanged.
 
 ## Local commands
 

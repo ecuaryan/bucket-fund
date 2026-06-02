@@ -84,9 +84,11 @@ pushes to `main`), required CI checks, and Vercel waiting for GitHub Actions bef
 Every push to `main` and every pull request runs
 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml):
 
-- **lint, unit test, build** — Vitest on `src/lib/`, production build
-- **database RLS tests** — local Supabase; tenant isolation, `move_money`, transaction visibility
-- **e2e smoke tests** — login redirect, admin sign-in, forgot-password flow
+- **lint, unit test, build** — Vitest on `src/lib/`, production build (always full)
+- **database RLS tests** — local Supabase when the diff can affect Postgres; pure UI/docs PRs skip the heavy steps but the job still reports (required check name unchanged)
+- **e2e smoke tests** — Playwright when the diff is not docs-only; docs-only PRs skip the heavy steps but the job still reports
+
+See [CONTRIBUTING § CI jobs](./CONTRIBUTING.md#ci-jobs) for how [`scripts/ciChangedScope.mjs`](./scripts/ciChangedScope.mjs) decides what to run.
 
 After CI **succeeds on `main`**, [`.github/workflows/deploy-supabase.yml`](./.github/workflows/deploy-supabase.yml)
 applies pending SQL migrations (`supabase db push`) and deploys Edge Functions to the
