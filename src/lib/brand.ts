@@ -123,17 +123,16 @@ export function householdAdminLabel(
 
 /** Always-shown lead for the Money sources section (covers banks + manual). */
 export const ADMIN_MONEY_SOURCES_INTRO =
-  'Add a linked bank or a manual amount—both count toward the money you organize into buckets. Enter manual amounts by hand and edit them anytime.'
+  'Link a bank or enter an amount by hand—both count toward the money you organize. Edit manual amounts anytime.'
 
 /** Bank-specific guidance, shown only once at least one bank is linked. */
 export const ADMIN_LINKED_ACCOUNTS_INTRO = `Linked banks are read-only—${BANK_READ_ONLY_ASSURANCE}.`
 
-export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_PREFIX =
-  'Use Reconnect when a bank link breaks. Use '
+export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_PREFIX = 'Reconnect a broken link or '
 
 /** Follows the inline refresh icon in Admin linked-accounts intro. */
 export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_SUFFIX =
-  ' to pull the latest balances. Link bank is for a new institution. To change which accounts you share, Unlink that bank and link it again.'
+  ' to refresh balances. To change which accounts you share, Unlink and link again.'
 
 export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
   'Balances count toward the money you can organize into buckets.'
