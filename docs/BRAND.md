@@ -37,6 +37,9 @@ The payoff:
 - Say **household** in UI when meaning “your group”; **family** is fine in
   internal/schema terms (`family_id`, routes like `/login/family`).
 - Say **join code** everywhere users link a device (not “device code”).
+- Say **money source** for anything that funds the household pool: a linked bank
+  or a manual amount the admin enters (estimate, real balance, or try-it-out
+  number). Prefer “Add a money source” over “link a bank” when both paths apply.
 - DB role `member` → UI **Adult**; `child` → **Child**; `admin` → **Admin**.
   See `src/lib/memberRoles.ts` and Admin strings in `brand.ts`.
 - Say **household admin** (not “your admin”) when a non-admin needs the person

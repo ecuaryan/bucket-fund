@@ -7,13 +7,15 @@ import {
   type HomeBalanceBreakdown,
 } from '@/lib/availableBalance'
 import {
-  HOME_LINK_BANK_ADMIN_ACTION,
-  HOME_LINK_BANK_TITLE,
-  sendLinkBankMemberBody,
+  HOME_ADD_SOURCE_LINK_ACTION,
+  HOME_ADD_SOURCE_MANUAL_ACTION,
+  homeAddSourceMemberBody,
+  SEND_ADD_SOURCE_ADMIN_BODY,
+  SEND_ADD_SOURCE_TITLE,
   SEND_ADULT_INTRO,
-  SEND_ADULT_NO_ACCOUNTS_BODY,
   SEND_CHILD_INTRO,
 } from '@/lib/brand'
+import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import { fetchHouseholdAdminName } from '@/lib/householdAdmin'
 import { subscribeHouseholdRosterRefresh } from '@/lib/householdRosterRefresh'
 import { filterSendRecipients } from '@/lib/sendRecipients'
@@ -59,6 +61,7 @@ export default function SendPage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [manualSourceOpen, setManualSourceOpen] = useState(false)
 
   const loadData = useCallback(async () => {
     if (!memberId) return
@@ -232,9 +235,13 @@ export default function SendPage() {
     return <Navigate to="/" replace />
   }
 
-  const hasLinkedAccounts = accounts.length > 0
-  const showLinkBankCard = isAdult && !hasLinkedAccounts
-  const canSend = sendEnabled && !showLinkBankCard
+  const hasMoneySources = accounts.length > 0
+  // Allocated buckets count as organized money: show the real (possibly
+  // negative) balance instead of the getting-started CTA. Sending stays
+  // blocked by the overdraft guard when there is nothing available.
+  const hasAllocations = (balanceBreakdown?.bucketAllocated ?? 0) > 0
+  const showAddSourceCard = isAdult && !hasMoneySources && !hasAllocations
+  const canSend = sendEnabled && !showAddSourceCard
 
   const availableColor =
     available >= 0
@@ -251,29 +258,38 @@ export default function SendPage() {
         </p>
       </header>
 
-      {showLinkBankCard ? (
+      {showAddSourceCard ? (
         <section
           className="rounded-2xl bg-emerald-500/10 px-4 py-4 ring-1 ring-emerald-500/30"
-          aria-label="Link a bank account"
+          aria-label="Add a money source"
         >
           <p className="text-xs font-medium uppercase tracking-wide text-emerald-300/70">
             Before you send
           </p>
           <h2 className="mt-1 text-lg font-semibold text-emerald-100">
-            {HOME_LINK_BANK_TITLE}
+            {SEND_ADD_SOURCE_TITLE}
           </h2>
           <p className="mt-2 text-sm text-emerald-200/80">
             {member?.role === 'admin'
-              ? SEND_ADULT_NO_ACCOUNTS_BODY
-              : sendLinkBankMemberBody(householdAdminName)}
+              ? SEND_ADD_SOURCE_ADMIN_BODY
+              : homeAddSourceMemberBody(householdAdminName)}
           </p>
           {member?.role === 'admin' ? (
-            <Link
-              to="/admin"
-              className="mt-4 inline-flex rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
-            >
-              {HOME_LINK_BANK_ADMIN_ACTION}
-            </Link>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setManualSourceOpen(true)}
+                className="inline-flex rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
+              >
+                {HOME_ADD_SOURCE_MANUAL_ACTION}
+              </button>
+              <Link
+                to="/admin"
+                className="inline-flex rounded-lg border border-emerald-500/40 px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/10"
+              >
+                {HOME_ADD_SOURCE_LINK_ACTION}
+              </Link>
+            </div>
           ) : null}
         </section>
       ) : (
@@ -349,7 +365,7 @@ export default function SendPage() {
                 step="0.01"
                 value={amountStr}
                 onChange={(e) => {
-                  setAmountStr(e.target.value)
+                  setAmountStr(e.target.value.replace(/-/g, ''))
                   setSubmitError(null)
                 }}
                 onFocus={(e) => scrollFocusedIntoView(e.currentTarget)}
@@ -422,6 +438,15 @@ export default function SendPage() {
         </Link>
         .
       </p>
+
+      {member?.role === 'admin' ? (
+        <ManualSourceDialog
+          open={manualSourceOpen}
+          mode="create"
+          onClose={() => setManualSourceOpen(false)}
+          onSaved={loadData}
+        />
+      ) : null}
       </div>
     </BusyOverlay>
   )

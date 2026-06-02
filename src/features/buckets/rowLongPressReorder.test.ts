@@ -13,9 +13,54 @@ import {
   rowCenterOffsets,
   rowDragCenterY,
   rowDragOverlayTop,
+  resolveRowHandlers,
   shouldCancelRowPress,
   shouldOpenMoveMoneyOnRelease,
 } from '@/features/buckets/rowLongPressReorder'
+
+describe('resolveRowHandlers', () => {
+  // Regression: with a single bucket (or while another row is renaming) reorder
+  // is disabled, so the drag handlers aren't attached. The row must still get a
+  // click handler that opens Move money — otherwise tapping a lone bucket does
+  // nothing and only the keyboard can open the dialog.
+  it('returns a tap-to-open click handler when reorder is disabled', () => {
+    const moved: string[] = []
+    const handlers = resolveRowHandlers({
+      dragEnabled: false,
+      bucketId: 'b1',
+      dragHandlers: { onPointerDown: () => {} },
+      onMoveMoney: (id) => moved.push(id),
+    })
+
+    expect(typeof handlers.onClick).toBe('function')
+    ;(handlers.onClick as () => void)()
+    expect(moved).toEqual(['b1'])
+  })
+
+  it('does not borrow the drag handlers when reorder is disabled', () => {
+    const handlers = resolveRowHandlers({
+      dragEnabled: false,
+      bucketId: 'b1',
+      dragHandlers: { onPointerDown: () => {} },
+      onMoveMoney: () => {},
+    })
+
+    expect(handlers.onPointerDown).toBeUndefined()
+  })
+
+  it('passes the drag handlers through unchanged when reorder is enabled', () => {
+    const dragHandlers = { onPointerDown: () => {}, onPointerUp: () => {} }
+    const handlers = resolveRowHandlers({
+      dragEnabled: true,
+      bucketId: 'b1',
+      dragHandlers,
+      onMoveMoney: () => {},
+    })
+
+    expect(handlers).toBe(dragHandlers)
+    expect(handlers.onClick).toBeUndefined()
+  })
+})
 
 describe('shouldCancelRowPress', () => {
   it('cancels when movement exceeds cancel threshold', () => {

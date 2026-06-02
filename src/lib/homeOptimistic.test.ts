@@ -21,6 +21,8 @@ function bucket(id: string, name: string, allocated: number): Bucket {
 const breakdown = (over: Partial<HomeBalanceBreakdown> = {}): HomeBalanceBreakdown => ({
   unallocated: 100,
   totalCash: 200,
+  bankCash: 200,
+  manualCash: 0,
   bucketAllocated: 100,
   childrenSetAside: 0,
   children: [],

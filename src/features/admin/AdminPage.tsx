@@ -1,12 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
-import { accountAssignmentChildId } from '@/lib/accounts'
+import { accountAssignmentChildId, deleteManualAccount } from '@/lib/accounts'
 import {
+  ADMIN_ADD_MONEY_SOURCE_ACTION,
+  ADMIN_ADD_SOURCE_LINK_OPTION,
+  ADMIN_ADD_SOURCE_MANUAL_OPTION,
   ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL,
   ADMIN_LINKED_ACCOUNTS_INTRO,
   ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_PREFIX,
   ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_SUFFIX,
+  ADMIN_MONEY_SOURCES_INTRO,
+  ADMIN_MANUAL_GROUP_TITLE,
+  ADMIN_MONEY_SOURCES_SECTION_TITLE,
   adminLinkBankConfirmMessage,
   adminLinkedAccountsMemberGate,
   adminUnlinkInstitutionConfirm,
@@ -26,6 +32,7 @@ import {
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
 import RefreshIcon from '@/components/ui/RefreshIcon'
 import AccountAssignmentSelect from '@/features/admin/AccountAssignmentSelect'
+import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import AdminAccountSection from '@/features/admin/AdminAccountSection'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
 import MembersSection from '@/features/admin/MembersSection'
@@ -79,8 +86,34 @@ export default function AdminPage() {
     Map<string, TellerEnrollmentMeta>
   >(new Map())
   const [enrollmentsLoaded, setEnrollmentsLoaded] = useState(false)
+  const [addSourceOpen, setAddSourceOpen] = useState(false)
+  const [manualDialog, setManualDialog] = useState<
+    | { mode: 'create' }
+    | { mode: 'edit'; accountId: string; label: string; amount: number }
+    | null
+  >(null)
+  const addSourceMenuRef = useRef<HTMLDivElement | null>(null)
 
   const isAdmin = member?.role === 'admin'
+
+  useEffect(() => {
+    if (!addSourceOpen) return
+    function onDocClick(e: MouseEvent) {
+      if (!addSourceMenuRef.current) return
+      if (!addSourceMenuRef.current.contains(e.target as Node)) {
+        setAddSourceOpen(false)
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setAddSourceOpen(false)
+    }
+    document.addEventListener('mousedown', onDocClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [addSourceOpen])
 
   const loadAccounts = useCallback(async () => {
     setLoadError(null)
@@ -223,6 +256,21 @@ export default function AdminPage() {
     }
   }
 
+  async function onDeleteManual(accountId: string, label: string) {
+    const ok = window.confirm(`Remove "${label}" from your money sources?`)
+    if (!ok) return
+    setLinkError(null)
+    setAccountsSyncing(true)
+    try {
+      await deleteManualAccount(accountId)
+      await loadAccounts()
+    } catch (e) {
+      setLinkError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setAccountsSyncing(false)
+    }
+  }
+
   async function onUnlink(group: InstitutionGroup) {
     if (group.enrollmentIds.length === 0) return
     const ok = window.confirm(
@@ -299,34 +347,64 @@ export default function AdminPage() {
               : 'Updating accounts…'
         }
       >
-      <section aria-label="Linked accounts">
+      <section aria-label="Money sources">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-base font-semibold">Linked accounts</h2>
+            <h2 className="text-base font-semibold">
+              {ADMIN_MONEY_SOURCES_SECTION_TITLE}
+            </h2>
             <p className="mt-1 text-xs text-zinc-400">
-              {ADMIN_LINKED_ACCOUNTS_INTRO}{' '}
-              {ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_PREFIX}
-              <span
-                className="mx-0.5 inline-flex align-text-bottom"
-                aria-hidden="true"
-              >
-                <RefreshIcon className="h-3 w-3" />
-              </span>
-              {ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_SUFFIX}
+              {ADMIN_MONEY_SOURCES_INTRO}
             </p>
+            {hasLinkedBanks && (
+              <p className="mt-1 text-xs text-zinc-400">
+                {ADMIN_LINKED_ACCOUNTS_INTRO}{' '}
+                {ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_PREFIX}
+                <span
+                  className="mx-0.5 inline-flex align-text-bottom"
+                  aria-hidden="true"
+                >
+                  <RefreshIcon className="h-3 w-3" />
+                </span>
+                {ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_SUFFIX}
+              </p>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={onLink}
-            disabled={!teller.ready || teller.linking}
-            className="shrink-0 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {teller.linking
-              ? 'Linking…'
-              : !teller.ready
-                ? 'Loading…'
-                : 'Link bank'}
-          </button>
+          <div ref={addSourceMenuRef} className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setAddSourceOpen((v) => !v)}
+              disabled={teller.linking}
+              className="rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {ADMIN_ADD_MONEY_SOURCE_ACTION}
+            </button>
+            {addSourceOpen ? (
+              <div className="absolute right-0 z-10 mt-1 w-max min-w-[12rem] overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-lg">
+                <button
+                  type="button"
+                  className="block w-full whitespace-nowrap px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                  onClick={() => {
+                    setAddSourceOpen(false)
+                    setManualDialog({ mode: 'create' })
+                  }}
+                >
+                  {ADMIN_ADD_SOURCE_MANUAL_OPTION}
+                </button>
+                <button
+                  type="button"
+                  disabled={!teller.ready || teller.linking}
+                  className="block w-full whitespace-nowrap px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
+                  onClick={() => {
+                    setAddSourceOpen(false)
+                    onLink()
+                  }}
+                >
+                  {teller.linking ? 'Linking…' : ADMIN_ADD_SOURCE_LINK_OPTION}
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
 
         {(linkError || teller.error || assignError) && (
@@ -356,10 +434,10 @@ export default function AdminPage() {
         ) : groups.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-zinc-700 p-6 text-center">
             <p className="text-sm font-medium text-zinc-300">
-              No accounts linked yet
+              No money sources yet
             </p>
             <p className="mt-1 text-xs text-zinc-400">
-              Tap &quot;Link bank&quot; to connect one or more accounts.{' '}
+              Add a money source to link a bank or enter an amount manually.{' '}
               {ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL}
             </p>
           </div>
@@ -373,7 +451,9 @@ export default function AdminPage() {
                 <header className="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-zinc-300">
-                      {group.institutionName ?? 'Unknown institution'}
+                      {group.isManual
+                        ? ADMIN_MANUAL_GROUP_TITLE
+                        : (group.institutionName ?? 'Unknown institution')}
                     </p>
                     <p className="text-xs text-zinc-400">
                       {group.accounts.length} account
@@ -449,30 +529,64 @@ export default function AdminPage() {
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-3">
-                        <AccountAssignmentSelect
-                          accountId={a.id}
-                          assignedChildId={accountAssignmentChildId(
-                            a,
-                            memberRolesById,
-                          )}
-                          children={childMembers}
-                          onAssigned={(ownerMemberId) => {
-                            setAssignError(null)
-                            setAccounts((prev) =>
-                              prev
-                                ? prev.map((row) =>
-                                    row.id === a.id
-                                      ? {
-                                          ...row,
-                                          owner_member_id: ownerMemberId,
-                                        }
-                                      : row,
-                                  )
-                                : prev,
-                            )
-                          }}
-                          onError={setAssignError}
-                        />
+                        {group.isManual ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setManualDialog({
+                                  mode: 'edit',
+                                  accountId: a.id,
+                                  label:
+                                    a.account_name ??
+                                    a.institution_name ??
+                                    '',
+                                  amount: Number(a.current_balance),
+                                })
+                              }
+                              className="rounded-lg border border-zinc-600 px-2 py-1 text-xs font-semibold text-zinc-200"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                void onDeleteManual(
+                                  a.id,
+                                  a.account_name ?? 'this source',
+                                )
+                              }
+                              className="rounded-lg border border-red-500/30 px-2 py-1 text-xs font-semibold text-red-300"
+                            >
+                              Remove
+                            </button>
+                          </>
+                        ) : (
+                          <AccountAssignmentSelect
+                            accountId={a.id}
+                            assignedChildId={accountAssignmentChildId(
+                              a,
+                              memberRolesById,
+                            )}
+                            children={childMembers}
+                            onAssigned={(ownerMemberId) => {
+                              setAssignError(null)
+                              setAccounts((prev) =>
+                                prev
+                                  ? prev.map((row) =>
+                                      row.id === a.id
+                                        ? {
+                                            ...row,
+                                            owner_member_id: ownerMemberId,
+                                          }
+                                        : row,
+                                    )
+                                  : prev,
+                              )
+                            }}
+                            onError={setAssignError}
+                          />
+                        )}
                         <p className="text-sm font-medium tabular-nums text-zinc-300">
                           {formatMoney(Number(a.current_balance))}
                         </p>
@@ -486,6 +600,29 @@ export default function AdminPage() {
         )}
       </section>
       </BusyOverlay>
+
+      <ManualSourceDialog
+        open={manualDialog !== null}
+        mode={manualDialog?.mode ?? 'create'}
+        accountId={
+          manualDialog?.mode === 'edit' ? manualDialog.accountId : undefined
+        }
+        initialLabel={
+          manualDialog?.mode === 'edit' ? manualDialog.label : undefined
+        }
+        initialAmount={
+          manualDialog?.mode === 'edit' ? manualDialog.amount : undefined
+        }
+        onClose={() => setManualDialog(null)}
+        onSaved={async () => {
+          setAccountsSyncing(true)
+          try {
+            await loadAccounts()
+          } finally {
+            setAccountsSyncing(false)
+          }
+        }}
+      />
 
       <MembersSection onRosterChanged={loadMembers} />
       <FamilyJoinSection />

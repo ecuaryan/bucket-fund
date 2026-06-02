@@ -29,7 +29,10 @@ import {
 import { ReorderGripPopover } from '@/features/buckets/ReorderHint'
 import { useReorderHint } from '@/features/buckets/ReorderHintContext'
 import { useRowLongPressReorder } from '@/features/buckets/useRowLongPressReorder'
-import { manualSortableShiftY } from '@/features/buckets/rowLongPressReorder'
+import {
+  manualSortableShiftY,
+  resolveRowHandlers,
+} from '@/features/buckets/rowLongPressReorder'
 import { BUCKET_NAME_MAX_LENGTH } from '@/lib/buckets'
 import { prefersReducedMotion } from '@/lib/motion'
 import type { Database } from '@/types/database'
@@ -183,6 +186,12 @@ export default function SortableBucketList({
               idx={idx}
               isLast={idx === buckets.length - 1}
               renaming={renamingId === bucket.id}
+              rowHandlers={resolveRowHandlers({
+                dragEnabled: false,
+                bucketId: bucket.id,
+                dragHandlers: {},
+                onMoveMoney,
+              })}
               {...rowProps}
             />
           </li>
@@ -238,7 +247,12 @@ export default function SortableBucketList({
                 manualSortableTransition={
                   manualSortableActive ? manualSortableTransition : undefined
                 }
-                rowHandlers={getRowHandlers(bucket.id)}
+                rowHandlers={resolveRowHandlers({
+                  dragEnabled: true,
+                  bucketId: bucket.id,
+                  dragHandlers: getRowHandlers(bucket.id),
+                  onMoveMoney,
+                })}
                 {...rowProps}
               />
             ))}

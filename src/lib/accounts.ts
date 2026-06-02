@@ -50,7 +50,16 @@ export const CASH_ACCOUNT_SUBTYPES = new Set<string>([
   'certificate_of_deposit',
   'cash_management',
   'treasury',
+  'manual',
 ])
+
+export function isManualAccount(a: Pick<Account, 'source'>): boolean {
+  return a.source === 'manual'
+}
+
+export function isTellerAccount(a: Pick<Account, 'source'>): boolean {
+  return a.source === 'teller'
+}
 
 export function isCashAccount(a: Pick<Account, 'account_type'>): boolean {
   if (!a.account_type) return false
@@ -77,4 +86,36 @@ export function latestCashSyncAt(accounts: Account[]): string | null {
     }
   }
   return latest
+}
+
+export async function addManualAccount(
+  amount: number,
+  label: string,
+): Promise<string> {
+  const { data, error } = await supabase.rpc('add_manual_account', {
+    p_amount: amount,
+    p_label: label,
+  })
+  if (error) throw error
+  return data as string
+}
+
+export async function updateManualAccount(
+  accountId: string,
+  amount: number,
+  label: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('update_manual_account', {
+    p_account_id: accountId,
+    p_amount: amount,
+    p_label: label,
+  })
+  if (error) throw error
+}
+
+export async function deleteManualAccount(accountId: string): Promise<void> {
+  const { error } = await supabase.rpc('delete_manual_account', {
+    p_account_id: accountId,
+  })
+  if (error) throw error
 }

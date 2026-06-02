@@ -220,7 +220,7 @@ export default function MoveMoneyDialog({
                 step="0.01"
                 value={amountStr}
                 onChange={(e) => {
-                  setAmountStr(e.target.value)
+                  setAmountStr(e.target.value.replace(/-/g, ''))
                   setError(null)
                 }}
                 onFocus={(e) => scrollFocusedIntoView(e.currentTarget)}

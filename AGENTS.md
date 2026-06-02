@@ -32,7 +32,7 @@ Entry point for AI coding agents (and humans) working in this repo.
   If you touch RLS or `auth_family_id()`, re-read the SECURITY WARNING
   at the top of
   [supabase/migrations/00000000000000_initial_schema.sql](./supabase/migrations/00000000000000_initial_schema.sql).
-- **The ledger identity is the contract.** Cash (Teller) = allocations +
+- **The ledger identity is the contract.** Cash (linked banks + manual money sources) = allocations +
   unallocated, with unallocated derived in SQL (`member_available_balance`).
   **User signal for “rebalance”:** negative red unallocated on Home — not a
   separate integrity banner. **Operator ledger checks** (automated family-wide

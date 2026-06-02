@@ -45,7 +45,8 @@ export type Database = {
           institution_name: string | null
           last_synced_at: string | null
           owner_member_id: string | null
-          teller_account_id: string
+          source: string
+          teller_account_id: string | null
           teller_enrollment_id: string | null
         }
         Insert: {
@@ -58,7 +59,8 @@ export type Database = {
           institution_name?: string | null
           last_synced_at?: string | null
           owner_member_id?: string | null
-          teller_account_id: string
+          source?: string
+          teller_account_id?: string | null
           teller_enrollment_id?: string | null
         }
         Update: {
@@ -71,7 +73,8 @@ export type Database = {
           institution_name?: string | null
           last_synced_at?: string | null
           owner_member_id?: string | null
-          teller_account_id?: string
+          source?: string
+          teller_account_id?: string | null
           teller_enrollment_id?: string | null
         }
         Relationships: [
@@ -419,6 +422,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_manual_account: {
+        Args: { p_amount: number; p_label: string }
+        Returns: string
+      }
       auth_family_id: { Args: never; Returns: string }
       auth_member_id: { Args: never; Returns: string }
       auth_role: { Args: never; Returns: string }
@@ -433,6 +440,10 @@ export type Database = {
       bucket_visible_to_adults: {
         Args: { p_bucket_id: string }
         Returns: boolean
+      }
+      delete_manual_account: {
+        Args: { p_account_id: string }
+        Returns: undefined
       }
       ensure_member_bucket_orders: { Args: never; Returns: undefined }
       generate_join_code: { Args: never; Returns: string }
@@ -469,6 +480,10 @@ export type Database = {
       send_money: {
         Args: { p_amount: number; p_note?: string; p_to_member_id: string }
         Returns: string
+      }
+      update_manual_account: {
+        Args: { p_account_id: string; p_amount: number; p_label: string }
+        Returns: undefined
       }
     }
     Enums: {

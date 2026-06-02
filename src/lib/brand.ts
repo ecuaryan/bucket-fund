@@ -121,7 +121,12 @@ export function householdAdminLabel(
   return trimmed || HOUSEHOLD_ADMIN_PHRASE
 }
 
-export const ADMIN_LINKED_ACCOUNTS_INTRO = `Read-only—${BANK_READ_ONLY_ASSURANCE}.`
+/** Always-shown lead for the Money sources section (covers banks + manual). */
+export const ADMIN_MONEY_SOURCES_INTRO =
+  'Add a linked bank or a manual amount—both count toward the money you organize into buckets. Enter manual amounts by hand and edit them anytime.'
+
+/** Bank-specific guidance, shown only once at least one bank is linked. */
+export const ADMIN_LINKED_ACCOUNTS_INTRO = `Linked banks are read-only—${BANK_READ_ONLY_ASSURANCE}.`
 
 export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_PREFIX =
   'Use Reconnect when a bank link breaks. Use '
@@ -131,7 +136,7 @@ export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_SUFFIX =
   ' to pull the latest balances. Link bank is for a new institution. To change which accounts you share, Unlink that bank and link it again.'
 
 export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
-  'Choose the accounts to share at that bank. Balances count toward household unallocated until you assign an account to a child.'
+  'Balances count toward the money you can organize into buckets.'
 
 export function adminLinkBankConfirmMessage(): string {
   return (
@@ -200,6 +205,45 @@ export const HOME_LINK_BANK_ADMIN_BODY =
   `Connect banks in Admin. To change which accounts you share at a bank, Unlink it and link again. Read-only—${BANK_READ_ONLY_ASSURANCE}.`
 
 export const HOME_LINK_BANK_ADMIN_ACTION = 'Link in Admin'
+
+export const HOME_ADD_SOURCE_TITLE = 'Start organizing your money'
+
+export const HOME_ADD_SOURCE_ADMIN_BODY =
+  'Not ready to link a bank? Add a money source with the amount you want to organize—your real balance, a rough estimate, or any number to try it out. No bank connection required, and you can link one anytime.'
+
+export const HOME_ADD_SOURCE_MANUAL_ACTION = 'Add a money source'
+
+export const HOME_ADD_SOURCE_LINK_ACTION = 'Or link a bank'
+
+export function homeAddSourceMemberBody(
+  adminName: string | null | undefined,
+): string {
+  return `Ask ${householdAdminLabel(adminName)} to add a money source—a linked bank or just an amount—so Buckets can show balances.`
+}
+
+export const MANUAL_SOURCE_DIALOG_TITLE = 'Add a money source'
+export const MANUAL_SOURCE_DIALOG_BODY =
+  'Enter the amount you want to organize. Make it up, estimate it, or use your real balance—you can edit it anytime.'
+export const MANUAL_SOURCE_LABEL_PLACEHOLDER = 'Cash on hand'
+export const MANUAL_SOURCE_DEFAULT_LABEL = 'Cash on hand'
+
+/** Prefill for new manual sources so admins can tap Add and try buckets immediately. */
+export const MANUAL_SOURCE_SUGGESTED_AMOUNT = 1000
+
+export const ADMIN_MANUAL_GROUP_TITLE = 'Manual sources'
+export const ADMIN_MONEY_SOURCES_SECTION_TITLE = 'Money sources'
+export const ADMIN_ADD_MONEY_SOURCE_ACTION = 'Add money source'
+export const ADMIN_ADD_SOURCE_LINK_OPTION = 'Link a bank'
+export const ADMIN_ADD_SOURCE_MANUAL_OPTION = 'Enter an amount manually'
+
+export const BREAKDOWN_CASH_LABEL = 'Cash'
+export const BREAKDOWN_LINKED_CASH_LABEL = 'Linked cash'
+export const BREAKDOWN_MANUAL_CASH_LABEL = 'Manual cash'
+
+export const SEND_ADD_SOURCE_TITLE = 'Add a money source first'
+
+export const SEND_ADD_SOURCE_ADMIN_BODY =
+  'Send uses cash from the household balance in Buckets. Add a money source in Admin—a linked bank or just an amount—so we know how much you can send.'
 
 export function homeLinkBankMemberBody(
   adminName: string | null | undefined,
