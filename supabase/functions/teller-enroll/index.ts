@@ -213,6 +213,7 @@ Deno.serve(async (req: Request) => {
       'id, teller_account_id, owner_member_id, institution_name, account_type, account_name',
     )
     .eq('family_id', enrollment.family_id)
+    .eq('source', 'teller')
   if (existingError) {
     return jsonResponse(
       { error: 'Failed to load existing accounts', details: existingError.message },

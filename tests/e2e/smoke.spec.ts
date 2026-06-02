@@ -24,7 +24,7 @@ test.describe('smoke', () => {
 
     await expect(page).toHaveURL('/')
     await expect(page.getByRole('heading', { name: 'Buckets' })).toBeVisible()
-    await expect(page.getByLabel('Link a bank account')).toBeVisible()
+    await expect(page.getByLabel('Add a money source')).toBeVisible()
   })
 
   test('forgot password page loads from login', async ({ page }) => {

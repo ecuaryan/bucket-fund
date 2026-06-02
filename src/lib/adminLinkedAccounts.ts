@@ -14,6 +14,8 @@ export type InstitutionGroup = {
   tellerConnectEnrollmentId: string | null
   /** All enrollments backing this institution (for Unlink). */
   enrollmentIds: string[]
+  /** Manual money sources (no Teller enrollment). */
+  isManual: boolean
 }
 
 export function normalizeInstitutionKey(name: string | null | undefined): string {
@@ -65,11 +67,16 @@ export function groupAccountsByInstitution(
   enrollmentMeta: Map<string, TellerEnrollmentMeta>,
 ): InstitutionGroup[] {
   const byInstitution = new Map<string, Account[]>()
-  const orphans: Account[] = []
+  const tellerOrphans: Account[] = []
+  const manualAccounts: Account[] = []
 
   for (const account of sortAccountsStable(accounts)) {
+    if (account.source === 'manual') {
+      manualAccounts.push(account)
+      continue
+    }
     if (!account.teller_enrollment_id) {
-      orphans.push(account)
+      tellerOrphans.push(account)
       continue
     }
     const meta = enrollmentMeta.get(account.teller_enrollment_id)
@@ -114,6 +121,7 @@ export function groupAccountsByInstitution(
       primaryEnrollmentId,
       tellerConnectEnrollmentId: primaryMeta?.enrollmentId ?? null,
       enrollmentIds,
+      isManual: false,
     })
   }
 
@@ -121,16 +129,46 @@ export function groupAccountsByInstitution(
     (a.institutionName ?? '').localeCompare(b.institutionName ?? ''),
   )
 
-  if (orphans.length > 0) {
+  if (manualAccounts.length > 0) {
+    const sorted = sortAccountsStable(manualAccounts)
+    let lastSyncedAt: string | null = null
+    let totalBalance = 0
+    for (const account of sorted) {
+      totalBalance += Number(account.current_balance)
+      if (
+        account.last_synced_at &&
+        (!lastSyncedAt || account.last_synced_at > lastSyncedAt)
+      ) {
+        lastSyncedAt = account.last_synced_at
+      }
+    }
+    groups.unshift({
+      groupKey: 'manual',
+      institutionName: null,
+      accounts: sorted,
+      totalBalance,
+      lastSyncedAt,
+      primaryEnrollmentId: '',
+      tellerConnectEnrollmentId: null,
+      enrollmentIds: [],
+      isManual: true,
+    })
+  }
+
+  if (tellerOrphans.length > 0) {
     groups.push({
       groupKey: 'unlinked',
       institutionName: 'Unlinked',
-      accounts: sortAccountsStable(orphans),
-      totalBalance: orphans.reduce((sum, a) => sum + Number(a.current_balance), 0),
+      accounts: sortAccountsStable(tellerOrphans),
+      totalBalance: tellerOrphans.reduce(
+        (sum, a) => sum + Number(a.current_balance),
+        0,
+      ),
       lastSyncedAt: null,
       primaryEnrollmentId: '',
       tellerConnectEnrollmentId: null,
       enrollmentIds: [],
+      isManual: false,
     })
   }
 

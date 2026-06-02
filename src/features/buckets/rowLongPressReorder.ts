@@ -48,6 +48,30 @@ export function autoScrollSpeed(
   return 0
 }
 
+export type RowHandlers = Record<string, unknown>
+
+/**
+ * Resolve the DOM handlers for a bucket row.
+ *
+ * With reorder enabled (2+ buckets, not renaming) the long-press/drag handlers
+ * own the row — a tap is detected on release inside them and opens Move money.
+ *
+ * When reorder is disabled (a single bucket, or while another row is being
+ * renamed) those handlers aren't attached, so the row still needs a plain click
+ * handler to open Move money. Without it, tapping a lone bucket did nothing and
+ * only the keyboard (Enter/Space) could open the dialog. Keep both render
+ * branches funneled through here so that gap can't reopen.
+ */
+export function resolveRowHandlers(args: {
+  dragEnabled: boolean
+  bucketId: string
+  dragHandlers: RowHandlers
+  onMoveMoney: (bucketId: string) => void
+}): RowHandlers {
+  if (args.dragEnabled) return args.dragHandlers
+  return { onClick: () => args.onMoveMoney(args.bucketId) }
+}
+
 export type PressPoint = { x: number; y: number }
 
 export function pressDistance(a: PressPoint, b: PressPoint): number {

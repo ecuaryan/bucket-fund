@@ -72,7 +72,8 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 ---
 
 ### Accounts
-- Only the **admin** links or unlinks banks (Teller Connect on **Admin → Linked accounts**).
+- **Money sources** are rows in `accounts`: a **linked bank** (Teller) and/or one or more **manual amounts** (admin-entered; no bank connection). They sum into the family cash pool.
+- Only the **admin** links or unlinks banks and adds/edits/removes manual sources (**Admin → Money sources**).
 - **Link bank** adds a new institution (new Teller enrollment). Select every account
   you want to share at that bank in the Connect flow.
 - **Reconnect** on an existing bank card opens Teller Connect in update mode for that
@@ -87,7 +88,8 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
   (admin and member) share the family pool on Home — assigning to a spouse is not in v1 UI.
 - Children may have zero, one, or multiple linked checking/savings accounts (multiple supported).
 - Children without linked accounts are **virtual-only** — their balance is funded purely by sends from other members
-- The family as a whole must have at least one linked account
+- The family as a whole must have at least one money source (linked bank or manual amount)
+- **Manual money sources:** admin-only, family-pool only (`owner_member_id` null), user-edited amounts (no auto-refresh). Coexist with linked banks; Home breakdown shows linked cash and manual cash separately when both are present.
 - Re-linking the same bank account (even when Teller issues a new `acc_…` id) preserves
   the prior child assignment and updates one row matched by institution + last four + type
 - Real balances are kept in sync via Teller webhooks (`transactions.processed` triggers a
@@ -102,7 +104,7 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 ### Balance Model
 
 **The invariant:**
-> Sum of all bucket allocations + sum of all unallocated balances across every member = total real balance from Teller across all linked accounts.
+> Sum of all bucket allocations + sum of all unallocated balances across every member = total cash from all money sources (linked bank balances + manual amounts).
 
 Every dollar lives in exactly one place — either in a named bucket or in someone's unallocated balance.
 
@@ -187,13 +189,12 @@ system-error banner.
 
 ### Home Screen
 - Bucket list with allocated amounts per bucket (adults: shared set, per-person sort order)
-- **Unallocated card** when at least one bank account is linked: green if ≥ 0, red if < 0
-  (red = rebalance signal — bank cash dropped but bucket labels did not)
-- **No linked accounts (admin/member):** link-bank CTA instead of the unallocated card —
-  negative unallocated with zero cash is not a meaningful rebalance signal; optional
-  note of total allocated across buckets. Admin gets a link to Admin; members are
-  told to ask the household admin.
-- No separate "real balance" display — unallocated (when linked) is the signal
+- **Unallocated card** when at least one money source exists: green if ≥ 0, red if < 0
+  (red = rebalance signal — cash dropped but bucket labels did not)
+- **No money sources (admin/member):** “Add a money source” CTA instead of the unallocated card —
+  admin can enter an amount manually from Home or link a bank in Admin; members are
+  told to ask the household admin. Optional note of total allocated across buckets.
+- No separate "real balance" display — unallocated (when sources exist) is the signal
 
 ---
 
@@ -202,9 +203,9 @@ system-error banner.
 Two different situations — do not conflate them in UX or docs.
 
 **1. Budgeting gap (normal, user-facing)**  
-Bank balance changed; bucket labels did not. Home shows negative unallocated
-(when accounts are linked). The user fixes it with bucket moves. No extra
-“integrity” modal. With no linked accounts, Home shows the link-bank CTA instead.
+Bank or manual pool balance changed; bucket labels did not. Home shows negative unallocated
+(when money sources exist). The user fixes it with bucket moves. No extra
+“integrity” modal. With no money sources, Home shows the add-a-money-source CTA instead.
 
 **2. System ledger gap (abnormal, operator-facing)**  
 Stored cash, allocations, and per-member math no longer form one consistent

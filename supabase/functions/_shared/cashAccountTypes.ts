@@ -6,6 +6,7 @@ export const CASH_ACCOUNT_SUBTYPES = new Set([
   'certificate_of_deposit',
   'cash_management',
   'treasury',
+  'manual',
 ])
 
 export function isCashAccountType(accountType: string | null | undefined): boolean {

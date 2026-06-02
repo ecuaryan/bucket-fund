@@ -23,6 +23,8 @@ export type ChildSetAsideLine = {
 export type HomeBalanceBreakdown = {
   unallocated: number
   totalCash: number
+  bankCash: number
+  manualCash: number
   bucketAllocated: number
   childrenSetAside: number
   children: ChildSetAsideLine[]
@@ -67,9 +69,16 @@ export function parseBreakdownRow(data: Json): HomeBalanceBreakdown | null {
     typeof row.bank_last_synced_at === 'string'
       ? row.bank_last_synced_at
       : null
+  const totalCash = num('total_cash')
+  const bankCash =
+    row.bank_cash !== undefined ? num('bank_cash') : totalCash
+  const manualCash =
+    row.manual_cash !== undefined ? num('manual_cash') : 0
   return {
     unallocated: num('unallocated'),
-    totalCash: num('total_cash'),
+    totalCash,
+    bankCash,
+    manualCash,
     bucketAllocated: num('bucket_allocated'),
     childrenSetAside: num('children_set_aside'),
     children,
@@ -92,11 +101,20 @@ export function computeClientUnallocated(
   return sumCashBalance(accounts) - allocated
 }
 
+function sumCashBySource(
+  accounts: Account[],
+  source: Account['source'],
+): number {
+  return sumCashBalance(accounts.filter((a) => a.source === source))
+}
+
 function clientBreakdownFallback(
   accounts: Account[],
   buckets: { allocated_amount: string | number }[],
 ): HomeBalanceBreakdown {
   const totalCash = sumCashBalance(accounts)
+  const bankCash = sumCashBySource(accounts, 'teller')
+  const manualCash = sumCashBySource(accounts, 'manual')
   const bucketAllocated = buckets.reduce(
     (sum, b) => sum + Number(b.allocated_amount),
     0,
@@ -104,6 +122,8 @@ function clientBreakdownFallback(
   return {
     unallocated: totalCash - bucketAllocated,
     totalCash,
+    bankCash,
+    manualCash,
     bucketAllocated,
     childrenSetAside: 0,
     children: [],

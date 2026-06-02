@@ -170,6 +170,7 @@ checks are deferred until a possible paid SaaS phase.
 - Move money flow (`move_money` Postgres fn + MoveMoneyDialog)
 - Send money (`send_money` RPC + Send page; adults fund children; blocked adult↔adult)
 - Teller Connect: link bank, sync accounts, webhook balance updates, unlink
+- Manual money sources: admin-entered amounts (no bank) for onboarding; coexist with linked banks
 - Transaction history with bucket filter, pagination, tap-to-expand notes
 - Admin: assign linked bank accounts to children (family pool default)
 - Dark theme (pure black + zinc palette)

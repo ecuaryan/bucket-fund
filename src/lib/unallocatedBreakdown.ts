@@ -1,3 +1,8 @@
+import {
+  BREAKDOWN_CASH_LABEL,
+  BREAKDOWN_LINKED_CASH_LABEL,
+  BREAKDOWN_MANUAL_CASH_LABEL,
+} from '@/lib/brand'
 import type { HomeBalanceBreakdown } from '@/lib/availableBalance'
 
 export type BreakdownLine = {
@@ -11,12 +16,15 @@ export type BreakdownLine = {
 export type UnallocatedSummary = {
   label: string
   amount: number
-  accountCount?: number
+  /** When set, rendered as "<money> <countText>" (e.g. "across 2 sources"). */
+  countText?: string
 }
 
 type BuildOpts = {
   isChild: boolean
   cashAccountsCount: number
+  bankAccountsCount: number
+  manualAccountsCount: number
   childTotal: number
 }
 
@@ -46,14 +54,41 @@ export function buildUnallocatedLines(
     return lines
   }
 
-  if (breakdown.totalCash > 0) {
+  if (breakdown.manualCash > 0) {
+    if (breakdown.bankCash > 0) {
+      const bankSuffix =
+        opts.bankAccountsCount > 0
+          ? ` (${opts.bankAccountsCount} account${opts.bankAccountsCount === 1 ? '' : 's'})`
+          : ''
+      lines.push({
+        key: 'bank-cash',
+        label: `${BREAKDOWN_LINKED_CASH_LABEL}${bankSuffix}`,
+        amount: breakdown.bankCash,
+        kind: 'add',
+      })
+    }
+    const manualSuffix =
+      opts.manualAccountsCount > 1
+        ? ` (${opts.manualAccountsCount} sources)`
+        : ''
+    // "Manual cash" only earns its qualifier when there is bank cash to
+    // distinguish it from; on its own it is just the household's cash.
+    const manualLabel =
+      breakdown.bankCash > 0 ? BREAKDOWN_MANUAL_CASH_LABEL : BREAKDOWN_CASH_LABEL
+    lines.push({
+      key: 'manual-cash',
+      label: `${manualLabel}${manualSuffix}`,
+      amount: breakdown.manualCash,
+      kind: 'add',
+    })
+  } else if (breakdown.totalCash > 0) {
     const accountSuffix =
       opts.cashAccountsCount > 0
         ? ` (${opts.cashAccountsCount} account${opts.cashAccountsCount === 1 ? '' : 's'})`
         : ''
     lines.push({
       key: 'linked-cash',
-      label: `Linked cash${accountSuffix}`,
+      label: `${BREAKDOWN_LINKED_CASH_LABEL}${accountSuffix}`,
       amount: breakdown.totalCash,
       kind: 'add',
     })
@@ -105,11 +140,30 @@ export function unallocatedSummary(
   }
 
   if (breakdown.totalCash <= 0) return null
+
+  const hasManual = breakdown.manualCash > 0
+  const hasBank = breakdown.bankCash > 0
+
+  if (hasManual && !hasBank) {
+    const n = opts.manualAccountsCount
+    return {
+      label: BREAKDOWN_CASH_LABEL,
+      amount: breakdown.totalCash,
+      countText: n > 1 ? `across ${n} sources` : undefined,
+    }
+  }
+
+  if (hasManual && hasBank) {
+    // Mixed: avoid mislabeling manual as "linked"; show the plain total.
+    return { label: BREAKDOWN_CASH_LABEL, amount: breakdown.totalCash }
+  }
+
+  const n = opts.cashAccountsCount
   return {
-    label: 'Linked cash',
+    label: BREAKDOWN_LINKED_CASH_LABEL,
     amount: breakdown.totalCash,
-    accountCount:
-      opts.cashAccountsCount > 0 ? opts.cashAccountsCount : undefined,
+    countText:
+      n > 0 ? `across ${n} linked account${n === 1 ? '' : 's'}` : undefined,
   }
 }
 
@@ -117,9 +171,8 @@ export function formatUnallocatedSummary(
   summary: UnallocatedSummary,
   formatMoney: (amount: number) => string,
 ): string {
-  if (summary.accountCount != null && summary.accountCount > 0) {
-    const n = summary.accountCount
-    return `${formatMoney(summary.amount)} across ${n} linked account${n === 1 ? '' : 's'}`
+  if (summary.countText) {
+    return `${formatMoney(summary.amount)} ${summary.countText}`
   }
   return `${summary.label}: ${formatMoney(summary.amount)}`
 }

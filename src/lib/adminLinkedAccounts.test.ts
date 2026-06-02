@@ -3,6 +3,9 @@ import {
   groupAccountsByInstitution,
   normalizeInstitutionKey,
 } from '@/lib/adminLinkedAccounts'
+import type { Database } from '@/types/database'
+
+type Account = Database['public']['Tables']['accounts']['Row']
 
 describe('adminLinkedAccounts', () => {
   it('normalizes institution names for grouping', () => {
@@ -15,6 +18,7 @@ describe('adminLinkedAccounts', () => {
           id: 'a1',
           family_id: 'fam',
           owner_member_id: null,
+          source: 'teller',
           teller_account_id: 'acc1',
           teller_enrollment_id: 'enr-internal-1',
           institution_name: 'Ally',
@@ -28,6 +32,7 @@ describe('adminLinkedAccounts', () => {
           id: 'a2',
           family_id: 'fam',
           owner_member_id: null,
+          source: 'teller',
           teller_account_id: 'acc2',
           teller_enrollment_id: 'enr-internal-2',
           institution_name: 'Ally',
@@ -72,5 +77,27 @@ describe('adminLinkedAccounts', () => {
     expect(groups[0]?.enrollmentIds).toEqual(['enr-internal-1', 'enr-internal-2'])
     expect(groups[0]?.primaryEnrollmentId).toBe('enr-internal-2')
     expect(groups[0]?.tellerConnectEnrollmentId).toBe('enr_teller_2')
+    expect(groups[0]?.isManual).toBe(false)
+  })
+
+  it('groups manual sources separately from teller orphans', () => {
+    const manual: Account = {
+      id: 'm1',
+      family_id: 'fam',
+      owner_member_id: null,
+      source: 'manual',
+      teller_account_id: null,
+      teller_enrollment_id: null,
+      institution_name: 'Cash on hand',
+      account_name: 'Cash on hand',
+      account_type: 'manual',
+      current_balance: 500,
+      last_synced_at: '2026-05-30T12:00:00Z',
+      created_at: '2026-05-30T12:00:00Z',
+    }
+    const groups = groupAccountsByInstitution([manual], new Map())
+    expect(groups).toHaveLength(1)
+    expect(groups[0]?.isManual).toBe(true)
+    expect(groups[0]?.enrollmentIds).toEqual([])
   })
 })

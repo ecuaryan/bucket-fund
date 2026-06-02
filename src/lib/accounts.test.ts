@@ -3,6 +3,7 @@ import {
   accountAssignmentChildId,
   isCashAccount,
   isFamilyPoolAccount,
+  isManualAccount,
   latestCashSyncAt,
   sumCashBalance,
 } from '@/lib/accounts'
@@ -24,14 +25,16 @@ function account(
     account_name: null,
     last_synced_at: null,
     created_at: '2026-01-01T00:00:00Z',
+    source: 'teller',
     ...overrides,
   }
 }
 
 describe('isCashAccount', () => {
-  it('treats checking and savings as cash', () => {
+  it('treats checking, savings, and manual as cash', () => {
     expect(isCashAccount({ account_type: 'checking' })).toBe(true)
     expect(isCashAccount({ account_type: 'SAVINGS' })).toBe(true)
+    expect(isCashAccount({ account_type: 'manual' })).toBe(true)
   })
 
   it('excludes credit cards and unknown types', () => {
@@ -70,6 +73,13 @@ describe('account assignment helpers', () => {
   })
 })
 
+describe('isManualAccount', () => {
+  it('detects manual money sources', () => {
+    expect(isManualAccount({ source: 'manual' })).toBe(true)
+    expect(isManualAccount({ source: 'teller' })).toBe(false)
+  })
+})
+
 describe('sumCashBalance', () => {
   it('sums only cash subtypes', () => {
     const total = sumCashBalance([
@@ -78,6 +88,13 @@ describe('sumCashBalance', () => {
       account({ current_balance: 999, account_type: 'credit_card' }),
     ])
     expect(total).toBe(150)
+  })
+
+  it('includes manual account_type in the total', () => {
+    const total = sumCashBalance([
+      account({ current_balance: 200, account_type: 'manual', source: 'manual' }),
+    ])
+    expect(total).toBe(200)
   })
 })
 

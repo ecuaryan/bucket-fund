@@ -11,13 +11,16 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import {
-  HOME_LINK_BANK_ADMIN_ACTION,
-  HOME_LINK_BANK_ADMIN_BODY,
-  HOME_LINK_BANK_TITLE,
+  HOME_ADD_SOURCE_ADMIN_BODY,
+  HOME_ADD_SOURCE_LINK_ACTION,
+  HOME_ADD_SOURCE_MANUAL_ACTION,
+  HOME_ADD_SOURCE_TITLE,
+  homeAddSourceMemberBody,
   homeChildUnallocatedHint,
-  homeLinkBankMemberBody,
   homeMemberNoBucketsHint,
 } from '@/lib/brand'
+import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
+import { isCashAccount } from '@/lib/accounts'
 import HomePageSkeleton from '@/components/HomePageSkeleton'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
@@ -85,6 +88,7 @@ export default function HomePage() {
   const [actionError, setActionError] = useState<string | null>(null)
   const [refreshError, setRefreshError] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
+  const [manualSourceOpen, setManualSourceOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [prevDetailsMemberId, setPrevDetailsMemberId] = useState<string | null>(
     null,
@@ -400,23 +404,30 @@ export default function HomePage() {
     !balanceUsesFallback &&
     (childTotal > 0 || balanceBreakdown.bucketAllocated > 0)
   const showBalanceBreakdown = showAdultBreakdown || showChildBreakdown
-  const hasLinkedAccounts = accounts.length > 0
-  const showLinkBankCard = isAdult && !hasLinkedAccounts
+  const hasMoneySources = accounts.length > 0
+  // Once money is in a bucket it is "organized" — show the negative red
+  // unallocated rebalance signal rather than the getting-started CTA. Only
+  // adults with nothing set up at all (no sources, nothing allocated) see it.
+  const hasAllocations = balanceBreakdown.bucketAllocated > 0
+  const showAddSourceCard = isAdult && !hasMoneySources && !hasAllocations
   const unallocatedColor =
     unallocated >= 0
       ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30'
       : 'bg-red-500/10 text-red-300 ring-red-500/30'
 
-  const cashAccountsCount = accounts.filter(
-    (a) => a.current_balance !== null && Number(a.current_balance) > 0,
-  ).length
+  const cashAccounts = accounts.filter(
+    (a) => isCashAccount(a) && Number(a.current_balance) > 0,
+  )
+  const cashAccountsCount = cashAccounts.length
+  const bankAccountsCount = cashAccounts.filter((a) => a.source === 'teller').length
+  const manualAccountsCount = cashAccounts.filter((a) => a.source === 'manual').length
 
   // Family-wide bank sync time. Comes from the breakdown RPC so every role —
   // including children, who can't read the accounts table — sees the same value.
   const bankSyncedLabel = formatRelativeTime(balanceBreakdown.bankLastSyncedAt)
 
   const unallocatedHint =
-    showLinkBankCard || showBalanceBreakdown
+    showAddSourceCard || showBalanceBreakdown
       ? null
       : cashAccountsCount > 0
         ? `${formatMoney(balanceBreakdown.totalCash)} across ${cashAccountsCount} linked account${cashAccountsCount === 1 ? '' : 's'}`
@@ -427,6 +438,8 @@ export default function HomePage() {
   const breakdownOpts = {
     isChild,
     cashAccountsCount,
+    bankAccountsCount,
+    manualAccountsCount,
     childTotal,
   }
   const breakdownLines = buildUnallocatedLines(balanceBreakdown, breakdownOpts)
@@ -442,14 +455,14 @@ export default function HomePage() {
   }
 
   const freshnessFooter =
-    bankSyncedLabel || (isAdult && hasLinkedAccounts) ? (
+    bankSyncedLabel || (isAdult && hasMoneySources) ? (
       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
         {bankSyncedLabel ? (
           <p className="text-[11px] opacity-50">
             Balances refreshed {bankSyncedLabel}
           </p>
         ) : null}
-        {isAdult && hasLinkedAccounts ? (
+        {isAdult && hasMoneySources && bankAccountsCount > 0 ? (
           <RefreshIconButton
             busy={syncing}
             disabled={syncing}
@@ -472,21 +485,21 @@ export default function HomePage() {
           Sends may be unavailable until migrations are applied.
         </p>
       )}
-      {showLinkBankCard ? (
+      {showAddSourceCard ? (
         <section
           className="rounded-2xl bg-emerald-500/10 px-4 py-5 ring-1 ring-emerald-500/30"
-          aria-label="Link a bank account"
+          aria-label="Add a money source"
         >
           <p className="text-xs font-medium uppercase tracking-wide text-emerald-300/70">
             Getting started
           </p>
           <h2 className="mt-1 text-lg font-semibold text-emerald-100">
-            {HOME_LINK_BANK_TITLE}
+            {HOME_ADD_SOURCE_TITLE}
           </h2>
           <p className="mt-2 text-sm text-emerald-200/80">
             {isAdmin
-              ? HOME_LINK_BANK_ADMIN_BODY
-              : homeLinkBankMemberBody(householdAdminName)}
+              ? HOME_ADD_SOURCE_ADMIN_BODY
+              : homeAddSourceMemberBody(householdAdminName)}
           </p>
           {balanceBreakdown.bucketAllocated > 0 ? (
             <p className="mt-2 text-xs text-emerald-200/60">
@@ -495,12 +508,21 @@ export default function HomePage() {
             </p>
           ) : null}
           {isAdmin ? (
-            <Link
-              to="/admin"
-              className="mt-4 inline-flex rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
-            >
-              {HOME_LINK_BANK_ADMIN_ACTION}
-            </Link>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setManualSourceOpen(true)}
+                className="inline-flex rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
+              >
+                {HOME_ADD_SOURCE_MANUAL_ACTION}
+              </button>
+              <Link
+                to="/admin"
+                className="inline-flex rounded-lg border border-emerald-500/40 px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/10"
+              >
+                {HOME_ADD_SOURCE_LINK_ACTION}
+              </Link>
+            </div>
           ) : null}
         </section>
       ) : (
@@ -614,11 +636,11 @@ export default function HomePage() {
         {buckets.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-zinc-700 p-6 text-center">
             <p className="text-sm font-medium text-zinc-300">
-              No buckets yet
+              {canCreateBuckets ? 'Start organizing your money' : 'No buckets yet'}
             </p>
             <p className="mt-1 text-xs text-zinc-400">
               {canCreateBuckets
-                ? 'Create your first one below.'
+                ? 'Create your first bucket below.'
                 : homeMemberNoBucketsHint(householdAdminName)}
             </p>
           </div>
@@ -690,6 +712,22 @@ export default function HomePage() {
           }
         }}
       />
+
+      {isAdmin ? (
+        <ManualSourceDialog
+          open={manualSourceOpen}
+          mode="create"
+          onClose={() => setManualSourceOpen(false)}
+          onSaved={async () => {
+            setSyncing(true)
+            try {
+              await loadData()
+            } finally {
+              setSyncing(false)
+            }
+          }}
+        />
+      ) : null}
     </>
   )
 }
