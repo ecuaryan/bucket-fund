@@ -430,7 +430,7 @@ export default function HomePage() {
     showAddSourceCard || showBalanceBreakdown
       ? null
       : cashAccountsCount > 0
-        ? `${formatMoney(balanceBreakdown.totalCash)} across ${cashAccountsCount} linked account${cashAccountsCount === 1 ? '' : 's'}`
+        ? `${formatMoney(balanceBreakdown.totalCash)} across ${cashAccountsCount} money source${cashAccountsCount === 1 ? '' : 's'}`
         : isChild
           ? homeChildUnallocatedHint(householdAdminName)
           : null

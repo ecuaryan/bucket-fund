@@ -240,6 +240,12 @@ export const BREAKDOWN_CASH_LABEL = 'Cash'
 export const BREAKDOWN_LINKED_CASH_LABEL = 'Linked cash'
 export const BREAKDOWN_MANUAL_CASH_LABEL = 'Manual cash'
 
+/** Collapsed Unallocated toggle, e.g. "$1,234.56 across 14 money sources". */
+export function unallocatedMoneySourcesCountText(count: number): string | undefined {
+  if (count <= 0) return undefined
+  return `across ${count} money source${count === 1 ? '' : 's'}`
+}
+
 export const SEND_ADD_SOURCE_TITLE = 'Add a money source first'
 
 export const SEND_ADD_SOURCE_ADMIN_BODY =
