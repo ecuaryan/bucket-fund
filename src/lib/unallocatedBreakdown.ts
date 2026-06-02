@@ -2,6 +2,7 @@ import {
   BREAKDOWN_CASH_LABEL,
   BREAKDOWN_LINKED_CASH_LABEL,
   BREAKDOWN_MANUAL_CASH_LABEL,
+  unallocatedMoneySourcesCountText,
 } from '@/lib/brand'
 import type { HomeBalanceBreakdown } from '@/lib/availableBalance'
 
@@ -141,29 +142,10 @@ export function unallocatedSummary(
 
   if (breakdown.totalCash <= 0) return null
 
-  const hasManual = breakdown.manualCash > 0
-  const hasBank = breakdown.bankCash > 0
-
-  if (hasManual && !hasBank) {
-    const n = opts.manualAccountsCount
-    return {
-      label: BREAKDOWN_CASH_LABEL,
-      amount: breakdown.totalCash,
-      countText: n > 1 ? `across ${n} sources` : undefined,
-    }
-  }
-
-  if (hasManual && hasBank) {
-    // Mixed: avoid mislabeling manual as "linked"; show the plain total.
-    return { label: BREAKDOWN_CASH_LABEL, amount: breakdown.totalCash }
-  }
-
-  const n = opts.cashAccountsCount
   return {
-    label: BREAKDOWN_LINKED_CASH_LABEL,
+    label: BREAKDOWN_CASH_LABEL,
     amount: breakdown.totalCash,
-    countText:
-      n > 0 ? `across ${n} linked account${n === 1 ? '' : 's'}` : undefined,
+    countText: unallocatedMoneySourcesCountText(opts.cashAccountsCount),
   }
 }
 

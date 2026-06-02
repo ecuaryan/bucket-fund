@@ -138,7 +138,7 @@ describe('unallocatedSummary', () => {
     })
     expect(summary).not.toBeNull()
     expect(formatUnallocatedSummary(summary!, fmt)).toBe(
-      '$1000.00 across 14 linked accounts',
+      '$1000.00 across 14 money sources',
     )
   })
 
@@ -164,10 +164,12 @@ describe('unallocatedSummary', () => {
         childTotal: 0,
       },
     )
-    expect(formatUnallocatedSummary(summary!, fmt)).toBe('$1100.00 across 2 sources')
+    expect(formatUnallocatedSummary(summary!, fmt)).toBe(
+      '$1100.00 across 2 money sources',
+    )
   })
 
-  it('summarizes a single manual source as plain Cash', () => {
+  it('summarizes a single money source with count', () => {
     const summary = unallocatedSummary(
       adultBreakdown({ totalCash: 1000, bankCash: 0, manualCash: 1000 }),
       {
@@ -178,7 +180,25 @@ describe('unallocatedSummary', () => {
         childTotal: 0,
       },
     )
-    expect(formatUnallocatedSummary(summary!, fmt)).toBe('Cash: $1000.00')
+    expect(formatUnallocatedSummary(summary!, fmt)).toBe(
+      '$1000.00 across 1 money source',
+    )
+  })
+
+  it('summarizes mixed linked and manual sources with total count', () => {
+    const summary = unallocatedSummary(
+      adultBreakdown({ totalCash: 5000, bankCash: 3000, manualCash: 2000 }),
+      {
+        isChild: false,
+        cashAccountsCount: 3,
+        bankAccountsCount: 2,
+        manualAccountsCount: 1,
+        childTotal: 0,
+      },
+    )
+    expect(formatUnallocatedSummary(summary!, fmt)).toBe(
+      '$5000.00 across 3 money sources',
+    )
   })
 })
 
