@@ -64,7 +64,7 @@ export default function AppShell() {
         <Outlet />
       </main>
 
-      <nav className="app-bottom-nav fixed inset-x-0 bottom-0 border-t border-zinc-800 bg-zinc-900/95 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] backdrop-blur">
+      <nav className="fixed inset-x-0 bottom-0 border-t border-zinc-800 bg-zinc-900/95 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] backdrop-blur">
         <ul className="mx-auto flex max-w-md items-stretch px-1 py-1.5 sm:px-2">
           <TabLink to="/" label={NAV_BUCKETS_LABEL} tab="buckets" />
           {showSendNav && <TabLink to="/send" label="Send" tab="send" />}

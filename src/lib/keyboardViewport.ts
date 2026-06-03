@@ -19,27 +19,24 @@ function scrollIntoViewNow(element: HTMLElement): void {
 }
 
 /**
- * Keep focused fields visible above the keyboard and fixed chrome.
+ * Keep a focused field within the scroll container's optimal viewing region.
  *
- * On touch devices `onFocus` fires before the keyboard finishes animating up,
- * and the keyboard reports its size over several `resize` events as it grows.
- * If the keyboard is already open we scroll once; otherwise we re-centre on
- * each resize until the field blurs, so it lands above the fully open keyboard
- * (not just the partially open one).
+ * The heavy lifting is CSS: `scroll-padding-bottom` (see `index.css`) reserves
+ * space for the fixed bottom tab bar so `scrollIntoView` lands the field above
+ * it. This helper just makes sure the scroll happens at the right time: on
+ * touch devices the keyboard animates in *after* `focus` fires and resizes the
+ * viewport, so we scroll once now and again on each viewport resize until the
+ * field blurs. We key off the resize event itself rather than a computed
+ * keyboard inset, which is ~0 under `interactive-widget=resizes-content`.
  */
 export function scrollFocusedIntoView(element: HTMLElement): void {
-  if (keyboardInsetPx() > 0) {
-    scrollIntoViewNow(element)
-    return
-  }
+  scrollIntoViewNow(element)
 
   const vv = window.visualViewport
   if (!vv) return
 
   let timer = 0
-  const onResize = () => {
-    if (keyboardInsetPx() > 0) scrollIntoViewNow(element)
-  }
+  const onResize = () => scrollIntoViewNow(element)
   const stop = () => {
     vv.removeEventListener('resize', onResize)
     element.removeEventListener('blur', stop)
@@ -48,6 +45,6 @@ export function scrollFocusedIntoView(element: HTMLElement): void {
 
   vv.addEventListener('resize', onResize)
   element.addEventListener('blur', stop)
-  // Safety net if the keyboard never opens (e.g. hardware keyboard / desktop).
-  timer = window.setTimeout(stop, 2000)
+  // Stop following once the field is done (or the viewport never settles).
+  timer = window.setTimeout(stop, 1500)
 }
