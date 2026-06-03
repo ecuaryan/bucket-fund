@@ -61,6 +61,9 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
   const [savingPin, setSavingPin] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+
   const loadMembers = useCallback(async () => {
     setLoadError(null)
     const { data, error } = await supabase
@@ -239,6 +242,55 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     }
   }
 
+  function startRename(m: Member) {
+    setRenameValue(m.name)
+    setRenamingId(m.id)
+    setActionError(null)
+    setInfo(null)
+  }
+
+  function cancelRename() {
+    setRenamingId(null)
+    setRenameValue('')
+  }
+
+  async function commitRename(m: Member) {
+    const next = renameValue.trim()
+    if (!next || next === m.name) {
+      cancelRename()
+      return
+    }
+    setRenamingId(null)
+    setRenameValue('')
+    setActionError(null)
+    setInfo(null)
+    const snapshot = members
+    setMembers((prev) =>
+      prev
+        ? prev.map((row) => (row.id === m.id ? { ...row, name: next } : row))
+        : prev,
+    )
+    setRefreshing(true)
+    try {
+      const { error } = await supabase
+        .from('family_members')
+        .update({ name: next })
+        .eq('id', m.id)
+      if (error) throw error
+      setInfo(`Renamed to ${next}.`)
+      await loadMembers()
+      onRosterChanged?.()
+      if (m.id === selfMemberId) {
+        await auth.refreshMember()
+      }
+    } catch (err) {
+      setMembers(snapshot)
+      setActionError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
   const sectionBusy = creating || savingPin || refreshing
 
   return (
@@ -314,22 +366,52 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
               key={m.id}
               className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
             >
-              <div>
-                <p className="text-sm font-medium text-zinc-300">
-                  {m.name}{' '}
-                  <span className="text-xs font-normal text-zinc-500">
+              {renamingId === m.id ? (
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <input
+                    autoFocus
+                    type="text"
+                    value={renameValue}
+                    aria-label={`Rename ${m.name}`}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') void commitRename(m)
+                      if (e.key === 'Escape') cancelRename()
+                    }}
+                    onBlur={() => void commitRename(m)}
+                    className="min-w-0 flex-1 rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-emerald-400 focus:outline focus:outline-2 focus:outline-emerald-400"
+                  />
+                  <span className="shrink-0 text-xs font-normal text-zinc-500">
                     ({roleLabel(m.role)})
                   </span>
-                </p>
-                <p className="text-xs text-zinc-500">
-                  {m.pin_set_at ? 'PIN set' : 'No PIN'}
-                  {m.pin_locked ? ' · locked' : ''}
-                  {m.pin_failed_attempts > 0 && !m.pin_locked
-                    ? ` · ${m.pin_failed_attempts} failed attempt${m.pin_failed_attempts === 1 ? '' : 's'}`
-                    : ''}
-                </p>
-              </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm font-medium text-zinc-300">
+                    {m.name}{' '}
+                    <span className="text-xs font-normal text-zinc-500">
+                      ({roleLabel(m.role)})
+                    </span>
+                  </p>
+                  <p className="text-xs text-zinc-500">
+                    {m.pin_set_at ? 'PIN set' : 'No PIN'}
+                    {m.pin_locked ? ' · locked' : ''}
+                    {m.pin_failed_attempts > 0 && !m.pin_locked
+                      ? ` · ${m.pin_failed_attempts} failed attempt${m.pin_failed_attempts === 1 ? '' : 's'}`
+                      : ''}
+                  </p>
+                </div>
+              )}
               <div className="flex flex-wrap gap-2">
+                {renamingId !== m.id && (
+                  <button
+                    type="button"
+                    onClick={() => startRename(m)}
+                    className="rounded-lg border border-zinc-700 px-2 py-1 text-xs font-semibold text-zinc-300 hover:bg-zinc-800"
+                  >
+                    Edit
+                  </button>
+                )}
                 {m.pin_locked && (
                   <button
                     type="button"

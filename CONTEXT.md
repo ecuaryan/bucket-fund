@@ -239,11 +239,27 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
 ---
 
 ### Authentication
-- **Admin (setup & bank):** email + password via Supabase Auth. Sign-up sets
+- **Admin (setup & bank):** email + password via Supabase Auth. Sign-up
+  collects **only email + password** (no name or household fields) to keep
+  onboarding frictionless and set up a future one-click OAuth path. Sign-up sets
   `bootstrap_family` metadata so only the first admin creates a tenant (PIN
-  users do not spawn extra families). The admin keeps a **real email** on
-  `auth.users` (shown on Admin → admin sign-in; password reset via the same
-  forgot-password email flow as login).
+  users do not spawn extra families). The `handle_new_user` trigger defaults the
+  member display name to the **email local-part** (e.g. `ryan`) and the family
+  name to `<email>'s Family`; neither is prompted for at signup. The admin keeps
+  a **real email** on `auth.users` (shown on Admin → admin sign-in; password
+  reset via the same forgot-password email flow as login).
+- **Member display names:** admin-managed. Admins inline-rename **any** member
+  (including their own row) on Admin → members; the guarded
+  `family_members.update({ name })` is allowed only for admins by the
+  `family_members_update_admin` RLS policy. Non-admins (member/child) cannot
+  rename anyone. Renaming the admin's own row refreshes the auth `member` so the
+  header updates immediately.
+- **Household name (deferred):** the auto-generated family name is **no longer
+  surfaced** in the solo UI — the PIN roster shows `APP_NAME` instead of the
+  stored family name. Collecting and naming a real household moves to a future
+  sharing/invite flow (likely a paid surface). The **family-of-one tenant model
+  and RLS are unchanged**: every row still carries `family_id` and is scoped by
+  `auth_family_id()`.
 - **Admin / Member / Child (day-to-day):** bind device once with an unguessable
   **family join code** or QR (`/join?code=…`), then avatar + **4-digit PIN**.
   Devices with a stored join code redirect to `/login/family` when signed out
