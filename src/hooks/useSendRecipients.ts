@@ -3,7 +3,6 @@ import { useAuth } from '@/lib/auth'
 import { subscribeHouseholdRosterRefresh } from '@/lib/householdRosterRefresh'
 import {
   filterSendRecipients,
-  isLinkedChild,
   type SendRecipientMember,
 } from '@/lib/sendRecipients'
 import { fetchLinkedChildMemberIds } from '@/lib/sends'
