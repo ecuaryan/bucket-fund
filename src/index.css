@@ -47,13 +47,15 @@ body {
 }
 
 /*
- * Hide the fixed bottom tab bar while the on-screen keyboard is open. The
- * keyboard re-pins `position: fixed; bottom: 0` elements directly above
- * itself, so the nav would otherwise cover the focused input (e.g. the Send
- * amount field). The tab bar is not needed mid-typing.
+ * Reserve space for the fixed bottom tab bar when a focused field is scrolled
+ * into view (browser focus-scroll or scrollIntoView). With
+ * `interactive-widget=resizes-content`, the keyboard shrinks the layout
+ * viewport and re-pins the tab bar directly above the keyboard; without this
+ * padding, inputs near the bottom (e.g. the Send amount field) land *behind*
+ * the tab bar. Keep this in sync with the tab bar height.
  */
-html.keyboard-open .app-bottom-nav {
-  display: none;
+html {
+  scroll-padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 @layer base {

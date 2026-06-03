@@ -40,11 +40,6 @@ function mockVisualViewport(height: number): MockViewport {
 
 describe('scrollFocusedIntoView', () => {
   beforeEach(() => {
-    // innerHeight is the reference for the keyboard inset calculation.
-    Object.defineProperty(window, 'innerHeight', {
-      value: 800,
-      configurable: true,
-    })
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
       cb(0)
       return 0
@@ -57,7 +52,7 @@ describe('scrollFocusedIntoView', () => {
     delete window.visualViewport
   })
 
-  it('scrolls immediately when the keyboard is already open', () => {
+  it('scrolls the field into view immediately on focus', () => {
     mockVisualViewport(500)
     const el = document.createElement('input')
     el.scrollIntoView = vi.fn()
@@ -67,24 +62,24 @@ describe('scrollFocusedIntoView', () => {
     expect(el.scrollIntoView).toHaveBeenCalledTimes(1)
   })
 
-  it('re-centres on each resize until the field blurs', () => {
+  it('re-scrolls on each viewport resize until the field blurs', () => {
     const vp = mockVisualViewport(800)
     const el = document.createElement('input')
     el.scrollIntoView = vi.fn()
 
     scrollFocusedIntoView(el)
 
-    // Keyboard not up yet: nothing scrolled, but we are listening.
-    expect(el.scrollIntoView).not.toHaveBeenCalled()
+    // One scroll on focus, and we are listening for the keyboard to settle.
+    expect(el.scrollIntoView).toHaveBeenCalledTimes(1)
     expect(vp.hasResizeListener()).toBe(true)
 
-    // The keyboard animates in over several resize events; re-centre on each
-    // so the field clears the *fully* open keyboard, not the partial one.
+    // The keyboard animates in over several resize events (the layout viewport
+    // shrinks under interactive-widget=resizes-content); follow each one.
     vp.setHeight(600)
     vp.emitResize()
     vp.setHeight(450)
     vp.emitResize()
-    expect(el.scrollIntoView).toHaveBeenCalledTimes(2)
+    expect(el.scrollIntoView).toHaveBeenCalledTimes(3)
 
     // Blurring the field detaches the listener.
     el.dispatchEvent(new Event('blur'))
