@@ -193,4 +193,156 @@ describe('send_money RPC', () => {
 
     expect(error).not.toBeNull()
   })
+
+  it('rejects adult send to linked child', async () => {
+    const family = await createAdminFamily('send-linked-recipient')
+    const linkedChild = await addMember(family.familyId, 'child', 'Jordan')
+    const svc = serviceClient()
+
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 200,
+    })
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: linkedChild.memberId,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 50,
+      source: 'teller',
+    })
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const { error } = await admin.rpc('send_money', {
+      p_to_member_id: linkedChild.memberId,
+      p_amount: 25,
+    })
+
+    expect(error).not.toBeNull()
+    expect(error?.message).toMatch(/settle through the bank/i)
+  })
+
+  it('rejects linked child sending to adult', async () => {
+    const family = await createAdminFamily('send-linked-caller')
+    const linkedChild = await addMember(family.familyId, 'child', 'Jordan')
+    const svc = serviceClient()
+
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: linkedChild.memberId,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 50,
+      source: 'teller',
+    })
+
+    const linkedClient = await userClient(linkedChild.email, linkedChild.password)
+    const { error } = await linkedClient.rpc('send_money', {
+      p_to_member_id: family.adminMemberId,
+      p_amount: 10,
+    })
+
+    expect(error).not.toBeNull()
+    expect(error?.message).toMatch(/settles at the bank/i)
+  })
+
+  it('rejects linked child sending to virtual sibling', async () => {
+    const family = await createAdminFamily('send-linked-to-virtual')
+    const virtualChild = await addMember(family.familyId, 'child', 'Alex')
+    const linkedChild = await addMember(family.familyId, 'child', 'Jordan')
+    const svc = serviceClient()
+
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 100,
+    })
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: linkedChild.memberId,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 50,
+      source: 'teller',
+    })
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    await sendMoney(admin, { toMemberId: virtualChild.memberId, amount: 30 })
+
+    const linkedClient = await userClient(linkedChild.email, linkedChild.password)
+    const { error } = await linkedClient.rpc('send_money', {
+      p_to_member_id: virtualChild.memberId,
+      p_amount: 5,
+    })
+
+    expect(error).not.toBeNull()
+    expect(error?.message).toMatch(/settles at the bank/i)
+  })
+
+  it('virtual child can still send to virtual sibling', async () => {
+    const family = await createAdminFamily('send-virtual-siblings')
+    const childA = await addMember(family.familyId, 'child', 'Alex')
+    const childB = await addMember(family.familyId, 'child', 'Blake')
+    const svc = serviceClient()
+
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 100,
+    })
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    await sendMoney(admin, { toMemberId: childA.memberId, amount: 40 })
+
+    const childAClient = await userClient(childA.email, childA.password)
+    await sendMoney(childAClient, { toMemberId: childB.memberId, amount: 15 })
+
+    expect(await getAvailableBalance(childAClient)).toBe(25)
+    expect(await getAvailableBalance(await userClient(childB.email, childB.password))).toBe(15)
+  })
+
+  it('adult can still send to virtual child when another child is linked', async () => {
+    const family = await createAdminFamily('send-virtual-with-linked')
+    const virtualChild = await addMember(family.familyId, 'child', 'Alex')
+    const linkedChild = await addMember(family.familyId, 'child', 'Jordan')
+    const svc = serviceClient()
+
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 200,
+    })
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: linkedChild.memberId,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 50,
+      source: 'teller',
+    })
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const txId = await sendMoney(admin, {
+      toMemberId: virtualChild.memberId,
+      amount: 60,
+      note: 'birthday',
+    })
+
+    expect(txId).toBeTruthy()
+    expect(await getAvailableBalance(admin)).toBe(140)
+    expect(
+      await getAvailableBalance(
+        await userClient(virtualChild.email, virtualChild.password),
+      ),
+    ).toBe(60)
+  })
 })

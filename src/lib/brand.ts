@@ -278,6 +278,14 @@ export const SEND_ADULT_NO_ACCOUNTS_BODY =
 export const SEND_CHILD_INTRO =
   'Send your unallocated to another household member.'
 
+export const SEND_LINKED_CHILD_TITLE = 'Your money is in your bank account'
+
+export const SEND_LINKED_CHILD_BODY =
+  'Spending comes from your debit card. When you need to move money in or out, use your bank app or ask a parent to transfer at the bank — not Send here.'
+
+export const SEND_LINKED_KIDS_EXCLUDED_HINT =
+  'Children with a linked bank account are not listed — their money moves at the bank, not through Send.'
+
 // --- History ---
 
 export const HISTORY_EMPTY_BUCKET_BODY =
