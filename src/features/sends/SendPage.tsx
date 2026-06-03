@@ -414,10 +414,8 @@ export default function SendPage() {
                 $
               </span>
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
-                min="0.01"
-                step="0.01"
                 value={amountStr}
                 onChange={(e) => {
                   setAmountStr(e.target.value.replace(/-/g, ''))
