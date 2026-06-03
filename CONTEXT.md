@@ -187,7 +187,13 @@ system-error banner.
   and adult-owned buckets (each other's moves included). Children's bucket moves
   stay hidden.
 - **Child** sees only moves involving their own buckets, plus sends they're part of.
-- Each entry shows: amount, counterparty or bucket name, timestamp, optional note
+- Each entry shows: amount, counterparty or bucket name, timestamp, optional note.
+- **Bucket names are snapshotted** on each `bucket_move` (`from_bucket_name` /
+  `to_bucket_name`), so history stays accurate after a bucket is renamed or
+  deleted instead of collapsing to "Unallocated → Unallocated".
+- **Adults (admin + member) see who moved the money** ("Bucket move · by Jamie")
+  so a household can tell which adult touched the shared pool; children do not
+  see the actor line.
 
 ---
 
