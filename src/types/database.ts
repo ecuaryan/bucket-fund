@@ -348,10 +348,12 @@ export type Database = {
           created_at: string
           family_id: string
           from_bucket_id: string | null
+          from_bucket_name: string | null
           from_member_id: string | null
           id: string
           note: string | null
           to_bucket_id: string | null
+          to_bucket_name: string | null
           to_member_id: string | null
           type: string
         }
@@ -360,10 +362,12 @@ export type Database = {
           created_at?: string
           family_id: string
           from_bucket_id?: string | null
+          from_bucket_name?: string | null
           from_member_id?: string | null
           id?: string
           note?: string | null
           to_bucket_id?: string | null
+          to_bucket_name?: string | null
           to_member_id?: string | null
           type: string
         }
@@ -372,10 +376,12 @@ export type Database = {
           created_at?: string
           family_id?: string
           from_bucket_id?: string | null
+          from_bucket_name?: string | null
           from_member_id?: string | null
           id?: string
           note?: string | null
           to_bucket_id?: string | null
+          to_bucket_name?: string | null
           to_member_id?: string | null
           type?: string
         }

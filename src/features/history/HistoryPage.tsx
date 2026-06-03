@@ -21,6 +21,7 @@ import {
   type HistoryFilter,
 } from '@/features/history/historyFilters'
 import { fetchHistoryPage, type HistoryTxRow } from '@/features/history/historyQueries'
+import { bucketEndpointLabel } from '@/lib/historyLabels'
 
 type TxRow = HistoryTxRow
 
@@ -394,8 +395,16 @@ function TxItem({
   let subtitle: string
 
   if (row.type === 'bucket_move') {
-    const fromLabel = bucketEndpointLabel(row.from_bucket_id, row.from_bucket)
-    const toLabel = bucketEndpointLabel(row.to_bucket_id, row.to_bucket)
+    const fromLabel = bucketEndpointLabel({
+      bucketId: row.from_bucket_id,
+      snapshotName: row.from_bucket_name,
+      joinedName: row.from_bucket?.name,
+    })
+    const toLabel = bucketEndpointLabel({
+      bucketId: row.to_bucket_id,
+      snapshotName: row.to_bucket_name,
+      joinedName: row.to_bucket?.name,
+    })
     title = `${fromLabel} → ${toLabel}`
     subtitle = 'Bucket move'
   } else {
@@ -436,15 +445,6 @@ function TxItem({
       </p>
     </div>
   )
-}
-
-function bucketEndpointLabel(
-  id: string | null,
-  joined: { name: string } | null,
-): string {
-  if (joined?.name) return joined.name
-  if (id) return 'Bucket'
-  return 'Unallocated'
 }
 
 function memberEndpointLabel(

@@ -8,6 +8,8 @@ export type HistoryTxRow = {
   amount: string | number
   from_bucket_id: string | null
   to_bucket_id: string | null
+  from_bucket_name: string | null
+  to_bucket_name: string | null
   from_member_id: string | null
   to_member_id: string | null
   note: string | null
