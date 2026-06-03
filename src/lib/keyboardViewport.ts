@@ -21,10 +21,11 @@ function scrollIntoViewNow(element: HTMLElement): void {
 /**
  * Keep focused fields visible above the keyboard and fixed chrome.
  *
- * On touch devices `onFocus` fires *before* the keyboard finishes animating
- * up, so the inset is still 0 at that moment. Waiting for the next visual
- * viewport resize lets us scroll once the keyboard is actually covering the
- * field — otherwise the scroll is a no-op and the field stays hidden.
+ * On touch devices `onFocus` fires before the keyboard finishes animating up,
+ * and the keyboard reports its size over several `resize` events as it grows.
+ * If the keyboard is already open we scroll once; otherwise we re-centre on
+ * each resize until the field blurs, so it lands above the fully open keyboard
+ * (not just the partially open one).
  */
 export function scrollFocusedIntoView(element: HTMLElement): void {
   if (keyboardInsetPx() > 0) {
@@ -35,17 +36,18 @@ export function scrollFocusedIntoView(element: HTMLElement): void {
   const vv = window.visualViewport
   if (!vv) return
 
-  let settled = false
+  let timer = 0
   const onResize = () => {
-    if (settled || keyboardInsetPx() === 0) return
-    settled = true
+    if (keyboardInsetPx() > 0) scrollIntoViewNow(element)
+  }
+  const stop = () => {
     vv.removeEventListener('resize', onResize)
-    scrollIntoViewNow(element)
+    element.removeEventListener('blur', stop)
+    window.clearTimeout(timer)
   }
 
   vv.addEventListener('resize', onResize)
-  // Detach if the keyboard never opens (e.g. hardware keyboard / desktop).
-  window.setTimeout(() => {
-    if (!settled) vv.removeEventListener('resize', onResize)
-  }, 1000)
+  element.addEventListener('blur', stop)
+  // Safety net if the keyboard never opens (e.g. hardware keyboard / desktop).
+  timer = window.setTimeout(stop, 2000)
 }

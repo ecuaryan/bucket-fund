@@ -67,7 +67,7 @@ describe('scrollFocusedIntoView', () => {
     expect(el.scrollIntoView).toHaveBeenCalledTimes(1)
   })
 
-  it('defers the scroll until the keyboard finishes opening', () => {
+  it('re-centres on each resize until the field blurs', () => {
     const vp = mockVisualViewport(800)
     const el = document.createElement('input')
     el.scrollIntoView = vi.fn()
@@ -78,11 +78,16 @@ describe('scrollFocusedIntoView', () => {
     expect(el.scrollIntoView).not.toHaveBeenCalled()
     expect(vp.hasResizeListener()).toBe(true)
 
-    // Keyboard slides up -> inset becomes positive -> scroll fires once.
-    vp.setHeight(500)
+    // The keyboard animates in over several resize events; re-centre on each
+    // so the field clears the *fully* open keyboard, not the partial one.
+    vp.setHeight(600)
     vp.emitResize()
+    vp.setHeight(450)
+    vp.emitResize()
+    expect(el.scrollIntoView).toHaveBeenCalledTimes(2)
 
-    expect(el.scrollIntoView).toHaveBeenCalledTimes(1)
+    // Blurring the field detaches the listener.
+    el.dispatchEvent(new Event('blur'))
     expect(vp.hasResizeListener()).toBe(false)
   })
 })
