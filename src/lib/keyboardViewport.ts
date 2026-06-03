@@ -11,8 +11,11 @@ export function keyboardInsetPx(): number {
 
 function scrollIntoViewNow(element: HTMLElement): void {
   requestAnimationFrame(() => {
+    // `nearest` (with `scroll-padding-bottom`) only scrolls when the field is
+    // actually outside the safe region, so switching between two already
+    // visible fields doesn't jump the page.
     element.scrollIntoView({
-      block: 'center',
+      block: 'nearest',
       behavior: prefersReducedMotion() ? 'auto' : 'smooth',
     })
   })
