@@ -8,10 +8,17 @@ alwaysApply: true
 Production holds real ledger data. **Do not** run `DELETE`, `TRUNCATE`, `DROP`,
 `db reset --linked`, or `supabase db query --linked` with writes.
 
-- **Schema:** migrations in `supabase/migrations/`, applied via CI `db push` only.
+- **Schema:** migrations in `supabase/migrations/`. **Production applies them
+  automatically** via [`.github/workflows/deploy-supabase.yml`](../.github/workflows/deploy-supabase.yml)
+  after CI passes on `main` (`supabase db push` in that workflow — not a manual
+  post-merge step on a dev machine).
+- **Agents:** do **not** instruct “run `supabase db push` after merge” as the
+  normal ship path. Verify **Deploy Supabase** on GitHub or **Database →
+  Migrations** in the Supabase dashboard instead.
 - **Data experiments:** `npm run db:reset` on local Docker (`--local`) only.
 - **Deploy CLI** (`link`, `db push`, `functions deploy`): only when the user
-  explicitly asks for a production deploy in that message.
+  explicitly asks for a production deploy in that message, or as documented
+  manual fallback when **Deploy Supabase** failed.
 - **Hosted wipe requests:** refuse to automate; user does it in the Supabase
   dashboard if they truly need to, after confirming backups.
 

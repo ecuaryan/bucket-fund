@@ -28,7 +28,7 @@ export async function sendMoney(args: SendMoneyArgs): Promise<string> {
   if (error) {
     if (isMissingDbFunctionError(error.message)) {
       throw new Error(
-        'Send is not available until the database is updated. An admin must run: supabase db push',
+        'Send is temporarily unavailable while the server finishes updating. Try again in a few minutes.',
       )
     }
     throw new Error(humaniseSendError(error.message))

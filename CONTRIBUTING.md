@@ -160,6 +160,11 @@ Supabase is still running.
 
 **PRs never touch production** — only merges to `main` trigger hosted deploys.
 
+**Agents:** merging a PR that adds migrations is sufficient. **Do not** tell the
+user to run `supabase db push` on their machine after merge — hosted schema is
+applied by **Deploy Supabase** automatically (see table above). Manual CLI
+deploy is documented below only as a fallback when that workflow fails.
+
 ### If frontend and backend are out of sync
 
 Symptoms: new UI calls a missing RPC, or Edge Function behavior is stale while
