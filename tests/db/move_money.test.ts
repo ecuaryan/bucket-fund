@@ -34,7 +34,9 @@ describe('move_money RPC', () => {
 
     const { data: tx, error } = await svc
       .from('transactions')
-      .select('type, amount, from_bucket_id, to_bucket_id, note')
+      .select(
+        'type, amount, from_bucket_id, to_bucket_id, from_bucket_name, to_bucket_name, from_member_id, note',
+      )
       .eq('id', txId)
       .single()
     expect(error).toBeNull()
@@ -43,8 +45,98 @@ describe('move_money RPC', () => {
       amount: 40,
       from_bucket_id: fromId,
       to_bucket_id: toId,
+      from_bucket_name: 'Groceries',
+      to_bucket_name: 'Gas',
+      from_member_id: family.adminMemberId,
       note: 'test move',
     })
+  })
+
+  it('records the member who performed the move', async () => {
+    const family = await createAdminFamily('move-actor-member')
+    const member = await addMember(family.familyId, 'member', 'Jamie')
+    const svc = serviceClient()
+    const fromId = await insertBucket(svc, family.familyId, 'Pool A', null)
+    const toId = await insertBucket(svc, family.familyId, 'Pool B', null)
+    await setBucketAllocation(svc, fromId, 30)
+
+    const memberClient = await userClient(member.email, member.password)
+    const txId = await moveMoney(memberClient, {
+      fromBucketId: fromId,
+      toBucketId: toId,
+      amount: 10,
+    })
+
+    const { data: tx, error } = await svc
+      .from('transactions')
+      .select('from_member_id')
+      .eq('id', txId)
+      .single()
+    expect(error).toBeNull()
+    expect(tx?.from_member_id).toBe(member.memberId)
+  })
+
+  it('preserves history labels after the source bucket is deleted', async () => {
+    const family = await createAdminFamily('move-delete-label')
+    const svc = serviceClient()
+    const bucketId = await insertBucket(svc, family.familyId, 'Snacks', null)
+    await setBucketAllocation(svc, bucketId, 20)
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const txId = await moveMoney(admin, {
+      fromBucketId: bucketId,
+      toBucketId: null,
+      amount: 15,
+    })
+
+    const { error: deleteError } = await svc
+      .from('buckets')
+      .delete()
+      .eq('id', bucketId)
+    expect(deleteError).toBeNull()
+
+    const { data: tx, error } = await svc
+      .from('transactions')
+      .select(
+        'from_bucket_id, to_bucket_id, from_bucket_name, to_bucket_name',
+      )
+      .eq('id', txId)
+      .single()
+    expect(error).toBeNull()
+    expect(tx).toMatchObject({
+      from_bucket_id: null,
+      to_bucket_id: null,
+      from_bucket_name: 'Snacks',
+      to_bucket_name: null,
+    })
+  })
+
+  it('does not rewrite snapshot names when a bucket is renamed', async () => {
+    const family = await createAdminFamily('move-rename-label')
+    const svc = serviceClient()
+    const bucketId = await insertBucket(svc, family.familyId, 'Fun', null)
+    await setBucketAllocation(svc, bucketId, 10)
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const txId = await moveMoney(admin, {
+      fromBucketId: null,
+      toBucketId: bucketId,
+      amount: 5,
+    })
+
+    const { error: renameError } = await svc
+      .from('buckets')
+      .update({ name: 'Entertainment' })
+      .eq('id', bucketId)
+    expect(renameError).toBeNull()
+
+    const { data: tx, error } = await svc
+      .from('transactions')
+      .select('to_bucket_name')
+      .eq('id', txId)
+      .single()
+    expect(error).toBeNull()
+    expect(tx?.to_bucket_name).toBe('Fun')
   })
 
   it('member can move money between adult-visible buckets', async () => {

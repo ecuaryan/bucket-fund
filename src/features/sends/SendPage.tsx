@@ -14,12 +14,15 @@ import {
   SEND_ADD_SOURCE_TITLE,
   SEND_ADULT_INTRO,
   SEND_CHILD_INTRO,
+  SEND_LINKED_CHILD_BODY,
+  SEND_LINKED_CHILD_TITLE,
+  SEND_LINKED_KIDS_EXCLUDED_HINT,
 } from '@/lib/brand'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import { fetchHouseholdAdminName } from '@/lib/householdAdmin'
 import { subscribeHouseholdRosterRefresh } from '@/lib/householdRosterRefresh'
-import { filterSendRecipients } from '@/lib/sendRecipients'
-import { sendMoney } from '@/lib/sends'
+import { filterSendRecipients, isLinkedChild } from '@/lib/sendRecipients'
+import { fetchLinkedChildMemberIds, sendMoney } from '@/lib/sends'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import { AmountLimitHint } from '@/components/AmountLimitHint'
@@ -63,12 +66,14 @@ export default function SendPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [manualSourceOpen, setManualSourceOpen] = useState(false)
+  const [linkedChildIds, setLinkedChildIds] = useState<Set<string> | null>(null)
 
   const loadData = useCallback(async () => {
     if (!memberId) return
     setLoadError(null)
     try {
-      const [membersRes, bucketsRes, accountsRes, adminName] = await Promise.all([
+      const [membersRes, bucketsRes, accountsRes, adminName, linkedIds] =
+        await Promise.all([
         supabase
           .from('family_members')
           .select('id, name, role')
@@ -77,6 +82,7 @@ export default function SendPage() {
         supabase.from('buckets').select('allocated_amount'),
         supabase.from('accounts').select('*'),
         fetchHouseholdAdminName(),
+        fetchLinkedChildMemberIds(),
       ])
       if (membersRes.error) {
         setLoadError(membersRes.error.message)
@@ -98,6 +104,7 @@ export default function SendPage() {
       })
       setMembers(membersRes.data ?? [])
       setAccounts(accountRows)
+      setLinkedChildIds(linkedIds)
       setHouseholdAdminName(adminName)
       setBalanceBreakdown(breakdown)
       setBalanceUsesFallback(usedFallback)
@@ -159,9 +166,27 @@ export default function SendPage() {
 
   const callerRole = member?.role
   const recipients = useMemo(() => {
-    if (!members || !memberId || !callerRole) return []
-    return filterSendRecipients(members, memberId, callerRole)
-  }, [members, memberId, callerRole])
+    if (!members || !memberId || !callerRole || !linkedChildIds) return []
+    return filterSendRecipients(
+      members,
+      memberId,
+      callerRole,
+      linkedChildIds,
+    )
+  }, [members, memberId, callerRole, linkedChildIds])
+
+  const isLinkedChildUser = Boolean(
+    memberId &&
+      callerRole &&
+      linkedChildIds &&
+      isLinkedChild(memberId, callerRole, linkedChildIds),
+  )
+  const showLinkedKidsHint = Boolean(
+    linkedChildIds &&
+      linkedChildIds.size > 0 &&
+      !isLinkedChildUser &&
+      (isAdult || isChild),
+  )
 
   const amount = parseFloat(amountStr)
   const amountValid = Number.isFinite(amount) && amount > 0
@@ -228,8 +253,33 @@ export default function SendPage() {
     )
   }
 
-  if (members === null || available === null || accounts === null) {
+  if (members === null || available === null || accounts === null || linkedChildIds === null) {
     return <LoadingStatus className="py-8" />
+  }
+
+  if (isLinkedChildUser) {
+    return (
+      <div className="mx-auto max-w-md space-y-6">
+        <header>
+          <h1 className="text-xl font-semibold">Send</h1>
+        </header>
+        <section
+          className="rounded-2xl bg-zinc-900 px-4 py-5 ring-1 ring-zinc-800"
+          aria-label="Linked bank account"
+        >
+          <h2 className="text-lg font-semibold text-zinc-100">
+            {SEND_LINKED_CHILD_TITLE}
+          </h2>
+          <p className="mt-2 text-sm text-zinc-400">{SEND_LINKED_CHILD_BODY}</p>
+          <Link
+            to="/"
+            className="mt-4 inline-flex rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-emerald-400"
+          >
+            Back to Buckets
+          </Link>
+        </section>
+      </div>
+    )
   }
 
   if (recipients.length === 0) {
@@ -351,6 +401,11 @@ export default function SendPage() {
                 </option>
               ))}
             </select>
+            {showLinkedKidsHint ? (
+              <p className="mt-2 text-xs text-zinc-500">
+                {SEND_LINKED_KIDS_EXCLUDED_HINT}
+              </p>
+            ) : null}
           </label>
 
           <label className="block">

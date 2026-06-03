@@ -5,6 +5,7 @@ import {
   filterSendRecipients,
   type SendRecipientMember,
 } from '@/lib/sendRecipients'
+import { fetchLinkedChildMemberIds } from '@/lib/sends'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 
@@ -15,16 +16,20 @@ export function useSendRecipients() {
     auth.status === 'signedIn' ? auth.session.access_token : null
   const familyId = member?.family_id ?? null
   const [members, setMembers] = useState<SendRecipientMember[] | null>(null)
+  const [linkedChildIds, setLinkedChildIds] = useState<Set<string>>(new Set())
 
   const loadMembers = useCallback(async () => {
     if (!member?.id) {
       setMembers(null)
+      setLinkedChildIds(new Set())
       return
     }
-    const { data, error } = await supabase
-      .from('family_members')
-      .select('id, name, role')
-    setMembers(error ? [] : (data ?? []))
+    const [membersRes, linkedIds] = await Promise.all([
+      supabase.from('family_members').select('id, name, role'),
+      fetchLinkedChildMemberIds(),
+    ])
+    setMembers(membersRes.error ? [] : (membersRes.data ?? []))
+    setLinkedChildIds(linkedIds)
   }, [member?.id])
 
   useEffect(() => {
@@ -46,6 +51,11 @@ export function useSendRecipients() {
               table: 'family_members',
               filter: `family_id=eq.${familyId}`,
             },
+            {
+              event: '*' as const,
+              table: 'accounts',
+              filter: `family_id=eq.${familyId}`,
+            },
           ]
         : [],
     [familyId],
@@ -60,8 +70,13 @@ export function useSendRecipients() {
 
   const recipients = useMemo(() => {
     if (!members || !member) return []
-    return filterSendRecipients(members, member.id, member.role)
-  }, [members, member])
+    return filterSendRecipients(
+      members,
+      member.id,
+      member.role,
+      linkedChildIds,
+    )
+  }, [members, member, linkedChildIds])
 
   return {
     recipients,

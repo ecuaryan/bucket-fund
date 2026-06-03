@@ -109,22 +109,20 @@ export function buildUnallocatedLines(
       (sum, child) => sum + child.amount,
       0,
     )
-    if (childrenTotal > 0) {
+    lines.push({
+      key: 'children-total',
+      label: 'Set aside for kids',
+      amount: childrenTotal,
+      kind: 'subtract',
+    })
+    for (const child of breakdown.children) {
       lines.push({
-        key: 'children-total',
-        label: 'Set aside for kids',
-        amount: childrenTotal,
+        key: `child-${child.memberId}`,
+        label: child.name,
+        amount: child.amount,
         kind: 'subtract',
+        indent: true,
       })
-      for (const child of breakdown.children) {
-        lines.push({
-          key: `child-${child.memberId}`,
-          label: child.name,
-          amount: child.amount,
-          kind: 'subtract',
-          indent: true,
-        })
-      }
     }
   }
 

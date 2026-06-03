@@ -348,10 +348,12 @@ export type Database = {
           created_at: string
           family_id: string
           from_bucket_id: string | null
+          from_bucket_name: string | null
           from_member_id: string | null
           id: string
           note: string | null
           to_bucket_id: string | null
+          to_bucket_name: string | null
           to_member_id: string | null
           type: string
         }
@@ -360,10 +362,12 @@ export type Database = {
           created_at?: string
           family_id: string
           from_bucket_id?: string | null
+          from_bucket_name?: string | null
           from_member_id?: string | null
           id?: string
           note?: string | null
           to_bucket_id?: string | null
+          to_bucket_name?: string | null
           to_member_id?: string | null
           type: string
         }
@@ -372,10 +376,12 @@ export type Database = {
           created_at?: string
           family_id?: string
           from_bucket_id?: string | null
+          from_bucket_name?: string | null
           from_member_id?: string | null
           id?: string
           note?: string | null
           to_bucket_id?: string | null
+          to_bucket_name?: string | null
           to_member_id?: string | null
           type?: string
         }
@@ -447,6 +453,7 @@ export type Database = {
       }
       ensure_member_bucket_orders: { Args: never; Returns: undefined }
       generate_join_code: { Args: never; Returns: string }
+      family_linked_child_member_ids: { Args: never; Returns: string[] }
       get_available_balance: { Args: never; Returns: number }
       get_home_balance_breakdown: { Args: never; Returns: Json }
       get_home_page_data: { Args: never; Returns: Json }
@@ -458,6 +465,10 @@ export type Database = {
       member_child_virtual_balance: {
         Args: { p_child_member_id: string }
         Returns: number
+      }
+      member_has_linked_account: {
+        Args: { p_member_id: string }
+        Returns: boolean
       }
       move_money: {
         Args: {

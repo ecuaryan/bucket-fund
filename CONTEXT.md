@@ -87,7 +87,10 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
   assign an account to a **child** only (many accounts can belong to one child). Adults
   (admin and member) share the family pool on Home — assigning to a spouse is not in v1 UI.
 - Children may have zero, one, or multiple linked checking/savings accounts (multiple supported).
-- Children without linked accounts are **virtual-only** — their balance is funded purely by sends from other members
+- **Two child money models (do not mix on one kid):**
+  - **Virtual-only** (no linked account): balance = net sends − bucket allocations. Card-less kids live here — spending is logged via **Send** (e.g. child → adult when a parent fronts a purchase). Birthday/earnings: kid hands cash to a parent; parent credits them with an **adult → child send**. Back every credit with real cash (deposit to a linked account or bump a **manual money source**) so adult unallocated does not drift red.
+  - **Linked** (Teller account assigned to the child): balance = linked bank cash − bucket allocations. Debit-card spending auto-reflects via Teller. Money in/out happens at the **real bank** (transfers, allowance deposits) — **no virtual sends in or out** for that child (`send_money` blocks both directions; Send UI omits linked children and shows an explanation card for linked kids).
+- Virtual siblings can still send to each other; linked ↔ anyone requires a real bank transfer.
 - The family as a whole must have at least one money source (linked bank or manual amount)
 - **Manual money sources:** admin-only, family-pool only (`owner_member_id` null), user-edited amounts (no auto-refresh). Coexist with linked banks; Home breakdown shows linked cash and manual cash separately when both are present.
 - Re-linking the same bank account (even when Teller issues a new `acc_…` id) preserves
@@ -162,10 +165,11 @@ system-error banner.
 - Logged with: amount, from, to, timestamp, optional note
 
 **Virtual sends**
-- **Adults → children:** fund a child's personal unallocated balance (allowance).
+- **Adults → virtual children:** fund a child's personal unallocated balance (birthday money, earnings, etc.). Not allowed to **linked** children — their money moves at the bank.
 - **Adults ↔ adults:** not supported — same shared pool; use **buckets** instead.
-- **Children → anyone:** from the child's balance; child → adult returns money to
-  the shared pool.
+- **Virtual children → anyone:** from the child's balance; child → adult returns money to
+  the shared pool (digital "handing over cash" when a parent fronts a purchase).
+- **Linked children:** Send is disabled in both directions — spending is their debit card; transfers settle at the bank. UI hides linked kids from recipient lists and explains why.
 - Optional note; instant; logged with amount, sender, recipient, timestamp, note.
 - Enforced in UI (Send recipient list) and `send_money` RPC.
 
@@ -183,7 +187,13 @@ system-error banner.
   and adult-owned buckets (each other's moves included). Children's bucket moves
   stay hidden.
 - **Child** sees only moves involving their own buckets, plus sends they're part of.
-- Each entry shows: amount, counterparty or bucket name, timestamp, optional note
+- Each entry shows: amount, counterparty or bucket name, timestamp, optional note.
+- **Bucket names are snapshotted** on each `bucket_move` (`from_bucket_name` /
+  `to_bucket_name`), so history stays accurate after a bucket is renamed or
+  deleted instead of collapsing to "Unallocated → Unallocated".
+- **Adults (admin + member) see who moved the money** ("Bucket move · by Jamie")
+  so a household can tell which adult touched the shared pool; children do not
+  see the actor line.
 
 ---
 

@@ -21,6 +21,7 @@ import {
   type HistoryFilter,
 } from '@/features/history/historyFilters'
 import { fetchHistoryPage, type HistoryTxRow } from '@/features/history/historyQueries'
+import { bucketEndpointLabel, historyBucketMoveSubtitle } from '@/lib/historyLabels'
 
 type TxRow = HistoryTxRow
 
@@ -251,7 +252,11 @@ export default function HistoryPage() {
               <ul className="divide-y divide-zinc-800 rounded-2xl bg-zinc-900 ring-1 ring-zinc-800">
                 {group.rows.map((row) => (
                   <li key={row.id} className="px-3 py-3">
-                    <TxItem row={row} currentMemberId={member.id} />
+                    <TxItem
+                      row={row}
+                      currentMemberId={member.id}
+                      viewerRole={member.role}
+                    />
                   </li>
                 ))}
               </ul>
@@ -381,39 +386,55 @@ function ActiveFilterChip({
 function TxItem({
   row,
   currentMemberId,
+  viewerRole,
 }: {
   row: TxRow
   currentMemberId: string
+  viewerRole: string
 }) {
   const { formatMoney } = useHideAmounts()
   const [noteExpanded, setNoteExpanded] = useState(false)
   const amount = formatMoney(Number(row.amount))
   const time = timeFormatter.format(new Date(row.created_at))
+  const showMoveActor =
+    viewerRole === 'admin' || viewerRole === 'member'
 
   let title: string
   let subtitle: string
 
   if (row.type === 'bucket_move') {
-    const fromLabel = bucketEndpointLabel(row.from_bucket_id, row.from_bucket)
-    const toLabel = bucketEndpointLabel(row.to_bucket_id, row.to_bucket)
+    const fromLabel = bucketEndpointLabel({
+      bucketId: row.from_bucket_id,
+      snapshotName: row.from_bucket_name,
+      joinedName: row.from_bucket?.name,
+    })
+    const toLabel = bucketEndpointLabel({
+      bucketId: row.to_bucket_id,
+      snapshotName: row.to_bucket_name,
+      joinedName: row.to_bucket?.name,
+    })
     title = `${fromLabel} → ${toLabel}`
-    subtitle = 'Bucket move'
+    subtitle = historyBucketMoveSubtitle({
+      time,
+      actorMemberId: row.from_member_id,
+      actorName: row.from_member?.name,
+      currentMemberId,
+      showActor: showMoveActor,
+    })
   } else {
     const fromIsMe = row.from_member_id === currentMemberId
     const toIsMe = row.to_member_id === currentMemberId
     const fromLabel = memberEndpointLabel(row.from_member, fromIsMe)
     const toLabel = memberEndpointLabel(row.to_member, toIsMe)
     title = `${fromLabel} → ${toLabel}`
-    subtitle = 'Send'
+    subtitle = `Send · ${time}`
   }
 
   return (
     <div className="flex items-start gap-3">
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-zinc-300">{title}</p>
-        <p className="text-xs text-zinc-400">
-          {subtitle} · {time}
-        </p>
+        <p className="text-xs text-zinc-400">{subtitle}</p>
         {row.note && (
           <button
             type="button"
@@ -436,15 +457,6 @@ function TxItem({
       </p>
     </div>
   )
-}
-
-function bucketEndpointLabel(
-  id: string | null,
-  joined: { name: string } | null,
-): string {
-  if (joined?.name) return joined.name
-  if (id) return 'Bucket'
-  return 'Unallocated'
 }
 
 function memberEndpointLabel(
