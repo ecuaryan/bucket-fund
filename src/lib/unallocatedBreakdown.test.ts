@@ -125,6 +125,35 @@ describe('buildUnallocatedLines', () => {
       'In your buckets',
     ])
   })
+
+  it('lists zero-balance children on the adult breakdown', () => {
+    const lines = buildUnallocatedLines(
+      adultBreakdown({
+        childrenSetAside: 0,
+        children: [
+          { memberId: 'c1', name: 'Adri', amount: 0 },
+          { memberId: 'c2', name: 'Jake', amount: 0 },
+        ],
+      }),
+      {
+        isChild: false,
+        cashAccountsCount: 1,
+        bankAccountsCount: 1,
+        manualAccountsCount: 0,
+        childTotal: 0,
+      },
+    )
+    expect(lines.map((l) => l.label)).toEqual([
+      'Linked cash (1 account)',
+      'Allocated to buckets',
+      'Set aside for kids',
+      'Adri',
+      'Jake',
+    ])
+    expect(lines[2].amount).toBe(0)
+    expect(lines[3].amount).toBe(0)
+    expect(lines[4].amount).toBe(0)
+  })
 })
 
 describe('unallocatedSummary', () => {
