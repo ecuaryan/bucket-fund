@@ -46,6 +46,16 @@ body {
   -webkit-text-security: disc;
 }
 
+/*
+ * Hide the fixed bottom tab bar while the on-screen keyboard is open. The
+ * keyboard re-pins `position: fixed; bottom: 0` elements directly above
+ * itself, so the nav would otherwise cover the focused input (e.g. the Send
+ * amount field). The tab bar is not needed mid-typing.
+ */
+html.keyboard-open .app-bottom-nav {
+  display: none;
+}
+
 @layer base {
   /*
    * iOS Safari auto-zooms focused fields below 16px. Our forms use text-sm;
