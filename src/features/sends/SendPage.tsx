@@ -14,6 +14,7 @@ import {
   SEND_ADD_SOURCE_TITLE,
   SEND_ADULT_INTRO,
   SEND_CHILD_INTRO,
+  SEND_DB_NOT_READY_BODY,
   SEND_LINKED_CHILD_BODY,
   SEND_LINKED_CHILD_TITLE,
   SEND_LINKED_KIDS_EXCLUDED_HINT,
@@ -375,9 +376,7 @@ export default function SendPage() {
 
       {!sendEnabled && (
         <p className="rounded-2xl bg-amber-500/10 px-4 py-3 text-sm text-amber-200 ring-1 ring-amber-500/30">
-          Send requires a database update on the hosted Supabase project. Run{' '}
-          <code className="text-amber-100">supabase db push</code> after merging
-          migrations, then refresh.
+          {SEND_DB_NOT_READY_BODY}
         </p>
       )}
 
@@ -483,7 +482,7 @@ export default function SendPage() {
         </form>
       ) : !sendEnabled ? (
         <p className="rounded-2xl bg-zinc-900 px-4 py-3 text-sm text-zinc-400 ring-1 ring-zinc-800">
-          Sending is disabled until the database migration is applied.
+          {SEND_DB_NOT_READY_BODY}
         </p>
       ) : null}
 

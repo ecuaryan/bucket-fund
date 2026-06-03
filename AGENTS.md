@@ -49,6 +49,12 @@ Entry point for AI coding agents (and humans) working in this repo.
   prefixed with `VITE_`, never imported by client code.
 - **Hosted database:** keep prod unlinked on dev machines; no bulk DELETE via CLI
   or agents. See `production-database.mdc` and README § Production database.
+- **Hosted schema deploy:** add SQL under `supabase/migrations/`. On merge to
+  `main`, **[Deploy Supabase](./.github/workflows/deploy-supabase.yml)** runs
+  `supabase db push` after green CI — **do not** tell the user to run `db push`
+  manually after merge. If the site looks ahead of the DB, check GitHub Actions
+  → **Deploy Supabase** or Supabase → **Database → Migrations**. Manual
+  `link` / `db push` is emergency fallback only ([CONTRIBUTING § Deploying backend changes](./CONTRIBUTING.md#deploying-backend-changes)).
 - **Auth sign-in routing.** Post-sign-out paths and email vs PIN preference
   live in [`src/lib/authNavigation.ts`](./src/lib/authNavigation.ts) and
   [`src/lib/signInPreference.ts`](./src/lib/signInPreference.ts). Use router

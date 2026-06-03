@@ -286,6 +286,12 @@ export const SEND_LINKED_CHILD_BODY =
 export const SEND_LINKED_KIDS_EXCLUDED_HINT =
   'Children with a linked bank account are not listed — their money moves at the bank, not through Send.'
 
+export const SEND_DB_NOT_READY_BODY =
+  'Send is temporarily unavailable while the server finishes updating. Try again in a few minutes, then refresh.'
+
+export const HOME_DB_UPDATE_PENDING_BODY =
+  'Balance is estimated from linked accounts only. The server is still updating — try again in a few minutes.'
+
 // --- History ---
 
 export const HISTORY_EMPTY_BUCKET_BODY =

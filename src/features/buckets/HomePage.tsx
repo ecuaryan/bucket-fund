@@ -17,6 +17,7 @@ import {
   HOME_ADD_SOURCE_TITLE,
   homeAddSourceMemberBody,
   homeChildUnallocatedHint,
+  HOME_DB_UPDATE_PENDING_BODY,
   homeMemberNoBucketsHint,
 } from '@/lib/brand'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
@@ -481,8 +482,7 @@ export default function HomePage() {
         <div className="space-y-6">
       {balanceUsesFallback && (
         <p className="rounded-2xl bg-amber-500/10 px-4 py-3 text-sm text-amber-200 ring-1 ring-amber-500/30">
-          Balance is estimated from linked accounts only (database update pending).
-          Sends may be unavailable until migrations are applied.
+          {HOME_DB_UPDATE_PENDING_BODY}
         </p>
       )}
       {showAddSourceCard ? (
