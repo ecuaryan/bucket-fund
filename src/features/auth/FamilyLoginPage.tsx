@@ -312,7 +312,7 @@ export default function FamilyLoginPage() {
   const householdAdminName = pickHouseholdAdminName(roster.members)
 
   return (
-    <AuthShell title={roster.familyName} subtitle="Who's signing in?">
+    <AuthShell title={APP_NAME} subtitle="Who's signing in?">
       {pinMembers.length === 0 ? (
         <p className="text-sm text-zinc-400">
           {pinNoMembersYet(householdAdminName)}

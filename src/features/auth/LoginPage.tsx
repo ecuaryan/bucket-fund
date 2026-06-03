@@ -12,8 +12,6 @@ import {
   BANK_LINK_READ_ONLY,
   LOGIN_ALREADY_HAVE_ACCOUNT,
   LOGIN_GET_STARTED,
-  LOGIN_HOUSEHOLD_LABEL,
-  LOGIN_HOUSEHOLD_PLACEHOLDER,
   LOGIN_NEW_HERE_INTRO,
   LOGIN_SHARED_SUB,
   LOGIN_SHARED_TITLE,
@@ -76,8 +74,6 @@ export default function LoginPage() {
   )
   const [email, setEmail] = useState(loginEmail)
   const [password, setPassword] = useState('')
-  const [displayName, setDisplayName] = useState('')
-  const [familyName, setFamilyName] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(loginInfo)
@@ -134,7 +130,7 @@ export default function LoginPage() {
         setSignInPreference('email')
         clearRequireFreshSignIn()
       } else {
-        await auth.signUp({ email, password, displayName, familyName })
+        await auth.signUp({ email, password })
         setSignInPreference('email')
         setInfo(
           'Account created. Check your email to confirm, then sign in below.',
@@ -181,20 +177,6 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              <Field
-                label="Your name"
-                value={displayName}
-                onChange={setDisplayName}
-                placeholder="Alex"
-                autoComplete="name"
-              />
-              <Field
-                label={LOGIN_HOUSEHOLD_LABEL}
-                value={familyName}
-                onChange={setFamilyName}
-                placeholder={LOGIN_HOUSEHOLD_PLACEHOLDER}
-                autoComplete="off"
-              />
               <Field
                 label="Email"
                 type="email"
