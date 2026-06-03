@@ -9,3 +9,28 @@ export function bucketEndpointLabel(args: {
   if (args.bucketId) return 'Bucket'
   return 'Unallocated'
 }
+
+/** Who performed a bucket move, for admin/member History subtitles. */
+export function historyMoveActorLabel(args: {
+  actorMemberId: string | null | undefined
+  actorName: string | null | undefined
+  currentMemberId: string
+  showActor: boolean
+}): string | null {
+  if (!args.showActor || !args.actorMemberId) return null
+  if (args.actorMemberId === args.currentMemberId) return 'you'
+  if (args.actorName) return args.actorName
+  return 'Someone'
+}
+
+export function historyBucketMoveSubtitle(args: {
+  time: string
+  actorMemberId: string | null | undefined
+  actorName: string | null | undefined
+  currentMemberId: string
+  showActor: boolean
+}): string {
+  const actor = historyMoveActorLabel(args)
+  if (actor) return `Bucket move · by ${actor} · ${args.time}`
+  return `Bucket move · ${args.time}`
+}
