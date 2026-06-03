@@ -1,5 +1,8 @@
 import { useEffect } from 'react'
-import { keyboardInsetPx } from '@/lib/keyboardViewport'
+import {
+  keyboardInsetPx,
+  scrollActiveEditableIntoView,
+} from '@/lib/keyboardViewport'
 
 /** Exposes `--keyboard-inset` on `:root` while the virtual keyboard is open. */
 export function useVisualViewportInset(): void {
@@ -15,15 +18,24 @@ export function useVisualViewportInset(): void {
       document.documentElement.classList.toggle('keyboard-open', inset > 0)
     }
 
+    // Resize fires when the keyboard opens/closes (or re-opens with the field
+    // still focused). Keep the focused field clear of the keyboard/tab bar.
+    // Bound to resize only — never to `scroll` — so it can't fight a manual
+    // scroll while typing.
+    function onResize() {
+      update()
+      scrollActiveEditableIntoView()
+    }
+
     update()
-    vv?.addEventListener('resize', update)
+    vv?.addEventListener('resize', onResize)
     vv?.addEventListener('scroll', update)
-    window.addEventListener('resize', update)
+    window.addEventListener('resize', onResize)
 
     return () => {
-      vv?.removeEventListener('resize', update)
+      vv?.removeEventListener('resize', onResize)
       vv?.removeEventListener('scroll', update)
-      window.removeEventListener('resize', update)
+      window.removeEventListener('resize', onResize)
       document.documentElement.style.removeProperty('--keyboard-inset')
       document.documentElement.classList.remove('keyboard-open')
     }

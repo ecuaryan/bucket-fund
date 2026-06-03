@@ -22,32 +22,34 @@ function scrollIntoViewNow(element: HTMLElement): void {
 }
 
 /**
- * Keep a focused field within the scroll container's optimal viewing region.
+ * Scroll a freshly focused field into the scroll container's optimal viewing
+ * region. The heavy lifting is CSS: `scroll-padding-bottom` (see `index.css`)
+ * reserves space for the fixed bottom tab bar so the field lands above it.
  *
- * The heavy lifting is CSS: `scroll-padding-bottom` (see `index.css`) reserves
- * space for the fixed bottom tab bar so `scrollIntoView` lands the field above
- * it. This helper just makes sure the scroll happens at the right time: on
- * touch devices the keyboard animates in *after* `focus` fires and resizes the
- * viewport, so we scroll once now and again on each viewport resize until the
- * field blurs. We key off the resize event itself rather than a computed
- * keyboard inset, which is ~0 under `interactive-widget=resizes-content`.
+ * This handles focus changes while the keyboard is already open (tabbing
+ * between fields). The separate case — the keyboard opening *after* focus, or
+ * re-opening without a new focus event — is handled globally on viewport
+ * resize via `scrollActiveEditableIntoView`.
  */
 export function scrollFocusedIntoView(element: HTMLElement): void {
   scrollIntoViewNow(element)
+}
 
-  const vv = window.visualViewport
-  if (!vv) return
+function isEditableField(el: Element | null): el is HTMLElement {
+  if (!(el instanceof HTMLElement)) return false
+  return (
+    el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable
+  )
+}
 
-  let timer = 0
-  const onResize = () => scrollIntoViewNow(element)
-  const stop = () => {
-    vv.removeEventListener('resize', onResize)
-    element.removeEventListener('blur', stop)
-    window.clearTimeout(timer)
-  }
-
-  vv.addEventListener('resize', onResize)
-  element.addEventListener('blur', stop)
-  // Stop following once the field is done (or the viewport never settles).
-  timer = window.setTimeout(stop, 1500)
+/**
+ * Scroll the currently focused text field into view. Called when the visual
+ * viewport resizes (the keyboard opening/closing) so a focused field is kept
+ * clear of the keyboard and tab bar — including when the keyboard re-opens
+ * without firing a new `focus` event (field tapped while it still has focus).
+ */
+export function scrollActiveEditableIntoView(): void {
+  if (typeof document === 'undefined') return
+  const active = document.activeElement
+  if (isEditableField(active)) scrollIntoViewNow(active)
 }
