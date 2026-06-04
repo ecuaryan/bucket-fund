@@ -301,7 +301,11 @@ export default function SendPage() {
       : 'bg-red-500/10 text-red-300 ring-red-500/30'
 
   return (
-    <BusyOverlay busy={submitting} label="Sending…">
+    <>
+    <BusyOverlay
+      busy={submitting && !manualSourceOpen}
+      label="Sending…"
+    >
       <div className="mx-auto max-w-md space-y-6">
       <header>
         <h1 className="text-xl font-semibold">Send</h1>
@@ -492,6 +496,8 @@ export default function SendPage() {
         .
       </p>
 
+      </div>
+    </BusyOverlay>
       {member?.role === 'admin' ? (
         <ManualSourceDialog
           open={manualSourceOpen}
@@ -500,7 +506,6 @@ export default function SendPage() {
           onSaved={loadData}
         />
       ) : null}
-      </div>
-    </BusyOverlay>
+    </>
   )
 }

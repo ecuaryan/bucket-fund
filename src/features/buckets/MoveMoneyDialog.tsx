@@ -121,6 +121,7 @@ export default function MoveMoneyDialog({
         amount,
         note: note.trim() || null,
       })
+      onClose()
       await Promise.resolve(
         onMoved({
           fromBucketId: endpointFromKey(fromKey),
@@ -128,7 +129,6 @@ export default function MoveMoneyDialog({
           amount,
         }),
       )
-      onClose()
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {

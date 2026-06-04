@@ -13,6 +13,11 @@ type Props = {
  * Blocks interaction and shows status while async work is in flight.
  * Status is pinned near the top (sticky) so it stays visible on long pages
  * (e.g. Home with many buckets) instead of centering in the full scroll height.
+ *
+ * Do not set `busy` while a {@link Sheet} dialog is open on the same surface —
+ * it flashes behind the modal and page-level errors sit under the backdrop.
+ * Close the sheet first (or exclude open dialogs from `busy`) and show errors
+ * inside the sheet.
  */
 export function BusyOverlay({
   busy,
