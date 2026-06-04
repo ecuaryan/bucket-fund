@@ -4,9 +4,11 @@ import { BrandLogo } from '@/components/BrandLogo'
 import NavTabIcon, { type NavTabId } from '@/components/layout/NavTabIcon'
 import { NAV_BUCKETS_LABEL } from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
+import { useScrollToTopOnPathname } from '@/hooks/useScrollToTopOnPathname'
 import { useSendRecipients } from '@/hooks/useSendRecipients'
 
 export default function AppShell() {
+  useScrollToTopOnPathname()
   const auth = useAuth()
   const [signingOut, setSigningOut] = useState(false)
 
