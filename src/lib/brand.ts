@@ -60,6 +60,10 @@ export const MEMBER_LOAD_ERROR_BODY =
   'This is usually a brief connection hiccup. Try again—if it keeps happening, sign out and sign back in.'
 export const MEMBER_LOAD_ERROR_RETRY = 'Try again'
 
+/** App header sign-out control (icon button `aria-label`). */
+export const HEADER_SIGN_OUT_LABEL = 'Sign out'
+export const HEADER_SIGNING_OUT_LABEL = 'Signing out…'
+
 export const LOGIN_GET_STARTED = 'Get started'
 
 export const LOGIN_SIGNUP_TITLE = 'Create your account'

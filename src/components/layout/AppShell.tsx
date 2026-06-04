@@ -2,7 +2,13 @@ import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { BrandLogo } from '@/components/BrandLogo'
 import NavTabIcon, { type NavTabId } from '@/components/layout/NavTabIcon'
-import { NAV_BUCKETS_LABEL } from '@/lib/brand'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
+import SignOutIcon from '@/components/ui/SignOutIcon'
+import {
+  HEADER_SIGN_OUT_LABEL,
+  HEADER_SIGNING_OUT_LABEL,
+  NAV_BUCKETS_LABEL,
+} from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
 import { useScrollToTopOnPathname } from '@/hooks/useScrollToTopOnPathname'
 import { useSendRecipients } from '@/hooks/useSendRecipients'
@@ -55,9 +61,16 @@ export default function AppShell() {
             type="button"
             onClick={onSignOut}
             disabled={signingOut}
-            className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-zinc-700 px-2 py-1 text-xs font-medium text-zinc-400 transition hover:border-zinc-600 hover:bg-zinc-800/60 hover:text-zinc-300 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {signingOut ? 'Signing out…' : 'Sign out'}
+            {signingOut ? (
+              <LoadingSpinner className="h-4 w-4" />
+            ) : (
+              <SignOutIcon className="h-4 w-4" />
+            )}
+            <span>
+              {signingOut ? HEADER_SIGNING_OUT_LABEL : HEADER_SIGN_OUT_LABEL}
+            </span>
           </button>
         </div>
       </header>
