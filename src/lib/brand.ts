@@ -117,7 +117,7 @@ export function adminPinSheetTitle(memberName: string, isSelf: boolean): string 
   return isSelf ? ADMIN_PIN_SHEET_TITLE_SELF : `PIN for ${memberName}`
 }
 
-/** Explains sign-out behavior when saving (matches set-pin Edge Function). */
+/** Explains sign-out behavior when saving (matches set-pin + client sign-out). */
 export function adminPinSheetBody(memberName: string, isSelf: boolean): string {
   if (isSelf) {
     return '4 digits. Saving signs you out on your other devices. This device stays signed in.'

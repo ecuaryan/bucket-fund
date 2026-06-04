@@ -150,7 +150,9 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     setActionError(null)
     setInfo(null)
     try {
-      await setMemberPin(pinTarget.id, pinValue)
+      await setMemberPin(pinTarget.id, pinValue, {
+        signOutOtherDevices: pinTarget.id === selfMemberId,
+      })
       setInfo(
         adminPinSaveSuccess(
           pinTarget.name,

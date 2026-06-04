@@ -2,7 +2,7 @@
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { handleCors, jsonResponse } from '../_shared/http.ts'
-import { callerClient, requireAdmin, serviceClient } from '../_shared/supabase.ts'
+import { requireAdmin, serviceClient } from '../_shared/supabase.ts'
 import { hashPin, isValidPin } from '../_shared/pin.ts'
 
 type Body = {
@@ -67,17 +67,9 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Could not save PIN' }, 500)
   }
 
-  const authHeader = req.headers.get('Authorization')
-  if (member.id === auth.memberId) {
-    // Admin updating own PIN: revoke other devices; keep this request's session.
-    if (authHeader) {
-      const caller = callerClient(authHeader)
-      const { error: signOutError } = await caller.auth.signOut({ scope: 'others' })
-      if (signOutError) {
-        console.warn('set-pin signOut others', signOutError)
-      }
-    }
-  } else {
+  // Own-PIN "sign out other devices" runs on the saving device in the client
+  // (`signOut({ scope: 'others' })`) so GoTrue can bind the current refresh token.
+  if (member.id !== auth.memberId) {
     const { error: signOutError } = await admin.auth.admin.signOut(
       member.user_id,
       'global',

@@ -105,12 +105,32 @@ export async function createMember(input: {
   return data.member
 }
 
-export async function setMemberPin(memberId: string, pin: string): Promise<void> {
+/**
+ * Revoke refresh tokens for every session except this device.
+ * Must run in the browser that just saved the admin's own PIN — GoTrue needs
+ * the local refresh token to identify the current session (`scope: 'others'`).
+ */
+export async function signOutOtherAuthSessions(): Promise<void> {
+  const { error } = await supabase.auth.signOut({ scope: 'others' })
+  if (error) {
+    throw new Error(`Could not sign out other devices: ${error.message}`)
+  }
+}
+
+export async function setMemberPin(
+  memberId: string,
+  pin: string,
+  options?: { signOutOtherDevices?: boolean },
+): Promise<void> {
   const { data: sessionData } = await supabase.auth.getSession()
   const token = sessionData.session?.access_token
   if (!token) throw new Error('Not signed in')
 
   await postFunction('set-pin', { memberId, pin }, token)
+
+  if (options?.signOutOtherDevices) {
+    await signOutOtherAuthSessions()
+  }
 }
 
 export async function clearPinLockout(memberId: string): Promise<void> {
