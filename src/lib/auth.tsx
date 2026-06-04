@@ -21,7 +21,12 @@ import {
   markPasswordRecoveryFlow,
 } from '@/lib/passwordRecoveryFlow'
 import { isPasswordRecoverySession } from '@/lib/recoverySession'
-import { useAdultBackgroundSignOut } from '@/hooks/useAdultBackgroundSignOut'
+import { useBackgroundSignOut } from '@/hooks/useBackgroundSignOut'
+import { isAppBackgroundExpired } from '@/lib/backgroundSignOut'
+import {
+  clearBackgroundPrivacyState,
+} from '@/lib/backgroundSessionCleanup'
+import { clearAllHomeCaches } from '@/lib/homeCache'
 import { canReuseLoadedMember } from '@/lib/authSessionReuse'
 import { classifyMemberFetch, type MemberFetchOutcome } from '@/lib/memberFetch'
 import { supabase } from '@/lib/supabase'
@@ -90,7 +95,7 @@ async function fetchMemberOutcome(
 }
 
 function AuthSessionEffects() {
-  useAdultBackgroundSignOut()
+  useBackgroundSignOut()
   return null
 }
 
@@ -116,6 +121,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void supabase.realtime.setAuth(session?.access_token ?? null)
     if (!session) {
       clearPasswordRecoveryFlow()
+      clearBackgroundPrivacyState()
+      clearAllHomeCaches()
       setState({
         status: 'signedOut',
         session: null,
@@ -124,6 +131,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         memberError: false,
       })
       return
+    }
+
+    if (!isAppBackgroundExpired()) {
+      clearBackgroundPrivacyState()
     }
 
     // Supabase re-emits SIGNED_IN / TOKEN_REFRESHED on every tab/PWA refocus.
@@ -292,6 +303,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const signOut = useCallback(async () => {
+    clearBackgroundPrivacyState()
+    clearAllHomeCaches()
     const { error } = await supabase.auth.signOut()
     if (error) throw error
   }, [])

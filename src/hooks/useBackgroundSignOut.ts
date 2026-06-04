@@ -1,20 +1,23 @@
 import { useEffect, useRef } from 'react'
 import {
-  ADULT_BACKGROUND_SIGN_OUT_MS,
+  BACKGROUND_SIGN_OUT_MS,
   createBackgroundSignOutTimer,
-  isAdultMemberRole,
+  readAppHiddenAt,
+  recordAppHiddenAt,
   shouldSignOutAfterBackground,
-} from '@/lib/adultBackgroundSignOut'
+} from '@/lib/backgroundSignOut'
+import { runExpiredBackgroundCleanup } from '@/lib/backgroundSessionCleanup'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 
 /**
- * When an admin or member hides the app (browser tab or installed PWA), sign out
- * locally after a grace period so a shared phone does not keep exposing household
- * balances. Uses a timestamp check on return because mobile OSes often suspend
- * background timers until the page is visible again.
+ * When a signed-in user hides the app (browser tab or installed PWA), sign out
+ * locally after a grace period so a shared phone does not keep exposing balances.
+ * Uses a timestamp check on return because mobile OSes often suspend background
+ * timers until the page is visible again. Privacy overlay is shown on hide via
+ * registerBackgroundPrivacyShield (main.tsx).
  */
-export function useAdultBackgroundSignOut(): void {
+export function useBackgroundSignOut(): void {
   const auth = useAuth()
   const hiddenAtRef = useRef<number | null>(null)
 
@@ -22,10 +25,10 @@ export function useAdultBackgroundSignOut(): void {
     if (auth.status !== 'signedIn') return
     if (auth.memberLoading) return
     if (auth.isPasswordRecovery) return
-    if (!isAdultMemberRole(auth.member?.role)) return
+    if (!auth.member) return
 
     const timer = createBackgroundSignOutTimer(
-      ADULT_BACKGROUND_SIGN_OUT_MS,
+      BACKGROUND_SIGN_OUT_MS,
       (fn, ms) => setTimeout(fn, ms),
       clearTimeout,
     )
@@ -35,15 +38,21 @@ export function useAdultBackgroundSignOut(): void {
     }
 
     function onHidden() {
-      hiddenAtRef.current = Date.now()
-      timer.start(signOutLocal)
+      const at = Date.now()
+      hiddenAtRef.current = at
+      recordAppHiddenAt(at)
+      timer.start(() => {
+        runExpiredBackgroundCleanup()
+        signOutLocal()
+      })
     }
 
     function onVisible() {
       timer.cancel()
-      const hiddenAt = hiddenAtRef.current
+      const hiddenAt = hiddenAtRef.current ?? readAppHiddenAt()
       hiddenAtRef.current = null
       if (shouldSignOutAfterBackground(hiddenAt, Date.now())) {
+        runExpiredBackgroundCleanup()
         signOutLocal()
       }
     }
@@ -70,6 +79,6 @@ export function useAdultBackgroundSignOut(): void {
     auth.status,
     auth.memberLoading,
     auth.isPasswordRecovery,
-    auth.member?.role,
+    auth.member,
   ])
 }

@@ -18,6 +18,15 @@
     <title>Bucket My Money</title>
   </head>
   <body>
+    <!-- Branded gate before React; keep copy in sync with APP_NAME / LOADING_STATUS_LABEL in src/lib/brand.ts -->
+    <div id="session-gate-overlay" class="session-gate-overlay" hidden aria-live="polite" role="status">
+      <img src="/icons/icon-192.png" alt="" width="48" height="48" class="session-gate-logo" />
+      <p class="session-gate-title">Bucket My Money</p>
+      <div class="session-gate-status">
+        <span class="session-gate-spinner" aria-hidden="true"></span>
+        <p class="session-gate-label">Loading…</p>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

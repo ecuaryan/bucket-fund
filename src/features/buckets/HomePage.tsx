@@ -29,6 +29,10 @@ import {
   childTotalBalance,
   type HomeBalanceBreakdown,
 } from '@/lib/availableBalance'
+import {
+  isAppBackgroundExpired,
+  isSessionGateActive,
+} from '@/lib/backgroundSignOut'
 import { readHomeCache, writeHomeCache } from '@/lib/homeCache'
 import { formatRelativeTime } from '@/lib/relativeTime'
 import { loadHomePage } from '@/lib/homePage'
@@ -173,6 +177,8 @@ export default function HomePage() {
       setHouseholdAdminName(null)
       return
     }
+    if (isAppBackgroundExpired() || isSessionGateActive()) return
+
     const cached = readHomeCache(familyId, memberId)
     if (cached) {
       setBuckets(cached.buckets)

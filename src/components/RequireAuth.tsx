@@ -1,29 +1,54 @@
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import MemberLoadError from '@/components/MemberLoadError'
 import OrphanMemberNotice from '@/components/OrphanMemberNotice'
-import PageFallback from '@/components/PageFallback'
-import { APP_NAME } from '@/lib/brand'
+import SessionGateShell from '@/components/SessionGateShell'
 import { useAuth } from '@/lib/auth'
+import {
+  isAppBackgroundExpired,
+  isSessionGateActive,
+} from '@/lib/backgroundSignOut'
+import { isSessionGateOverlayVisible } from '@/lib/backgroundPrivacyShield'
+import { runExpiredBackgroundCleanup } from '@/lib/backgroundSessionCleanup'
 import { signedOutRedirectTarget } from '@/lib/authNavigation'
 import { HideAmountsProvider } from '@/lib/HideAmountsProvider'
 import { takeOrphanMemberNotice } from '@/lib/pinAuth'
+import { supabase } from '@/lib/supabase'
+
+function shouldShowSessionGate(
+  status: ReturnType<typeof useAuth>['status'],
+  memberLoading: boolean,
+): boolean {
+  if (status === 'loading') return true
+  if (status === 'signedIn' && memberLoading) return true
+  if (status === 'signedIn') {
+    return (
+      isAppBackgroundExpired() ||
+      isSessionGateActive() ||
+      isSessionGateOverlayVisible()
+    )
+  }
+  return false
+}
 
 export default function RequireAuth({ children }: { children: ReactNode }) {
   const auth = useAuth()
   const location = useLocation()
 
-  if (auth.status === 'loading') {
-    return (
-      <div className="flex min-h-svh flex-col bg-black">
-        <header className="border-b border-zinc-800 bg-zinc-900/80 px-4 py-3">
-          <p className="text-sm font-semibold text-zinc-300">{APP_NAME}</p>
-        </header>
-        <main className="mx-auto w-full max-w-md flex-1 px-4 pt-6">
-          <PageFallback />
-        </main>
-      </div>
-    )
+  const showGate = shouldShowSessionGate(
+    auth.status,
+    auth.status === 'signedIn' ? auth.memberLoading : false,
+  )
+
+  useEffect(() => {
+    if (auth.status !== 'signedIn') return
+    if (!isAppBackgroundExpired()) return
+    runExpiredBackgroundCleanup()
+    void supabase.auth.signOut({ scope: 'local' })
+  }, [auth.status])
+
+  if (showGate) {
+    return <SessionGateShell />
   }
 
   if (auth.status === 'signedOut') {
@@ -39,8 +64,6 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
     !auth.memberLoading &&
     !auth.member
   ) {
-    // A failed lookup is not proof of removal — offer a retry instead of the
-    // orphan notice, which would wrongly say the user lost household access.
     if (auth.memberError) {
       return <MemberLoadError />
     }
@@ -49,19 +72,6 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
 
   if (auth.isPasswordRecovery) {
     return <Navigate to="/login/reset" replace />
-  }
-
-  if (auth.status === 'signedIn' && auth.memberLoading) {
-    return (
-      <div className="flex min-h-svh flex-col bg-black">
-        <header className="border-b border-zinc-800 bg-zinc-900/80 px-4 py-3">
-          <p className="text-sm font-semibold text-zinc-300">{APP_NAME}</p>
-        </header>
-        <main className="mx-auto w-full max-w-md flex-1 px-4 pt-6">
-          <PageFallback />
-        </main>
-      </div>
-    )
   }
 
   const memberId =

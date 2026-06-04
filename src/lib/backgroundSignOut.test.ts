@@ -1,23 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  ADULT_BACKGROUND_SIGN_OUT_MS,
+  BACKGROUND_SIGN_OUT_MS,
+  clearAppHiddenAt,
+  clearSessionGateActive,
   createBackgroundSignOutTimer,
-  isAdultMemberRole,
+  isAppBackgroundExpired,
+  isSessionGateActive,
+  readAppHiddenAt,
+  recordAppHiddenAt,
+  setSessionGateActive,
   shouldSignOutAfterBackground,
-} from '@/lib/adultBackgroundSignOut'
-
-describe('isAdultMemberRole', () => {
-  it('treats admin and member as adult', () => {
-    expect(isAdultMemberRole('admin')).toBe(true)
-    expect(isAdultMemberRole('member')).toBe(true)
-  })
-
-  it('does not treat child or unknown roles as adult', () => {
-    expect(isAdultMemberRole('child')).toBe(false)
-    expect(isAdultMemberRole(null)).toBe(false)
-    expect(isAdultMemberRole(undefined)).toBe(false)
-  })
-})
+} from '@/lib/backgroundSignOut'
 
 describe('shouldSignOutAfterBackground', () => {
   it('requires a recorded hidden time', () => {
@@ -26,14 +19,40 @@ describe('shouldSignOutAfterBackground', () => {
 
   it('signs out after the threshold', () => {
     expect(
-      shouldSignOutAfterBackground(0, ADULT_BACKGROUND_SIGN_OUT_MS),
+      shouldSignOutAfterBackground(0, BACKGROUND_SIGN_OUT_MS),
     ).toBe(true)
   })
 
   it('does not sign out before the threshold', () => {
     expect(
-      shouldSignOutAfterBackground(0, ADULT_BACKGROUND_SIGN_OUT_MS - 1),
+      shouldSignOutAfterBackground(0, BACKGROUND_SIGN_OUT_MS - 1),
     ).toBe(false)
+  })
+})
+
+describe('sessionStorage hidden-at and gate flags', () => {
+  beforeEach(() => {
+    sessionStorage.clear()
+  })
+
+  it('records and reads hidden timestamp', () => {
+    recordAppHiddenAt(1_000)
+    expect(readAppHiddenAt()).toBe(1_000)
+    clearAppHiddenAt()
+    expect(readAppHiddenAt()).toBe(null)
+  })
+
+  it('isAppBackgroundExpired uses stored hidden-at', () => {
+    recordAppHiddenAt(Date.now() - BACKGROUND_SIGN_OUT_MS)
+    expect(isAppBackgroundExpired()).toBe(true)
+  })
+
+  it('tracks session gate active flag', () => {
+    expect(isSessionGateActive()).toBe(false)
+    setSessionGateActive()
+    expect(isSessionGateActive()).toBe(true)
+    clearSessionGateActive()
+    expect(isSessionGateActive()).toBe(false)
   })
 })
 
@@ -49,7 +68,7 @@ describe('createBackgroundSignOutTimer', () => {
   it('fires after the configured delay', () => {
     const onFire = vi.fn()
     const timer = createBackgroundSignOutTimer(
-      ADULT_BACKGROUND_SIGN_OUT_MS,
+      BACKGROUND_SIGN_OUT_MS,
       (fn, ms) => setTimeout(fn, ms),
       clearTimeout,
     )
@@ -57,7 +76,7 @@ describe('createBackgroundSignOutTimer', () => {
     timer.start(onFire)
     expect(onFire).not.toHaveBeenCalled()
 
-    vi.advanceTimersByTime(ADULT_BACKGROUND_SIGN_OUT_MS - 1)
+    vi.advanceTimersByTime(BACKGROUND_SIGN_OUT_MS - 1)
     expect(onFire).not.toHaveBeenCalled()
 
     vi.advanceTimersByTime(1)
@@ -67,7 +86,7 @@ describe('createBackgroundSignOutTimer', () => {
   it('cancel clears a pending sign-out', () => {
     const onFire = vi.fn()
     const timer = createBackgroundSignOutTimer(
-      ADULT_BACKGROUND_SIGN_OUT_MS,
+      BACKGROUND_SIGN_OUT_MS,
       (fn, ms) => setTimeout(fn, ms),
       clearTimeout,
     )
@@ -75,14 +94,14 @@ describe('createBackgroundSignOutTimer', () => {
     timer.start(onFire)
     vi.advanceTimersByTime(30_000)
     timer.cancel()
-    vi.advanceTimersByTime(ADULT_BACKGROUND_SIGN_OUT_MS)
+    vi.advanceTimersByTime(BACKGROUND_SIGN_OUT_MS)
     expect(onFire).not.toHaveBeenCalled()
   })
 
   it('restart resets the delay', () => {
     const onFire = vi.fn()
     const timer = createBackgroundSignOutTimer(
-      ADULT_BACKGROUND_SIGN_OUT_MS,
+      BACKGROUND_SIGN_OUT_MS,
       (fn, ms) => setTimeout(fn, ms),
       clearTimeout,
     )
