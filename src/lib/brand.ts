@@ -162,6 +162,15 @@ export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_SUFFIX =
 export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
   'Balances count toward the money you can organize into buckets.'
 
+/** Accessible label for expand/collapse on a money-source group header. */
+export function adminMoneySourceGroupExpandLabel(
+  expanded: boolean,
+  accountCount: number,
+): string {
+  const n = accountCount === 1 ? '1 account' : `${accountCount} accounts`
+  return expanded ? `Collapse ${n}` : `Expand ${n}`
+}
+
 export function adminLinkBankConfirmMessage(): string {
   return (
     'Link bank is for a new institution.\n\n' +
