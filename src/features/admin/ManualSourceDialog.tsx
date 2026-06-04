@@ -84,8 +84,8 @@ export default function ManualSourceDialog({
         if (!accountId) throw new Error('Missing account')
         await updateManualAccount(accountId, amount, trimmed)
       }
-      await onSaved()
       onClose()
+      await onSaved()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -99,7 +99,10 @@ export default function ManualSourceDialog({
         <h2 className="text-lg font-semibold text-zinc-300">{title}</h2>
         <button
           type="button"
-          onClick={onClose}
+          onClick={() => {
+            if (submitting) return
+            onClose()
+          }}
           disabled={submitting}
           className="rounded p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50"
           aria-label="Close"

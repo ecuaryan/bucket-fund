@@ -50,6 +50,25 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Member has no login yet' }, 400)
   }
 
+  // Sign the member out everywhere before changing their PIN. We delete their
+  // auth.sessions via RPC (revokes refresh tokens) because `auth.admin.signOut`
+  // needs the member's own JWT and cannot sign a user out by id. Own-PIN
+  // "sign out other devices" is handled on the saving device in the client
+  // (`signOut({ scope: 'others' })`), so skip it for self.
+  if (member.id !== auth.memberId) {
+    const { error: revokeError } = await admin.rpc('revoke_member_sessions', {
+      p_user_id: member.user_id,
+      p_family_id: auth.familyId,
+    })
+    if (revokeError) {
+      console.error('set-pin revoke_member_sessions', revokeError)
+      return jsonResponse(
+        { error: 'Could not sign them out on other devices. Try again.' },
+        500,
+      )
+    }
+  }
+
   const pinHash = await hashPin(pin)
 
   const { error: updateError } = await admin
@@ -65,18 +84,6 @@ Deno.serve(async (req: Request) => {
   if (updateError) {
     console.error('set-pin update', updateError)
     return jsonResponse({ error: 'Could not save PIN' }, 500)
-  }
-
-  // Own-PIN "sign out other devices" runs on the saving device in the client
-  // (`signOut({ scope: 'others' })`) so GoTrue can bind the current refresh token.
-  if (member.id !== auth.memberId) {
-    const { error: signOutError } = await admin.auth.admin.signOut(
-      member.user_id,
-      'global',
-    )
-    if (signOutError) {
-      console.warn('set-pin signOut global', signOutError)
-    }
   }
 
   return jsonResponse({ ok: true })

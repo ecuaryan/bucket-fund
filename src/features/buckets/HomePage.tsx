@@ -484,7 +484,10 @@ export default function HomePage() {
 
   return (
     <>
-      <BusyOverlay busy={syncing} label="Updating…">
+      <BusyOverlay
+        busy={syncing && moveBucketId === null && !manualSourceOpen}
+        label="Updating…"
+      >
         <div className="space-y-6">
       {balanceUsesFallback && (
         <p className="rounded-2xl bg-amber-500/10 px-4 py-3 text-sm text-amber-200 ring-1 ring-amber-500/30">

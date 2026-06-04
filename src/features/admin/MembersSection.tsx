@@ -61,6 +61,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
 
   const [pinTarget, setPinTarget] = useState<Member | null>(null)
   const [pinValue, setPinValue] = useState('')
+  const [pinError, setPinError] = useState<string | null>(null)
   const [savingPin, setSavingPin] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -143,11 +144,11 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     e.preventDefault()
     if (!pinTarget) return
     if (!/^\d{4}$/.test(pinValue)) {
-      setActionError('PIN must be exactly 4 digits.')
+      setPinError('PIN must be exactly 4 digits.')
       return
     }
     setSavingPin(true)
-    setActionError(null)
+    setPinError(null)
     setInfo(null)
     try {
       await setMemberPin(pinTarget.id, pinValue, {
@@ -183,7 +184,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
         setRefreshing(false)
       }
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : String(err))
+      setPinError(err instanceof Error ? err.message : String(err))
     } finally {
       setSavingPin(false)
     }
@@ -297,7 +298,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     }
   }
 
-  const sectionBusy = creating || savingPin || refreshing
+  const sectionBusy = creating || (refreshing && pinTarget === null)
 
   return (
     <BusyOverlay busy={sectionBusy} label="Saving…">
@@ -432,7 +433,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
                   onClick={() => {
                     setPinTarget(m)
                     setPinValue('')
-                    setActionError(null)
+                    setPinError(null)
                   }}
                   className="rounded-lg border border-zinc-700 px-2 py-1 text-xs font-semibold text-zinc-300 hover:bg-zinc-800"
                 >
@@ -457,8 +458,10 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
         <Sheet
           open={pinTarget !== null}
           onClose={() => {
+            if (savingPin) return
             setPinTarget(null)
             setPinValue('')
+            setPinError(null)
           }}
           aria-label={
             pinTarget.id === selfMemberId
@@ -477,6 +480,14 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
             <p className="mt-1 text-xs text-zinc-400">
               {adminPinSheetBody(pinTarget.name, pinTarget.id === selfMemberId)}
             </p>
+            {pinError ? (
+              <p
+                role="alert"
+                className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300 ring-1 ring-red-500/30"
+              >
+                {pinError}
+              </p>
+            ) : null}
             <PinInput
               autoFocus
               aria-label={`4-digit PIN for ${pinTarget.name}`}
@@ -490,7 +501,9 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
                 onClick={() => {
                   setPinTarget(null)
                   setPinValue('')
+                  setPinError(null)
                 }}
+                disabled={savingPin}
                 className="flex-1 rounded-lg border border-zinc-700 py-2 text-sm text-zinc-400"
               >
                 Cancel

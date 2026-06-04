@@ -345,11 +345,12 @@ export default function AdminPage() {
 
       <BusyOverlay
         busy={
-          unlinkingKey !== null ||
-          reconnectingKey !== null ||
-          refreshingKey !== null ||
-          teller.linking ||
-          accountsSyncing
+          manualDialog === null &&
+          (unlinkingKey !== null ||
+            reconnectingKey !== null ||
+            refreshingKey !== null ||
+            teller.linking ||
+            accountsSyncing)
         }
         label={
           teller.linking
