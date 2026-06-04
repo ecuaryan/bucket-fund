@@ -2,7 +2,7 @@
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { handleCors, jsonResponse } from '../_shared/http.ts'
-import { requireAdmin, serviceClient } from '../_shared/supabase.ts'
+import { callerClient, requireAdmin, serviceClient } from '../_shared/supabase.ts'
 import { hashPin, isValidPin } from '../_shared/pin.ts'
 
 type Body = {
@@ -67,15 +67,23 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Could not save PIN' }, 500)
   }
 
-  // Sign out other members so they must use the new PIN. Skip when the admin
-  // updates their own PIN while already signed in with email.
-  if (member.id !== auth.memberId) {
+  const authHeader = req.headers.get('Authorization')
+  if (member.id === auth.memberId) {
+    // Admin updating own PIN: revoke other devices; keep this request's session.
+    if (authHeader) {
+      const caller = callerClient(authHeader)
+      const { error: signOutError } = await caller.auth.signOut({ scope: 'others' })
+      if (signOutError) {
+        console.warn('set-pin signOut others', signOutError)
+      }
+    }
+  } else {
     const { error: signOutError } = await admin.auth.admin.signOut(
       member.user_id,
       'global',
     )
     if (signOutError) {
-      console.warn('set-pin signOut', signOutError)
+      console.warn('set-pin signOut global', signOutError)
     }
   }
 

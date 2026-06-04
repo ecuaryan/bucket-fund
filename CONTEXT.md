@@ -279,7 +279,9 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
   **Admin PIN login** still uses the admin’s real email — the `pin-login` Edge
   Function issues a session via magic link without rotating the email password.
 - **PIN management:** admin only — set/reset PIN verbally; no self-service PIN
-  change in v1. Reset PIN revokes all sessions for that member.
+  change in v1. Resetting **another** member's PIN signs them out on every device.
+  Resetting **your own** PIN signs you out on every **other** device; the device
+  where you save the PIN stays signed in.
 - **Lockout:** 6 failed PIN attempts → locked until admin clears.
 - **Join code rotation:** admin can rotate; only affects **new** device binds.
 - **Sessions:** independent per person — logout on one device does not sign out others.

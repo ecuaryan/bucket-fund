@@ -22,13 +22,41 @@ export function normalizeInstitutionKey(name: string | null | undefined): string
   return (name ?? 'unknown').toLowerCase().trim()
 }
 
-function sortAccountsStable<T extends { created_at: string; id: string }>(
-  accounts: T[],
-): T[] {
-  return [...accounts].sort((a, b) => {
-    const byTime = a.created_at.localeCompare(b.created_at)
-    if (byTime !== 0) return byTime
-    return a.id.localeCompare(b.id)
+type AccountSortRow = {
+  id: string
+  current_balance: number | string
+  account_name: string | null
+}
+
+/** Balance high → low, then account name A–Z, then id for stability. */
+export function compareAccountsByBalanceThenName(
+  a: AccountSortRow,
+  b: AccountSortRow,
+): number {
+  const balA = Number(a.current_balance)
+  const balB = Number(b.current_balance)
+  if (balB !== balA) return balB - balA
+  const byName = (a.account_name ?? '').localeCompare(b.account_name ?? '', undefined, {
+    sensitivity: 'base',
+  })
+  if (byName !== 0) return byName
+  return a.id.localeCompare(b.id)
+}
+
+function sortAccountsByBalanceThenName<T extends AccountSortRow>(accounts: T[]): T[] {
+  return [...accounts].sort(compareAccountsByBalanceThenName)
+}
+
+function compareInstitutionGroups(
+  a: InstitutionGroup,
+  b: InstitutionGroup,
+): number {
+  if (a.isManual !== b.isManual) return a.isManual ? -1 : 1
+  if (a.groupKey === 'unlinked') return 1
+  if (b.groupKey === 'unlinked') return -1
+  if (b.totalBalance !== a.totalBalance) return b.totalBalance - a.totalBalance
+  return (a.institutionName ?? '').localeCompare(b.institutionName ?? '', undefined, {
+    sensitivity: 'base',
   })
 }
 
@@ -70,7 +98,7 @@ export function groupAccountsByInstitution(
   const tellerOrphans: Account[] = []
   const manualAccounts: Account[] = []
 
-  for (const account of sortAccountsStable(accounts)) {
+  for (const account of accounts) {
     if (account.source === 'manual') {
       manualAccounts.push(account)
       continue
@@ -90,7 +118,7 @@ export function groupAccountsByInstitution(
 
   const groups: InstitutionGroup[] = []
   for (const [groupKey, institutionAccounts] of byInstitution) {
-    const sorted = sortAccountsStable(institutionAccounts)
+    const sorted = sortAccountsByBalanceThenName(institutionAccounts)
     const enrollmentIds = [
       ...new Set(
         sorted
@@ -125,12 +153,8 @@ export function groupAccountsByInstitution(
     })
   }
 
-  groups.sort((a, b) =>
-    (a.institutionName ?? '').localeCompare(b.institutionName ?? ''),
-  )
-
   if (manualAccounts.length > 0) {
-    const sorted = sortAccountsStable(manualAccounts)
+    const sorted = sortAccountsByBalanceThenName(manualAccounts)
     let lastSyncedAt: string | null = null
     let totalBalance = 0
     for (const account of sorted) {
@@ -159,7 +183,7 @@ export function groupAccountsByInstitution(
     groups.push({
       groupKey: 'unlinked',
       institutionName: 'Unlinked',
-      accounts: sortAccountsStable(tellerOrphans),
+      accounts: sortAccountsByBalanceThenName(tellerOrphans),
       totalBalance: tellerOrphans.reduce(
         (sum, a) => sum + Number(a.current_balance),
         0,
@@ -171,6 +195,8 @@ export function groupAccountsByInstitution(
       isManual: false,
     })
   }
+
+  groups.sort(compareInstitutionGroups)
 
   return groups
 }
