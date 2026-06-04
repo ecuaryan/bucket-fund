@@ -53,3 +53,18 @@ export function writeHomeCache(
     // Quota or private mode — ignore.
   }
 }
+
+export function clearAllHomeCaches(): void {
+  try {
+    const keys: string[] = []
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i)
+      if (key?.startsWith(CACHE_PREFIX)) keys.push(key)
+    }
+    for (const key of keys) {
+      sessionStorage.removeItem(key)
+    }
+  } catch {
+    // private mode
+  }
+}

@@ -52,7 +52,7 @@ function readNavigationType(): string | undefined {
   return undefined
 }
 
-function hasSessionAuthToken(): boolean {
+export function hasSessionAuthToken(): boolean {
   try {
     return sessionStorage.getItem(SUPABASE_AUTH_STORAGE_KEY) !== null
   } catch {

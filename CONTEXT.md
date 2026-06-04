@@ -283,11 +283,11 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
 - **Lockout:** 6 failed PIN attempts → locked until admin clears.
 - **Join code rotation:** admin can rotate; only affects **new** device binds.
 - **Sessions:** independent per person — logout on one device does not sign out others.
-- **Shared phones:** adult sessions (`admin`, `member`) sign out locally after **60 seconds**
-  hidden (browser tab or installed PWA via `visibilitychange`; elapsed time checked on
-  return because mobile OSes suspend background timers). Re-auth via family PIN when the
-  device has a join code. Child sessions are unchanged. Manual header Sign out remains
-  available.
+- **Shared phones:** all signed-in sessions sign out locally after **60 seconds** hidden
+  (browser tab or installed PWA via `visibilitychange`; elapsed time checked on return
+  because mobile OSes often suspend background timers). On hide, a branded gate (app icon +
+  loading spinner) covers balances; on return under 60s the gate clears; after 60s re-auth
+  via family PIN when the device has a join code. Manual header Sign out remains available.
 - **Kill / cold start:** auth tokens are stored in `sessionStorage`, not `localStorage`, so
   force-quitting or reopening the PWA after the process ends requires sign-in again (tab
   reload keeps the session). Legacy `localStorage` tokens are migrated only on reload, not on

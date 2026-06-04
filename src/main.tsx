@@ -6,10 +6,12 @@ import App from './App.tsx'
 import KeyboardViewport from '@/components/KeyboardViewport'
 import { AuthProvider } from '@/lib/auth'
 import { migrateLegacyStorageKeys } from '@/lib/localStorageMigrate'
+import { registerBackgroundPrivacyShield } from '@/lib/backgroundPrivacyShield'
 import { registerPwaUpdateChecks } from '@/lib/pwaUpdate'
 import './index.css'
 
 migrateLegacyStorageKeys()
+registerBackgroundPrivacyShield()
 registerSW({
   immediate: true,
   onRegisteredSW(_swUrl, registration) {
