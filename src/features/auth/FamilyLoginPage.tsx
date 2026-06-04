@@ -234,13 +234,6 @@ export default function FamilyLoginPage() {
             </p>
           )}
           <button
-            type="submit"
-            disabled={pin.length !== 4}
-            className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black disabled:opacity-50"
-          >
-            Sign in
-          </button>
-          <button
             type="button"
             onClick={() => {
               setSelected(null)
