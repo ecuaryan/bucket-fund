@@ -22,14 +22,19 @@ export type ValidateJoinResult = {
   members: JoinMember[]
 }
 
-function mapPostFunctionNetworkError(err: unknown, name: string): Error {
+function mapPostFunctionNetworkError(
+  err: unknown,
+  name: string,
+  authenticated: boolean,
+): Error {
   if (err instanceof Error) {
     if (err.message.includes('timed out')) return err
     const msg = err.message.toLowerCase()
     if (msg === 'failed to fetch' || msg.includes('network')) {
-      return new Error(
-        'Could not reach the server. Check your connection. If you were idle a long time, sign out and sign in again, then retry.',
-      )
+      const hint = authenticated
+        ? ' If you were idle a long time, sign out and sign in again, then retry.'
+        : ''
+      return new Error(`Could not reach the server. Check your connection.${hint}`)
     }
   }
   return err instanceof Error ? err : new Error(`${name} failed`)
@@ -68,12 +73,15 @@ async function postFunction<T>(
       'Request timed out. Check your connection and try again.',
     )
   } catch (err) {
-    throw mapPostFunctionNetworkError(err, name)
+    throw mapPostFunctionNetworkError(err, name, Boolean(accessToken))
   }
 
   const data = (await res.json().catch(() => ({}))) as T & { error?: string }
   if (!res.ok) {
-    if (res.status === 401) {
+    // A 401 on an authenticated call means the admin's session is no longer
+    // valid. Unauthenticated calls (e.g. pin-login) use 401 for domain errors
+    // like "Wrong PIN", so keep the server's message there.
+    if (res.status === 401 && accessToken) {
       throw new Error('Session expired. Sign out and sign in again, then retry.')
     }
     const detail = data.error ?? `${name} failed: ${res.status}`
