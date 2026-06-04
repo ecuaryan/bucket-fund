@@ -110,6 +110,28 @@ export const ADMIN_HOUSEHOLD_MEMBERS_DETAILS = [
   'Tell each person their PIN—they cannot change it themselves.',
 ] as const
 
+/** Admin PIN sheet title when the admin sets their own PIN. */
+export const ADMIN_PIN_SHEET_TITLE_SELF = 'Your PIN'
+
+export function adminPinSheetTitle(memberName: string, isSelf: boolean): string {
+  return isSelf ? ADMIN_PIN_SHEET_TITLE_SELF : `PIN for ${memberName}`
+}
+
+/** Explains sign-out behavior when saving (matches set-pin Edge Function). */
+export function adminPinSheetBody(memberName: string, isSelf: boolean): string {
+  if (isSelf) {
+    return '4 digits. Saving signs you out on your other devices. This device stays signed in.'
+  }
+  return `4 digits. Saving signs ${memberName} out on every device. They sign in again with this PIN.`
+}
+
+export function adminPinSaveSuccess(memberName: string, isSelf: boolean): string {
+  if (isSelf) {
+    return 'PIN saved. Your other devices were signed out; use the new PIN to sign in there.'
+  }
+  return `PIN saved for ${memberName}. They're signed out everywhere until they sign in with the new PIN.`
+}
+
 /** Admin: linked account or bucket belongs to all adults (not a child). */
 export const HOUSEHOLD_LABEL = 'Household'
 

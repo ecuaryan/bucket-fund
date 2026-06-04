@@ -12,6 +12,9 @@ import {
   ADMIN_LOADING_MEMBERS,
   APP_FORM_DATA_ATTR,
   REMOVE_CHILD_ACCOUNTS_DETAIL,
+  adminPinSaveSuccess,
+  adminPinSheetBody,
+  adminPinSheetTitle,
 } from '@/lib/brand'
 import {
   ROLE_OPTION_ADULT,
@@ -149,9 +152,10 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     try {
       await setMemberPin(pinTarget.id, pinValue)
       setInfo(
-        pinTarget.id === selfMemberId
-          ? `PIN updated. You can use it on this device from PIN sign-in.`
-          : `PIN updated for ${pinTarget.name}. They'll need to sign in again.`,
+        adminPinSaveSuccess(
+          pinTarget.name,
+          pinTarget.id === selfMemberId,
+        ),
       )
       setPinTarget(null)
       setPinValue('')
@@ -454,7 +458,11 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
             setPinTarget(null)
             setPinValue('')
           }}
-          aria-label={`Set PIN for ${pinTarget.name}`}
+          aria-label={
+            pinTarget.id === selfMemberId
+              ? 'Set your PIN'
+              : `Set PIN for ${pinTarget.name}`
+          }
         >
           <form
             onSubmit={onSavePin}
@@ -462,11 +470,10 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
             {...{ [APP_FORM_DATA_ATTR]: 'admin-set-pin' }}
           >
             <h3 id="pin-dialog-title" className="text-lg font-semibold text-zinc-300">
-              PIN for {pinTarget.name}
+              {adminPinSheetTitle(pinTarget.name, pinTarget.id === selfMemberId)}
             </h3>
             <p className="mt-1 text-xs text-zinc-400">
-              4 digits. Saving signs them out everywhere until they sign in
-              again.
+              {adminPinSheetBody(pinTarget.name, pinTarget.id === selfMemberId)}
             </p>
             <PinInput
               autoFocus
