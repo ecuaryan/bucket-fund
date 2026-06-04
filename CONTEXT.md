@@ -280,8 +280,10 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
   Function issues a session via magic link without rotating the email password.
 - **PIN management:** admin only — set/reset PIN verbally; no self-service PIN
   change in v1. Resetting **another** member's PIN signs them out on every device.
-  Resetting **your own** PIN signs you out on every **other** device; the device
-  where you save the PIN stays signed in.
+  Resetting **your own** PIN signs you out on every **other** device (revoked on
+  save via `signOut({ scope: 'others' })` on that device); the device where you
+  save stays signed in. Other devices drop on the next refresh or activity — JWTs
+  can linger until expiry.
 - **Lockout:** 6 failed PIN attempts → locked until admin clears.
 - **Join code rotation:** admin can rotate; only affects **new** device binds.
 - **Sessions:** independent per person — logout on one device does not sign out others.
