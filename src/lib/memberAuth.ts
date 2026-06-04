@@ -1,5 +1,5 @@
 import { notifyHouseholdRosterChanged } from '@/lib/householdRosterRefresh'
-import { getFreshAccessToken } from '@/lib/sessionToken'
+import { getFreshAccessToken, refreshAccessToken } from '@/lib/sessionToken'
 import { supabase, supabaseUrl } from '@/lib/supabase'
 import { withTimeout } from '@/lib/timeout'
 
@@ -60,20 +60,37 @@ async function postFunction<T>(
     headers.Authorization = `Bearer ${accessToken}`
   }
 
-  let res: Response
-  try {
-    res = await withTimeout(
+  const send = (token?: string) => {
+    const h = { ...headers }
+    if (token) h.Authorization = `Bearer ${token}`
+    return withTimeout(
       fetch(`${supabaseUrl}/functions/v1/${name}`, {
         method: 'POST',
-        headers,
+        headers: h,
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(timeoutMs),
       }),
       timeoutMs,
       'Request timed out. Check your connection and try again.',
     )
+  }
+
+  let res: Response
+  try {
+    res = await send(accessToken)
   } catch (err) {
     throw mapPostFunctionNetworkError(err, name, Boolean(accessToken))
+  }
+
+  if (res.status === 401 && accessToken) {
+    const retryToken = await refreshAccessToken()
+    if (retryToken) {
+      try {
+        res = await send(retryToken)
+      } catch (err) {
+        throw mapPostFunctionNetworkError(err, name, true)
+      }
+    }
   }
 
   const data = (await res.json().catch(() => ({}))) as T & { error?: string }
@@ -144,6 +161,14 @@ export async function signOutOtherAuthSessions(): Promise<void> {
   const { error } = await supabase.auth.signOut({ scope: 'others' })
   if (error) {
     throw new Error(`Could not sign out other devices: ${error.message}`)
+  }
+  // GoTrue may rotate tokens after revoking other sessions; refresh so the next
+  // admin Edge call (e.g. updating a child's PIN right after) does not fail.
+  const token = await refreshAccessToken()
+  if (!token) {
+    throw new Error(
+      'Other devices were signed out, but this device lost its session. Sign in again with your new PIN.',
+    )
   }
 }
 

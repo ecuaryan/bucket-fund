@@ -6,10 +6,14 @@
 -- silently fails, which is why resetting another member's PIN never actually
 -- signed them out on their other devices.
 --
--- Deleting the member's rows from auth.sessions revokes their refresh tokens
--- (refresh_tokens cascade on session delete), so other devices drop on their
--- next token refresh. The access-token JWT they hold stays valid until its
--- normal expiry (Supabase default), same as any sign-out.
+-- We delete the member's auth.refresh_tokens *and* auth.sessions. Deleting
+-- sessions alone would normally cascade to refresh_tokens, but we revoke the
+-- refresh tokens explicitly so this can never silently leave a live refresh
+-- token behind (the exact failure mode of the old admin.signOut-by-user-id
+-- call). Once the refresh token is gone, the device's next token refresh fails
+-- and it signs out — same outcome as a real GoTrue logout. The short-lived
+-- access-token JWT they currently hold stays valid until its normal expiry
+-- (Supabase default), same as any sign-out.
 --
 -- Authorization (caller must be an admin of the member's family) is enforced
 -- by the set-pin Edge Function before this runs; execute is granted to
@@ -39,6 +43,11 @@ begin
   ) then
     raise exception 'member not in family' using errcode = '42501';
   end if;
+
+  delete from auth.refresh_tokens
+   where session_id in (
+     select id from auth.sessions where user_id = p_user_id
+   );
 
   delete from auth.sessions where user_id = p_user_id;
 end;
