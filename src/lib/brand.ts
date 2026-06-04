@@ -122,14 +122,14 @@ export function adminPinSheetBody(memberName: string, isSelf: boolean): string {
   if (isSelf) {
     return '4 digits. Saving signs you out on your other devices. This device stays signed in.'
   }
-  return `4 digits. Saving signs ${memberName} out on every device. They sign in again with this PIN.`
+  return `4 digits. Saving signs ${memberName} out on every device. They sign in again with this PIN. Other devices may look signed in until they open the app or the session refreshes.`
 }
 
 export function adminPinSaveSuccess(memberName: string, isSelf: boolean): string {
   if (isSelf) {
     return 'PIN saved. Your other devices were signed out; use the new PIN to sign in there.'
   }
-  return `PIN saved for ${memberName}. They're signed out everywhere until they sign in with the new PIN.`
+  return `PIN saved for ${memberName}. They're signed out everywhere; use the new PIN to sign in. Other devices may still show the app briefly until they refresh.`
 }
 
 /** Admin: linked account or bucket belongs to all adults (not a child). */

@@ -50,6 +50,22 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Member has no login yet' }, 400)
   }
 
+  // Own-PIN "sign out other devices" runs on the saving device in the client
+  // (`signOut({ scope: 'others' })`) so GoTrue can bind the current refresh token.
+  if (member.id !== auth.memberId) {
+    const { error: signOutError } = await admin.auth.admin.signOut(
+      member.user_id,
+      'global',
+    )
+    if (signOutError) {
+      console.error('set-pin signOut global', signOutError)
+      return jsonResponse(
+        { error: 'Could not sign them out on other devices. Try again.' },
+        500,
+      )
+    }
+  }
+
   const pinHash = await hashPin(pin)
 
   const { error: updateError } = await admin
@@ -65,18 +81,6 @@ Deno.serve(async (req: Request) => {
   if (updateError) {
     console.error('set-pin update', updateError)
     return jsonResponse({ error: 'Could not save PIN' }, 500)
-  }
-
-  // Own-PIN "sign out other devices" runs on the saving device in the client
-  // (`signOut({ scope: 'others' })`) so GoTrue can bind the current refresh token.
-  if (member.id !== auth.memberId) {
-    const { error: signOutError } = await admin.auth.admin.signOut(
-      member.user_id,
-      'global',
-    )
-    if (signOutError) {
-      console.warn('set-pin signOut global', signOutError)
-    }
   }
 
   return jsonResponse({ ok: true })

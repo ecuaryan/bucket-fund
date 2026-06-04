@@ -1,4 +1,5 @@
 import { notifyHouseholdRosterChanged } from '@/lib/householdRosterRefresh'
+import { getFreshAccessToken } from '@/lib/sessionToken'
 import { supabase, supabaseUrl } from '@/lib/supabase'
 import { withTimeout } from '@/lib/timeout'
 
@@ -21,6 +22,25 @@ export type ValidateJoinResult = {
   members: JoinMember[]
 }
 
+function mapPostFunctionNetworkError(err: unknown, name: string): Error {
+  if (err instanceof Error) {
+    if (err.message.includes('timed out')) return err
+    const msg = err.message.toLowerCase()
+    if (msg === 'failed to fetch' || msg.includes('network')) {
+      return new Error(
+        'Could not reach the server. Check your connection. If you were idle a long time, sign out and sign in again, then retry.',
+      )
+    }
+  }
+  return err instanceof Error ? err : new Error(`${name} failed`)
+}
+
+async function requireAdminAccessToken(): Promise<string> {
+  const token = await getFreshAccessToken()
+  if (!token) throw new Error('Not signed in')
+  return token
+}
+
 async function postFunction<T>(
   name: string,
   body: unknown,
@@ -35,19 +55,27 @@ async function postFunction<T>(
     headers.Authorization = `Bearer ${accessToken}`
   }
 
-  const res = await withTimeout(
-    fetch(`${supabaseUrl}/functions/v1/${name}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(timeoutMs),
-    }),
-    timeoutMs,
-    'Sign-in timed out. Check your connection and try again.',
-  )
+  let res: Response
+  try {
+    res = await withTimeout(
+      fetch(`${supabaseUrl}/functions/v1/${name}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(timeoutMs),
+      }),
+      timeoutMs,
+      'Request timed out. Check your connection and try again.',
+    )
+  } catch (err) {
+    throw mapPostFunctionNetworkError(err, name)
+  }
 
   const data = (await res.json().catch(() => ({}))) as T & { error?: string }
   if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error('Session expired. Sign out and sign in again, then retry.')
+    }
     const detail = data.error ?? `${name} failed: ${res.status}`
     if (res.status === 503) {
       throw new Error(
@@ -80,10 +108,7 @@ export async function exchangePinForSession(input: {
 }
 
 export async function removeMember(memberId: string): Promise<void> {
-  const { data: sessionData } = await supabase.auth.getSession()
-  const token = sessionData.session?.access_token
-  if (!token) throw new Error('Not signed in')
-
+  const token = await requireAdminAccessToken()
   await postFunction<{ ok: boolean }>('remove-member', { memberId }, token)
   notifyHouseholdRosterChanged()
 }
@@ -92,10 +117,7 @@ export async function createMember(input: {
   name: string
   role: 'member' | 'child'
 }): Promise<{ id: string; name: string; role: string }> {
-  const { data: sessionData } = await supabase.auth.getSession()
-  const token = sessionData.session?.access_token
-  if (!token) throw new Error('Not signed in')
-
+  const token = await requireAdminAccessToken()
   const data = await postFunction<{ member: { id: string; name: string; role: string } }>(
     'create-member',
     input,
@@ -122,10 +144,7 @@ export async function setMemberPin(
   pin: string,
   options?: { signOutOtherDevices?: boolean },
 ): Promise<void> {
-  const { data: sessionData } = await supabase.auth.getSession()
-  const token = sessionData.session?.access_token
-  if (!token) throw new Error('Not signed in')
-
+  const token = await requireAdminAccessToken()
   await postFunction('set-pin', { memberId, pin }, token)
 
   if (options?.signOutOtherDevices) {
@@ -134,9 +153,6 @@ export async function setMemberPin(
 }
 
 export async function clearPinLockout(memberId: string): Promise<void> {
-  const { data: sessionData } = await supabase.auth.getSession()
-  const token = sessionData.session?.access_token
-  if (!token) throw new Error('Not signed in')
-
+  const token = await requireAdminAccessToken()
   await postFunction('clear-pin-lockout', { memberId }, token)
 }
