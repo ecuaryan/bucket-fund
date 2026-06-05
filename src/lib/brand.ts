@@ -110,6 +110,14 @@ export const ADMIN_HOUSEHOLD_MEMBERS_DETAILS = [
   'Tell each person their PIN—they cannot change it themselves.',
 ] as const
 
+/** Prompt when the signed-in admin has not set a PIN yet. */
+export const ADMIN_PIN_SETUP_CTA_TITLE = 'Sign in faster with a PIN'
+
+export const ADMIN_PIN_SETUP_CTA_BODY =
+  'Set a 4-digit PIN on this device and skip email next time—pick your name and enter your PIN.'
+
+export const ADMIN_PIN_SETUP_CTA_ACTION = 'Set your PIN'
+
 /** Admin PIN sheet title when the admin sets their own PIN. */
 export const ADMIN_PIN_SHEET_TITLE_SELF = 'Your PIN'
 
@@ -120,14 +128,14 @@ export function adminPinSheetTitle(memberName: string, isSelf: boolean): string 
 /** Explains sign-out behavior when saving (matches set-pin + client sign-out). */
 export function adminPinSheetBody(memberName: string, isSelf: boolean): string {
   if (isSelf) {
-    return '4 digits. Saving signs you out on your other devices. This device stays signed in.'
+    return '4 digits. We link this device for PIN sign-in. Saving signs you out on your other devices; this device stays signed in.'
   }
   return `4 digits. Saving signs ${memberName} out on every device. They sign in again with this PIN. Other devices may look signed in until they open the app or the session refreshes.`
 }
 
 export function adminPinSaveSuccess(memberName: string, isSelf: boolean): string {
   if (isSelf) {
-    return 'PIN saved. Your other devices were signed out; use the new PIN to sign in there.'
+    return 'PIN saved. This device is ready for quick sign-in. Your other devices were signed out—use the new PIN there.'
   }
   return `PIN saved for ${memberName}. They're signed out everywhere; use the new PIN to sign in. Other devices may still show the app briefly until they refresh.`
 }
