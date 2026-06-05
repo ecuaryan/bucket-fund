@@ -10,12 +10,18 @@ import {
   ADMIN_HOUSEHOLD_MEMBERS_INTRO,
   ADMIN_HOUSEHOLD_MEMBERS_TITLE,
   ADMIN_LOADING_MEMBERS,
+  ADMIN_PIN_SETUP_CTA_ACTION,
+  ADMIN_PIN_SETUP_CTA_BODY,
+  ADMIN_PIN_SETUP_CTA_TITLE,
   APP_FORM_DATA_ATTR,
   REMOVE_CHILD_ACCOUNTS_DETAIL,
   adminPinSaveSuccess,
   adminPinSheetBody,
   adminPinSheetTitle,
 } from '@/lib/brand'
+import { bindFamily } from '@/lib/familyDevice'
+import { setLastPinMemberId } from '@/lib/lastPinMember'
+import { setSignInPreference } from '@/lib/signInPreference'
 import {
   ROLE_OPTION_ADULT,
   ROLE_OPTION_CHILD,
@@ -140,6 +146,24 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     }
   }
 
+  function openPinSheet(member: Member) {
+    setPinTarget(member)
+    setPinValue('')
+    setPinError(null)
+  }
+
+  async function linkDeviceForPinSignIn(familyId: string, memberId: string) {
+    const { data } = await supabase
+      .from('families')
+      .select('join_code')
+      .eq('id', familyId)
+      .maybeSingle()
+    if (!data?.join_code) return
+    bindFamily(familyId, data.join_code)
+    setSignInPreference('pin')
+    setLastPinMemberId(memberId)
+  }
+
   async function onSavePin(e: FormEvent) {
     e.preventDefault()
     if (!pinTarget) return
@@ -147,19 +171,18 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
       setPinError('PIN must be exactly 4 digits.')
       return
     }
+    const isSelf = pinTarget.id === selfMemberId
     setSavingPin(true)
     setPinError(null)
     setInfo(null)
     try {
       await setMemberPin(pinTarget.id, pinValue, {
-        signOutOtherDevices: pinTarget.id === selfMemberId,
+        signOutOtherDevices: isSelf,
       })
-      setInfo(
-        adminPinSaveSuccess(
-          pinTarget.name,
-          pinTarget.id === selfMemberId,
-        ),
-      )
+      if (isSelf) {
+        await linkDeviceForPinSignIn(pinTarget.family_id, pinTarget.id)
+      }
+      setInfo(adminPinSaveSuccess(pinTarget.name, isSelf))
       setPinTarget(null)
       setPinValue('')
       const pinNow = new Date().toISOString()
@@ -299,6 +322,11 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
   }
 
   const sectionBusy = creating || (refreshing && pinTarget === null)
+  const selfMember =
+    selfMemberId && members
+      ? members.find((m) => m.id === selfMemberId) ?? null
+      : null
+  const showPinSetupCta = selfMember != null && !selfMember.pin_set_at
 
   return (
     <BusyOverlay busy={sectionBusy} label="Saving…">
@@ -329,6 +357,24 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
         <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300 ring-1 ring-emerald-500/30">
           {info}
         </p>
+      )}
+
+      {showPinSetupCta && (
+        <div className="rounded-2xl bg-emerald-500/10 p-4 ring-1 ring-emerald-500/30">
+          <p className="text-sm font-semibold text-emerald-200">
+            {ADMIN_PIN_SETUP_CTA_TITLE}
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-emerald-200/90">
+            {ADMIN_PIN_SETUP_CTA_BODY}
+          </p>
+          <button
+            type="button"
+            onClick={() => openPinSheet(selfMember)}
+            className="mt-3 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black"
+          >
+            {ADMIN_PIN_SETUP_CTA_ACTION}
+          </button>
+        </div>
       )}
 
       <form
@@ -430,11 +476,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
                 )}
                 <button
                   type="button"
-                  onClick={() => {
-                    setPinTarget(m)
-                    setPinValue('')
-                    setPinError(null)
-                  }}
+                  onClick={() => openPinSheet(m)}
                   className="rounded-lg border border-zinc-700 px-2 py-1 text-xs font-semibold text-zinc-300 hover:bg-zinc-800"
                 >
                   {m.pin_set_at ? 'Reset PIN' : 'Set PIN'}
