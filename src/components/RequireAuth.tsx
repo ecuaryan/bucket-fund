@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
+import { useSessionValidityProbe } from '@/hooks/useSessionValidityProbe'
 import MemberLoadError from '@/components/MemberLoadError'
 import OrphanMemberNotice from '@/components/OrphanMemberNotice'
 import SessionGateShell from '@/components/SessionGateShell'
@@ -34,6 +35,7 @@ function shouldShowSessionGate(
 export default function RequireAuth({ children }: { children: ReactNode }) {
   const auth = useAuth()
   const location = useLocation()
+  useSessionValidityProbe()
 
   const showGate = shouldShowSessionGate(
     auth.status,
