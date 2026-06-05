@@ -37,7 +37,7 @@ import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import AdminAccountSection from '@/features/admin/AdminAccountSection'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
 import MembersSection from '@/features/admin/MembersSection'
-import { formatAppVersion } from '@/lib/appVersion'
+import AppVersionFooter from '@/components/AppVersionFooter'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import { LoadingStatus } from '@/components/ui/LoadingStatus'
@@ -684,9 +684,7 @@ export default function AdminPage() {
 
       <AdminAccountSection />
 
-      <p className="pt-6 text-center text-xs text-zinc-600">
-        Version {formatAppVersion()}
-      </p>
+      <AppVersionFooter />
     </div>
   )
 }
