@@ -54,7 +54,10 @@ function onDocumentVisible(): void {
 }
 
 function onPageShow(event: PageTransitionEvent): void {
-  if (!hasSessionAuthToken()) return
+  if (!hasSessionAuthToken()) {
+    clearBackgroundPrivacyFlags()
+    return
+  }
   if (event.persisted || isAppBackgroundExpired() || isSessionGateActive()) {
     showSessionGateOverlay()
   }

@@ -28,6 +28,7 @@ import {
   postSignInPath,
   shouldRedirectLoginToPin,
 } from '@/lib/authNavigation'
+import { clearBackgroundPrivacyState } from '@/lib/backgroundSessionCleanup'
 import { clearPasswordRecoveryFlow } from '@/lib/passwordRecoveryFlow'
 import { setSignInPreference } from '@/lib/signInPreference'
 
@@ -56,6 +57,10 @@ export default function LoginPage() {
   const pendingFreshSignIn = isRequireFreshSignIn()
   const preferEmailSignIn = loginState?.preferEmailSignIn === true
   const isSignUpMode = searchParams.get('signup') === '1'
+
+  useEffect(() => {
+    clearBackgroundPrivacyState()
+  }, [])
 
   useEffect(() => {
     if (pendingFreshSignIn && auth.status === 'signedIn') {

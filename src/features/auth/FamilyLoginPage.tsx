@@ -33,6 +33,7 @@ import {
   type JoinMember,
   type ValidateJoinResult,
 } from '@/lib/memberAuth'
+import { clearBackgroundPrivacyState } from '@/lib/backgroundSessionCleanup'
 import { clearPasswordRecoveryFlow } from '@/lib/passwordRecoveryFlow'
 import { takeOrphanMemberNotice } from '@/lib/pinAuth'
 import type { AuthLocationState } from '@/lib/authNavigation'
@@ -81,6 +82,10 @@ export default function FamilyLoginPage() {
     setRoster(result)
     setRestoreNotice(null)
     return result
+  }, [])
+
+  useEffect(() => {
+    clearBackgroundPrivacyState()
   }, [])
 
   useEffect(() => {

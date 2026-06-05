@@ -1,9 +1,14 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
+import { clearBackgroundPrivacyState } from '@/lib/backgroundSessionCleanup'
 import { useAuth } from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
 import { shouldRunNavSessionProbe } from '@/hooks/sessionNavProbeCooldown'
 import { markAutoSignOut } from '@/lib/autoSignOut'
+import { isRevokedRefreshError } from '@/lib/revokedSessionError'
+import { supabase } from '@/lib/supabase'
+
+/** Skip probes briefly after sign-in so refresh is not raced with setSession. */
+const POST_SIGN_IN_PROBE_GRACE_MS = 5_000
 
 /**
  * After server-side session revocation (e.g. admin reset your PIN), the access
@@ -17,6 +22,26 @@ export function useSessionValidityProbe(): void {
   const location = useLocation()
   const probeGeneration = useRef(0)
   const lastNavProbeAt = useRef(0)
+  const signedInAtMs = useRef(0)
+
+  useEffect(() => {
+    if (auth.status === 'signedIn') {
+      signedInAtMs.current = Date.now()
+    }
+  }, [auth.status])
+
+  const runProbe = useCallback(() => {
+    if (Date.now() - signedInAtMs.current < POST_SIGN_IN_PROBE_GRACE_MS) return
+
+    const generation = ++probeGeneration.current
+    void supabase.auth.refreshSession().then(({ error }) => {
+      if (probeGeneration.current !== generation) return
+      if (!error || !isRevokedRefreshError(error)) return
+      markAutoSignOut()
+      clearBackgroundPrivacyState()
+      void supabase.auth.signOut({ scope: 'local' })
+    })
+  }, [])
 
   useEffect(() => {
     if (auth.status !== 'signedIn') return
@@ -26,15 +51,8 @@ export function useSessionValidityProbe(): void {
     if (!shouldRunNavSessionProbe(lastNavProbeAt.current, now)) return
     lastNavProbeAt.current = now
 
-    const generation = ++probeGeneration.current
-    void supabase.auth.refreshSession().then(({ error }) => {
-      if (probeGeneration.current !== generation) return
-      if (error) {
-        markAutoSignOut()
-        void supabase.auth.signOut({ scope: 'local' })
-      }
-    })
-  }, [auth.status, auth.isPasswordRecovery, location.pathname])
+    runProbe()
+  }, [auth.status, auth.isPasswordRecovery, location.pathname, runProbe])
 
   useEffect(() => {
     if (auth.status !== 'signedIn') return
@@ -42,18 +60,10 @@ export function useSessionValidityProbe(): void {
 
     function onVisibilityChange() {
       if (document.visibilityState !== 'visible') return
-
-      const generation = ++probeGeneration.current
-      void supabase.auth.refreshSession().then(({ error }) => {
-        if (probeGeneration.current !== generation) return
-        if (error) {
-          markAutoSignOut()
-          void supabase.auth.signOut({ scope: 'local' })
-        }
-      })
+      runProbe()
     }
 
     document.addEventListener('visibilitychange', onVisibilityChange)
     return () => document.removeEventListener('visibilitychange', onVisibilityChange)
-  }, [auth.status, auth.isPasswordRecovery])
+  }, [auth.status, auth.isPasswordRecovery, runProbe])
 }

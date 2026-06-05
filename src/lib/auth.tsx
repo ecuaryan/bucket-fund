@@ -25,10 +25,7 @@ import {
 } from '@/lib/passwordRecoveryFlow'
 import { isPasswordRecoverySession } from '@/lib/recoverySession'
 import { useBackgroundSignOut } from '@/hooks/useBackgroundSignOut'
-import { isAppBackgroundExpired } from '@/lib/backgroundSignOut'
-import {
-  clearBackgroundPrivacyState,
-} from '@/lib/backgroundSessionCleanup'
+import { clearBackgroundPrivacyState } from '@/lib/backgroundSessionCleanup'
 import { clearAllHomeCaches } from '@/lib/homeCache'
 import { canReuseLoadedMember } from '@/lib/authSessionReuse'
 import { classifyMemberFetch, type MemberFetchOutcome } from '@/lib/memberFetch'
@@ -137,9 +134,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    if (!isAppBackgroundExpired()) {
-      clearBackgroundPrivacyState()
-    }
+    // Successful sign-in (email or PIN) clears a stale background gate left in
+    // sessionStorage — otherwise desktop PWAs stay on the loading overlay after
+    // the 60s hide policy even though auth tokens are valid.
+    clearBackgroundPrivacyState()
 
     // Supabase re-emits SIGNED_IN / TOKEN_REFRESHED on every tab/PWA refocus.
     // When it is the same user we already have loaded, swap the token in place

@@ -39,10 +39,12 @@ registerRoute(
   }),
 )
 
-// Auth endpoints must never be cached — stale responses look like sign-out.
+// Auth and Edge Functions must never be cached.
 registerRoute(
   ({ url }) =>
-    url.hostname.endsWith('.supabase.co') && url.pathname.startsWith('/auth/'),
+    url.hostname.endsWith('.supabase.co') &&
+    (url.pathname.startsWith('/auth/') ||
+      url.pathname.startsWith('/functions/v1/')),
   new NetworkOnly(),
 )
 

@@ -11,7 +11,10 @@ import {
 } from '@/lib/backgroundSignOut'
 import { isSessionGateOverlayVisible } from '@/lib/backgroundPrivacyShield'
 import { markAutoSignOut } from '@/lib/autoSignOut'
-import { runExpiredBackgroundCleanup } from '@/lib/backgroundSessionCleanup'
+import {
+  clearBackgroundPrivacyState,
+  runExpiredBackgroundCleanup,
+} from '@/lib/backgroundSessionCleanup'
 import { signedOutRedirectTarget } from '@/lib/authNavigation'
 import { HideAmountsProvider } from '@/lib/HideAmountsProvider'
 import { takeOrphanMemberNotice } from '@/lib/pinAuth'
@@ -48,6 +51,7 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
     if (!isAppBackgroundExpired()) return
     runExpiredBackgroundCleanup()
     markAutoSignOut()
+    clearBackgroundPrivacyState()
     void supabase.auth.signOut({ scope: 'local' })
   }, [auth.status])
 
