@@ -1,9 +1,11 @@
+import type { AuthError } from '@supabase/supabase-js'
 import { useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
 import { shouldRunNavSessionProbe } from '@/hooks/sessionNavProbeCooldown'
 import { markAutoSignOut } from '@/lib/autoSignOut'
+import { isRevokedRefreshError } from '@/lib/revokedSessionError'
+import { supabase } from '@/lib/supabase'
 
 /**
  * After server-side session revocation (e.g. admin reset your PIN), the access
@@ -18,6 +20,12 @@ export function useSessionValidityProbe(): void {
   const probeGeneration = useRef(0)
   const lastNavProbeAt = useRef(0)
 
+  function handleRefreshError(error: AuthError | null) {
+    if (!error || !isRevokedRefreshError(error)) return
+    markAutoSignOut()
+    void supabase.auth.signOut({ scope: 'local' })
+  }
+
   useEffect(() => {
     if (auth.status !== 'signedIn') return
     if (auth.isPasswordRecovery) return
@@ -29,10 +37,7 @@ export function useSessionValidityProbe(): void {
     const generation = ++probeGeneration.current
     void supabase.auth.refreshSession().then(({ error }) => {
       if (probeGeneration.current !== generation) return
-      if (error) {
-        markAutoSignOut()
-        void supabase.auth.signOut({ scope: 'local' })
-      }
+      handleRefreshError(error)
     })
   }, [auth.status, auth.isPasswordRecovery, location.pathname])
 
@@ -46,10 +51,7 @@ export function useSessionValidityProbe(): void {
       const generation = ++probeGeneration.current
       void supabase.auth.refreshSession().then(({ error }) => {
         if (probeGeneration.current !== generation) return
-        if (error) {
-          markAutoSignOut()
-          void supabase.auth.signOut({ scope: 'local' })
-        }
+        handleRefreshError(error)
       })
     }
 
