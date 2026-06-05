@@ -1,3 +1,4 @@
+import type { AuthError } from '@supabase/supabase-js'
 import { useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
@@ -19,7 +20,7 @@ export function useSessionValidityProbe(): void {
   const probeGeneration = useRef(0)
   const lastNavProbeAt = useRef(0)
 
-  function handleRefreshError(error: { message: string; code?: string } | null) {
+  function handleRefreshError(error: AuthError | null) {
     if (!error || !isRevokedRefreshError(error)) return
     markAutoSignOut()
     void supabase.auth.signOut({ scope: 'local' })
