@@ -10,7 +10,10 @@ import {
 } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { APP_NAME } from '@/lib/brand'
+import { clearAutoSignOut } from '@/lib/autoSignOut'
 import { clearLocalAuthSession } from '@/lib/authStorage'
+import { isPinBoundDevice } from '@/lib/familyDevice'
+import { setLastPinMemberId } from '@/lib/lastPinMember'
 import {
   isPinAuthEmail,
   ORPHAN_MEMBER_MESSAGE,
@@ -29,6 +32,7 @@ import {
 import { clearAllHomeCaches } from '@/lib/homeCache'
 import { canReuseLoadedMember } from '@/lib/authSessionReuse'
 import { classifyMemberFetch, type MemberFetchOutcome } from '@/lib/memberFetch'
+import { getSignInPreference } from '@/lib/signInPreference'
 import { supabase } from '@/lib/supabase'
 import { withTimeout } from '@/lib/timeout'
 import type { Database } from '@/types/database'
@@ -222,6 +226,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       memberLoading: false,
       memberError: false,
     })
+    if (
+      isPinBoundDevice() &&
+      getSignInPreference() !== 'email'
+    ) {
+      setLastPinMemberId(outcome.member.id)
+    }
   }, [])
 
   useEffect(() => {
@@ -303,6 +313,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const signOut = useCallback(async () => {
+    clearAutoSignOut()
     clearBackgroundPrivacyState()
     clearAllHomeCaches()
     const { error } = await supabase.auth.signOut()

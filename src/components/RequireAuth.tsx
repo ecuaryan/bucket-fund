@@ -10,6 +10,7 @@ import {
   isSessionGateActive,
 } from '@/lib/backgroundSignOut'
 import { isSessionGateOverlayVisible } from '@/lib/backgroundPrivacyShield'
+import { markAutoSignOut } from '@/lib/autoSignOut'
 import { runExpiredBackgroundCleanup } from '@/lib/backgroundSessionCleanup'
 import { signedOutRedirectTarget } from '@/lib/authNavigation'
 import { HideAmountsProvider } from '@/lib/HideAmountsProvider'
@@ -46,6 +47,7 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
     if (auth.status !== 'signedIn') return
     if (!isAppBackgroundExpired()) return
     runExpiredBackgroundCleanup()
+    markAutoSignOut()
     void supabase.auth.signOut({ scope: 'local' })
   }, [auth.status])
 

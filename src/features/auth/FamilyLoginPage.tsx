@@ -89,6 +89,19 @@ export default function FamilyLoginPage() {
   }, [loginState?.info])
 
   useEffect(() => {
+    if (!roster || selected || loginState?.info) return
+    const resumeId = loginState?.resumeMemberId
+    if (!resumeId) return
+    const member = roster.members.find((m) => m.id === resumeId)
+    if (!member?.hasPin || member.pinLocked) return
+    setPin('')
+    setPinError(null)
+    pinSubmitInFlight.current = false
+    flushSync(() => setSelected(member))
+    pinInputRef.current?.focus()
+  }, [roster, selected, loginState?.info, loginState?.resumeMemberId])
+
+  useEffect(() => {
     let cancelled = false
     const storedCode = getBoundJoinCode()?.trim()
     if (!storedCode) {
