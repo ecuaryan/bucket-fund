@@ -128,14 +128,14 @@ export function adminPinSheetTitle(memberName: string, isSelf: boolean): string 
 /** Explains sign-out behavior when saving (matches set-pin + client sign-out). */
 export function adminPinSheetBody(memberName: string, isSelf: boolean): string {
   if (isSelf) {
-    return '4 digits. We link this device for PIN sign-in. Saving signs you out on your other devices; this device stays signed in.'
+    return '4 digits. We link this device for PIN sign-in. Saving signs you out on any other devices; this device stays signed in.'
   }
   return `4 digits. Saving signs ${memberName} out on every device. They sign in again with this PIN. Other devices may look signed in until they open the app or the session refreshes.`
 }
 
 export function adminPinSaveSuccess(memberName: string, isSelf: boolean): string {
   if (isSelf) {
-    return 'PIN saved. This device is ready for quick sign-in. Your other devices were signed out—use the new PIN there.'
+    return 'PIN saved. This device is ready for quick sign-in. Any other devices were signed out—use the new PIN there.'
   }
   return `PIN saved for ${memberName}. They're signed out everywhere; use the new PIN to sign in. Other devices may still show the app briefly until they refresh.`
 }
