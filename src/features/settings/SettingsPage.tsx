@@ -1,3 +1,4 @@
+import AppVersionFooter from '@/components/AppVersionFooter'
 import DemoHideAmountsToggle from '@/components/DemoHideAmountsToggle'
 import { SETTINGS_PAGE_TITLE } from '@/lib/brand'
 
@@ -9,6 +10,8 @@ export default function SettingsPage() {
       </header>
 
       <DemoHideAmountsToggle />
+
+      <AppVersionFooter />
     </div>
   )
 }
