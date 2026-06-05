@@ -62,6 +62,8 @@ export default function FamilyLoginPage() {
   const [pinError, setPinError] = useState<string | null>(null)
   const pinInputRef = useRef<HTMLInputElement>(null)
   const pinSubmitInFlight = useRef(false)
+  /** Auto-resume after policy sign-out runs once; dismissing must not re-open PIN entry. */
+  const skipAutoResume = useRef(false)
 
   function selectMember(member: JoinMember) {
     setPin('')
@@ -89,9 +91,10 @@ export default function FamilyLoginPage() {
   }, [loginState?.info])
 
   useEffect(() => {
-    if (!roster || selected || loginState?.info) return
+    if (!roster || selected || loginState?.info || skipAutoResume.current) return
     const resumeId = loginState?.resumeMemberId
     if (!resumeId) return
+    skipAutoResume.current = true
     const member = roster.members.find((m) => m.id === resumeId)
     if (!member?.hasPin || member.pinLocked) return
     setPin('')
@@ -249,6 +252,7 @@ export default function FamilyLoginPage() {
           <button
             type="button"
             onClick={() => {
+              skipAutoResume.current = true
               setSelected(null)
               setPin('')
               setPinError(null)
