@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { shouldRunNavSessionProbe } from '@/hooks/sessionNavProbeCooldown'
+import { markAutoSignOut } from '@/lib/autoSignOut'
 
 /**
  * After server-side session revocation (e.g. admin reset your PIN), the access
@@ -28,7 +29,10 @@ export function useSessionValidityProbe(): void {
     const generation = ++probeGeneration.current
     void supabase.auth.refreshSession().then(({ error }) => {
       if (probeGeneration.current !== generation) return
-      if (error) void supabase.auth.signOut({ scope: 'local' })
+      if (error) {
+        markAutoSignOut()
+        void supabase.auth.signOut({ scope: 'local' })
+      }
     })
   }, [auth.status, auth.isPasswordRecovery, location.pathname])
 
@@ -42,7 +46,10 @@ export function useSessionValidityProbe(): void {
       const generation = ++probeGeneration.current
       void supabase.auth.refreshSession().then(({ error }) => {
         if (probeGeneration.current !== generation) return
-        if (error) void supabase.auth.signOut({ scope: 'local' })
+        if (error) {
+          markAutoSignOut()
+          void supabase.auth.signOut({ scope: 'local' })
+        }
       })
     }
 

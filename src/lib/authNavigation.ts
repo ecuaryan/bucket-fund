@@ -1,3 +1,4 @@
+import { takeAutoSignOutResumeMemberId } from '@/lib/autoSignOut'
 import { shouldDefaultToPinSignIn } from '@/lib/signInPreference'
 
 /**
@@ -6,6 +7,7 @@ import { shouldDefaultToPinSignIn } from '@/lib/signInPreference'
  * Post-sign-out routing (RequireAuth):
  * - No join code on device → /login (email)
  * - Join code + last sign-in was PIN (or never chose) → /login/family
+ *   (automatic sign-out skips the person picker when the last PIN member is known)
  * - Join code + user chose email (sign-in or “Admin email sign-in”) → /login
  *
  * Orphan PIN member (removed from household) → /login/family with info message.
@@ -20,6 +22,8 @@ export type AuthLocationState = {
   info?: string
   /** Prefill login email (must look like an address). */
   email?: string
+  /** After automatic sign-out, open PIN entry for this member when still on the roster. */
+  resumeMemberId?: string
 }
 
 export function loginEmailFromQuery(
@@ -48,7 +52,11 @@ export function signedOutRedirectTarget(
     }
   }
   if (shouldDefaultToPinSignIn()) {
-    return { to: '/login/family', state: { from: pathname } }
+    const resumeMemberId = takeAutoSignOutResumeMemberId() ?? undefined
+    return {
+      to: '/login/family',
+      state: { from: pathname, ...(resumeMemberId ? { resumeMemberId } : {}) },
+    }
   }
   return { to: '/login', state: { from: pathname } }
 }

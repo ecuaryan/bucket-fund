@@ -6,6 +6,7 @@ import {
   recordAppHiddenAt,
   shouldSignOutAfterBackground,
 } from '@/lib/backgroundSignOut'
+import { markAutoSignOut } from '@/lib/autoSignOut'
 import { runExpiredBackgroundCleanup } from '@/lib/backgroundSessionCleanup'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
@@ -34,6 +35,7 @@ export function useBackgroundSignOut(): void {
     )
 
     function signOutLocal() {
+      markAutoSignOut()
       void supabase.auth.signOut({ scope: 'local' })
     }
 

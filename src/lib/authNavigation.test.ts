@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { markAutoSignOut, clearAutoSignOut } from '@/lib/autoSignOut'
 import { bindFamily, clearBoundFamily } from '@/lib/familyDevice'
+import { setLastPinMemberId, clearLastPinMemberId } from '@/lib/lastPinMember'
 import {
   loginEmailFromQuery,
   postSignInPath,
@@ -15,11 +17,15 @@ describe('signedOutRedirectTarget', () => {
   beforeEach(() => {
     clearBoundFamily()
     clearSignInPreference()
+    clearAutoSignOut()
+    clearLastPinMemberId()
   })
 
   afterEach(() => {
     clearBoundFamily()
     clearSignInPreference()
+    clearAutoSignOut()
+    clearLastPinMemberId()
   })
 
   it('sends email-only devices to /login', () => {
@@ -32,6 +38,22 @@ describe('signedOutRedirectTarget', () => {
     bindFamily('family-id', 'ABCDEF')
     const { to } = signedOutRedirectTarget('/', null)
     expect(to).toBe('/login/family')
+  })
+
+  it('skips the person picker after automatic sign-out when a last PIN member is known', () => {
+    bindFamily('family-id', 'ABCDEF')
+    setLastPinMemberId('member-42')
+    markAutoSignOut()
+    const { to, state } = signedOutRedirectTarget('/', null)
+    expect(to).toBe('/login/family')
+    expect(state.resumeMemberId).toBe('member-42')
+  })
+
+  it('does not resume a PIN member after manual sign-out', () => {
+    bindFamily('family-id', 'ABCDEF')
+    setLastPinMemberId('member-42')
+    const { state } = signedOutRedirectTarget('/', null)
+    expect(state.resumeMemberId).toBeUndefined()
   })
 
   it('sends email-preference devices to /login even with join code', () => {
