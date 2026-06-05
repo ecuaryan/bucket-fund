@@ -8,7 +8,8 @@
 --
 -- Revert to delete-only revocation. Match refresh tokens by session_id and
 -- by user_id (cast to text for Auth versions where user_id is varchar).
--- Run as supabase_auth_admin so deletes are permitted on auth tables.
+-- SECURITY DEFINER (postgres) can delete on hosted; do not ALTER OWNER here
+-- (CI/local migrations cannot SET ROLE supabase_auth_admin).
 -- =====================================================================
 
 create or replace function public.revoke_member_sessions(
@@ -46,8 +47,6 @@ begin
    where user_id = p_user_id;
 end;
 $$;
-
-alter function public.revoke_member_sessions(uuid, uuid) owner to supabase_auth_admin;
 
 revoke all on function public.revoke_member_sessions(uuid, uuid) from public;
 grant execute on function public.revoke_member_sessions(uuid, uuid) to service_role;
