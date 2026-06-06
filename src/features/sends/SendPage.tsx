@@ -12,11 +12,11 @@ import {
   bucketsAddSourceMemberBody,
   SEND_ADD_SOURCE_ADMIN_BODY,
   SEND_ADD_SOURCE_TITLE,
-  SEND_ADULT_INTRO,
-  SEND_CHILD_INTRO,
+  SEND_KID_INTRO,
+  SEND_SHARED_BALANCE_INTRO,
   SEND_DB_NOT_READY_BODY,
-  SEND_LINKED_CHILD_BODY,
-  SEND_LINKED_CHILD_TITLE,
+  SEND_LINKED_KID_BODY,
+  SEND_LINKED_KID_TITLE,
   SEND_LINKED_KIDS_EXCLUDED_HINT,
 } from '@/lib/brand'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
@@ -271,9 +271,9 @@ export default function SendPage() {
           aria-label="Linked bank account"
         >
           <h2 className="text-lg font-semibold text-zinc-100">
-            {SEND_LINKED_CHILD_TITLE}
+            {SEND_LINKED_KID_TITLE}
           </h2>
-          <p className="mt-2 text-sm text-zinc-400">{SEND_LINKED_CHILD_BODY}</p>
+          <p className="mt-2 text-sm text-zinc-400">{SEND_LINKED_KID_BODY}</p>
           <Link
             to="/"
             className="mt-4 inline-flex rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-emerald-400"
@@ -312,7 +312,7 @@ export default function SendPage() {
       <header>
         <h1 className="text-xl font-semibold">Send</h1>
         <p className="mt-1 text-sm text-zinc-400">
-          {isAdult ? SEND_ADULT_INTRO : SEND_CHILD_INTRO}
+          {isAdult ? SEND_SHARED_BALANCE_INTRO : SEND_KID_INTRO}
         </p>
       </header>
 

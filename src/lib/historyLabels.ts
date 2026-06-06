@@ -10,7 +10,7 @@ export function bucketEndpointLabel(args: {
   return 'Unallocated'
 }
 
-/** Who performed a bucket move, for admin/member History subtitles. */
+/** Who performed a bucket move, for shared-balance History subtitles (admin + Shared). */
 export function historyMoveActorLabel(args: {
   actorMemberId: string | null | undefined
   actorName: string | null | undefined

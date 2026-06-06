@@ -5,8 +5,8 @@
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Admin',
-  member: 'Adult',
-  child: 'Child',
+  member: 'Shared',
+  child: 'Kid',
 }
 
 export function roleLabel(role: string): string {
@@ -14,5 +14,5 @@ export function roleLabel(role: string): string {
 }
 
 /** Add-member form <select> options (value stays member | child). */
-export const ROLE_OPTION_ADULT = 'Adult — shares your buckets'
-export const ROLE_OPTION_CHILD = 'Child — own buckets'
+export const ROLE_OPTION_SHARED = 'Shared — shares household buckets'
+export const ROLE_OPTION_KID = 'Kid — own buckets'

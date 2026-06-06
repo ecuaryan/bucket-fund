@@ -130,9 +130,9 @@ export const ADMIN_HOUSEHOLD_MEMBERS_INTRO =
 
 /** Role and PIN implications when adding household members. */
 export const ADMIN_HOUSEHOLD_MEMBERS_DETAILS = [
-  'Adults share all household buckets and the same unallocated balance.',
-  'Fund children with Send.',
-  'Each child only sees what you Send them and their own buckets—not the household balance or adult bank accounts.',
+  'People on the shared balance—including you—share all household buckets and the same unallocated amount.',
+  'Fund kids with Send.',
+  'Each kid only sees what you Send them and their own buckets—not the shared balance or household bank accounts.',
   'Tell each person their PIN—they cannot change it themselves.',
 ] as const
 
@@ -166,7 +166,7 @@ export function adminPinSaveSuccess(memberName: string, isSelf: boolean): string
   return `PIN saved for ${memberName}. They're signed out everywhere; use the new PIN to sign in. Other devices may still show the app briefly until they refresh.`
 }
 
-/** Admin: linked account or bucket belongs to all adults (not a child). */
+/** Admin: linked account or bucket belongs to the shared balance (not a kid). */
 export const HOUSEHOLD_LABEL = 'Household'
 
 /** Who can link banks, add members, and change Admin settings. */
@@ -264,13 +264,13 @@ export const ADMIN_REMOVE_MEMBER_EFFECT_SIGN_OUT =
 export const ADMIN_REMOVE_MEMBER_EFFECT_READD =
   'To use the app again, add them back to the household and set a new PIN.'
 
-export const ADMIN_REMOVE_CHILD_EFFECT_BUCKETS =
+export const ADMIN_REMOVE_KID_EFFECT_BUCKETS =
   'Their personal buckets are removed. No cash is lost—that money stays in your household and shows as unallocated in Buckets.'
 
-export const ADMIN_REMOVE_CHILD_EFFECT_ACCOUNTS =
+export const ADMIN_REMOVE_KID_EFFECT_ACCOUNTS =
   'Any bank accounts assigned to them become household accounts and count toward unallocated.'
 
-export const ADMIN_REMOVE_ADULT_EFFECT_LOGIN =
+export const ADMIN_REMOVE_SHARED_EFFECT_LOGIN =
   'Their PIN and sign-in are deleted.'
 
 // --- Buckets (main tab) ---
@@ -281,10 +281,10 @@ export const NAV_BUCKETS_LABEL = 'Buckets'
 export const BUCKETS_REORDER_POPOVER_LABEL =
   'Press and hold the reorder grip, then drag'
 
-export function bucketsChildUnallocatedHint(
+export function bucketsKidUnallocatedHint(
   adminName: string | null | undefined,
 ): string {
-  return `When an adult sends you money, move it into buckets—or ask ${householdAdminLabel(adminName)} to link your bank account.`
+  return `When someone on the shared balance sends you money, move it into buckets—or ask ${householdAdminLabel(adminName)} to link your bank account.`
 }
 
 export const BUCKETS_LINK_BANK_TITLE = 'Link a bank account'
@@ -359,22 +359,22 @@ export function bucketsMemberNoBucketsHint(
 
 // --- Send ---
 
-export const SEND_ADULT_INTRO =
-  'Fund a child’s unallocated from the balance adults share in Buckets.'
+export const SEND_SHARED_BALANCE_INTRO =
+  'Fund a kid’s unallocated from the shared balance in Buckets.'
 
-export const SEND_ADULT_NO_ACCOUNTS_BODY =
+export const SEND_SHARED_BALANCE_NO_ACCOUNTS_BODY =
   'Send uses cash from the household balance in Buckets. Link a bank account in Admin first so we know how much you can send.'
 
-export const SEND_CHILD_INTRO =
+export const SEND_KID_INTRO =
   'Send your unallocated to another household member.'
 
-export const SEND_LINKED_CHILD_TITLE = 'Your money is in your bank account'
+export const SEND_LINKED_KID_TITLE = 'Your money is in your bank account'
 
-export const SEND_LINKED_CHILD_BODY =
-  'Spending comes from your debit card. When you need to move money in or out, use your bank app or ask a parent to transfer at the bank — not Send here.'
+export const SEND_LINKED_KID_BODY =
+  'Spending comes from your debit card. When you need to move money in or out, use your bank app or ask your household admin to transfer at the bank—not Send here.'
 
 export const SEND_LINKED_KIDS_EXCLUDED_HINT =
-  'Children with a linked bank account are not listed — their money moves at the bank, not through Send.'
+  'Kids with a linked bank account are not listed—their money moves at the bank, not through Send.'
 
 export const SEND_DB_NOT_READY_BODY =
   'Send is temporarily unavailable while the server finishes updating. Try again in a few minutes, then refresh.'

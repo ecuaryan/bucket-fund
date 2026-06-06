@@ -40,12 +40,16 @@ The payoff:
 - Say **money source** for anything that funds the household pool: a linked bank
   or a manual amount the admin enters (estimate, real balance, or try-it-out
   number). Prefer “Add a money source” over “link a bank” when both paths apply.
-- DB role `member` → UI **Adult**; `child` → **Child**; `admin` → **Admin**.
+- DB role `member` → UI **Shared**; `child` → **Kid**; `admin` → **Admin**.
   See `src/lib/memberRoles.ts` and Admin strings in `brand.ts`.
+- **Shared balance** is the collective money pool (admin + Shared role). Say
+  “people on the shared balance” or “shared balance” in copy—not “adults” or
+  “partners”—when describing who shares household buckets and unallocated.
 - Say **household admin** (not “your admin”) when a non-admin needs the person
   who manages Admin. Use **unallocated** in the Buckets tab/Send; **Household** in Admin
   assignment dropdowns (`HOUSEHOLD_LABEL`, not “pool” in user copy).
-- Child-facing copy: **adult**, not “parent,” unless you mean a specific person.
+- Kid-facing copy: **shared balance** or **household admin**, not “parent,”
+  unless you mean a specific person.
 
 ## Display name
 
@@ -98,7 +102,7 @@ limit UI to “checking or savings” only.
 | Household admin (hints) | `householdAdminLabel()`, `HOUSEHOLD_ADMIN_PHRASE` fallback |
 | Buckets tab: no linked accounts | `bucketsLinkBankMemberBody()` |
 | Buckets tab: member empty buckets | `bucketsMemberNoBucketsHint()` |
-| Buckets tab: child unallocated hint | `bucketsChildUnallocatedHint()` |
+| Buckets tab: kid unallocated hint | `bucketsKidUnallocatedHint()` |
 | History empty state | `HISTORY_EMPTY_*` |
 | PIN sign-in: empty roster | `pinNoMembersYet()` |
 | Admin gate (non-admin) | `adminLinkedAccountsMemberGate()` |

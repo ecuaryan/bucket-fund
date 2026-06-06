@@ -170,15 +170,15 @@ checks are deferred until a possible paid SaaS phase.
 - Email/password auth + sign-up bootstrap (creates family + admin member;
   `bootstrap_family` metadata prevents duplicate families for PIN users)
 - Family join code + QR, avatar + 4-digit PIN login, admin member/PIN management
-- Per-member bucket ordering; adults do not see children's buckets in the Buckets tab
+- Per-member bucket ordering; shared balance does not see kids' buckets in the Buckets tab
 - Buckets tab: unallocated pool, bucket list, Realtime sync
 - Bucket CRUD: create, inline rename, reorder, delete (with fund reclaim)
 - Move money flow (`move_money` Postgres fn + MoveMoneyDialog)
-- Send money (`send_money` RPC + Send page; adults fund children; blocked adult↔adult)
+- Send money (`send_money` RPC + Send page; shared balance funds kids; blocked shared↔shared)
 - Teller Connect: link bank, sync accounts, webhook balance updates, unlink
 - Manual money sources: admin-entered amounts (no bank) for onboarding; coexist with linked banks
 - Transaction history with bucket filter, pagination, tap-to-expand notes
-- Admin: assign linked bank accounts to children (family pool default)
+- Admin: assign linked bank accounts to kids (family pool default)
 - Dark theme (pure black + zinc palette)
 - PWA icons, favicons, apple-touch-icon, offline fallback, service worker registration
 - Background sign-out (60s hidden → local sign-out for all roles; branded gate on hide; family PIN re-auth)
@@ -313,9 +313,9 @@ Full list and behavior matrix: <https://teller.io/docs/guides/sandbox>
 - [ ] WebAuthn biometric fast path.
 - [x] UI for the bucket move flow (BucketsPage + MoveMoneyDialog + `move_money`
       RPC). Optional note field included.
-- [x] Member management UI (admin: add member/child, set PIN, unlock, rotate join code).
-- [x] Account assignment UI (Admin: family pool by default; assign to children).
-- [x] Send money flow (adults → children; shared adult unallocated in the Buckets tab).
+- [x] Member management UI (admin: add Shared/Kid, set PIN, unlock, rotate join code).
+- [x] Account assignment UI (Admin: family pool by default; assign to kids).
+- [x] Send money flow (shared balance → kids; shared unallocated in the Buckets tab).
 - [ ] **Credit cards:** exclude from enroll/storage vs integrate (e.g.
       subtract card balance from unallocated / show as liability). Today only
       cash account types count toward Buckets unallocated. See CONTEXT.md §
