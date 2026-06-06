@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { BUCKET_NAME_MAX_LENGTH } from '@/lib/bucketName'
-import { createAdminFamily, insertBucket, serviceClient, userClient } from './fixtures'
+import {
+  addMember,
+  createAdminFamily,
+  insertBucket,
+  serviceClient,
+  userClient,
+} from './fixtures'
 
 describe('buckets: name length constraint', () => {
   it('rejects insert with a name over the max length', async () => {
@@ -58,5 +64,78 @@ describe('buckets: name length constraint', () => {
 
     expect(error).not.toBeNull()
     expect(error?.code).toBe('23514')
+  })
+})
+
+describe('buckets: name unique per owner', () => {
+  it('rejects duplicate family-pool names (case-insensitive)', async () => {
+    const family = await createAdminFamily('bucket-dup-pool')
+    const svc = serviceClient()
+    await insertBucket(svc, family.familyId, 'Groceries', null)
+
+    const { error } = await svc.from('buckets').insert({
+      family_id: family.familyId,
+      name: ' groceries ',
+      owner_member_id: null,
+      allocated_amount: 0,
+    })
+
+    expect(error).not.toBeNull()
+    expect(error?.code).toBe('23505')
+  })
+
+  it('allows the same label on family pool and a kid bucket', async () => {
+    const family = await createAdminFamily('bucket-dup-cross')
+    const svc = serviceClient()
+    const kid = await addMember(family.familyId, 'child', 'Kid')
+    await insertBucket(svc, family.familyId, 'Spending', null)
+
+    const kidBucketId = await insertBucket(
+      svc,
+      family.familyId,
+      'Spending',
+      kid.memberId,
+    )
+
+    expect(kidBucketId).toBeTruthy()
+  })
+
+  it('rejects duplicate names within one kid list', async () => {
+    const family = await createAdminFamily('bucket-dup-kid')
+    const svc = serviceClient()
+    const kid = await addMember(family.familyId, 'child', 'Kid')
+    await insertBucket(svc, family.familyId, 'Allowance', kid.memberId)
+
+    const { error } = await svc.from('buckets').insert({
+      family_id: family.familyId,
+      name: 'ALLOWANCE',
+      owner_member_id: kid.memberId,
+      allocated_amount: 0,
+    })
+
+    expect(error).not.toBeNull()
+    expect(error?.code).toBe('23505')
+  })
+
+  it('rejects rename into an existing name in the same list', async () => {
+    const family = await createAdminFamily('bucket-rename-dup')
+    const svc = serviceClient()
+    const groceriesId = await insertBucket(
+      svc,
+      family.familyId,
+      'Groceries',
+      null,
+    )
+    await insertBucket(svc, family.familyId, 'Rent', null)
+    const adminClient = await userClient(family.adminEmail, family.adminPassword)
+
+    const { error } = await adminClient
+      .from('buckets')
+      .update({ name: 'rent' })
+      .eq('id', groceriesId)
+
+    expect(error).not.toBeNull()
+    expect(error?.code).toBe('23505')
+    expect(error?.message).toMatch(/buckets_family_owner_name_key/i)
   })
 })

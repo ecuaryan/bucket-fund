@@ -53,10 +53,11 @@ import {
 import {
   deleteBucket,
   BUCKET_NAME_MAX_LENGTH,
+  humaniseBucketWriteError,
   renameBucket,
   reorderBucket,
   reorderBuckets,
-  validateBucketName,
+  validateBucketNameForList,
 } from '@/lib/buckets'
 import type { Database } from '@/types/database'
 import MoveMoneyDialog from '@/features/buckets/MoveMoneyDialog'
@@ -261,12 +262,16 @@ export default function BucketsPage() {
       setRenamingId(null)
       return
     }
-    const invalid = validateBucketName(next)
+    const previous = buckets?.find((b) => b.id === id)?.name
+    const invalid = validateBucketNameForList(
+      buckets?.map((b) => b.name) ?? [],
+      next,
+      { exceptName: previous },
+    )
     if (invalid) {
       setActionError(invalid)
       return
     }
-    const previous = buckets?.find((b) => b.id === id)?.name
     if (!previous || previous === next) {
       setRenamingId(null)
       return
@@ -380,7 +385,10 @@ export default function BucketsPage() {
     if (!member) return
     const name = newBucketName.trim()
     if (!name) return
-    const invalid = validateBucketName(name)
+    const invalid = validateBucketNameForList(
+      buckets?.map((b) => b.name) ?? [],
+      name,
+    )
     if (invalid) {
       setCreateError(invalid)
       return
@@ -401,7 +409,7 @@ export default function BucketsPage() {
 
     setCreating(false)
     if (error) {
-      setCreateError(error.message)
+      setCreateError(humaniseBucketWriteError(error))
       return
     }
     setBuckets((prev) => (prev ? [...prev, data] : [data]))
@@ -694,7 +702,10 @@ export default function BucketsPage() {
             renameValue={renameValue}
             canManageStructure={canManageStructure}
             formatMoney={formatMoney}
-            onRenameValueChange={setRenameValue}
+            onRenameValueChange={(value) => {
+              setRenameValue(value)
+              if (actionError) setActionError(null)
+            }}
             onCommitRename={commitRename}
             onCancelRename={cancelRename}
             onMoveMoney={setMoveBucketId}
@@ -718,7 +729,10 @@ export default function BucketsPage() {
                 type="text"
                 value={newBucketName}
                 maxLength={BUCKET_NAME_MAX_LENGTH}
-                onValueChange={setNewBucketName}
+                onValueChange={(value) => {
+                  setNewBucketName(value)
+                  if (createError) setCreateError(null)
+                }}
                 placeholder="New bucket name"
                 inputClassName="w-full rounded-lg border-0 bg-zinc-900 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-500 focus:outline focus:outline-2 focus:outline-emerald-400"
               />

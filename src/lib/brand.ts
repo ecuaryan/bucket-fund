@@ -321,6 +321,9 @@ export function adminAssignAccountToKidConfirm(kidName: string): string {
 
 export const NAV_BUCKETS_LABEL = 'Buckets'
 
+export const BUCKETS_NAME_DUPLICATE =
+  'You already have a bucket with this name.'
+
 export function bucketsDeleteBucketSheetTitle(name: string): string {
   return `Delete ${name}?`
 }
