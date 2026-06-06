@@ -27,6 +27,7 @@ import { fetchLinkedChildMemberIds, sendMoney } from '@/lib/sends'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import { AmountLimitHint } from '@/components/AmountLimitHint'
+import { ClearableInput } from '@/components/ui/ClearableInput'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
@@ -413,34 +414,35 @@ export default function SendPage() {
 
           <label className="block">
             <span className="text-sm font-medium text-zinc-300">Amount</span>
-            <div className="relative mt-1">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">
-                $
-              </span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={amountStr}
-                onChange={(e) => {
-                  setAmountStr(e.target.value.replace(/-/g, ''))
-                  setSubmitError(null)
-                }}
-                onFocus={(e) => scrollFocusedIntoView(e.currentTarget)}
-                placeholder="0.00"
-                required
-                aria-invalid={overdraft || undefined}
-                aria-describedby={amountLimitDescribedBy(
-                  'send-amount-hint',
-                  sendAvailableHint,
-                  overdraftMessage,
-                )}
-                className={`w-full rounded-xl border bg-zinc-950 py-2.5 pl-7 pr-3 text-sm tabular-nums text-zinc-100 focus:outline-none focus:ring-1 ${
-                  overdraft
-                    ? 'border-red-500/60 focus:border-red-500 focus:ring-red-500/40'
-                    : 'border-zinc-700 focus:border-emerald-500 focus:ring-emerald-500'
-                }`}
-              />
-            </div>
+            <ClearableInput
+              wrapperClassName="mt-1"
+              type="text"
+              inputMode="decimal"
+              value={amountStr}
+              onValueChange={(v) => {
+                setAmountStr(v.replace(/-/g, ''))
+                setSubmitError(null)
+              }}
+              onFocus={(e) => scrollFocusedIntoView(e.currentTarget)}
+              placeholder="0.00"
+              required
+              aria-invalid={overdraft || undefined}
+              aria-describedby={amountLimitDescribedBy(
+                'send-amount-hint',
+                sendAvailableHint,
+                overdraftMessage,
+              )}
+              leading={
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">
+                  $
+                </span>
+              }
+              inputClassName={`w-full rounded-xl border bg-zinc-950 py-2.5 pl-7 pr-3 text-sm tabular-nums text-zinc-100 focus:outline-none focus:ring-1 ${
+                overdraft
+                  ? 'border-red-500/60 focus:border-red-500 focus:ring-red-500/40'
+                  : 'border-zinc-700 focus:border-emerald-500 focus:ring-emerald-500'
+              }`}
+            />
             <AmountLimitHint
               id="send-amount-hint"
               availableHint={sendAvailableHint}
@@ -452,14 +454,16 @@ export default function SendPage() {
             <span className="text-sm font-medium text-zinc-300">
               Note <span className="font-normal text-zinc-500">(optional)</span>
             </span>
-            <input
+            <ClearableInput
+              wrapperClassName="mt-1"
               type="text"
               maxLength={280}
               value={note}
-              onChange={(e) => setNote(e.target.value)}
+              onValueChange={setNote}
               onFocus={(e) => scrollFocusedIntoView(e.currentTarget)}
               placeholder="Lunch, allowance, …"
-              className="mt-1 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              clearAriaLabel="Clear note"
+              inputClassName="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-zinc-100 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </label>
 

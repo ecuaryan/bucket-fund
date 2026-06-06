@@ -19,6 +19,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { ClearableInput } from '@/components/ui/ClearableInput'
 import DragHandle from '@/components/ui/DragHandle'
 import BucketActionsMenu from '@/features/buckets/BucketActionsMenu'
 import { BucketReorderPointerSensor } from '@/features/buckets/bucketReorderSensors'
@@ -403,18 +404,19 @@ function BucketRowContent({
     return (
       <>
         <div className="flex min-w-0 flex-1 items-center gap-2 pl-1">
-          <input
+          <ClearableInput
+            wrapperClassName="min-w-0 flex-1"
             autoFocus
             type="text"
             value={renameValue}
             maxLength={BUCKET_NAME_MAX_LENGTH}
-            onChange={(e) => onRenameValueChange(e.target.value)}
+            onValueChange={onRenameValueChange}
             onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
               if (e.key === 'Enter') void onCommitRename(bucket.id)
               if (e.key === 'Escape') onCancelRename()
             }}
             onBlur={() => void onCommitRename(bucket.id)}
-            className="min-w-0 flex-1 rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-emerald-400 focus:outline focus:outline-2 focus:outline-emerald-400"
+            inputClassName="w-full min-w-0 rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-emerald-400 focus:outline focus:outline-2 focus:outline-emerald-400"
           />
           <p className="shrink-0 text-sm font-semibold tabular-nums text-zinc-500">
             {formatMoney(Number(bucket.allocated_amount))}

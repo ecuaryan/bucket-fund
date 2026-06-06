@@ -167,6 +167,17 @@ export async function sendMoney(
   return data
 }
 
+export async function updateTransactionNote(
+  client: Db,
+  args: { transactionId: string; note: string | null },
+): Promise<void> {
+  const { error } = await client.rpc('update_transaction_note', {
+    p_transaction_id: args.transactionId,
+    p_note: args.note,
+  })
+  if (error) throw error
+}
+
 export async function getAvailableBalance(client: Db): Promise<number> {
   const { data, error } = await client.rpc('get_available_balance')
   if (error) throw error

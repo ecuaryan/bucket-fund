@@ -7,6 +7,7 @@ import {
   sendMoney,
   serviceClient,
   setBucketAllocation,
+  updateTransactionNote,
   userClient,
 } from './fixtures'
 
@@ -254,5 +255,130 @@ describe('RLS: transaction history visibility', () => {
 
     expect(error).toBeNull()
     expect(data).toMatchObject({ id: txId, type: 'send' })
+  })
+})
+
+describe('update_transaction_note', () => {
+  it('viewer can add and edit a note on a visible send', async () => {
+    const family = await createAdminFamily('tx-note-send')
+    const child = await addMember(family.familyId, 'child', 'Alex')
+    await serviceClient().from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 100,
+    })
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const txId = await sendMoney(admin, {
+      toMemberId: child.memberId,
+      amount: 15,
+    })
+
+    const childClient = await userClient(child.email, child.password)
+    await updateTransactionNote(childClient, {
+      transactionId: txId,
+      note: 'Birthday money',
+    })
+
+    const { data: afterAdd, error: addError } = await childClient
+      .from('transactions')
+      .select('note')
+      .eq('id', txId)
+      .single()
+    expect(addError).toBeNull()
+    expect(afterAdd?.note).toBe('Birthday money')
+
+    await updateTransactionNote(childClient, {
+      transactionId: txId,
+      note: 'Updated',
+    })
+
+    const { data: afterEdit, error: editError } = await childClient
+      .from('transactions')
+      .select('note')
+      .eq('id', txId)
+      .single()
+    expect(editError).toBeNull()
+    expect(afterEdit?.note).toBe('Updated')
+  })
+
+  it('viewer can clear a note', async () => {
+    const family = await createAdminFamily('tx-note-clear')
+    const svc = serviceClient()
+    const fromId = await insertBucket(svc, family.familyId, 'A', null)
+    const toId = await insertBucket(svc, family.familyId, 'B', null)
+    await setBucketAllocation(svc, fromId, 50)
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const txId = await moveMoney(admin, {
+      fromBucketId: fromId,
+      toBucketId: toId,
+      amount: 5,
+      note: 'temp',
+    })
+
+    await updateTransactionNote(admin, { transactionId: txId, note: null })
+
+    const { data, error } = await admin
+      .from('transactions')
+      .select('note')
+      .eq('id', txId)
+      .single()
+    expect(error).toBeNull()
+    expect(data?.note).toBeNull()
+  })
+
+  it('rejects note longer than 280 characters', async () => {
+    const family = await createAdminFamily('tx-note-long')
+    const svc = serviceClient()
+    const fromId = await insertBucket(svc, family.familyId, 'A', null)
+    const toId = await insertBucket(svc, family.familyId, 'B', null)
+    await setBucketAllocation(svc, fromId, 40)
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const txId = await moveMoney(admin, {
+      fromBucketId: fromId,
+      toBucketId: toId,
+      amount: 4,
+    })
+
+    await expect(
+      updateTransactionNote(admin, {
+        transactionId: txId,
+        note: 'x'.repeat(281),
+      }),
+    ).rejects.toThrow(/note too long/i)
+  })
+
+  it('member cannot update note on child-only bucket move', async () => {
+    const family = await createAdminFamily('tx-note-hide')
+    const member = await addMember(family.familyId, 'member', 'Jamie')
+    const child = await addMember(family.familyId, 'child', 'Alex')
+    const svc = serviceClient()
+    const poolId = await insertBucket(svc, family.familyId, 'Pool', null)
+    const childBucketId = await insertBucket(
+      svc,
+      family.familyId,
+      'Alex',
+      child.memberId,
+    )
+    await setBucketAllocation(svc, poolId, 60)
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const txId = await moveMoney(admin, {
+      fromBucketId: poolId,
+      toBucketId: childBucketId,
+      amount: 10,
+    })
+
+    const memberClient = await userClient(member.email, member.password)
+    await expect(
+      updateTransactionNote(memberClient, {
+        transactionId: txId,
+        note: 'nope',
+      }),
+    ).rejects.toThrow(/transaction not found/i)
   })
 })
