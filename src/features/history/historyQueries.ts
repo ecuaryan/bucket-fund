@@ -11,7 +11,9 @@ export type HistoryTxRow = {
   from_bucket_name: string | null
   to_bucket_name: string | null
   from_member_id: string | null
+  from_member_name: string | null
   to_member_id: string | null
+  to_member_name: string | null
   note: string | null
   created_at: string
   from_bucket: { name: string } | null

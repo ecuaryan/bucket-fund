@@ -194,6 +194,9 @@ system-error banner.
 - **Bucket names are snapshotted** on each `bucket_move` (`from_bucket_name` /
   `to_bucket_name`), so history stays accurate after a bucket is renamed or
   deleted instead of collapsing to "Unallocated → Unallocated".
+- **Member names are snapshotted** on each `send` (`from_member_name` /
+  `to_member_name`), so History keeps "Alex" after a kid is removed (member ids
+  null via `ON DELETE SET NULL`, same pattern as buckets).
 - **Shared balance (admin + Shared) see who moved the money** ("Bucket move · by Jamie")
   so a household can tell who touched the shared pool; kids do not
   see the actor line.

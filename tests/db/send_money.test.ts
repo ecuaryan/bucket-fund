@@ -41,7 +41,9 @@ describe('send_money RPC', () => {
 
     const { data: tx, error } = await svc
       .from('transactions')
-      .select('type, amount, from_member_id, to_member_id, note')
+      .select(
+        'type, amount, from_member_id, to_member_id, from_member_name, to_member_name, note',
+      )
       .eq('id', txId)
       .single()
     expect(error).toBeNull()
@@ -50,8 +52,48 @@ describe('send_money RPC', () => {
       amount: 75,
       from_member_id: family.adminMemberId,
       to_member_id: child.memberId,
+      to_member_name: 'Alex',
       note: 'allowance',
     })
+    expect(tx?.from_member_name).toBeTruthy()
+  })
+
+  it('keeps snapshotted names after recipient is removed', async () => {
+    const family = await createAdminFamily('send-snapshot-remove')
+    const child = await addMember(family.familyId, 'child', 'Alex')
+    const svc = serviceClient()
+
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 200,
+    })
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const txId = await sendMoney(admin, {
+      toMemberId: child.memberId,
+      amount: 40,
+    })
+
+    const { error: deleteError } = await svc
+      .from('family_members')
+      .delete()
+      .eq('id', child.memberId)
+    expect(deleteError).toBeNull()
+
+    const { data: tx, error } = await svc
+      .from('transactions')
+      .select(
+        'from_member_id, to_member_id, from_member_name, to_member_name',
+      )
+      .eq('id', txId)
+      .single()
+    expect(error).toBeNull()
+    expect(tx?.to_member_id).toBeNull()
+    expect(tx?.to_member_name).toBe('Alex')
+    expect(tx?.from_member_name).toBeTruthy()
   })
 
   it('admin unallocated does not change when child buckets received money', async () => {

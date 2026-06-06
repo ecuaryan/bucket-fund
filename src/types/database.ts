@@ -350,11 +350,13 @@ export type Database = {
           from_bucket_id: string | null
           from_bucket_name: string | null
           from_member_id: string | null
+          from_member_name: string | null
           id: string
           note: string | null
           to_bucket_id: string | null
           to_bucket_name: string | null
           to_member_id: string | null
+          to_member_name: string | null
           type: string
         }
         Insert: {
@@ -364,11 +366,13 @@ export type Database = {
           from_bucket_id?: string | null
           from_bucket_name?: string | null
           from_member_id?: string | null
+          from_member_name?: string | null
           id?: string
           note?: string | null
           to_bucket_id?: string | null
           to_bucket_name?: string | null
           to_member_id?: string | null
+          to_member_name?: string | null
           type: string
         }
         Update: {
@@ -378,11 +382,13 @@ export type Database = {
           from_bucket_id?: string | null
           from_bucket_name?: string | null
           from_member_id?: string | null
+          from_member_name?: string | null
           id?: string
           note?: string | null
           to_bucket_id?: string | null
           to_bucket_name?: string | null
           to_member_id?: string | null
+          to_member_name?: string | null
           type?: string
         }
         Relationships: [

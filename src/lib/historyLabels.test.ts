@@ -3,6 +3,7 @@ import {
   bucketEndpointLabel,
   historyBucketMoveSubtitle,
   historyMoveActorLabel,
+  sendMemberEndpointLabel,
 } from '@/lib/historyLabels'
 
 describe('bucketEndpointLabel', () => {
@@ -44,6 +45,48 @@ describe('bucketEndpointLabel', () => {
         joinedName: null,
       }),
     ).toBe('Groceries')
+  })
+})
+
+describe('sendMemberEndpointLabel', () => {
+  it('prefers snapshot name over live join', () => {
+    expect(
+      sendMemberEndpointLabel({
+        snapshotName: 'Alex',
+        joinedName: 'New name',
+        isMe: false,
+      }),
+    ).toBe('Alex')
+  })
+
+  it('returns You for the current member', () => {
+    expect(
+      sendMemberEndpointLabel({
+        snapshotName: 'Jamie',
+        joinedName: 'Jamie',
+        isMe: true,
+      }),
+    ).toBe('You')
+  })
+
+  it('keeps name after member removed via snapshot', () => {
+    expect(
+      sendMemberEndpointLabel({
+        snapshotName: 'Alex',
+        joinedName: null,
+        isMe: false,
+      }),
+    ).toBe('Alex')
+  })
+
+  it('falls back to Someone without snapshot or join', () => {
+    expect(
+      sendMemberEndpointLabel({
+        snapshotName: null,
+        joinedName: null,
+        isMe: false,
+      }),
+    ).toBe('Someone')
   })
 })
 
