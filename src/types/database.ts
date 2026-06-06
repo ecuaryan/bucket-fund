@@ -492,6 +492,14 @@ export type Database = {
         Args: { p_amount: number; p_note?: string; p_to_member_id: string }
         Returns: string
       }
+      transaction_visible_to_caller: {
+        Args: { p_transaction_id: string }
+        Returns: boolean
+      }
+      update_transaction_note: {
+        Args: { p_note?: string | null; p_transaction_id: string }
+        Returns: undefined
+      }
       update_manual_account: {
         Args: { p_account_id: string; p_amount: number; p_label: string }
         Returns: undefined

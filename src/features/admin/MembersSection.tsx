@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
+import { ClearableInput } from '@/components/ui/ClearableInput'
 import PinInput from '@/components/ui/PinInput'
 import { Sheet } from '@/components/ui/Sheet'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
@@ -383,11 +384,12 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
       >
         <label className="block flex-1">
           <span className="text-xs font-medium text-zinc-400">Name</span>
-          <input
+          <ClearableInput
+            wrapperClassName="mt-1 block w-full"
             value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            onValueChange={setNewName}
             placeholder="Jamie"
-            className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700"
+            inputClassName="w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700"
           />
         </label>
         <label className="block sm:w-52">
@@ -421,18 +423,19 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
             >
               {renamingId === m.id ? (
                 <div className="flex min-w-0 flex-1 items-center gap-2">
-                  <input
+                  <ClearableInput
+                    wrapperClassName="min-w-0 flex-1"
                     autoFocus
                     type="text"
                     value={renameValue}
                     aria-label={`Rename ${m.name}`}
-                    onChange={(e) => setRenameValue(e.target.value)}
+                    onValueChange={setRenameValue}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') void commitRename(m)
                       if (e.key === 'Escape') cancelRename()
                     }}
                     onBlur={() => void commitRename(m)}
-                    className="min-w-0 flex-1 rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-emerald-400 focus:outline focus:outline-2 focus:outline-emerald-400"
+                    inputClassName="w-full min-w-0 rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-emerald-400 focus:outline focus:outline-2 focus:outline-emerald-400"
                   />
                   <span className="shrink-0 text-xs font-normal text-zinc-500">
                     ({roleLabel(m.role)})

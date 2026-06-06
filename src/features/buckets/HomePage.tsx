@@ -24,6 +24,7 @@ import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import { isCashAccount } from '@/lib/accounts'
 import HomePageSkeleton from '@/components/HomePageSkeleton'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
+import { ClearableInput } from '@/components/ui/ClearableInput'
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
 import {
   childTotalBalance,
@@ -680,13 +681,14 @@ export default function HomePage() {
         {canCreateBuckets && (
           <>
             <form onSubmit={onCreateBucket} className="mt-4 flex gap-2">
-              <input
+              <ClearableInput
+                wrapperClassName="min-w-0 flex-1"
                 type="text"
                 value={newBucketName}
                 maxLength={BUCKET_NAME_MAX_LENGTH}
-                onChange={(e) => setNewBucketName(e.target.value)}
+                onValueChange={setNewBucketName}
                 placeholder="New bucket name"
-                className="flex-1 rounded-lg border-0 bg-zinc-900 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-500 focus:outline focus:outline-2 focus:outline-emerald-400"
+                inputClassName="w-full rounded-lg border-0 bg-zinc-900 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-500 focus:outline focus:outline-2 focus:outline-emerald-400"
               />
               <button
                 type="submit"

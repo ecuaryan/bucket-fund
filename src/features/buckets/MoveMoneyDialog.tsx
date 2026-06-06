@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { ClearableInput } from '@/components/ui/ClearableInput'
 import { Sheet } from '@/components/ui/Sheet'
 import { AmountLimitHint } from '@/components/AmountLimitHint'
 import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
@@ -208,36 +209,36 @@ export default function MoveMoneyDialog({
             <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400">
               Amount
             </span>
-            <div className="relative">
-              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-500">
-                $
-              </span>
-              <input
-                ref={amountRef}
-                type="number"
-                inputMode="decimal"
-                min="0"
-                step="0.01"
-                value={amountStr}
-                onChange={(e) => {
-                  setAmountStr(e.target.value.replace(/-/g, ''))
-                  setError(null)
-                }}
-                onFocus={(e) => scrollFocusedIntoView(e.currentTarget)}
-                placeholder="0.00"
-                aria-invalid={overdraft || undefined}
-                aria-describedby={amountLimitDescribedBy(
-                  'move-amount-hint',
-                  moveAvailableHint,
-                  overdraftMessage,
-                )}
-                className={
-                  overdraft
-                    ? 'w-full rounded-lg border border-red-500/60 bg-zinc-950 py-2 pl-7 pr-3 text-base tabular-nums text-zinc-300 placeholder:text-zinc-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500/40'
-                    : 'w-full rounded-lg border-0 bg-zinc-950 py-2 pl-7 pr-3 text-base tabular-nums text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-500 focus:outline focus:outline-2 focus:outline-emerald-400'
-                }
-              />
-            </div>
+            <ClearableInput
+              ref={amountRef}
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              value={amountStr}
+              onValueChange={(v) => {
+                setAmountStr(v.replace(/-/g, ''))
+                setError(null)
+              }}
+              onFocus={(e) => scrollFocusedIntoView(e.currentTarget)}
+              placeholder="0.00"
+              aria-invalid={overdraft || undefined}
+              aria-describedby={amountLimitDescribedBy(
+                'move-amount-hint',
+                moveAvailableHint,
+                overdraftMessage,
+              )}
+              leading={
+                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-500">
+                  $
+                </span>
+              }
+              inputClassName={
+                overdraft
+                  ? 'w-full rounded-lg border border-red-500/60 bg-zinc-950 py-2 pl-7 pr-3 text-base tabular-nums text-zinc-300 placeholder:text-zinc-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500/40'
+                  : 'w-full rounded-lg border-0 bg-zinc-950 py-2 pl-7 pr-3 text-base tabular-nums text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-500 focus:outline focus:outline-2 focus:outline-emerald-400'
+              }
+            />
             <AmountLimitHint
               id="move-amount-hint"
               availableHint={moveAvailableHint}
@@ -249,14 +250,15 @@ export default function MoveMoneyDialog({
             <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400">
               Note (optional)
             </span>
-            <input
+            <ClearableInput
               type="text"
               value={note}
-              onChange={(e) => setNote(e.target.value)}
+              onValueChange={setNote}
               onFocus={(e) => scrollFocusedIntoView(e.currentTarget)}
               maxLength={280}
               placeholder="What's this for?"
-              className="w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-500 focus:outline focus:outline-2 focus:outline-emerald-400"
+              clearAriaLabel="Clear note"
+              inputClassName="w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-500 focus:outline focus:outline-2 focus:outline-emerald-400"
             />
           </label>
 

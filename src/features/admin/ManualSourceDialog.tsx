@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { ClearableInput } from '@/components/ui/ClearableInput'
 import { Sheet } from '@/components/ui/Sheet'
 import { AmountLimitHint } from '@/components/AmountLimitHint'
 import {
@@ -115,26 +116,28 @@ export default function ManualSourceDialog({
 
         <label className="block">
           <span className="text-xs font-medium text-zinc-400">Label</span>
-          <input
+          <ClearableInput
+            wrapperClassName="mt-1"
             type="text"
             value={label}
             maxLength={60}
-            onChange={(e) => setLabel(e.target.value)}
+            onValueChange={setLabel}
             placeholder={MANUAL_SOURCE_LABEL_PLACEHOLDER}
-            className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
+            inputClassName="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
           />
         </label>
 
         <label className="block">
           <span className="text-xs font-medium text-zinc-400">Amount</span>
-          <input
+          <ClearableInput
             ref={amountRef}
+            wrapperClassName="mt-1"
             type="text"
             inputMode="decimal"
             value={amountStr}
-            onChange={(e) => setAmountStr(e.target.value.replace(/-/g, ''))}
+            onValueChange={(v) => setAmountStr(v.replace(/-/g, ''))}
             onFocus={onAmountFocus}
-            className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm tabular-nums text-zinc-100"
+            inputClassName="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm tabular-nums text-zinc-100"
           />
           <AmountLimitHint
             id="manual-source-amount-hint"

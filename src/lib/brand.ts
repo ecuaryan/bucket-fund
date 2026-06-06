@@ -346,6 +346,23 @@ export const HISTORY_EMPTY_BODY =
 export const HISTORY_EMPTY_SENDS_BODY =
   'Send money to a household member and it will appear here.'
 
+export const HISTORY_NOTE_ADD = 'Add note'
+
+export const HISTORY_NOTE_EDIT = 'Edit note'
+
+export const HISTORY_NOTE_SHEET_TITLE_ADD = 'Add note'
+
+export const HISTORY_NOTE_SHEET_TITLE_EDIT = 'Edit note'
+
+/** Matches Move money sheet note field (sentence in uppercase label). */
+export const TRANSACTION_NOTE_FIELD_LABEL = 'Note (optional)'
+
+export const TRANSACTION_NOTE_PLACEHOLDER = "What's this for?"
+
+export const HISTORY_NOTE_CLEAR = 'Clear note'
+
+export const INPUT_CLEAR_ARIA_LABEL = 'Clear'
+
 // --- PIN sign-in ---
 
 export function pinNoMembersYet(adminName: string | null | undefined): string {

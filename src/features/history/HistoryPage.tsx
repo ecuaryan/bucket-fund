@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
@@ -7,11 +14,22 @@ import {
   HISTORY_EMPTY_BODY,
   HISTORY_EMPTY_BUCKET_BODY,
   HISTORY_EMPTY_SENDS_BODY,
+  HISTORY_NOTE_ADD,
+  HISTORY_NOTE_CLEAR,
+  HISTORY_NOTE_EDIT,
+  HISTORY_NOTE_SHEET_TITLE_ADD,
+  HISTORY_NOTE_SHEET_TITLE_EDIT,
   LOADING_STATUS_LABEL,
+  TRANSACTION_NOTE_FIELD_LABEL,
+  TRANSACTION_NOTE_PLACEHOLDER,
 } from '@/lib/brand'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { LoadingStatus } from '@/components/ui/LoadingStatus'
+import { ClearableInput } from '@/components/ui/ClearableInput'
+import { Sheet } from '@/components/ui/Sheet'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
+import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
+import { updateTransactionNote } from '@/lib/transactions'
 import type { Database } from '@/types/database'
 import {
   filterFromSearchParams,
@@ -188,6 +206,19 @@ export default function HistoryPage() {
     setSearchParams(searchParamsForFilter(next))
   }
 
+  const handleNoteUpdated = useCallback(
+    (transactionId: string, note: string | null) => {
+      setRows((prev) =>
+        prev
+          ? prev.map((row) =>
+              row.id === transactionId ? { ...row, note } : row,
+            )
+          : prev,
+      )
+    },
+    [],
+  )
+
   if (!member) return null
 
   if (loadError && rows === null) {
@@ -256,6 +287,7 @@ export default function HistoryPage() {
                       row={row}
                       currentMemberId={member.id}
                       viewerRole={member.role}
+                      onNoteUpdated={handleNoteUpdated}
                     />
                   </li>
                 ))}
@@ -387,13 +419,19 @@ function TxItem({
   row,
   currentMemberId,
   viewerRole,
+  onNoteUpdated,
 }: {
   row: TxRow
   currentMemberId: string
   viewerRole: string
+  onNoteUpdated: (transactionId: string, note: string | null) => void
 }) {
   const { formatMoney } = useHideAmounts()
   const [noteExpanded, setNoteExpanded] = useState(false)
+  const [editingNote, setEditingNote] = useState(false)
+  const [draftNote, setDraftNote] = useState('')
+  const [savingNote, setSavingNote] = useState(false)
+  const [noteError, setNoteError] = useState<string | null>(null)
   const amount = formatMoney(Number(row.amount))
   const time = timeFormatter.format(new Date(row.created_at))
   const showMoveActor =
@@ -430,32 +468,151 @@ function TxItem({
     subtitle = `Send · ${time}`
   }
 
+  const sheetTitle = row.note
+    ? HISTORY_NOTE_SHEET_TITLE_EDIT
+    : HISTORY_NOTE_SHEET_TITLE_ADD
+
+  function closeNoteEditor() {
+    if (savingNote) return
+    setEditingNote(false)
+    setNoteError(null)
+  }
+
+  function openNoteEditor() {
+    setDraftNote(row.note ?? '')
+    setNoteError(null)
+    setEditingNote(true)
+  }
+
+  async function saveNote(e: FormEvent) {
+    e.preventDefault()
+    setSavingNote(true)
+    setNoteError(null)
+    try {
+      const trimmed = draftNote.trim()
+      const next = trimmed === '' ? null : trimmed
+      await updateTransactionNote(row.id, next)
+      onNoteUpdated(row.id, next)
+      setEditingNote(false)
+      setNoteExpanded(Boolean(next))
+    } catch (err) {
+      setNoteError(err instanceof Error ? err.message : 'Could not save note')
+    } finally {
+      setSavingNote(false)
+    }
+  }
+
   return (
-    <div className="flex items-start gap-3">
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-zinc-300">{title}</p>
-        <p className="text-xs text-zinc-400">{subtitle}</p>
-        {row.note && (
-          <button
-            type="button"
-            onClick={() => setNoteExpanded((v) => !v)}
-            aria-expanded={noteExpanded}
-            aria-label={noteExpanded ? 'Collapse note' : 'Expand note'}
-            className={
-              'mt-1 block w-full text-left text-xs italic text-zinc-400 transition hover:text-zinc-300 focus:outline-none focus-visible:text-zinc-300 ' +
-              (noteExpanded
-                ? 'whitespace-pre-wrap break-words'
-                : 'truncate')
-            }
-          >
-            “{row.note}”
-          </button>
-        )}
+    <>
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-zinc-300">{title}</p>
+          <p className="text-xs text-zinc-400">{subtitle}</p>
+          {row.note ? (
+            <div className="mt-1">
+              <button
+                type="button"
+                onClick={() => setNoteExpanded((v) => !v)}
+                aria-expanded={noteExpanded}
+                aria-label={noteExpanded ? 'Collapse note' : 'Expand note'}
+                className={
+                  'block w-full text-left text-xs italic text-zinc-400 transition hover:text-zinc-300 focus:outline-none focus-visible:text-zinc-300 ' +
+                  (noteExpanded
+                    ? 'whitespace-pre-wrap break-words'
+                    : 'truncate')
+                }
+              >
+                “{row.note}”
+              </button>
+              <button
+                type="button"
+                onClick={openNoteEditor}
+                className="mt-1 text-xs text-zinc-500 hover:text-zinc-300"
+              >
+                {HISTORY_NOTE_EDIT}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={openNoteEditor}
+              className="mt-1 text-xs text-emerald-400/90 hover:text-emerald-300"
+            >
+              {HISTORY_NOTE_ADD}
+            </button>
+          )}
+        </div>
+        <p className="shrink-0 text-sm font-semibold tabular-nums text-zinc-300">
+          {amount}
+        </p>
       </div>
-      <p className="shrink-0 text-sm font-semibold tabular-nums text-zinc-300">
-        {amount}
-      </p>
-    </div>
+
+      <Sheet
+        open={editingNote}
+        onClose={closeNoteEditor}
+        aria-label={sheetTitle}
+      >
+        <form onSubmit={saveNote} className="space-y-4">
+          <header className="flex items-baseline justify-between">
+            <h2 className="text-lg font-semibold text-zinc-300">{sheetTitle}</h2>
+            <button
+              type="button"
+              onClick={closeNoteEditor}
+              disabled={savingNote}
+              className="rounded p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </header>
+
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400">
+              {TRANSACTION_NOTE_FIELD_LABEL}
+            </span>
+            <ClearableInput
+              type="text"
+              maxLength={280}
+              value={draftNote}
+              onValueChange={setDraftNote}
+              onFocus={(e) => scrollFocusedIntoView(e.currentTarget)}
+              placeholder={TRANSACTION_NOTE_PLACEHOLDER}
+              autoFocus
+              disabled={savingNote}
+              clearAriaLabel={HISTORY_NOTE_CLEAR}
+              inputClassName="w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-500 focus:outline focus:outline-2 focus:outline-emerald-400"
+            />
+          </label>
+
+          {noteError && (
+            <p
+              role="alert"
+              className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300 ring-1 ring-red-500/30"
+            >
+              {noteError}
+            </p>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={closeNoteEditor}
+              disabled={savingNote}
+              className="flex-1 rounded-lg border border-zinc-700 py-2 text-sm text-zinc-400"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={savingNote}
+              className="flex-1 rounded-lg bg-emerald-500 py-2 text-sm font-semibold text-black disabled:opacity-50"
+            >
+              {savingNote ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </form>
+      </Sheet>
+    </>
   )
 }
 
