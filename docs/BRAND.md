@@ -98,6 +98,7 @@ limit UI to “checking or savings” only.
 | Join code (Admin + PIN) | `JOIN_CODE_*`, `ADMIN_JOIN_CODE_*` |
 | Admin people & roles | `ADMIN_HOUSEHOLD_MEMBERS_*`, `memberRoles.ts` |
 | Admin linked accounts | `ADMIN_LINKED_ACCOUNTS_*` |
+| Assign linked account to kid | `adminAssignAccountToKidSheetTitle()`, `ADMIN_ASSIGN_ACCOUNT_TO_KID_*` |
 | Admin email & password reset | `ADMIN_ACCOUNT_*` |
 | Household admin (hints) | `householdAdminLabel()`, `HOUSEHOLD_ADMIN_PHRASE` fallback |
 | Buckets tab: no linked accounts | `bucketsLinkBankMemberBody()` |
