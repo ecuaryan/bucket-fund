@@ -278,7 +278,7 @@ export function adminAssignAccountToKidSheetTitle(kidName: string): string {
 }
 
 export function adminAssignAccountToKidSheetIntro(kidName: string): string {
-  return `This bank account will count toward ${kidName}'s balance—not the shared balance.`
+  return `This bank account will count toward ${kidName}'s balance—not the household balance.`
 }
 
 export const ADMIN_ASSIGN_ACCOUNT_TO_KID_WHAT_CHANGES = 'What changes'
