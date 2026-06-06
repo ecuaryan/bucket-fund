@@ -263,10 +263,10 @@ export const ADMIN_REMOVE_MEMBER_EFFECT_READD =
   'To use the app again, add them back to the household and set a new PIN.'
 
 export const ADMIN_REMOVE_CHILD_EFFECT_BUCKETS =
-  'Their buckets and the money in those buckets are deleted.'
+  'Their personal buckets are removed. No cash is lost—that money stays in your household and shows as unallocated on Home.'
 
 export const ADMIN_REMOVE_CHILD_EFFECT_ACCOUNTS =
-  'Bank accounts assigned to them become household accounts and count toward unallocated.'
+  'Any bank accounts assigned to them become household accounts and count toward unallocated.'
 
 export const ADMIN_REMOVE_ADULT_EFFECT_LOGIN =
   'Their PIN and sign-in are deleted.'
