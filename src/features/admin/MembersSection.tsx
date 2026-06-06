@@ -28,9 +28,7 @@ import {
   adminPinSheetBody,
   adminPinSheetTitle,
 } from '@/lib/brand'
-import { bindFamily } from '@/lib/familyDevice'
-import { setLastPinMemberId } from '@/lib/lastPinMember'
-import { setSignInPreference } from '@/lib/signInPreference'
+import { bindDeviceForPinSignIn } from '@/lib/familyDevice'
 import {
   ROLE_OPTION_ADULT,
   ROLE_OPTION_CHILD,
@@ -172,9 +170,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
       .eq('id', familyId)
       .maybeSingle()
     if (!data?.join_code) return
-    bindFamily(familyId, data.join_code)
-    setSignInPreference('pin')
-    setLastPinMemberId(memberId)
+    bindDeviceForPinSignIn(familyId, data.join_code, memberId)
   }
 
   async function onSavePin(e: FormEvent) {

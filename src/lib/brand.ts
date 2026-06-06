@@ -95,6 +95,8 @@ export const ADMIN_JOIN_CODE_INTRO =
 export const ADMIN_JOIN_CODE_QR_ALT =
   'QR code to link a device with your household join code'
 
+export const ADMIN_JOIN_CODE_COPY_CODE_ARIA = 'Copy join code'
+
 export const ADMIN_JOIN_CODE_ROTATE_SHEET_TITLE = 'Generate a new join code?'
 
 export const ADMIN_JOIN_CODE_ROTATE_SHEET_INTRO =
