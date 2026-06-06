@@ -40,12 +40,17 @@ npm run db:start          # first time: Docker + local Supabase (~1 min)
 source scripts/env-local.sh && npm run dev   # Vite on :5173 against local API
 ```
 
+**Phone on same WiFi:** `npm run dev:phone` — binds Vite to your LAN and points
+`VITE_SUPABASE_URL` at `http://<lan-ip>:54321` for that session only (desktop
+`.env.local` can stay on `127.0.0.1`). Open the printed URL on your phone.
+
 **Fast loop (recommended):** leave `supabase start` running in one terminal;
-use another for `npm run dev`. After pulling SQL changes: `npm run db:reset`.
+use another for `npm run dev` (or `npm run dev:phone`). After pulling SQL changes: `npm run db:reset`.
 
 | Command | Purpose |
 | ------- | ------- |
 | `npm run db:start` | Local Postgres + Auth + Studio (port 54323) |
+| `npm run dev:phone` | Vite on LAN for phone UI testing (same WiFi) |
 | `npm run functions:serve` | Edge Functions (second terminal; needs `supabase/functions/.env`) |
 | `npm run db:stop` | Stop local stack |
 | `npm run db:reset` | Re-apply all migrations (+ optional `seed.sql`) |
@@ -70,6 +75,7 @@ npm run functions:serve    # second terminal while the app runs
 | Script            | Purpose                          |
 | ----------------- | -------------------------------- |
 | `npm run dev`     | Vite dev server                  |
+| `npm run dev:phone` | Vite on LAN for phone UI testing (same WiFi) |
 | `npm run build`   | Type-check + production build    |
 | `npm run lint`    | ESLint                           |
 | `npm test`        | Unit tests (Vitest, run once)  |
