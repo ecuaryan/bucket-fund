@@ -9,11 +9,13 @@ import {
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
+import { useSendRecipients } from '@/hooks/useSendRecipients'
 import { useAuth } from '@/lib/auth'
 import {
   HISTORY_EMPTY_BODY,
   HISTORY_EMPTY_BUCKET_BODY,
   HISTORY_EMPTY_SENDS_BODY,
+  HISTORY_FILTER_SENT_MONEY,
   HISTORY_NOTE_ADD,
   HISTORY_NOTE_CLEAR,
   HISTORY_NOTE_EDIT,
@@ -92,6 +94,8 @@ export default function HistoryPage() {
   const accessToken =
     auth.status === 'signedIn' ? auth.session.access_token : null
   const familyId = member?.family_id ?? null
+  const { sendReady, showSendNav } = useSendRecipients()
+  const showSendFilter = sendReady && showSendNav
 
   const loadMore = useCallback(async () => {
     if (loadingMore || rows === null || rows.length === 0) return
@@ -179,6 +183,11 @@ export default function HistoryPage() {
     void loadBuckets()
   }, [familyId, loadBuckets])
 
+  useEffect(() => {
+    if (!sendReady || showSendNav || filter.kind !== 'send') return
+    setSearchParams({})
+  }, [sendReady, showSendNav, filter.kind, setSearchParams])
+
   usePostgresChanges(
     accessToken,
     familyId ? `history:${familyId}` : null,
@@ -252,6 +261,7 @@ export default function HistoryPage() {
         buckets={buckets ?? []}
         filter={filter}
         activeBucketName={filteredBucketName}
+        showSendFilter={showSendFilter}
         onChange={setFilter}
       />
 
@@ -327,16 +337,20 @@ function FilterBar({
   buckets,
   filter,
   activeBucketName,
+  showSendFilter,
   onChange,
 }: {
   buckets: Bucket[]
   filter: HistoryFilter
   activeBucketName: string | null
+  showSendFilter: boolean
   onChange: (filter: HistoryFilter) => void
 }) {
   const selectValue =
     filter.kind === 'send'
-      ? SEND_FILTER_VALUE
+      ? showSendFilter
+        ? SEND_FILTER_VALUE
+        : ''
       : filter.kind === 'bucket'
         ? filter.bucketId
         : ''
@@ -364,7 +378,9 @@ function FilterBar({
         className="rounded-lg border-0 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
       >
         <option value="">All transactions</option>
-        <option value={SEND_FILTER_VALUE}>Sends only</option>
+        {showSendFilter ? (
+          <option value={SEND_FILTER_VALUE}>{HISTORY_FILTER_SENT_MONEY}</option>
+        ) : null}
         {buckets.map((b) => (
           <option key={b.id} value={b.id}>
             {b.name}
@@ -375,8 +391,11 @@ function FilterBar({
         )}
       </select>
 
-      {filter.kind === 'send' && (
-        <ActiveFilterChip label="Sends only" onClear={() => onChange({ kind: 'all' })} />
+      {showSendFilter && filter.kind === 'send' && (
+        <ActiveFilterChip
+          label={HISTORY_FILTER_SENT_MONEY}
+          onClear={() => onChange({ kind: 'all' })}
+        />
       )}
 
       {filter.kind === 'bucket' && (

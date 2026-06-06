@@ -273,6 +273,28 @@ export const ADMIN_REMOVE_KID_EFFECT_ACCOUNTS =
 export const ADMIN_REMOVE_SHARED_EFFECT_LOGIN =
   'Their PIN and sign-in are deleted.'
 
+export function adminAssignAccountToKidSheetTitle(kidName: string): string {
+  return `Assign account to ${kidName}?`
+}
+
+export function adminAssignAccountToKidSheetIntro(kidName: string): string {
+  return `This bank account will count toward ${kidName}'s balance—not the household balance.`
+}
+
+export const ADMIN_ASSIGN_ACCOUNT_TO_KID_WHAT_CHANGES = 'What changes'
+
+/** Shown before assigning a linked account to a kid (Send rules, bank-based balance). */
+export const ADMIN_ASSIGN_ACCOUNT_TO_KID_EFFECTS = [
+  'Send is turned off for this kid—you can’t fund them here, and they can’t Send in the app.',
+  'Their balance follows this linked account (debit card spending updates automatically).',
+  'Moving money in or out happens at the bank—transfers and deposits, not Send.',
+  'To switch back to virtual allowance, assign the account to Household.',
+] as const
+
+export function adminAssignAccountToKidConfirm(kidName: string): string {
+  return `Assign to ${kidName}`
+}
+
 // --- Buckets (main tab) ---
 
 export const NAV_BUCKETS_LABEL = 'Buckets'
@@ -383,6 +405,9 @@ export const BUCKETS_DB_UPDATE_PENDING_BODY =
   'Balance is estimated from linked accounts only. The server is still updating — try again in a few minutes.'
 
 // --- History ---
+
+/** History filter dropdown + active chip (Send tab transactions only). */
+export const HISTORY_FILTER_SENT_MONEY = 'Sent money'
 
 export const HISTORY_EMPTY_BUCKET_BODY =
   'Move money in or out of this bucket and it will appear here.'
