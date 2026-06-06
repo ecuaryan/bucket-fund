@@ -3,13 +3,13 @@ import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import {
   childTotalBalance,
-  fetchHomeBalanceBreakdown,
-  type HomeBalanceBreakdown,
+  fetchBucketsBalanceBreakdown,
+  type BucketsBalanceBreakdown,
 } from '@/lib/availableBalance'
 import {
-  HOME_ADD_SOURCE_LINK_ACTION,
-  HOME_ADD_SOURCE_MANUAL_ACTION,
-  homeAddSourceMemberBody,
+  BUCKETS_ADD_SOURCE_LINK_ACTION,
+  BUCKETS_ADD_SOURCE_MANUAL_ACTION,
+  bucketsAddSourceMemberBody,
   SEND_ADD_SOURCE_ADMIN_BODY,
   SEND_ADD_SOURCE_TITLE,
   SEND_ADULT_INTRO,
@@ -58,7 +58,7 @@ export default function SendPage() {
   )
   const [available, setAvailable] = useState<number | null>(null)
   const [balanceBreakdown, setBalanceBreakdown] =
-    useState<HomeBalanceBreakdown | null>(null)
+    useState<BucketsBalanceBreakdown | null>(null)
   const [balanceUsesFallback, setBalanceUsesFallback] = useState(false)
   const [sendEnabled, setSendEnabled] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -101,7 +101,7 @@ export default function SendPage() {
       }
 
       const accountRows = accountsRes.data ?? []
-      const { breakdown, usedFallback } = await fetchHomeBalanceBreakdown({
+      const { breakdown, usedFallback } = await fetchBucketsBalanceBreakdown({
         accounts: accountRows,
         buckets: bucketsRes.data ?? [],
       })
@@ -330,7 +330,7 @@ export default function SendPage() {
           <p className="mt-2 text-sm text-emerald-200/80">
             {member?.role === 'admin'
               ? SEND_ADD_SOURCE_ADMIN_BODY
-              : homeAddSourceMemberBody(householdAdminName)}
+              : bucketsAddSourceMemberBody(householdAdminName)}
           </p>
           {member?.role === 'admin' ? (
             <div className="mt-4 flex flex-wrap gap-2">
@@ -339,13 +339,13 @@ export default function SendPage() {
                 onClick={() => setManualSourceOpen(true)}
                 className="inline-flex rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
               >
-                {HOME_ADD_SOURCE_MANUAL_ACTION}
+                {BUCKETS_ADD_SOURCE_MANUAL_ACTION}
               </button>
               <Link
                 to="/admin"
                 className="inline-flex rounded-lg border border-emerald-500/40 px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/10"
               >
-                {HOME_ADD_SOURCE_LINK_ACTION}
+                {BUCKETS_ADD_SOURCE_LINK_ACTION}
               </Link>
             </div>
           ) : null}

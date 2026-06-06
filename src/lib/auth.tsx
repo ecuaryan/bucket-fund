@@ -29,7 +29,7 @@ import { isAppBackgroundExpired } from '@/lib/backgroundSignOut'
 import {
   clearBackgroundPrivacyState,
 } from '@/lib/backgroundSessionCleanup'
-import { clearAllHomeCaches } from '@/lib/homeCache'
+import { clearAllBucketsPageCaches } from '@/lib/bucketsPageCache'
 import { canReuseLoadedMember } from '@/lib/authSessionReuse'
 import { classifyMemberFetch, type MemberFetchOutcome } from '@/lib/memberFetch'
 import { getSignInPreference } from '@/lib/signInPreference'
@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!session) {
       clearPasswordRecoveryFlow()
       clearBackgroundPrivacyState()
-      clearAllHomeCaches()
+      clearAllBucketsPageCaches()
       setState({
         status: 'signedOut',
         session: null,
@@ -315,7 +315,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     clearAutoSignOut()
     clearBackgroundPrivacyState()
-    clearAllHomeCaches()
+    clearAllBucketsPageCaches()
     const { error } = await supabase.auth.signOut()
     if (error) throw error
   }, [])

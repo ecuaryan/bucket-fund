@@ -20,7 +20,7 @@ export type ChildSetAsideLine = {
   amount: number
 }
 
-export type HomeBalanceBreakdown = {
+export type BucketsBalanceBreakdown = {
   unallocated: number
   totalCash: number
   bankCash: number
@@ -33,12 +33,12 @@ export type HomeBalanceBreakdown = {
 }
 
 /** Net sends for a child (positive when funded by family). */
-export function childFamilyFunding(breakdown: HomeBalanceBreakdown): number {
+export function childFamilyFunding(breakdown: BucketsBalanceBreakdown): number {
   return breakdown.unallocated + breakdown.bucketAllocated - breakdown.totalCash
 }
 
 /** Child's total funds before bucket splits (linked cash + net sends). */
-export function childTotalBalance(breakdown: HomeBalanceBreakdown): number {
+export function childTotalBalance(breakdown: BucketsBalanceBreakdown): number {
   return breakdown.unallocated + breakdown.bucketAllocated
 }
 
@@ -60,7 +60,7 @@ function parseChildLines(raw: unknown): ChildSetAsideLine[] {
   return lines
 }
 
-export function parseBreakdownRow(data: Json): HomeBalanceBreakdown | null {
+export function parseBreakdownRow(data: Json): BucketsBalanceBreakdown | null {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return null
   const row = data as Record<string, unknown>
   const num = (key: string) => Number(row[key] ?? 0)
@@ -111,7 +111,7 @@ function sumCashBySource(
 function clientBreakdownFallback(
   accounts: Account[],
   buckets: { allocated_amount: string | number }[],
-): HomeBalanceBreakdown {
+): BucketsBalanceBreakdown {
   const totalCash = sumCashBalance(accounts)
   const bankCash = sumCashBySource(accounts, 'teller')
   const manualCash = sumCashBySource(accounts, 'manual')
@@ -133,18 +133,18 @@ function clientBreakdownFallback(
 
 /**
  * Authoritative balance from Postgres when migrations are deployed;
- * falls back to client math so Home still loads if the DB lags the frontend.
+ * falls back to client math so the Buckets tab still loads if the DB lags the frontend.
  */
 export async function fetchAvailableBalance(
   fallback: { accounts: Account[]; buckets: { allocated_amount: string | number }[] },
 ): Promise<{ balance: number; usedFallback: boolean }> {
-  const { breakdown, usedFallback } = await fetchHomeBalanceBreakdown(fallback)
+  const { breakdown, usedFallback } = await fetchBucketsBalanceBreakdown(fallback)
   return { balance: breakdown.unallocated, usedFallback }
 }
 
-export async function fetchHomeBalanceBreakdown(
+export async function fetchBucketsBalanceBreakdown(
   fallback: { accounts: Account[]; buckets: { allocated_amount: string | number }[] },
-): Promise<{ breakdown: HomeBalanceBreakdown; usedFallback: boolean }> {
+): Promise<{ breakdown: BucketsBalanceBreakdown; usedFallback: boolean }> {
   const { data, error } = await supabase.rpc('get_home_balance_breakdown')
   if (!error) {
     const parsed = parseBreakdownRow(data)

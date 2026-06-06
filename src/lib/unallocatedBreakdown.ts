@@ -4,7 +4,7 @@ import {
   BREAKDOWN_MANUAL_CASH_LABEL,
   unallocatedMoneySourcesCountText,
 } from '@/lib/brand'
-import type { HomeBalanceBreakdown } from '@/lib/availableBalance'
+import type { BucketsBalanceBreakdown } from '@/lib/availableBalance'
 
 export type BreakdownLine = {
   key: string
@@ -30,7 +30,7 @@ type BuildOpts = {
 }
 
 export function buildUnallocatedLines(
-  breakdown: HomeBalanceBreakdown,
+  breakdown: BucketsBalanceBreakdown,
   opts: BuildOpts,
 ): BreakdownLine[] {
   const lines: BreakdownLine[] = []
@@ -130,7 +130,7 @@ export function buildUnallocatedLines(
 }
 
 export function unallocatedSummary(
-  breakdown: HomeBalanceBreakdown,
+  breakdown: BucketsBalanceBreakdown,
   opts: BuildOpts,
 ): UnallocatedSummary | null {
   if (opts.isChild) {

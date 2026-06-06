@@ -4,8 +4,8 @@ import {
   renameBucketInList,
   reorderBucketList,
   swapBucketOrder,
-} from '@/lib/homeOptimistic'
-import type { HomeBalanceBreakdown } from '@/lib/availableBalance'
+} from '@/lib/bucketsPageOptimistic'
+import type { BucketsBalanceBreakdown } from '@/lib/availableBalance'
 import type { Database } from '@/types/database'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
@@ -18,7 +18,7 @@ function bucket(id: string, name: string, allocated: number): Bucket {
   } as Bucket
 }
 
-const breakdown = (over: Partial<HomeBalanceBreakdown> = {}): HomeBalanceBreakdown => ({
+const breakdown = (over: Partial<BucketsBalanceBreakdown> = {}): BucketsBalanceBreakdown => ({
   unallocated: 100,
   totalCash: 200,
   bankCash: 200,

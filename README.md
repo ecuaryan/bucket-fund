@@ -161,7 +161,7 @@ High-level snapshot of what exists on `main` today. Product truth lives in
 [CONTEXT.md](./CONTEXT.md) (including [product stage](./CONTEXT.md#product-stage));
 this section tracks build progress only.
 
-**Rollout:** Builder’s family is the first beta. Negative unallocated on Home
+**Rollout:** Builder’s family is the first beta. Negative unallocated in the Buckets tab
 is the user-facing “rebalance your buckets” signal. Automated operator ledger
 checks are deferred until a possible paid SaaS phase.
 
@@ -170,8 +170,8 @@ checks are deferred until a possible paid SaaS phase.
 - Email/password auth + sign-up bootstrap (creates family + admin member;
   `bootstrap_family` metadata prevents duplicate families for PIN users)
 - Family join code + QR, avatar + 4-digit PIN login, admin member/PIN management
-- Per-member bucket ordering; adults do not see children's buckets on Home
-- Home screen: unallocated pool, bucket list, Realtime sync
+- Per-member bucket ordering; adults do not see children's buckets in the Buckets tab
+- Buckets tab: unallocated pool, bucket list, Realtime sync
 - Bucket CRUD: create, inline rename, reorder, delete (with fund reclaim)
 - Move money flow (`move_money` Postgres fn + MoveMoneyDialog)
 - Send money (`send_money` RPC + Send page; adults fund children; blocked adult↔adult)
@@ -299,7 +299,7 @@ Full list and behavior matrix: <https://teller.io/docs/guides/sandbox>
 
 ### Deferred until paid SaaS (if ever)
 
-- [ ] Operator ledger monitoring: SQL family-wide check (same formulas as Home),
+- [ ] Operator ledger monitoring: SQL family-wide check (same formulas as the Buckets tab),
       logging/alerts for the operator — not a user-facing duplicate of red
       unallocated. Scaffold: `supabase/functions/check-invariant/`. See
       CONTEXT.md § Data Integrity.
@@ -311,14 +311,14 @@ Full list and behavior matrix: <https://teller.io/docs/guides/sandbox>
 - [x] PIN login + family join code (`/login/family`, `/join`, Edge Functions).
       Email/password for admin setup (`src/features/auth/LoginPage.tsx`).
 - [ ] WebAuthn biometric fast path.
-- [x] UI for the bucket move flow (HomePage + MoveMoneyDialog + `move_money`
+- [x] UI for the bucket move flow (BucketsPage + MoveMoneyDialog + `move_money`
       RPC). Optional note field included.
 - [x] Member management UI (admin: add member/child, set PIN, unlock, rotate join code).
 - [x] Account assignment UI (Admin: family pool by default; assign to children).
-- [x] Send money flow (adults → children; shared adult unallocated on Home).
+- [x] Send money flow (adults → children; shared adult unallocated in the Buckets tab).
 - [ ] **Credit cards:** exclude from enroll/storage vs integrate (e.g.
       subtract card balance from unallocated / show as liability). Today only
-      cash account types count toward Home unallocated. See CONTEXT.md §
+      cash account types count toward Buckets unallocated. See CONTEXT.md §
       “Credit cards & linked liabilities”.
 
 ## License

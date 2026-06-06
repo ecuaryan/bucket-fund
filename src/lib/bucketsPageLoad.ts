@@ -1,8 +1,8 @@
 import {
-  fetchHomeBalanceBreakdown,
+  fetchBucketsBalanceBreakdown,
   isMissingDbFunctionError,
   parseBreakdownRow,
-  type HomeBalanceBreakdown,
+  type BucketsBalanceBreakdown,
 } from '@/lib/availableBalance'
 import { fetchHouseholdAdminName } from '@/lib/householdAdmin'
 import { supabase } from '@/lib/supabase'
@@ -12,15 +12,15 @@ import type { Json } from '@/types/database'
 type Bucket = Database['public']['Tables']['buckets']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
 
-export type HomePageData = {
+export type BucketsPageData = {
   buckets: Bucket[]
   accounts: Account[]
-  breakdown: HomeBalanceBreakdown
+  breakdown: BucketsBalanceBreakdown
   usedFallback: boolean
   householdAdminName: string | null
 }
 
-type HomePageCoreData = Omit<HomePageData, 'householdAdminName'>
+type BucketsPageCoreData = Omit<BucketsPageData, 'householdAdminName'>
 
 function parseBucketRows(raw: unknown): Bucket[] {
   if (!Array.isArray(raw)) return []
@@ -32,8 +32,8 @@ function parseAccountRows(raw: unknown): Account[] {
   return raw as Account[]
 }
 
-/** One RPC for Home when migration 23 is deployed; null → use legacy loaders. */
-export async function fetchHomePageData(): Promise<HomePageCoreData | null> {
+/** One RPC for the Buckets tab when migration 23 is deployed; null → use legacy loaders. */
+export async function fetchBucketsPageData(): Promise<BucketsPageCoreData | null> {
   const { data, error } = await supabase.rpc('get_home_page_data')
   if (error) {
     if (isMissingDbFunctionError(error.message)) return null
@@ -56,7 +56,7 @@ export async function fetchHomePageData(): Promise<HomePageCoreData | null> {
 }
 
 /** Legacy path when get_home_page_data is not on the linked project yet. */
-export async function fetchHomePageDataLegacy(): Promise<HomePageCoreData> {
+export async function fetchBucketsPageDataLegacy(): Promise<BucketsPageCoreData> {
   await supabase.rpc('ensure_member_bucket_orders')
 
   const [bucketsRes, orderRes, accountsRes] = await Promise.all([
@@ -80,7 +80,7 @@ export async function fetchHomePageDataLegacy(): Promise<HomePageCoreData> {
   })
 
   const accounts = (accountsRes.data ?? []) as Account[]
-  const { breakdown, usedFallback } = await fetchHomeBalanceBreakdown({
+  const { breakdown, usedFallback } = await fetchBucketsBalanceBreakdown({
     accounts,
     buckets: sorted,
   })
@@ -93,14 +93,14 @@ export async function fetchHomePageDataLegacy(): Promise<HomePageCoreData> {
   }
 }
 
-export async function loadHomePage(): Promise<HomePageData> {
+export async function loadBucketsPage(): Promise<BucketsPageData> {
   const [fast, householdAdminName] = await Promise.all([
-    fetchHomePageData(),
+    fetchBucketsPageData(),
     fetchHouseholdAdminName(),
   ])
   if (fast) {
     return { ...fast, householdAdminName }
   }
-  const legacy = await fetchHomePageDataLegacy()
+  const legacy = await fetchBucketsPageDataLegacy()
   return { ...legacy, householdAdminName }
 }

@@ -8,12 +8,12 @@ import {
   setSessionGateActive,
 } from '@/lib/backgroundSignOut'
 import { clearLocalAuthSession } from '@/lib/authStorage'
-import { clearAllHomeCaches } from '@/lib/homeCache'
+import { clearAllBucketsPageCaches } from '@/lib/bucketsPageCache'
 
 /** Sync cleanup when the 60s background policy expires (tokens + caches; keep gate visible). */
 export function runExpiredBackgroundCleanup(): void {
   clearLocalAuthSession()
-  clearAllHomeCaches()
+  clearAllBucketsPageCaches()
   setSessionGateActive()
   showSessionGateOverlay()
 }

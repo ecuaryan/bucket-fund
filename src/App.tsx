@@ -9,7 +9,7 @@ const FamilyLoginPage = lazy(() => import('@/features/auth/FamilyLoginPage'))
 const JoinPage = lazy(() => import('@/features/auth/JoinPage'))
 const ForgotPasswordPage = lazy(() => import('@/features/auth/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('@/features/auth/ResetPasswordPage'))
-const HomePage = lazy(() => import('@/features/buckets/HomePage'))
+const BucketsPage = lazy(() => import('@/features/buckets/BucketsPage'))
 const SendPage = lazy(() => import('@/features/sends/SendPage'))
 const HistoryPage = lazy(() => import('@/features/history/HistoryPage'))
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'))
@@ -67,7 +67,7 @@ export default function App() {
           path="/"
           element={
             <Lazy>
-              <HomePage />
+              <BucketsPage />
             </Lazy>
           }
         />

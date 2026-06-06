@@ -16,8 +16,15 @@ import {
   ADMIN_PIN_SETUP_CTA_BODY,
   ADMIN_PIN_SETUP_CTA_TITLE,
   APP_FORM_DATA_ATTR,
-  REMOVE_CHILD_ACCOUNTS_DETAIL,
+  ADMIN_REMOVE_ADULT_EFFECT_LOGIN,
+  ADMIN_REMOVE_CHILD_EFFECT_ACCOUNTS,
+  ADMIN_REMOVE_CHILD_EFFECT_BUCKETS,
+  ADMIN_REMOVE_MEMBER_EFFECT_READD,
+  ADMIN_REMOVE_MEMBER_EFFECT_SIGN_OUT,
+  ADMIN_REMOVE_MEMBER_SHEET_INTRO,
+  ADMIN_REMOVE_MEMBER_WHAT_HAPPENS,
   adminPinSaveSuccess,
+  adminRemoveMemberSheetTitle,
   adminPinSheetBody,
   adminPinSheetTitle,
 } from '@/lib/brand'
@@ -73,6 +80,10 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
 
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
+
+  const [removeTarget, setRemoveTarget] = useState<Member | null>(null)
+  const [removing, setRemoving] = useState(false)
+  const [removeError, setRemoveError] = useState<string | null>(null)
 
   const loadMembers = useCallback(async () => {
     setLoadError(null)
@@ -211,18 +222,25 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     }
   }
 
-  async function onRemove(m: Member) {
+  function openRemoveConfirm(m: Member) {
     if (m.role === 'admin') return
-    const detail =
-      m.role === 'child'
-        ? REMOVE_CHILD_ACCOUNTS_DETAIL
-        : 'They will lose access to the app. '
-    const ok = window.confirm(
-      `Remove ${m.name} from your household? ${detail}This cannot be undone.`,
-    )
-    if (!ok) return
+    setRemoveError(null)
+    setRemoveTarget(m)
+  }
+
+  function closeRemoveConfirm() {
+    if (removing) return
+    setRemoveTarget(null)
+    setRemoveError(null)
+  }
+
+  async function confirmRemove() {
+    const m = removeTarget
+    if (!m || m.role === 'admin') return
 
     const snapshot = members
+    setRemoving(true)
+    setRemoveError(null)
     setActionError(null)
     setInfo(null)
     if (pinTarget?.id === m.id) {
@@ -234,12 +252,14 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     try {
       await removeMember(m.id)
       setInfo(`Removed ${m.name}.`)
+      setRemoveTarget(null)
       await loadMembers()
       onRosterChanged?.()
     } catch (err) {
       setMembers(snapshot)
-      setActionError(err instanceof Error ? err.message : String(err))
+      setRemoveError(err instanceof Error ? err.message : String(err))
     } finally {
+      setRemoving(false)
       setRefreshing(false)
     }
   }
@@ -484,7 +504,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
                 {m.role !== 'admin' && (
                   <button
                     type="button"
-                    onClick={() => void onRemove(m)}
+                    onClick={() => openRemoveConfirm(m)}
                     className="rounded-lg border border-red-500/30 px-2 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/10"
                   >
                     Remove
@@ -494,6 +514,85 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
             </li>
           ))}
         </ul>
+      )}
+
+      {removeTarget && (
+        <Sheet
+          open={removeTarget !== null}
+          onClose={closeRemoveConfirm}
+          aria-label={adminRemoveMemberSheetTitle(removeTarget.name)}
+        >
+          <header className="mb-4 flex items-baseline justify-between">
+            <h2 className="text-lg font-semibold text-zinc-300">
+              {adminRemoveMemberSheetTitle(removeTarget.name)}
+            </h2>
+            <button
+              type="button"
+              onClick={closeRemoveConfirm}
+              disabled={removing}
+              className="rounded p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </header>
+
+          <div className="space-y-4">
+            <p className="text-sm text-zinc-400">
+              <span className="font-medium text-zinc-300">
+                {roleLabel(removeTarget.role)}
+              </span>
+              {' — '}
+              {ADMIN_REMOVE_MEMBER_SHEET_INTRO}
+            </p>
+
+            <div>
+              <h3 className="text-sm font-medium text-zinc-300">
+                {ADMIN_REMOVE_MEMBER_WHAT_HAPPENS}
+              </h3>
+              <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-zinc-400">
+                <li>{ADMIN_REMOVE_MEMBER_EFFECT_SIGN_OUT}</li>
+                {removeTarget.role === 'child' ? (
+                  <>
+                    <li>{ADMIN_REMOVE_CHILD_EFFECT_BUCKETS}</li>
+                    <li>{ADMIN_REMOVE_CHILD_EFFECT_ACCOUNTS}</li>
+                  </>
+                ) : (
+                  <li>{ADMIN_REMOVE_ADULT_EFFECT_LOGIN}</li>
+                )}
+                <li>{ADMIN_REMOVE_MEMBER_EFFECT_READD}</li>
+              </ul>
+            </div>
+
+            {removeError ? (
+              <p
+                role="alert"
+                className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30"
+              >
+                {removeError}
+              </p>
+            ) : null}
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={closeRemoveConfirm}
+                disabled={removing}
+                className="flex-1 rounded-lg border border-zinc-700 py-2 text-sm text-zinc-400 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmRemove()}
+                disabled={removing}
+                className="flex-1 rounded-lg bg-red-500 py-2 text-sm font-semibold text-white transition hover:bg-red-400 disabled:opacity-50"
+              >
+                {removing ? 'Removing…' : `Remove ${removeTarget.name}`}
+              </button>
+            </div>
+          </div>
+        </Sheet>
       )}
 
       {pinTarget && (

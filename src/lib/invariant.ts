@@ -6,7 +6,7 @@
  *   sum(bucket allocations) + sum(unallocated balances across members)
  *     === sum(real Teller balances across all linked accounts)
  *
- * User-facing “rebalance” signal is negative unallocated on Home (see
+ * User-facing “rebalance” signal is negative unallocated on Buckets tab (see
  * CONTEXT.md § Data Integrity). Automated operator ledger checks are
  * deferred until a possible paid SaaS (`check-invariant` stub).
  *

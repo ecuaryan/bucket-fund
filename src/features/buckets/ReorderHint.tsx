@@ -1,4 +1,4 @@
-import { HOME_BUCKET_REORDER_POPOVER_LABEL } from '@/lib/brand'
+import { BUCKETS_REORDER_POPOVER_LABEL } from '@/lib/brand'
 import { useReorderHint } from '@/features/buckets/ReorderHintContext'
 
 function GripDotsIcon({ className = '' }: { className?: string }) {
@@ -28,7 +28,7 @@ export function ReorderGripPopover({ bucketId }: { bucketId: string }) {
   return (
     <div
       role="tooltip"
-      aria-label={HOME_BUCKET_REORDER_POPOVER_LABEL}
+      aria-label={BUCKETS_REORDER_POPOVER_LABEL}
       className="menu-popover-enter pointer-events-none absolute left-0 top-full z-30 mt-1 w-max max-w-[min(16rem,calc(100vw-2rem))] rounded-lg bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-200 shadow-lg ring-1 ring-zinc-700"
     >
       <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5">

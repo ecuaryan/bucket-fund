@@ -14,7 +14,7 @@ test.describe('smoke', () => {
     await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible()
   })
 
-  test('admin email sign-in reaches home', async ({ page }) => {
+  test('admin email sign-in reaches Buckets tab', async ({ page }) => {
     const family = await createAdminFamily('e2e-admin')
 
     await page.goto('/login')
@@ -33,7 +33,7 @@ test.describe('smoke', () => {
     await expect(page).toHaveURL(/\/login\/forgot/)
   })
 
-  test('bucket rename and delete reflect immediately on home', async ({
+  test('bucket rename and delete reflect immediately on Buckets tab', async ({
     page,
   }) => {
     const family = await createAdminFamily('e2e-bucket-ui')

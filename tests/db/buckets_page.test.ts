@@ -7,9 +7,9 @@ import {
   userClient,
 } from './fixtures'
 
-describe('get_home_page_data RPC', () => {
+describe('Buckets page bootstrap (get_home_page_data RPC)', () => {
   it('returns buckets, accounts, and breakdown for admin', async () => {
-    const family = await createAdminFamily('home-page-data')
+    const family = await createAdminFamily('buckets-page-data')
     const svc = serviceClient()
     await insertBucket(svc, family.familyId, 'Groceries', null)
 
@@ -27,7 +27,7 @@ describe('get_home_page_data RPC', () => {
   })
 })
 
-describe('get_home_balance_breakdown RPC', () => {
+describe('Buckets balance breakdown (get_home_balance_breakdown RPC)', () => {
   it('includes children with zero balance on the adult breakdown', async () => {
     const family = await createAdminFamily('breakdown-zero-child')
     const child = await addMember(family.familyId, 'child', 'Alex')
