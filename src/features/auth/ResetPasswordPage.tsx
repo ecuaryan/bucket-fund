@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthShell } from '@/components/AuthShell'
+import { FieldLabel } from '@/components/ui/FieldLabel'
 import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import { markRequireFreshSignIn } from '@/lib/freshSignIn'
 import { clearPasswordRecoveryFlow } from '@/lib/passwordRecoveryFlow'
@@ -156,7 +157,7 @@ export default function ResetPasswordPage() {
         autoComplete="on"
       >
         <label className="block">
-          <span className="block text-sm font-medium text-zinc-300">Email</span>
+          <FieldLabel spacing="tight">Email</FieldLabel>
           <input
             ref={emailRef}
             type="email"
@@ -170,9 +171,7 @@ export default function ResetPasswordPage() {
           />
         </label>
         <label className="block">
-          <span className="block text-sm font-medium text-zinc-300">
-            New password
-          </span>
+          <FieldLabel spacing="tight">New password</FieldLabel>
           <input
             type="password"
             name="password"
@@ -184,9 +183,7 @@ export default function ResetPasswordPage() {
           />
         </label>
         <label className="block">
-          <span className="block text-sm font-medium text-zinc-300">
-            Confirm password
-          </span>
+          <FieldLabel spacing="tight">Confirm password</FieldLabel>
           <input
             type="password"
             name="password_confirm"

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { ClearableInput } from '@/components/ui/ClearableInput'
+import { FieldLabel } from '@/components/ui/FieldLabel'
 import PinInput from '@/components/ui/PinInput'
 import { Sheet } from '@/components/ui/Sheet'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
@@ -383,7 +384,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
         className="flex flex-col gap-3 rounded-2xl bg-zinc-900 p-4 ring-1 ring-zinc-800 sm:flex-row sm:items-end"
       >
         <label className="block flex-1">
-          <span className="text-xs font-medium text-zinc-400">Name</span>
+          <FieldLabel spacing="tight">Name</FieldLabel>
           <ClearableInput
             wrapperClassName="mt-1 block w-full"
             value={newName}
@@ -393,7 +394,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
           />
         </label>
         <label className="block sm:w-52">
-          <span className="text-xs font-medium text-zinc-400">Type</span>
+          <FieldLabel spacing="tight">Type</FieldLabel>
           <select
             value={newRole}
             onChange={(e) => setNewRole(e.target.value as 'member' | 'child')}

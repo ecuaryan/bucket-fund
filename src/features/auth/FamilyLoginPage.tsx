@@ -8,6 +8,7 @@ import {
 import { flushSync } from 'react-dom'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { AuthShell } from '@/components/AuthShell'
+import { FieldLabel } from '@/components/ui/FieldLabel'
 import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import {
   APP_FORM_DATA_ATTR,
@@ -280,9 +281,7 @@ export default function FamilyLoginPage() {
       <AuthShell title={PIN_JOIN_PAGE_TITLE} subtitle={PIN_JOIN_PAGE_SUBTITLE}>
         <form onSubmit={onBindCode} className="space-y-4">
           <label htmlFor="join-code" className="block text-left">
-            <span className="text-xs font-medium text-zinc-400">
-              {JOIN_CODE_LABEL}
-            </span>
+            <FieldLabel spacing="tight">{JOIN_CODE_LABEL}</FieldLabel>
             <input
               id="join-code"
               value={codeInput}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ClearableInput } from '@/components/ui/ClearableInput'
+import { FieldLabel } from '@/components/ui/FieldLabel'
 import { Sheet } from '@/components/ui/Sheet'
 import { AmountLimitHint } from '@/components/AmountLimitHint'
 import {
@@ -115,7 +116,7 @@ export default function ManualSourceDialog({
         <p className="text-sm text-zinc-400">{MANUAL_SOURCE_DIALOG_BODY}</p>
 
         <label className="block">
-          <span className="text-xs font-medium text-zinc-400">Label</span>
+          <FieldLabel spacing="tight">Label</FieldLabel>
           <ClearableInput
             wrapperClassName="mt-1"
             type="text"
@@ -128,7 +129,7 @@ export default function ManualSourceDialog({
         </label>
 
         <label className="block">
-          <span className="text-xs font-medium text-zinc-400">Amount</span>
+          <FieldLabel spacing="tight">Amount</FieldLabel>
           <ClearableInput
             ref={amountRef}
             wrapperClassName="mt-1"

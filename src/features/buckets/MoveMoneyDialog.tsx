@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { ClearableInput } from '@/components/ui/ClearableInput'
+import { FieldLabel } from '@/components/ui/FieldLabel'
 import { Sheet } from '@/components/ui/Sheet'
 import { AmountLimitHint } from '@/components/AmountLimitHint'
 import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
@@ -155,7 +156,7 @@ export default function MoveMoneyDialog({
           <div className="rounded-xl bg-zinc-950 p-3 ring-1 ring-inset ring-zinc-700">
             <div className="flex items-stretch gap-2">
               <div className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-3">
-                <span className="text-sm font-medium text-zinc-400">From</span>
+                <FieldLabel spacing="tight">From</FieldLabel>
                 <Picker
                   label="From"
                   value={fromKey}
@@ -167,7 +168,7 @@ export default function MoveMoneyDialog({
                   embedded
                   hideLabel
                 />
-                <span className="text-sm font-medium text-zinc-400">To</span>
+                <FieldLabel spacing="tight">To</FieldLabel>
                 <Picker
                   label="To"
                   value={toKey}
@@ -206,9 +207,7 @@ export default function MoveMoneyDialog({
           </div>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400">
-              Amount
-            </span>
+            <FieldLabel>Amount</FieldLabel>
             <ClearableInput
               ref={amountRef}
               type="number"
@@ -247,9 +246,7 @@ export default function MoveMoneyDialog({
           </label>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400">
-              Note (optional)
-            </span>
+            <FieldLabel optional>Note</FieldLabel>
             <ClearableInput
               type="text"
               value={note}
@@ -320,9 +317,7 @@ function Picker({
   return (
     <label className="block min-w-0">
       {!hideLabel && (
-        <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400">
-          {label}
-        </span>
+        <FieldLabel>{label}</FieldLabel>
       )}
       <select
         value={value}

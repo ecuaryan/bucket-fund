@@ -26,6 +26,7 @@ import {
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import { ClearableInput } from '@/components/ui/ClearableInput'
+import { FieldLabel } from '@/components/ui/FieldLabel'
 import { Sheet } from '@/components/ui/Sheet'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
@@ -345,7 +346,10 @@ function FilterBar({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <label className="text-xs font-medium text-zinc-400" htmlFor="history-filter">
+      <label
+        htmlFor="history-filter"
+        className="text-sm font-medium text-zinc-300"
+      >
         Filter
       </label>
       <select
@@ -567,9 +571,7 @@ function TxItem({
           </header>
 
           <label className="block">
-            <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400">
-              {TRANSACTION_NOTE_FIELD_LABEL}
-            </span>
+            <FieldLabel optional>{TRANSACTION_NOTE_FIELD_LABEL}</FieldLabel>
             <ClearableInput
               type="text"
               maxLength={280}
