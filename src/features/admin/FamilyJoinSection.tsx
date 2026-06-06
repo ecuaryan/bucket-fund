@@ -3,6 +3,7 @@ import { Sheet } from '@/components/ui/Sheet'
 import { useAuth } from '@/lib/auth'
 import { bindDeviceForPinSignIn } from '@/lib/familyDevice'
 import {
+  ADMIN_JOIN_CODE_COPY_CODE_ARIA,
   ADMIN_JOIN_CODE_INTRO,
   ADMIN_JOIN_CODE_QR_ALT,
   ADMIN_JOIN_CODE_ROTATE_CONFIRM,
@@ -27,7 +28,7 @@ export default function FamilyJoinSection() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [rotateError, setRotateError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState<'code' | 'link' | null>(null)
 
   const loadCode = useCallback(async () => {
     setLoadError(null)
@@ -92,12 +93,13 @@ export default function FamilyJoinSection() {
     }
   }
 
-  async function onCopy() {
-    if (!joinUrl) return
+  async function copyText(text: string, target: 'code' | 'link') {
     try {
-      await navigator.clipboard.writeText(joinUrl)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      await navigator.clipboard.writeText(text)
+      setCopied(target)
+      setTimeout(() => {
+        setCopied((current) => (current === target ? null : current))
+      }, 2000)
     } catch {
       setLoadError('Could not copy to clipboard')
     }
@@ -130,18 +132,58 @@ export default function FamilyJoinSection() {
           />
         )}
         <div className="min-w-0 flex-1 text-center sm:text-left">
-          <p className="font-mono text-2xl font-semibold tracking-widest text-zinc-300">
-            {joinCode ?? '…'}
-          </p>
+          <div className="flex items-center justify-center gap-2 sm:justify-start">
+            <p className="font-mono text-2xl font-semibold tracking-widest text-zinc-300">
+              {joinCode ?? '…'}
+            </p>
+            <button
+              type="button"
+              onClick={() => joinCode && void copyText(joinCode, 'code')}
+              disabled={!joinCode}
+              aria-label={
+                copied === 'code' ? 'Copied' : ADMIN_JOIN_CODE_COPY_CODE_ARIA
+              }
+              className={
+                'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-zinc-700 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 disabled:cursor-not-allowed disabled:opacity-50 ' +
+                (copied === 'code' ? 'border-emerald-500/40 text-emerald-400' : '')
+              }
+            >
+              {copied === 'code' ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                  className="h-4 w-4"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                  className="h-4 w-4"
+                >
+                  <path d="M7 3.5A1.5 1.5 0 0 1 8.5 2h3.879a1.5 1.5 0 0 1 1.06.44l3.122 3.12A1.5 1.5 0 0 1 17 6.622V12.5a1.5 1.5 0 0 1-1.5 1.5H9.621a1.5 1.5 0 0 1-1.06-.44L5.44 10.378A1.5 1.5 0 0 1 5 9.318V3.5Zm1.5-.5a.5.5 0 0 0-.5.5v5.818l3.122 3.12a.5.5 0 0 0 .378.162H15.5a.5.5 0 0 0 .5-.5V6.622a.5.5 0 0 0-.146-.354l-3.122-3.12A.5.5 0 0 0 12.379 3H8.5Zm-2 0A1.5 1.5 0 0 0 5 4.5v5.818a1.5 1.5 0 0 0 .44 1.06l3.122 3.12A1.5 1.5 0 0 0 9.621 15H14.5a1.5 1.5 0 0 0 1.5-1.5V7.879a1.5 1.5 0 0 0-.44-1.06L12.44 3.7A1.5 1.5 0 0 0 11.378 3H6.5Z" />
+                </svg>
+              )}
+            </button>
+          </div>
           <p className="mt-2 break-all text-xs text-zinc-500">{joinUrl}</p>
           <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
             <button
               type="button"
-              onClick={() => void onCopy()}
+              onClick={() => joinUrl && void copyText(joinUrl, 'link')}
               disabled={!joinUrl}
               className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800"
             >
-              {copied ? 'Copied' : 'Copy link'}
+              {copied === 'link' ? 'Copied' : 'Copy link'}
             </button>
             <button
               type="button"
