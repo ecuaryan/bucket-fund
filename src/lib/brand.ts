@@ -95,6 +95,30 @@ export const ADMIN_JOIN_CODE_INTRO =
 export const ADMIN_JOIN_CODE_QR_ALT =
   'QR code to link a device with your household join code'
 
+export const ADMIN_JOIN_CODE_ROTATE_SHEET_TITLE = 'Generate a new join code?'
+
+export const ADMIN_JOIN_CODE_ROTATE_SHEET_INTRO =
+  'Use this if the current code may have been shared with the wrong people. The old code stops working immediately.'
+
+export const ADMIN_JOIN_CODE_ROTATE_WHAT_HAPPENS = 'What happens'
+
+export const ADMIN_JOIN_CODE_ROTATE_EFFECT_STAY_SIGNED_IN =
+  'People already signed in can keep using the app until they sign out.'
+
+export const ADMIN_JOIN_CODE_ROTATE_EFFECT_SIGN_IN_AGAIN =
+  'After sign-out, each device needs the new code once, then the same PIN as before.'
+
+export const ADMIN_JOIN_CODE_ROTATE_EFFECT_OLD_LINKS =
+  'Old QR codes and links no longer work for linking devices.'
+
+export const ADMIN_JOIN_CODE_ROTATE_EFFECT_SHARE =
+  'Share the new code or QR with everyone in your household after you generate it.'
+
+export const ADMIN_JOIN_CODE_ROTATE_CONFIRM = 'Generate new code'
+
+export const ADMIN_JOIN_CODE_ROTATE_SUCCESS =
+  'New join code created. Share it with your household.'
+
 // --- Admin: people & roles ---
 
 export const ADMIN_HOUSEHOLD_MEMBERS_TITLE = 'Household members'
