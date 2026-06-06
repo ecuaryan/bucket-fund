@@ -277,6 +277,37 @@ export const ADMIN_REMOVE_SHARED_EFFECT_LOGIN =
 
 export const NAV_BUCKETS_LABEL = 'Buckets'
 
+export function bucketsDeleteBucketSheetTitle(name: string): string {
+  return `Delete ${name}?`
+}
+
+export function bucketsDeleteBucketSheetIntro(
+  formattedAmount: string,
+  hasAllocation: boolean,
+): string {
+  return hasAllocation
+    ? `This bucket has ${formattedAmount} in it.`
+    : 'This bucket is empty.'
+}
+
+export const BUCKETS_DELETE_BUCKET_WHAT_HAPPENS = 'What happens'
+
+export function bucketsDeleteBucketEffectUnallocated(
+  formattedAmount: string,
+): string {
+  return `${formattedAmount} returns to unallocated. Cash is not lost.`
+}
+
+export const BUCKETS_DELETE_BUCKET_EFFECT_LABEL =
+  'The bucket label is removed—you can’t move money to it anymore.'
+
+export const BUCKETS_DELETE_BUCKET_EFFECT_HISTORY =
+  'Past moves stay in History with this bucket’s name.'
+
+export function bucketsDeleteBucketConfirm(name: string): string {
+  return `Delete ${name}`
+}
+
 /** Screen-reader label for the reorder grip popover (visual uses the grip icon). */
 export const BUCKETS_REORDER_POPOVER_LABEL =
   'Press and hold the reorder grip, then drag'
