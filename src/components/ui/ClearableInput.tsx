@@ -5,12 +5,10 @@ import {
 } from 'react'
 import { INPUT_CLEAR_ARIA_LABEL } from '@/lib/brand'
 
+/** Widen right padding only — keep px-* / pl-* so left inset stays intact. */
 function withClearPadding(className: string): string {
   if (/\bpr-\S+\b/.test(className)) {
     return className.replace(/\bpr-\S+\b/, 'pr-9')
-  }
-  if (/\bpx-(\S+)\b/.test(className)) {
-    return className.replace(/\bpx-(\S+)\b/, 'pl-$1 pr-9')
   }
   return `${className} pr-9`
 }
