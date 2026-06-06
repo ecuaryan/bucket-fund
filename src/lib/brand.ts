@@ -247,8 +247,29 @@ export const ADMIN_ACCOUNT_RESET_HINT =
 export const ADMIN_ACCOUNT_RESET_SENT =
   'This only changes your email sign-in password. Your PIN—and everyone else\'s—stays the same.'
 
-export const REMOVE_CHILD_ACCOUNTS_DETAIL =
-  'Their buckets will be deleted. Any bank accounts assigned to them will count toward household unallocated. '
+export function adminRemoveMemberSheetTitle(name: string): string {
+  return `Remove ${name}?`
+}
+
+export const ADMIN_REMOVE_MEMBER_SHEET_INTRO =
+  'They will lose access to the app on every device. This cannot be undone.'
+
+export const ADMIN_REMOVE_MEMBER_WHAT_HAPPENS = 'What happens'
+
+export const ADMIN_REMOVE_MEMBER_EFFECT_SIGN_OUT =
+  'They are signed out everywhere immediately.'
+
+export const ADMIN_REMOVE_MEMBER_EFFECT_READD =
+  'To use the app again, add them back to the household and set a new PIN.'
+
+export const ADMIN_REMOVE_CHILD_EFFECT_BUCKETS =
+  'Their buckets and the money in those buckets are deleted.'
+
+export const ADMIN_REMOVE_CHILD_EFFECT_ACCOUNTS =
+  'Bank accounts assigned to them become household accounts and count toward unallocated.'
+
+export const ADMIN_REMOVE_ADULT_EFFECT_LOGIN =
+  'Their PIN and sign-in are deleted.'
 
 // --- Buckets (main tab) ---
 
