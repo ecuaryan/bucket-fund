@@ -50,6 +50,7 @@ import {
   reorderBucketList,
   swapBucketOrder,
 } from '@/lib/bucketsPageOptimistic'
+import { toast } from '@/lib/toast'
 import {
   deleteBucket,
   BUCKET_NAME_MAX_LENGTH,
@@ -100,7 +101,6 @@ export default function BucketsPage() {
   const [moveBucketId, setMoveBucketId] = useState<string | null>(null)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
-  const [actionError, setActionError] = useState<string | null>(null)
   const [refreshError, setRefreshError] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [manualSourceOpen, setManualSourceOpen] = useState(false)
@@ -253,7 +253,6 @@ export default function BucketsPage() {
   function startRename(id: string, currentName: string) {
     setRenameValue(currentName)
     setRenamingId(id)
-    setActionError(null)
   }
 
   async function commitRename(id: string) {
@@ -269,7 +268,7 @@ export default function BucketsPage() {
       { exceptName: previous },
     )
     if (invalid) {
-      setActionError(invalid)
+      toast.error(invalid)
       return
     }
     if (!previous || previous === next) {
@@ -277,7 +276,6 @@ export default function BucketsPage() {
       return
     }
     setRenamingId(null)
-    setActionError(null)
     setBuckets((prev) => (prev ? renameBucketInList(prev, id, next) : prev))
     try {
       await renameBucket(id, next)
@@ -286,7 +284,7 @@ export default function BucketsPage() {
       setBuckets((prev) =>
         prev ? renameBucketInList(prev, id, previous) : prev,
       )
-      setActionError(e instanceof Error ? e.message : String(e))
+      toast.error(e instanceof Error ? e.message : String(e))
     }
   }
 
@@ -296,7 +294,6 @@ export default function BucketsPage() {
   }
 
   async function handleReorder(id: string, direction: 'up' | 'down') {
-    setActionError(null)
     prepareFlip()
     const snapshot = buckets
     setBuckets((prev) => (prev ? swapBucketOrder(prev, id, direction) : prev))
@@ -305,12 +302,11 @@ export default function BucketsPage() {
       void loadData()
     } catch (e) {
       setBuckets(snapshot)
-      setActionError(e instanceof Error ? e.message : String(e))
+      toast.error(e instanceof Error ? e.message : String(e))
     }
   }
 
   async function handleDragReorder(orderedIds: string[]) {
-    setActionError(null)
     const snapshot = buckets
     setBuckets((prev) => (prev ? reorderBucketList(prev, orderedIds) : prev))
     try {
@@ -318,7 +314,7 @@ export default function BucketsPage() {
       void loadData()
     } catch (e) {
       setBuckets(snapshot)
-      setActionError(e instanceof Error ? e.message : String(e))
+      toast.error(e instanceof Error ? e.message : String(e))
     }
   }
 
@@ -358,13 +354,12 @@ export default function BucketsPage() {
   }
 
   function requestDeleteBucket(b: Bucket) {
-    setActionError(null)
     if (Number(b.allocated_amount) > 0) {
       setDeleteError(null)
       setDeleteTarget(b)
       return
     }
-    void performDeleteBucket(b, setActionError)
+    void performDeleteBucket(b, (message) => toast.error(message))
   }
 
   function closeDeleteConfirm() {
@@ -702,10 +697,7 @@ export default function BucketsPage() {
             renameValue={renameValue}
             canManageStructure={canManageStructure}
             formatMoney={formatMoney}
-            onRenameValueChange={(value) => {
-              setRenameValue(value)
-              if (actionError) setActionError(null)
-            }}
+            onRenameValueChange={setRenameValue}
             onCommitRename={commitRename}
             onCancelRename={cancelRename}
             onMoveMoney={setMoveBucketId}
@@ -717,10 +709,6 @@ export default function BucketsPage() {
             onDragReorder={(ids) => void handleDragReorder(ids)}
           />
         )}
-        {actionError && (
-          <p className="mt-2 text-xs text-red-300">{actionError}</p>
-        )}
-
         {canCreateBuckets && (
           <>
             <form onSubmit={onCreateBucket} className="mt-4 flex gap-2">

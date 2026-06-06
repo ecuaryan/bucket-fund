@@ -11,10 +11,12 @@ import {
 } from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
 import { useScrollToTopOnPathname } from '@/hooks/useScrollToTopOnPathname'
+import { useToastLayout } from '@/hooks/useToastLayout'
 import { useSendRecipients } from '@/hooks/useSendRecipients'
 
 export default function AppShell() {
   useScrollToTopOnPathname()
+  useToastLayout('app')
   const auth = useAuth()
   const [signingOut, setSigningOut] = useState(false)
 

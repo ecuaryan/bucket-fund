@@ -19,6 +19,7 @@ import {
   HISTORY_NOTE_ADD,
   HISTORY_NOTE_CLEAR,
   HISTORY_NOTE_EDIT,
+  HISTORY_NOTE_SAVED,
   HISTORY_NOTE_SHEET_TITLE_ADD,
   HISTORY_NOTE_SHEET_TITLE_EDIT,
   LOADING_STATUS_LABEL,
@@ -33,6 +34,7 @@ import { Sheet } from '@/components/ui/Sheet'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
 import { updateTransactionNote } from '@/lib/transactions'
+import { toast } from '@/lib/toast'
 import type { Database } from '@/types/database'
 import {
   filterFromSearchParams,
@@ -530,6 +532,7 @@ function TxItem({
       onNoteUpdated(row.id, next)
       setEditingNote(false)
       setNoteExpanded(Boolean(next))
+      toast.success(HISTORY_NOTE_SAVED)
     } catch (err) {
       setNoteError(err instanceof Error ? err.message : 'Could not save note')
     } finally {

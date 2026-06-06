@@ -18,6 +18,7 @@ import {
   ADMIN_JOIN_CODE_TITLE,
 } from '@/lib/brand'
 import { supabase } from '@/lib/supabase'
+import { toast } from '@/lib/toast'
 
 export default function FamilyJoinSection() {
   const auth = useAuth()
@@ -27,7 +28,6 @@ export default function FamilyJoinSection() {
   const [rotating, setRotating] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [rotateError, setRotateError] = useState<string | null>(null)
-  const [info, setInfo] = useState<string | null>(null)
   const [copied, setCopied] = useState<'code' | 'link' | null>(null)
 
   const loadCode = useCallback(async () => {
@@ -84,7 +84,7 @@ export default function FamilyJoinSection() {
       ) {
         bindDeviceForPinSignIn(member.family_id, newCode, member.id)
       }
-      setInfo(ADMIN_JOIN_CODE_ROTATE_SUCCESS)
+      toast.success(ADMIN_JOIN_CODE_ROTATE_SUCCESS)
       setConfirmOpen(false)
     } catch (e) {
       setRotateError(e instanceof Error ? e.message : String(e))
@@ -101,7 +101,7 @@ export default function FamilyJoinSection() {
         setCopied((current) => (current === target ? null : current))
       }, 2000)
     } catch {
-      setLoadError('Could not copy to clipboard')
+      toast.error('Could not copy to clipboard')
     }
   }
 
@@ -115,12 +115,6 @@ export default function FamilyJoinSection() {
           {loadError}
         </p>
       )}
-      {info && (
-        <p className="mt-3 rounded-lg bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300 ring-1 ring-emerald-500/30">
-          {info}
-        </p>
-      )}
-
       <div className="mt-4 flex flex-col items-center gap-4 rounded-2xl bg-zinc-900 p-4 ring-1 ring-zinc-800 sm:flex-row sm:items-start">
         {qrSrc && (
           <img

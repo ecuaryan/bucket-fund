@@ -164,6 +164,31 @@ html {
     animation: fade-in 200ms ease both;
   }
 
+  .toast-viewport {
+    bottom: calc(var(--toast-bottom-base, 1rem) + env(safe-area-inset-bottom, 0px));
+  }
+
+  html[data-toast-layout='app'] {
+    --toast-bottom-base: 6.25rem;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .toast-panel {
+      animation: toast-in 180ms ease both;
+    }
+  }
+
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .busy-overlay {
     animation: busy-overlay-in 150ms ease both;
   }

@@ -16,8 +16,9 @@ describe('admin PIN copy', () => {
     expect(adminPinSheetBody('Alex', false)).toMatch(/signs Alex out on every device/)
     expect(adminPinSheetBody('Alex', false)).toMatch(/look signed in/)
 
-    expect(adminPinSaveSuccess('Alex', true)).toMatch(/ready for quick sign-in/)
-    expect(adminPinSaveSuccess('Alex', true)).toMatch(/any other devices were signed out/i)
-    expect(adminPinSaveSuccess('Alex', false)).toMatch(/signed out everywhere/)
+    expect(adminPinSaveSuccess('Alex', true)).toBe(
+      'PIN saved. Use it on other devices.',
+    )
+    expect(adminPinSaveSuccess('Alex', false)).toBe('PIN saved for Alex.')
   })
 })

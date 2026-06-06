@@ -50,6 +50,9 @@ The payoff:
   assignment dropdowns (`HOUSEHOLD_LABEL`, not “pool” in user copy).
 - Kid-facing copy: **shared balance** or **household admin**, not “parent,”
   unless you mean a specific person.
+- **Toasts:** ephemeral success/error feedback uses the global toast (above tab bar
+  on signed-in pages). Keep copy short for auto-dismiss; longer text stays in sheets
+  or requires manual dismiss. Form field validation stays inline.
 - **Confirmations:** use the shared `Sheet` for **consequential** actions only—
   money moves, access loss, irreversible structural changes with real impact.
   Skip confirm for low-impact, easily reversible flows (e.g. deleting an empty bucket).
@@ -109,6 +112,10 @@ limit UI to “checking or savings” only.
 | Admin remove manual source | `adminRemoveManualSourceSheetTitle()`, `ADMIN_REMOVE_MANUAL_SOURCE_*` |
 | Buckets delete bucket | `bucketsDeleteBucketSheetTitle()`, `BUCKETS_DELETE_BUCKET_*` |
 | Buckets duplicate name | `BUCKETS_NAME_DUPLICATE` |
+| Toast dismiss | `TOAST_DISMISS_LABEL` |
+| History note saved | `HISTORY_NOTE_SAVED` |
+| Manual source saved | `manualSourceAddedSuccess()`, `manualSourceUpdatedSuccess()` |
+| Member actions | `adminMemberAddedSuccess()`, `adminPinSaveSuccess()`, … |
 | Admin email & password reset | `ADMIN_ACCOUNT_*` |
 | Household admin (hints) | `householdAdminLabel()`, `HOUSEHOLD_ADMIN_PHRASE` fallback |
 | Buckets tab: no linked accounts | `bucketsLinkBankMemberBody()` |

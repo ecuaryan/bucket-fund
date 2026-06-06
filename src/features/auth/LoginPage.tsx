@@ -7,6 +7,7 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 import { AuthBrandHeader } from '@/components/AuthBrandHeader'
+import { useToastLayout } from '@/hooks/useToastLayout'
 import { FieldLabel } from '@/components/ui/FieldLabel'
 import { useAuth } from '@/lib/auth'
 import {
@@ -69,6 +70,8 @@ export default function LoginPage() {
       setSignInPreference('email')
     }
   }, [preferEmailSignIn])
+
+  useToastLayout('auth')
 
   const [mode, setMode] = useState<Mode>(() =>
     searchParams.get('signup') === '1' ? 'signUp' : 'signIn',
