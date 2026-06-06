@@ -15,7 +15,7 @@ import {
   HISTORY_EMPTY_BODY,
   HISTORY_EMPTY_BUCKET_BODY,
   HISTORY_EMPTY_SENDS_BODY,
-  HISTORY_FILTER_SEND_MONEY,
+  HISTORY_FILTER_SENT_MONEY,
   HISTORY_NOTE_ADD,
   HISTORY_NOTE_CLEAR,
   HISTORY_NOTE_EDIT,
@@ -379,7 +379,7 @@ function FilterBar({
       >
         <option value="">All transactions</option>
         {showSendFilter ? (
-          <option value={SEND_FILTER_VALUE}>{HISTORY_FILTER_SEND_MONEY}</option>
+          <option value={SEND_FILTER_VALUE}>{HISTORY_FILTER_SENT_MONEY}</option>
         ) : null}
         {buckets.map((b) => (
           <option key={b.id} value={b.id}>
@@ -393,7 +393,7 @@ function FilterBar({
 
       {showSendFilter && filter.kind === 'send' && (
         <ActiveFilterChip
-          label={HISTORY_FILTER_SEND_MONEY}
+          label={HISTORY_FILTER_SENT_MONEY}
           onClear={() => onChange({ kind: 'all' })}
         />
       )}

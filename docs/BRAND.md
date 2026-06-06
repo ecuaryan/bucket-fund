@@ -104,7 +104,7 @@ limit UI to “checking or savings” only.
 | Buckets tab: no linked accounts | `bucketsLinkBankMemberBody()` |
 | Buckets tab: member empty buckets | `bucketsMemberNoBucketsHint()` |
 | Buckets tab: kid unallocated hint | `bucketsKidUnallocatedHint()` |
-| History send filter | `HISTORY_FILTER_SEND_MONEY` |
+| History sent-money filter | `HISTORY_FILTER_SENT_MONEY` |
 | History empty state | `HISTORY_EMPTY_*` |
 | PIN sign-in: empty roster | `pinNoMembersYet()` |
 | Admin gate (non-admin) | `adminLinkedAccountsMemberGate()` |

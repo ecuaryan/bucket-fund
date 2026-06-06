@@ -407,7 +407,7 @@ export const BUCKETS_DB_UPDATE_PENDING_BODY =
 // --- History ---
 
 /** History filter dropdown + active chip (Send tab transactions only). */
-export const HISTORY_FILTER_SEND_MONEY = 'Send money'
+export const HISTORY_FILTER_SENT_MONEY = 'Sent money'
 
 export const HISTORY_EMPTY_BUCKET_BODY =
   'Move money in or out of this bucket and it will appear here.'
