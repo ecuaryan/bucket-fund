@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Sheet } from '@/components/ui/Sheet'
+import { useAuth } from '@/lib/auth'
+import { bindDeviceForPinSignIn } from '@/lib/familyDevice'
 import {
   ADMIN_JOIN_CODE_INTRO,
   ADMIN_JOIN_CODE_QR_ALT,
@@ -17,6 +19,8 @@ import {
 import { supabase } from '@/lib/supabase'
 
 export default function FamilyJoinSection() {
+  const auth = useAuth()
+  const member = auth.status === 'signedIn' ? auth.member : null
   const [joinCode, setJoinCode] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [rotating, setRotating] = useState(false)
@@ -70,7 +74,15 @@ export default function FamilyJoinSection() {
     try {
       const { data, error } = await supabase.rpc('rotate_family_join_code')
       if (error) throw error
-      setJoinCode(data as string)
+      const newCode = data as string
+      setJoinCode(newCode)
+      if (
+        member?.role === 'admin' &&
+        member.pin_set_at &&
+        member.family_id
+      ) {
+        bindDeviceForPinSignIn(member.family_id, newCode, member.id)
+      }
       setInfo(ADMIN_JOIN_CODE_ROTATE_SUCCESS)
       setConfirmOpen(false)
     } catch (e) {
