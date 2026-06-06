@@ -50,6 +50,11 @@ The payoff:
   assignment dropdowns (`HOUSEHOLD_LABEL`, not “pool” in user copy).
 - Kid-facing copy: **shared balance** or **household admin**, not “parent,”
   unless you mean a specific person.
+- **Confirmations:** use the shared `Sheet` for **consequential** actions only—
+  money moves, access loss, irreversible structural changes with real impact.
+  Skip confirm for low-impact, easily reversible flows (e.g. deleting an empty bucket).
+  Never `window.confirm` (unreliable in embedded browsers). Copy in `brand.ts`;
+  match member-removal patterns (intro, bullets, Cancel + action).
 
 ## Display name
 
@@ -99,6 +104,10 @@ limit UI to “checking or savings” only.
 | Admin people & roles | `ADMIN_HOUSEHOLD_MEMBERS_*`, `memberRoles.ts` |
 | Admin linked accounts | `ADMIN_LINKED_ACCOUNTS_*` |
 | Assign linked account to kid | `adminAssignAccountToKidSheetTitle()`, `ADMIN_ASSIGN_ACCOUNT_TO_KID_*` |
+| Admin link-bank warning | `ADMIN_LINK_BANK_CONFIRM_*` |
+| Admin unlink bank | `adminUnlinkInstitutionSheetTitle()`, `ADMIN_UNLINK_INSTITUTION_CONFIRM` |
+| Admin remove manual source | `adminRemoveManualSourceSheetTitle()`, `ADMIN_REMOVE_MANUAL_SOURCE_*` |
+| Buckets delete bucket | `bucketsDeleteBucketSheetTitle()`, `BUCKETS_DELETE_BUCKET_*` |
 | Admin email & password reset | `ADMIN_ACCOUNT_*` |
 | Household admin (hints) | `householdAdminLabel()`, `HOUSEHOLD_ADMIN_PHRASE` fallback |
 | Buckets tab: no linked accounts | `bucketsLinkBankMemberBody()` |

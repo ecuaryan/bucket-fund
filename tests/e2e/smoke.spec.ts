@@ -41,8 +41,6 @@ test.describe('smoke', () => {
     await insertBucket(svc, family.familyId, 'Old Name', null)
     await insertBucket(svc, family.familyId, 'Delete Me', null)
 
-    page.on('dialog', (dialog) => dialog.accept())
-
     await page.goto('/login')
     await page.locator('#login-email').fill(family.adminEmail)
     await page.locator('#login-password').fill(family.adminPassword)
@@ -66,7 +64,10 @@ test.describe('smoke', () => {
       .filter({ hasText: 'Delete Me' })
     await deleteRow.getByRole('button', { name: 'Bucket options' }).click()
     await page.getByRole('menuitem', { name: 'Delete' }).click()
-    await expect(page.getByText('Delete Me')).not.toBeVisible()
-    await expect(page.getByText('Groceries')).toBeVisible()
+    // Empty buckets delete immediately (no confirmation sheet).
+    await expect(deleteRow).not.toBeVisible()
+    await expect(
+      page.getByRole('listitem').filter({ hasText: 'Groceries' }),
+    ).toBeVisible()
   })
 })
