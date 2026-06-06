@@ -1,7 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Sheet } from '@/components/ui/Sheet'
 import {
   ADMIN_JOIN_CODE_INTRO,
   ADMIN_JOIN_CODE_QR_ALT,
+  ADMIN_JOIN_CODE_ROTATE_CONFIRM,
+  ADMIN_JOIN_CODE_ROTATE_EFFECT_OLD_LINKS,
+  ADMIN_JOIN_CODE_ROTATE_EFFECT_SHARE,
+  ADMIN_JOIN_CODE_ROTATE_EFFECT_SIGN_IN_AGAIN,
+  ADMIN_JOIN_CODE_ROTATE_EFFECT_STAY_SIGNED_IN,
+  ADMIN_JOIN_CODE_ROTATE_SHEET_INTRO,
+  ADMIN_JOIN_CODE_ROTATE_SHEET_TITLE,
+  ADMIN_JOIN_CODE_ROTATE_SUCCESS,
+  ADMIN_JOIN_CODE_ROTATE_WHAT_HAPPENS,
   ADMIN_JOIN_CODE_TITLE,
 } from '@/lib/brand'
 import { supabase } from '@/lib/supabase'
@@ -10,6 +20,8 @@ export default function FamilyJoinSection() {
   const [joinCode, setJoinCode] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [rotating, setRotating] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [rotateError, setRotateError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -40,21 +52,29 @@ export default function FamilyJoinSection() {
     return `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(joinUrl)}`
   }, [joinUrl])
 
-  async function onRotate() {
-    const ok = window.confirm(
-      'Generate a new join code? Devices already linked keep working; only new devices need the new code.',
-    )
-    if (!ok) return
+  function openRotateConfirm() {
+    setRotateError(null)
+    setConfirmOpen(true)
+  }
+
+  function closeRotateConfirm() {
+    if (rotating) return
+    setConfirmOpen(false)
+    setRotateError(null)
+  }
+
+  async function confirmRotate() {
     setRotating(true)
-    setInfo(null)
+    setRotateError(null)
     setLoadError(null)
     try {
       const { data, error } = await supabase.rpc('rotate_family_join_code')
       if (error) throw error
       setJoinCode(data as string)
-      setInfo('New join code created.')
+      setInfo(ADMIN_JOIN_CODE_ROTATE_SUCCESS)
+      setConfirmOpen(false)
     } catch (e) {
-      setLoadError(e instanceof Error ? e.message : String(e))
+      setRotateError(e instanceof Error ? e.message : String(e))
     } finally {
       setRotating(false)
     }
@@ -113,15 +133,82 @@ export default function FamilyJoinSection() {
             </button>
             <button
               type="button"
-              onClick={() => void onRotate()}
+              onClick={openRotateConfirm}
               disabled={rotating}
               className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-200 hover:bg-amber-500/20 disabled:opacity-50"
             >
-              {rotating ? 'Rotating…' : 'New code'}
+              New code
             </button>
           </div>
         </div>
       </div>
+
+      <Sheet
+        open={confirmOpen}
+        onClose={closeRotateConfirm}
+        aria-label={ADMIN_JOIN_CODE_ROTATE_SHEET_TITLE}
+      >
+        <header className="mb-4 flex items-baseline justify-between">
+          <h2 className="text-lg font-semibold text-zinc-300">
+            {ADMIN_JOIN_CODE_ROTATE_SHEET_TITLE}
+          </h2>
+          <button
+            type="button"
+            onClick={closeRotateConfirm}
+            disabled={rotating}
+            className="rounded p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </header>
+
+        <div className="space-y-4">
+          <p className="text-sm text-zinc-400">
+            {ADMIN_JOIN_CODE_ROTATE_SHEET_INTRO}
+          </p>
+
+          <div>
+            <h3 className="text-sm font-medium text-zinc-300">
+              {ADMIN_JOIN_CODE_ROTATE_WHAT_HAPPENS}
+            </h3>
+            <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-zinc-400">
+              <li>{ADMIN_JOIN_CODE_ROTATE_EFFECT_STAY_SIGNED_IN}</li>
+              <li>{ADMIN_JOIN_CODE_ROTATE_EFFECT_SIGN_IN_AGAIN}</li>
+              <li>{ADMIN_JOIN_CODE_ROTATE_EFFECT_OLD_LINKS}</li>
+              <li>{ADMIN_JOIN_CODE_ROTATE_EFFECT_SHARE}</li>
+            </ul>
+          </div>
+
+          {rotateError ? (
+            <p
+              role="alert"
+              className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30"
+            >
+              {rotateError}
+            </p>
+          ) : null}
+
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={closeRotateConfirm}
+              disabled={rotating}
+              className="flex-1 rounded-lg border border-zinc-700 py-2 text-sm text-zinc-400 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmRotate()}
+              disabled={rotating}
+              className="flex-1 rounded-lg bg-amber-500 py-2 text-sm font-semibold text-black transition hover:bg-amber-400 disabled:opacity-50"
+            >
+              {rotating ? 'Generating…' : ADMIN_JOIN_CODE_ROTATE_CONFIRM}
+            </button>
+          </div>
+        </div>
+      </Sheet>
     </section>
   )
 }
