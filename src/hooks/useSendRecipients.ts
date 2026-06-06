@@ -78,8 +78,12 @@ export function useSendRecipients() {
     )
   }, [members, member, linkedChildIds])
 
+  const sendReady = members !== null
+  const showSendNav = sendReady && recipients.length > 0
+
   return {
     recipients,
-    showSendNav: members !== null && recipients.length > 0,
+    sendReady,
+    showSendNav,
   }
 }
