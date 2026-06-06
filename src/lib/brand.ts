@@ -205,24 +205,46 @@ export function adminMoneySourceGroupExpandLabel(
   return expanded ? `Collapse ${n}` : `Expand ${n}`
 }
 
-export function adminLinkBankConfirmMessage(): string {
-  return (
-    'Link bank is for a new institution.\n\n' +
-    'To add or remove accounts at a bank you already linked, cancel, Unlink that bank, and link it again with the accounts you want.\n\n' +
-    'Continue with Link bank anyway?'
-  )
+export const ADMIN_LINK_BANK_CONFIRM_SHEET_TITLE = 'Link a new bank?'
+
+export const ADMIN_LINK_BANK_CONFIRM_SHEET_INTRO =
+  'Link bank is for a new institution—not for changing accounts at a bank you already linked.'
+
+export const ADMIN_LINK_BANK_CONFIRM_WHAT_TO_KNOW = 'Before you continue'
+
+export const ADMIN_LINK_BANK_CONFIRM_EFFECTS = [
+  'To add or remove accounts at an existing bank, Unlink it and link again with the full set you want.',
+  'Using Link bank for an institution that is already connected can duplicate enrollments.',
+] as const
+
+export const ADMIN_LINK_BANK_CONFIRM_ACTION = 'Link bank anyway'
+
+export function adminUnlinkInstitutionSheetTitle(
+  institutionName: string | null,
+): string {
+  return `Unlink ${institutionName ?? 'this bank'}?`
 }
 
-export function adminUnlinkInstitutionConfirm(
+export function adminUnlinkInstitutionSheetIntro(
   institutionName: string | null,
   accountCount: number,
 ): string {
-  const label = institutionName ?? 'this bank'
-  return (
-    `Unlink ${label}? ` +
-    `${accountCount} account${accountCount === 1 ? '' : 's'} will be removed from Bucket My Money.`
-  )
+  const label = institutionName ?? 'This bank'
+  const accounts =
+    accountCount === 1 ? '1 account' : `${accountCount} accounts`
+  return `${label} and ${accounts} will be removed from Bucket My Money. Balances will no longer count toward Buckets.`
 }
+
+export const ADMIN_UNLINK_INSTITUTION_CONFIRM = 'Unlink bank'
+
+export function adminRemoveManualSourceSheetTitle(label: string): string {
+  return `Remove ${label}?`
+}
+
+export const ADMIN_REMOVE_MANUAL_SOURCE_INTRO =
+  'This manual amount will be removed from your money sources. Linked banks are not affected.'
+
+export const ADMIN_REMOVE_MANUAL_SOURCE_CONFIRM = 'Remove'
 
 export const ADMIN_LOADING_MEMBERS = 'Loading household members…'
 
@@ -298,6 +320,37 @@ export function adminAssignAccountToKidConfirm(kidName: string): string {
 // --- Buckets (main tab) ---
 
 export const NAV_BUCKETS_LABEL = 'Buckets'
+
+export function bucketsDeleteBucketSheetTitle(name: string): string {
+  return `Delete ${name}?`
+}
+
+export function bucketsDeleteBucketSheetIntro(
+  formattedAmount: string,
+  hasAllocation: boolean,
+): string {
+  return hasAllocation
+    ? `This bucket has ${formattedAmount} in it.`
+    : 'This bucket is empty.'
+}
+
+export const BUCKETS_DELETE_BUCKET_WHAT_HAPPENS = 'What happens'
+
+export function bucketsDeleteBucketEffectUnallocated(
+  formattedAmount: string,
+): string {
+  return `${formattedAmount} returns to unallocated. Cash is not lost.`
+}
+
+export const BUCKETS_DELETE_BUCKET_EFFECT_LABEL =
+  'The bucket label is removed—you can’t move money to it anymore.'
+
+export const BUCKETS_DELETE_BUCKET_EFFECT_HISTORY =
+  'Past moves stay in History with this bucket’s name.'
+
+export function bucketsDeleteBucketConfirm(name: string): string {
+  return `Delete ${name}`
+}
 
 /** Screen-reader label for the reorder grip popover (visual uses the grip icon). */
 export const BUCKETS_REORDER_POPOVER_LABEL =

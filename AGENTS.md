@@ -41,6 +41,8 @@ Entry point for AI coding agents (and humans) working in this repo.
   normal bank-vs-bucket drift.
 - **Money writes only via RPCs.** `move_money` and `send_money`; extend
   `tests/db/` when changing balance logic.
+- **Destructive / consequential UI:** confirm with `Sheet` + `brand.ts` copy—
+  not `window.confirm` (breaks in Cursor’s browser and some mobile hosts).
 - **Child role is locked down.** A child must never be able to query
   family-pool balances, other members' balances, or other members'
   transactions. Validate this at the RLS layer, not the UI layer.

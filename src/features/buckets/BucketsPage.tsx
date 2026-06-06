@@ -16,11 +16,19 @@ import {
   BUCKETS_ADD_SOURCE_MANUAL_ACTION,
   BUCKETS_ADD_SOURCE_TITLE,
   bucketsAddSourceMemberBody,
+  bucketsDeleteBucketConfirm,
+  bucketsDeleteBucketEffectUnallocated,
+  bucketsDeleteBucketSheetIntro,
+  bucketsDeleteBucketSheetTitle,
+  BUCKETS_DELETE_BUCKET_EFFECT_HISTORY,
+  BUCKETS_DELETE_BUCKET_EFFECT_LABEL,
+  BUCKETS_DELETE_BUCKET_WHAT_HAPPENS,
   bucketsKidUnallocatedHint,
   BUCKETS_DB_UPDATE_PENDING_BODY,
   bucketsMemberNoBucketsHint,
 } from '@/lib/brand'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
+import { Sheet } from '@/components/ui/Sheet'
 import { isCashAccount } from '@/lib/accounts'
 import BucketsPageSkeleton from '@/components/BucketsPageSkeleton'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
@@ -95,6 +103,9 @@ export default function BucketsPage() {
   const [refreshError, setRefreshError] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [manualSourceOpen, setManualSourceOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<Bucket | null>(null)
+  const [deletingBucket, setDeletingBucket] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [prevDetailsMemberId, setPrevDetailsMemberId] = useState<string | null>(
     null,
@@ -319,26 +330,37 @@ export default function BucketsPage() {
     }
   }
 
-  async function handleDelete(b: Bucket) {
+  function requestDeleteBucket(b: Bucket) {
     setActionError(null)
-    const allocated = Number(b.allocated_amount)
-    const message =
-      allocated > 0
-        ? `Delete "${b.name}"? Its ${formatMoney(allocated)} will return to Unallocated.`
-        : `Delete "${b.name}"?`
-    if (!window.confirm(message)) return
+    setDeleteError(null)
+    setDeleteTarget(b)
+  }
+
+  function closeDeleteConfirm() {
+    if (deletingBucket) return
+    setDeleteTarget(null)
+    setDeleteError(null)
+  }
+
+  async function confirmDeleteBucket() {
+    if (!deleteTarget) return
+    const b = deleteTarget
     const snapshot = buckets
+    setDeletingBucket(true)
+    setDeleteError(null)
     if (renamingId === b.id) setRenamingId(null)
     if (moveBucketId === b.id) setMoveBucketId(null)
     setBuckets((prev) => (prev ? prev.filter((x) => x.id !== b.id) : prev))
     setSyncing(true)
     try {
       await deleteBucket(b.id)
+      setDeleteTarget(null)
       await loadData()
     } catch (e) {
       setBuckets(snapshot)
-      setActionError(e instanceof Error ? e.message : String(e))
+      setDeleteError(e instanceof Error ? e.message : String(e))
     } finally {
+      setDeletingBucket(false)
       setSyncing(false)
     }
   }
@@ -670,7 +692,7 @@ export default function BucketsPage() {
             onRename={startRename}
             onMoveUp={(id) => void handleReorder(id, 'up')}
             onMoveDown={(id) => void handleReorder(id, 'down')}
-            onDelete={handleDelete}
+            onDelete={requestDeleteBucket}
             onDragReorder={(ids) => void handleDragReorder(ids)}
           />
         )}
@@ -723,6 +745,85 @@ export default function BucketsPage() {
           }
         }}
       />
+
+      {deleteTarget ? (
+        <Sheet
+          open
+          onClose={closeDeleteConfirm}
+          aria-label={bucketsDeleteBucketSheetTitle(deleteTarget.name)}
+        >
+          <header className="mb-4 flex items-baseline justify-between">
+            <h2 className="text-lg font-semibold text-zinc-300">
+              {bucketsDeleteBucketSheetTitle(deleteTarget.name)}
+            </h2>
+            <button
+              type="button"
+              onClick={closeDeleteConfirm}
+              disabled={deletingBucket}
+              className="rounded p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </header>
+
+          <div className="space-y-4">
+            <p className="text-sm text-zinc-400">
+              {bucketsDeleteBucketSheetIntro(
+                formatMoney(Number(deleteTarget.allocated_amount)),
+                Number(deleteTarget.allocated_amount) > 0,
+              )}
+            </p>
+
+            <div>
+              <h3 className="text-sm font-medium text-zinc-300">
+                {BUCKETS_DELETE_BUCKET_WHAT_HAPPENS}
+              </h3>
+              <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-zinc-400">
+                {Number(deleteTarget.allocated_amount) > 0 ? (
+                  <li>
+                    {bucketsDeleteBucketEffectUnallocated(
+                      formatMoney(Number(deleteTarget.allocated_amount)),
+                    )}
+                  </li>
+                ) : null}
+                <li>{BUCKETS_DELETE_BUCKET_EFFECT_LABEL}</li>
+                <li>{BUCKETS_DELETE_BUCKET_EFFECT_HISTORY}</li>
+              </ul>
+            </div>
+
+            {deleteError ? (
+              <p
+                role="alert"
+                className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30"
+              >
+                {deleteError}
+              </p>
+            ) : null}
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={closeDeleteConfirm}
+                disabled={deletingBucket}
+                className="flex-1 rounded-lg border border-zinc-700 py-2 text-sm text-zinc-400 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmDeleteBucket()}
+                disabled={deletingBucket}
+                className="flex-1 rounded-lg bg-red-500 py-2 text-sm font-semibold text-white transition hover:bg-red-400 disabled:opacity-50"
+              >
+                {deletingBucket
+                  ? 'Deleting…'
+                  : bucketsDeleteBucketConfirm(deleteTarget.name)}
+              </button>
+            </div>
+          </div>
+        </Sheet>
+      ) : null}
 
       {isAdmin ? (
         <ManualSourceDialog

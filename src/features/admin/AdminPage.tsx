@@ -13,10 +13,19 @@ import {
   ADMIN_MONEY_SOURCES_INTRO,
   ADMIN_MANUAL_GROUP_TITLE,
   ADMIN_MONEY_SOURCES_SECTION_TITLE,
-  adminLinkBankConfirmMessage,
+  ADMIN_LINK_BANK_CONFIRM_ACTION,
+  ADMIN_LINK_BANK_CONFIRM_EFFECTS,
+  ADMIN_LINK_BANK_CONFIRM_SHEET_INTRO,
+  ADMIN_LINK_BANK_CONFIRM_SHEET_TITLE,
+  ADMIN_LINK_BANK_CONFIRM_WHAT_TO_KNOW,
+  ADMIN_REMOVE_MANUAL_SOURCE_CONFIRM,
+  ADMIN_REMOVE_MANUAL_SOURCE_INTRO,
+  ADMIN_UNLINK_INSTITUTION_CONFIRM,
   adminLinkedAccountsMemberGate,
   adminMoneySourceGroupExpandLabel,
-  adminUnlinkInstitutionConfirm,
+  adminRemoveManualSourceSheetTitle,
+  adminUnlinkInstitutionSheetIntro,
+  adminUnlinkInstitutionSheetTitle,
 } from '@/lib/brand'
 import {
   groupAccountsByInstitution,
@@ -38,6 +47,7 @@ import AdminAccountSection from '@/features/admin/AdminAccountSection'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
 import MembersSection from '@/features/admin/MembersSection'
 import AppVersionFooter from '@/components/AppVersionFooter'
+import { Sheet } from '@/components/ui/Sheet'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import { LoadingStatus } from '@/components/ui/LoadingStatus'
@@ -98,6 +108,14 @@ export default function AdminPage() {
   const [expandedGroupKeys, setExpandedGroupKeys] = useState<Set<string>>(
     () => new Set(),
   )
+  const [linkBankConfirmOpen, setLinkBankConfirmOpen] = useState(false)
+  const [removeManualTarget, setRemoveManualTarget] = useState<{
+    id: string
+    label: string
+  } | null>(null)
+  const [removingManual, setRemovingManual] = useState(false)
+  const [removeManualError, setRemoveManualError] = useState<string | null>(null)
+  const [unlinkTarget, setUnlinkTarget] = useState<InstitutionGroup | null>(null)
 
   const isAdmin = member?.role === 'admin'
 
@@ -218,16 +236,26 @@ export default function AdminPage() {
     )
   }
 
-  function onLink() {
-    if (hasLinkedBanks && !window.confirm(adminLinkBankConfirmMessage())) {
-      return
-    }
+  function startLinkBank() {
     setLinkError(null)
     setLinkInfo(null)
     teller.open({
       onLinked: (result) => afterLinkSuccess(result.accounts.length, 'Linked'),
       onError: (msg) => setLinkError(msg),
     })
+  }
+
+  function requestLinkBank() {
+    if (hasLinkedBanks) {
+      setLinkBankConfirmOpen(true)
+      return
+    }
+    startLinkBank()
+  }
+
+  function confirmLinkBank() {
+    setLinkBankConfirmOpen(false)
+    startLinkBank()
   }
 
   function onReconnect(group: InstitutionGroup) {
@@ -270,28 +298,38 @@ export default function AdminPage() {
     }
   }
 
-  async function onDeleteManual(accountId: string, label: string) {
-    const ok = window.confirm(`Remove "${label}" from your money sources?`)
-    if (!ok) return
+  function requestRemoveManualSource(accountId: string, label: string) {
+    setRemoveManualError(null)
+    setRemoveManualTarget({ id: accountId, label })
+  }
+
+  async function confirmRemoveManualSource() {
+    if (!removeManualTarget) return
+    setRemovingManual(true)
+    setRemoveManualError(null)
     setLinkError(null)
     setAccountsSyncing(true)
     try {
-      await deleteManualAccount(accountId)
+      await deleteManualAccount(removeManualTarget.id)
+      setRemoveManualTarget(null)
       await loadAccounts()
     } catch (e) {
-      setLinkError(e instanceof Error ? e.message : String(e))
+      setRemoveManualError(e instanceof Error ? e.message : String(e))
     } finally {
+      setRemovingManual(false)
       setAccountsSyncing(false)
     }
   }
 
-  async function onUnlink(group: InstitutionGroup) {
+  function requestUnlinkInstitution(group: InstitutionGroup) {
     if (group.enrollmentIds.length === 0) return
-    const ok = window.confirm(
-      adminUnlinkInstitutionConfirm(group.institutionName, group.accounts.length),
-    )
-    if (!ok) return
+    setUnlinkTarget(group)
+  }
 
+  async function confirmUnlinkInstitution() {
+    if (!unlinkTarget || unlinkTarget.enrollmentIds.length === 0) return
+    const group = unlinkTarget
+    setUnlinkTarget(null)
     setUnlinkingKey(group.groupKey)
     setLinkError(null)
     setLinkInfo(null)
@@ -412,7 +450,7 @@ export default function AdminPage() {
                   className="block w-full whitespace-nowrap px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
                   onClick={() => {
                     setAddSourceOpen(false)
-                    onLink()
+                    requestLinkBank()
                   }}
                 >
                   {teller.linking ? 'Linking…' : ADMIN_ADD_SOURCE_LINK_OPTION}
@@ -550,7 +588,7 @@ export default function AdminPage() {
                       )}
                       <button
                         type="button"
-                        onClick={() => onUnlink(group)}
+                        onClick={() => requestUnlinkInstitution(group)}
                         disabled={
                           unlinkingKey === group.groupKey ||
                           refreshingKey === group.groupKey
@@ -605,7 +643,7 @@ export default function AdminPage() {
                             <button
                               type="button"
                               onClick={() =>
-                                void onDeleteManual(
+                                requestRemoveManualSource(
                                   a.id,
                                   a.account_name ?? 'this source',
                                 )
@@ -678,6 +716,182 @@ export default function AdminPage() {
           }
         }}
       />
+
+      <Sheet
+        open={linkBankConfirmOpen}
+        onClose={() => setLinkBankConfirmOpen(false)}
+        aria-label={ADMIN_LINK_BANK_CONFIRM_SHEET_TITLE}
+      >
+        <header className="mb-4 flex items-baseline justify-between">
+          <h2 className="text-lg font-semibold text-zinc-300">
+            {ADMIN_LINK_BANK_CONFIRM_SHEET_TITLE}
+          </h2>
+          <button
+            type="button"
+            onClick={() => setLinkBankConfirmOpen(false)}
+            className="rounded p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </header>
+
+        <div className="space-y-4">
+          <p className="text-sm text-zinc-400">
+            {ADMIN_LINK_BANK_CONFIRM_SHEET_INTRO}
+          </p>
+
+          <div>
+            <h3 className="text-sm font-medium text-zinc-300">
+              {ADMIN_LINK_BANK_CONFIRM_WHAT_TO_KNOW}
+            </h3>
+            <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-zinc-400">
+              {ADMIN_LINK_BANK_CONFIRM_EFFECTS.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setLinkBankConfirmOpen(false)}
+              className="flex-1 rounded-lg border border-zinc-700 py-2 text-sm text-zinc-400"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={confirmLinkBank}
+              className="flex-1 rounded-lg bg-amber-500 py-2 text-sm font-semibold text-black transition hover:bg-amber-400"
+            >
+              {ADMIN_LINK_BANK_CONFIRM_ACTION}
+            </button>
+          </div>
+        </div>
+      </Sheet>
+
+      {removeManualTarget ? (
+        <Sheet
+          open
+          onClose={() => {
+            if (removingManual) return
+            setRemoveManualTarget(null)
+            setRemoveManualError(null)
+          }}
+          aria-label={adminRemoveManualSourceSheetTitle(removeManualTarget.label)}
+        >
+          <header className="mb-4 flex items-baseline justify-between">
+            <h2 className="text-lg font-semibold text-zinc-300">
+              {adminRemoveManualSourceSheetTitle(removeManualTarget.label)}
+            </h2>
+            <button
+              type="button"
+              onClick={() => {
+                if (removingManual) return
+                setRemoveManualTarget(null)
+                setRemoveManualError(null)
+              }}
+              disabled={removingManual}
+              className="rounded p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </header>
+
+          <div className="space-y-4">
+            <p className="text-sm text-zinc-400">
+              {ADMIN_REMOVE_MANUAL_SOURCE_INTRO}
+            </p>
+
+            {removeManualError ? (
+              <p
+                role="alert"
+                className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30"
+              >
+                {removeManualError}
+              </p>
+            ) : null}
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  if (removingManual) return
+                  setRemoveManualTarget(null)
+                  setRemoveManualError(null)
+                }}
+                disabled={removingManual}
+                className="flex-1 rounded-lg border border-zinc-700 py-2 text-sm text-zinc-400 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmRemoveManualSource()}
+                disabled={removingManual}
+                className="flex-1 rounded-lg bg-red-500 py-2 text-sm font-semibold text-white transition hover:bg-red-400 disabled:opacity-50"
+              >
+                {removingManual ? 'Removing…' : ADMIN_REMOVE_MANUAL_SOURCE_CONFIRM}
+              </button>
+            </div>
+          </div>
+        </Sheet>
+      ) : null}
+
+      {unlinkTarget ? (
+        <Sheet
+          open
+          onClose={() => setUnlinkTarget(null)}
+          aria-label={adminUnlinkInstitutionSheetTitle(
+            unlinkTarget.institutionName,
+          )}
+        >
+          <header className="mb-4 flex items-baseline justify-between">
+            <h2 className="text-lg font-semibold text-zinc-300">
+              {adminUnlinkInstitutionSheetTitle(unlinkTarget.institutionName)}
+            </h2>
+            <button
+              type="button"
+              onClick={() => setUnlinkTarget(null)}
+              disabled={unlinkingKey !== null}
+              className="rounded p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </header>
+
+          <div className="space-y-4">
+            <p className="text-sm text-zinc-400">
+              {adminUnlinkInstitutionSheetIntro(
+                unlinkTarget.institutionName,
+                unlinkTarget.accounts.length,
+              )}
+            </p>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setUnlinkTarget(null)}
+                disabled={unlinkingKey !== null}
+                className="flex-1 rounded-lg border border-zinc-700 py-2 text-sm text-zinc-400 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmUnlinkInstitution()}
+                disabled={unlinkingKey !== null}
+                className="flex-1 rounded-lg bg-red-500 py-2 text-sm font-semibold text-white transition hover:bg-red-400 disabled:opacity-50"
+              >
+                {unlinkingKey !== null ? 'Unlinking…' : ADMIN_UNLINK_INSTITUTION_CONFIRM}
+              </button>
+            </div>
+          </div>
+        </Sheet>
+      ) : null}
 
       <MembersSection onRosterChanged={loadMembers} />
       <FamilyJoinSection />
