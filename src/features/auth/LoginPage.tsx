@@ -82,7 +82,7 @@ export default function LoginPage() {
   if (auth.status === 'signedIn' && !pendingFreshSignIn) {
     if (auth.memberLoading) {
       return (
-        <div className="flex min-h-svh items-center justify-center bg-black px-4">
+        <div className="flex min-h-svh items-center justify-center bg-black px-4 pb-[calc(10rem+max(0.5rem,env(safe-area-inset-bottom,0px))+var(--keyboard-inset,0px))]">
           <p className="text-sm text-zinc-500">Signing you in…</p>
         </div>
       )
@@ -158,7 +158,7 @@ export default function LoginPage() {
   const isSignUp = mode === 'signUp'
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-black px-4 py-12">
+    <div className="flex min-h-svh flex-col items-center justify-center overflow-y-auto bg-black px-4 pt-[max(2rem,env(safe-area-inset-top,0px))] pb-[calc(10rem+max(0.5rem,env(safe-area-inset-bottom,0px))+var(--keyboard-inset,0px))] sm:py-12">
       <div className="w-full max-w-sm">
         <AuthBrandHeader />
 
