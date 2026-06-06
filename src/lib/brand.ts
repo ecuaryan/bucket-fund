@@ -325,13 +325,8 @@ export function bucketsDeleteBucketSheetTitle(name: string): string {
   return `Delete ${name}?`
 }
 
-export function bucketsDeleteBucketSheetIntro(
-  formattedAmount: string,
-  hasAllocation: boolean,
-): string {
-  return hasAllocation
-    ? `This bucket has ${formattedAmount} in it.`
-    : 'This bucket is empty.'
+export function bucketsDeleteBucketSheetIntro(formattedAmount: string): string {
+  return `This bucket has ${formattedAmount} in it.`
 }
 
 export const BUCKETS_DELETE_BUCKET_WHAT_HAPPENS = 'What happens'

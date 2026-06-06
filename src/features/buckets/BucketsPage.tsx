@@ -330,24 +330,11 @@ export default function BucketsPage() {
     }
   }
 
-  function requestDeleteBucket(b: Bucket) {
-    setActionError(null)
-    setDeleteError(null)
-    setDeleteTarget(b)
-  }
-
-  function closeDeleteConfirm() {
-    if (deletingBucket) return
-    setDeleteTarget(null)
-    setDeleteError(null)
-  }
-
-  async function confirmDeleteBucket() {
-    if (!deleteTarget) return
-    const b = deleteTarget
+  async function performDeleteBucket(
+    b: Bucket,
+    reportError: (message: string) => void,
+  ) {
     const snapshot = buckets
-    setDeletingBucket(true)
-    setDeleteError(null)
     if (renamingId === b.id) setRenamingId(null)
     if (moveBucketId === b.id) setMoveBucketId(null)
     setBuckets((prev) => (prev ? prev.filter((x) => x.id !== b.id) : prev))
@@ -358,11 +345,34 @@ export default function BucketsPage() {
       await loadData()
     } catch (e) {
       setBuckets(snapshot)
-      setDeleteError(e instanceof Error ? e.message : String(e))
+      reportError(e instanceof Error ? e.message : String(e))
     } finally {
       setDeletingBucket(false)
       setSyncing(false)
     }
+  }
+
+  function requestDeleteBucket(b: Bucket) {
+    setActionError(null)
+    if (Number(b.allocated_amount) > 0) {
+      setDeleteError(null)
+      setDeleteTarget(b)
+      return
+    }
+    void performDeleteBucket(b, setActionError)
+  }
+
+  function closeDeleteConfirm() {
+    if (deletingBucket) return
+    setDeleteTarget(null)
+    setDeleteError(null)
+  }
+
+  async function confirmDeleteBucket() {
+    if (!deleteTarget) return
+    setDeletingBucket(true)
+    setDeleteError(null)
+    await performDeleteBucket(deleteTarget, setDeleteError)
   }
 
   async function onCreateBucket(e: FormEvent<HTMLFormElement>) {
@@ -771,7 +781,6 @@ export default function BucketsPage() {
             <p className="text-sm text-zinc-400">
               {bucketsDeleteBucketSheetIntro(
                 formatMoney(Number(deleteTarget.allocated_amount)),
-                Number(deleteTarget.allocated_amount) > 0,
               )}
             </p>
 
@@ -780,13 +789,11 @@ export default function BucketsPage() {
                 {BUCKETS_DELETE_BUCKET_WHAT_HAPPENS}
               </h3>
               <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-zinc-400">
-                {Number(deleteTarget.allocated_amount) > 0 ? (
-                  <li>
-                    {bucketsDeleteBucketEffectUnallocated(
-                      formatMoney(Number(deleteTarget.allocated_amount)),
-                    )}
-                  </li>
-                ) : null}
+                <li>
+                  {bucketsDeleteBucketEffectUnallocated(
+                    formatMoney(Number(deleteTarget.allocated_amount)),
+                  )}
+                </li>
                 <li>{BUCKETS_DELETE_BUCKET_EFFECT_LABEL}</li>
                 <li>{BUCKETS_DELETE_BUCKET_EFFECT_HISTORY}</li>
               </ul>

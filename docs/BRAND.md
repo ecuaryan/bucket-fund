@@ -50,9 +50,11 @@ The payoff:
   assignment dropdowns (`HOUSEHOLD_LABEL`, not “pool” in user copy).
 - Kid-facing copy: **shared balance** or **household admin**, not “parent,”
   unless you mean a specific person.
-- **Confirmations:** use the shared `Sheet` component—never `window.confirm`
-  (unreliable in embedded browsers and inconsistent on mobile). Copy in `brand.ts`;
-  match member-removal / join-code rotation patterns (intro, optional bullets, Cancel + action).
+- **Confirmations:** use the shared `Sheet` for **consequential** actions only—
+  money moves, access loss, irreversible structural changes with real impact.
+  Skip confirm for low-impact, easily reversible flows (e.g. deleting an empty bucket).
+  Never `window.confirm` (unreliable in embedded browsers). Copy in `brand.ts`;
+  match member-removal patterns (intro, bullets, Cancel + action).
 
 ## Display name
 
