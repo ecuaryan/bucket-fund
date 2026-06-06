@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { AuthShell } from '@/components/AuthShell'
+import { FieldLabel } from '@/components/ui/FieldLabel'
 import { supabase } from '@/lib/supabase'
 import { passwordResetRedirectUrl } from '@/lib/passwordReset'
 
@@ -70,7 +71,7 @@ export default function ForgotPasswordPage() {
           data-lpignore="true"
         >
           <label className="block">
-            <span className="block text-sm font-medium text-zinc-300">Email</span>
+            <FieldLabel spacing="tight">Email</FieldLabel>
             <input
               type="email"
               name="email"

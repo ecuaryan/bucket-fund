@@ -7,6 +7,7 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 import { AuthBrandHeader } from '@/components/AuthBrandHeader'
+import { FieldLabel } from '@/components/ui/FieldLabel'
 import { useAuth } from '@/lib/auth'
 import {
   BANK_LINK_READ_ONLY,
@@ -364,7 +365,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="block text-sm font-medium text-zinc-300">{label}</span>
+      <FieldLabel spacing="tight">{label}</FieldLabel>
       <input
         type={type}
         name={name}

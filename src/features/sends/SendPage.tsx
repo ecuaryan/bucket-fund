@@ -28,6 +28,7 @@ import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import { AmountLimitHint } from '@/components/AmountLimitHint'
 import { ClearableInput } from '@/components/ui/ClearableInput'
+import { FieldLabel } from '@/components/ui/FieldLabel'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
@@ -391,7 +392,7 @@ export default function SendPage() {
           className="space-y-4 rounded-2xl bg-zinc-900 p-5 ring-1 ring-zinc-800"
         >
           <label className="block">
-            <span className="text-sm font-medium text-zinc-300">To</span>
+            <FieldLabel spacing="tight">To</FieldLabel>
             <select
               value={toMemberId}
               onChange={(e) => setToMemberId(e.target.value)}
@@ -413,7 +414,7 @@ export default function SendPage() {
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-zinc-300">Amount</span>
+            <FieldLabel spacing="tight">Amount</FieldLabel>
             <ClearableInput
               wrapperClassName="mt-1"
               type="text"
@@ -451,9 +452,9 @@ export default function SendPage() {
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-zinc-300">
-              Note <span className="font-normal text-zinc-500">(optional)</span>
-            </span>
+            <FieldLabel spacing="tight" optional>
+              Note
+            </FieldLabel>
             <ClearableInput
               wrapperClassName="mt-1"
               type="text"

@@ -354,8 +354,7 @@ export const HISTORY_NOTE_SHEET_TITLE_ADD = 'Add note'
 
 export const HISTORY_NOTE_SHEET_TITLE_EDIT = 'Edit note'
 
-/** Matches Move money sheet note field (sentence in uppercase label). */
-export const TRANSACTION_NOTE_FIELD_LABEL = 'Note (optional)'
+export const TRANSACTION_NOTE_FIELD_LABEL = 'Note'
 
 export const TRANSACTION_NOTE_PLACEHOLDER = "What's this for?"
 

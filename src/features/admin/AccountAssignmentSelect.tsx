@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FieldLabel } from '@/components/ui/FieldLabel'
 import { HOUSEHOLD_LABEL } from '@/lib/brand'
 import { assignAccountOwner } from '@/lib/accounts'
 
@@ -50,9 +51,9 @@ export default function AccountAssignmentSelect({
 
   return (
     <label className="flex shrink-0 flex-col items-end gap-0.5">
-      <span className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+      <FieldLabel spacing="tight" compact>
         Assigned to
-      </span>
+      </FieldLabel>
       <select
         value={assignedChildId ?? ''}
         disabled={saving}
