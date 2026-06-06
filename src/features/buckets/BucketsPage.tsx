@@ -16,7 +16,7 @@ import {
   BUCKETS_ADD_SOURCE_MANUAL_ACTION,
   BUCKETS_ADD_SOURCE_TITLE,
   bucketsAddSourceMemberBody,
-  bucketsChildUnallocatedHint,
+  bucketsKidUnallocatedHint,
   BUCKETS_DB_UPDATE_PENDING_BODY,
   bucketsMemberNoBucketsHint,
 } from '@/lib/brand'
@@ -440,7 +440,7 @@ export default function BucketsPage() {
       : cashAccountsCount > 0
         ? `${formatMoney(balanceBreakdown.totalCash)} across ${cashAccountsCount} money source${cashAccountsCount === 1 ? '' : 's'}`
         : isChild
-          ? bucketsChildUnallocatedHint(householdAdminName)
+          ? bucketsKidUnallocatedHint(householdAdminName)
           : null
 
   const breakdownOpts = {

@@ -16,9 +16,9 @@ import {
   ADMIN_PIN_SETUP_CTA_BODY,
   ADMIN_PIN_SETUP_CTA_TITLE,
   APP_FORM_DATA_ATTR,
-  ADMIN_REMOVE_ADULT_EFFECT_LOGIN,
-  ADMIN_REMOVE_CHILD_EFFECT_ACCOUNTS,
-  ADMIN_REMOVE_CHILD_EFFECT_BUCKETS,
+  ADMIN_REMOVE_SHARED_EFFECT_LOGIN,
+  ADMIN_REMOVE_KID_EFFECT_ACCOUNTS,
+  ADMIN_REMOVE_KID_EFFECT_BUCKETS,
   ADMIN_REMOVE_MEMBER_EFFECT_READD,
   ADMIN_REMOVE_MEMBER_EFFECT_SIGN_OUT,
   ADMIN_REMOVE_MEMBER_SHEET_INTRO,
@@ -30,8 +30,8 @@ import {
 } from '@/lib/brand'
 import { bindDeviceForPinSignIn } from '@/lib/familyDevice'
 import {
-  ROLE_OPTION_ADULT,
-  ROLE_OPTION_CHILD,
+  ROLE_OPTION_KID,
+  ROLE_OPTION_SHARED,
   roleLabel,
 } from '@/lib/memberRoles'
 import {
@@ -410,14 +410,14 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
           />
         </label>
         <label className="block sm:w-52">
-          <FieldLabel spacing="tight">Type</FieldLabel>
+          <FieldLabel spacing="tight">Role</FieldLabel>
           <select
             value={newRole}
             onChange={(e) => setNewRole(e.target.value as 'member' | 'child')}
             className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700"
           >
-            <option value="member">{ROLE_OPTION_ADULT}</option>
-            <option value="child">{ROLE_OPTION_CHILD}</option>
+            <option value="member">{ROLE_OPTION_SHARED}</option>
+            <option value="child">{ROLE_OPTION_KID}</option>
           </select>
         </label>
         <button
@@ -554,11 +554,11 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
                 <li>{ADMIN_REMOVE_MEMBER_EFFECT_SIGN_OUT}</li>
                 {removeTarget.role === 'child' ? (
                   <>
-                    <li>{ADMIN_REMOVE_CHILD_EFFECT_BUCKETS}</li>
-                    <li>{ADMIN_REMOVE_CHILD_EFFECT_ACCOUNTS}</li>
+                    <li>{ADMIN_REMOVE_KID_EFFECT_BUCKETS}</li>
+                    <li>{ADMIN_REMOVE_KID_EFFECT_ACCOUNTS}</li>
                   </>
                 ) : (
-                  <li>{ADMIN_REMOVE_ADULT_EFFECT_LOGIN}</li>
+                  <li>{ADMIN_REMOVE_SHARED_EFFECT_LOGIN}</li>
                 )}
                 <li>{ADMIN_REMOVE_MEMBER_EFFECT_READD}</li>
               </ul>

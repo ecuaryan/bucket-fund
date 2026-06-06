@@ -10,7 +10,7 @@ export type ChildMemberOption = {
 
 type AccountAssignmentSelectProps = {
   accountId: string
-  /** null = household (all adults); otherwise a child member id. */
+  /** null = household (shared balance); otherwise a kid member id. */
   assignedChildId: string | null
   children: ChildMemberOption[]
   onAssigned: (ownerMemberId: string | null) => void
@@ -59,7 +59,7 @@ export default function AccountAssignmentSelect({
         disabled={saving}
         onChange={(e) => void onChange(e.target.value)}
         className="max-w-[9rem] rounded-lg border-0 bg-zinc-950 py-1.5 pl-2 pr-7 text-xs text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400 disabled:opacity-50"
-        aria-label={`Assign account to ${HOUSEHOLD_LABEL.toLowerCase()} or child`}
+        aria-label={`Assign account to ${HOUSEHOLD_LABEL.toLowerCase()} or kid`}
       >
         <option value="">{HOUSEHOLD_LABEL}</option>
         {children.map((c) => (

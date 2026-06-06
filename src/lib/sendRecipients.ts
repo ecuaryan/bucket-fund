@@ -13,7 +13,7 @@ export function isLinkedChild(
   return role === 'child' && linkedChildIds.has(memberId)
 }
 
-/** Same rules as SendPage: adults → virtual children only; children → everyone except linked children. */
+/** Same rules as SendPage: shared balance → virtual kids only; kids → everyone except linked kids. */
 export function filterSendRecipients(
   members: SendRecipientMember[],
   callerMemberId: string,
