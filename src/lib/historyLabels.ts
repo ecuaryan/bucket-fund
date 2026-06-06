@@ -10,6 +10,18 @@ export function bucketEndpointLabel(args: {
   return 'Unallocated'
 }
 
+/** Label for one endpoint of a send row in History. */
+export function sendMemberEndpointLabel(args: {
+  snapshotName: string | null | undefined
+  joinedName: string | null | undefined
+  isMe: boolean
+}): string {
+  if (args.isMe) return 'You'
+  if (args.snapshotName) return args.snapshotName
+  if (args.joinedName) return args.joinedName
+  return 'Someone'
+}
+
 /** Who performed a bucket move, for shared-balance History subtitles (admin + Shared). */
 export function historyMoveActorLabel(args: {
   actorMemberId: string | null | undefined

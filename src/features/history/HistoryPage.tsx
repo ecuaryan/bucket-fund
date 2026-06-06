@@ -40,7 +40,11 @@ import {
   type HistoryFilter,
 } from '@/features/history/historyFilters'
 import { fetchHistoryPage, type HistoryTxRow } from '@/features/history/historyQueries'
-import { bucketEndpointLabel, historyBucketMoveSubtitle } from '@/lib/historyLabels'
+import {
+  bucketEndpointLabel,
+  historyBucketMoveSubtitle,
+  sendMemberEndpointLabel,
+} from '@/lib/historyLabels'
 
 type TxRow = HistoryTxRow
 
@@ -466,8 +470,16 @@ function TxItem({
   } else {
     const fromIsMe = row.from_member_id === currentMemberId
     const toIsMe = row.to_member_id === currentMemberId
-    const fromLabel = memberEndpointLabel(row.from_member, fromIsMe)
-    const toLabel = memberEndpointLabel(row.to_member, toIsMe)
+    const fromLabel = sendMemberEndpointLabel({
+      snapshotName: row.from_member_name,
+      joinedName: row.from_member?.name,
+      isMe: fromIsMe,
+    })
+    const toLabel = sendMemberEndpointLabel({
+      snapshotName: row.to_member_name,
+      joinedName: row.to_member?.name,
+      isMe: toIsMe,
+    })
     title = `${fromLabel} → ${toLabel}`
     subtitle = `Send · ${time}`
   }
@@ -616,15 +628,6 @@ function TxItem({
       </Sheet>
     </>
   )
-}
-
-function memberEndpointLabel(
-  joined: { name: string } | null,
-  isMe: boolean,
-): string {
-  if (isMe) return 'You'
-  if (joined?.name) return joined.name
-  return 'Someone'
 }
 
 function groupByDay(
