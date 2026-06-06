@@ -75,7 +75,7 @@ export default function AppShell() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-md flex-1 px-4 pt-6 pb-[calc(6rem+max(0.5rem,env(safe-area-inset-bottom,0px))+var(--keyboard-inset,0px))]">
+      <main className="mx-auto w-full max-w-md flex-1 px-4 pt-6 pb-[calc(10rem+max(0.5rem,env(safe-area-inset-bottom,0px))+var(--keyboard-inset,0px))]">
         <Outlet />
       </main>
 
