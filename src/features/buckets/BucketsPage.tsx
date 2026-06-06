@@ -53,10 +53,11 @@ import {
 import {
   deleteBucket,
   BUCKET_NAME_MAX_LENGTH,
+  humaniseBucketWriteError,
   renameBucket,
   reorderBucket,
   reorderBuckets,
-  validateBucketName,
+  validateBucketNameForList,
 } from '@/lib/buckets'
 import type { Database } from '@/types/database'
 import MoveMoneyDialog from '@/features/buckets/MoveMoneyDialog'
@@ -261,12 +262,16 @@ export default function BucketsPage() {
       setRenamingId(null)
       return
     }
-    const invalid = validateBucketName(next)
+    const previous = buckets?.find((b) => b.id === id)?.name
+    const invalid = validateBucketNameForList(
+      buckets?.map((b) => b.name) ?? [],
+      next,
+      { exceptName: previous },
+    )
     if (invalid) {
       setActionError(invalid)
       return
     }
-    const previous = buckets?.find((b) => b.id === id)?.name
     if (!previous || previous === next) {
       setRenamingId(null)
       return
@@ -380,7 +385,10 @@ export default function BucketsPage() {
     if (!member) return
     const name = newBucketName.trim()
     if (!name) return
-    const invalid = validateBucketName(name)
+    const invalid = validateBucketNameForList(
+      buckets?.map((b) => b.name) ?? [],
+      name,
+    )
     if (invalid) {
       setCreateError(invalid)
       return
@@ -401,7 +409,7 @@ export default function BucketsPage() {
 
     setCreating(false)
     if (error) {
-      setCreateError(error.message)
+      setCreateError(humaniseBucketWriteError(error))
       return
     }
     setBuckets((prev) => (prev ? [...prev, data] : [data]))

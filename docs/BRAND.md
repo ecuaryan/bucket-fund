@@ -108,6 +108,7 @@ limit UI to “checking or savings” only.
 | Admin unlink bank | `adminUnlinkInstitutionSheetTitle()`, `ADMIN_UNLINK_INSTITUTION_CONFIRM` |
 | Admin remove manual source | `adminRemoveManualSourceSheetTitle()`, `ADMIN_REMOVE_MANUAL_SOURCE_*` |
 | Buckets delete bucket | `bucketsDeleteBucketSheetTitle()`, `BUCKETS_DELETE_BUCKET_*` |
+| Buckets duplicate name | `BUCKETS_NAME_DUPLICATE` |
 | Admin email & password reset | `ADMIN_ACCOUNT_*` |
 | Household admin (hints) | `householdAdminLabel()`, `HOUSEHOLD_ADMIN_PHRASE` fallback |
 | Buckets tab: no linked accounts | `bucketsLinkBankMemberBody()` |

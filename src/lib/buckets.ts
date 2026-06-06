@@ -1,7 +1,13 @@
 import { supabase } from '@/lib/supabase'
-import { validateBucketName } from '@/lib/bucketName'
+import { humaniseBucketWriteError, validateBucketName } from '@/lib/bucketName'
 
-export { BUCKET_NAME_MAX_LENGTH, validateBucketName } from '@/lib/bucketName'
+export {
+  BUCKET_NAME_MAX_LENGTH,
+  humaniseBucketWriteError,
+  normalizeBucketName,
+  validateBucketName,
+  validateBucketNameForList,
+} from '@/lib/bucketName'
 
 export type MoveMoneyArgs = {
   fromBucketId: string | null
@@ -48,7 +54,7 @@ export async function renameBucket(
     .from('buckets')
     .update({ name: trimmed })
     .eq('id', bucketId)
-  if (error) throw new Error(error.message)
+  if (error) throw new Error(humaniseBucketWriteError(error))
 }
 
 /**
