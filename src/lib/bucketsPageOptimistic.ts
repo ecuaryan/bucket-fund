@@ -1,4 +1,4 @@
-import type { HomeBalanceBreakdown } from '@/lib/availableBalance'
+import type { BucketsBalanceBreakdown } from '@/lib/availableBalance'
 import type { Database } from '@/types/database'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
@@ -41,14 +41,14 @@ export function renameBucketInList(
   return buckets.map((b) => (b.id === id ? { ...b, name } : b))
 }
 
-/** Mirror move_money conservation for instant Home UI before reload. */
+/** Mirror move_money conservation for instant Buckets tab UI before reload. */
 export function applyBucketMove(
   buckets: Bucket[],
-  breakdown: HomeBalanceBreakdown,
+  breakdown: BucketsBalanceBreakdown,
   fromBucketId: string | null,
   toBucketId: string | null,
   amount: number,
-): { buckets: Bucket[]; breakdown: HomeBalanceBreakdown } {
+): { buckets: Bucket[]; breakdown: BucketsBalanceBreakdown } {
   const nextBuckets = buckets.map((b) => ({ ...b }))
   const adjustBucket = (id: string, delta: number) => {
     const i = nextBuckets.findIndex((b) => b.id === id)

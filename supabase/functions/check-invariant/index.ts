@@ -9,7 +9,7 @@
 //     === sum(current_balance across accounts where family_id = $1)
 //
 // DEFERRED (family beta): see CONTEXT.md § Data Integrity. User-facing
-// rebalancing uses negative unallocated on Home. Before paid SaaS, implement
+// rebalancing uses negative unallocated on Buckets tab. Before paid SaaS, implement
 // operator-side checks here (or in SQL) — logging/alerts, not a duplicate
 // of the red-unallocated UX.
 //

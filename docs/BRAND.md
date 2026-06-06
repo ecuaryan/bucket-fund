@@ -43,7 +43,7 @@ The payoff:
 - DB role `member` → UI **Adult**; `child` → **Child**; `admin` → **Admin**.
   See `src/lib/memberRoles.ts` and Admin strings in `brand.ts`.
 - Say **household admin** (not “your admin”) when a non-admin needs the person
-  who manages Admin. Use **unallocated** on Home/Send; **Household** in Admin
+  who manages Admin. Use **unallocated** in the Buckets tab/Send; **Household** in Admin
   assignment dropdowns (`HOUSEHOLD_LABEL`, not “pool” in user copy).
 - Child-facing copy: **adult**, not “parent,” unless you mean a specific person.
 
@@ -71,7 +71,7 @@ accounts and balances; webhooks refresh balances when activity posts. We do
 **`send_money` and `move_money` are virtual** — labels inside the app only.
 
 User-facing reassurance: `BANK_READ_ONLY_ASSURANCE`, `BANK_LINK_READ_ONLY`,
-`ADMIN_LINKED_ACCOUNTS_INTRO`, `HOME_LINK_BANK_*` in `brand.ts` — read-only;
+`ADMIN_LINKED_ACCOUNTS_INTRO`, `BUCKETS_LINK_BANK_*` in `brand.ts` — read-only;
 we read balances and cannot transfer, send, or withdraw money at the bank.
 Balance freshness uses **Refresh** (on-demand re-pull), not background polling.
 Do not promise “we never see transactions” if we later fetch transaction history;
@@ -96,9 +96,9 @@ limit UI to “checking or savings” only.
 | Admin linked accounts | `ADMIN_LINKED_ACCOUNTS_*` |
 | Admin email & password reset | `ADMIN_ACCOUNT_*` |
 | Household admin (hints) | `householdAdminLabel()`, `HOUSEHOLD_ADMIN_PHRASE` fallback |
-| Home: no linked accounts | `homeLinkBankMemberBody()` |
-| Home: member empty buckets | `homeMemberNoBucketsHint()` |
-| Home: child unallocated hint | `homeChildUnallocatedHint()` |
+| Buckets tab: no linked accounts | `bucketsLinkBankMemberBody()` |
+| Buckets tab: member empty buckets | `bucketsMemberNoBucketsHint()` |
+| Buckets tab: child unallocated hint | `bucketsChildUnallocatedHint()` |
 | History empty state | `HISTORY_EMPTY_*` |
 | PIN sign-in: empty roster | `pinNoMembersYet()` |
 | Admin gate (non-admin) | `adminLinkedAccountsMemberGate()` |

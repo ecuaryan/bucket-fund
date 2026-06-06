@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { HomeBalanceBreakdown } from '@/lib/availableBalance'
+import type { BucketsBalanceBreakdown } from '@/lib/availableBalance'
 import {
   buildUnallocatedLines,
   formatBucketsHeaderSubtitle,
@@ -10,8 +10,8 @@ import {
 const fmt = (n: number) => `$${n.toFixed(2)}`
 
 function adultBreakdown(
-  overrides: Partial<HomeBalanceBreakdown> = {},
-): HomeBalanceBreakdown {
+  overrides: Partial<BucketsBalanceBreakdown> = {},
+): BucketsBalanceBreakdown {
   const totalCash = overrides.totalCash ?? 1000
   const bankCash = overrides.bankCash ?? totalCash
   const manualCash = overrides.manualCash ?? 0

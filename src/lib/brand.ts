@@ -278,32 +278,32 @@ export const ADMIN_REMOVE_ADULT_EFFECT_LOGIN =
 export const NAV_BUCKETS_LABEL = 'Buckets'
 
 /** Screen-reader label for the reorder grip popover (visual uses the grip icon). */
-export const HOME_BUCKET_REORDER_POPOVER_LABEL =
+export const BUCKETS_REORDER_POPOVER_LABEL =
   'Press and hold the reorder grip, then drag'
 
-export function homeChildUnallocatedHint(
+export function bucketsChildUnallocatedHint(
   adminName: string | null | undefined,
 ): string {
   return `When an adult sends you money, move it into buckets—or ask ${householdAdminLabel(adminName)} to link your bank account.`
 }
 
-export const HOME_LINK_BANK_TITLE = 'Link a bank account'
+export const BUCKETS_LINK_BANK_TITLE = 'Link a bank account'
 
-export const HOME_LINK_BANK_ADMIN_BODY =
+export const BUCKETS_LINK_BANK_ADMIN_BODY =
   `Connect banks in Admin. To change which accounts you share at a bank, Unlink it and link again. Read-only—${BANK_READ_ONLY_ASSURANCE}.`
 
-export const HOME_LINK_BANK_ADMIN_ACTION = 'Link in Admin'
+export const BUCKETS_LINK_BANK_ADMIN_ACTION = 'Link in Admin'
 
-export const HOME_ADD_SOURCE_TITLE = 'Start organizing your money'
+export const BUCKETS_ADD_SOURCE_TITLE = 'Start organizing your money'
 
-export const HOME_ADD_SOURCE_ADMIN_BODY =
+export const BUCKETS_ADD_SOURCE_ADMIN_BODY =
   'Not ready to link a bank? Add a money source with the amount you want to organize—your real balance, a rough estimate, or any number to try it out. No bank connection required, and you can link one anytime.'
 
-export const HOME_ADD_SOURCE_MANUAL_ACTION = 'Add a money source'
+export const BUCKETS_ADD_SOURCE_MANUAL_ACTION = 'Add a money source'
 
-export const HOME_ADD_SOURCE_LINK_ACTION = 'Or link a bank'
+export const BUCKETS_ADD_SOURCE_LINK_ACTION = 'Or link a bank'
 
-export function homeAddSourceMemberBody(
+export function bucketsAddSourceMemberBody(
   adminName: string | null | undefined,
 ): string {
   return `Ask ${householdAdminLabel(adminName)} to add a money source—a linked bank or just an amount—so Buckets can show balances.`
@@ -339,7 +339,7 @@ export const SEND_ADD_SOURCE_TITLE = 'Add a money source first'
 export const SEND_ADD_SOURCE_ADMIN_BODY =
   'Send uses cash from the household balance in Buckets. Add a money source in Admin—a linked bank or just an amount—so we know how much you can send.'
 
-export function homeLinkBankMemberBody(
+export function bucketsLinkBankMemberBody(
   adminName: string | null | undefined,
 ): string {
   return `No bank accounts are linked yet. Ask ${householdAdminLabel(adminName)} to connect a bank account so balances stay in sync with your buckets.`
@@ -351,7 +351,7 @@ export function sendLinkBankMemberBody(
   return `No bank accounts are linked yet. Ask ${householdAdminLabel(adminName)} to connect one before you can send.`
 }
 
-export function homeMemberNoBucketsHint(
+export function bucketsMemberNoBucketsHint(
   adminName: string | null | undefined,
 ): string {
   return `Ask ${householdAdminLabel(adminName)} to add buckets.`
@@ -379,7 +379,7 @@ export const SEND_LINKED_KIDS_EXCLUDED_HINT =
 export const SEND_DB_NOT_READY_BODY =
   'Send is temporarily unavailable while the server finishes updating. Try again in a few minutes, then refresh.'
 
-export const HOME_DB_UPDATE_PENDING_BODY =
+export const BUCKETS_DB_UPDATE_PENDING_BODY =
   'Balance is estimated from linked accounts only. The server is still updating — try again in a few minutes.'
 
 // --- History ---

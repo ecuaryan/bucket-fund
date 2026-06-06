@@ -184,7 +184,7 @@ export async function getAvailableBalance(client: Db): Promise<number> {
   return Number(data)
 }
 
-/** Service role — same formula as Home / send_money. */
+/** Service role — same formula as Buckets tab / send_money. */
 export async function memberBalance(svc: Db, memberId: string): Promise<number> {
   const { data, error } = await svc.rpc('member_available_balance', {
     p_member_id: memberId,

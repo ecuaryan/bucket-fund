@@ -1,5 +1,5 @@
-/** Placeholder layout while Home data loads (matches Home structure). */
-export default function HomePageSkeleton() {
+/** Placeholder layout while Buckets tab data loads (matches Buckets tab structure). */
+export default function BucketsPageSkeleton() {
   return (
     <div className="animate-pulse space-y-6" aria-busy="true" aria-label="Loading home">
       <div className="rounded-2xl bg-zinc-900 px-4 py-5 ring-1 ring-zinc-800">

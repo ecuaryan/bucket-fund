@@ -1,33 +1,33 @@
-import type { HomeBalanceBreakdown } from '@/lib/availableBalance'
+import type { BucketsBalanceBreakdown } from '@/lib/availableBalance'
 import type { Database } from '@/types/database'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
 
-export type HomePageCache = {
+export type BucketsPageCache = {
   buckets: Bucket[]
   accounts: Account[]
-  breakdown: HomeBalanceBreakdown
+  breakdown: BucketsBalanceBreakdown
   balanceUsesFallback: boolean
   householdAdminName: string | null
   savedAt: number
 }
 
-const CACHE_PREFIX = 'bucketmymoney:home:'
+const CACHE_PREFIX = 'bucketmymoney:buckets:'
 const MAX_AGE_MS = 5 * 60 * 1000
 
 function cacheKey(familyId: string, memberId: string): string {
   return `${CACHE_PREFIX}${familyId}:${memberId}`
 }
 
-export function readHomeCache(
+export function readBucketsPageCache(
   familyId: string,
   memberId: string,
-): HomePageCache | null {
+): BucketsPageCache | null {
   try {
     const raw = sessionStorage.getItem(cacheKey(familyId, memberId))
     if (!raw) return null
-    const parsed = JSON.parse(raw) as HomePageCache
+    const parsed = JSON.parse(raw) as BucketsPageCache
     if (Date.now() - parsed.savedAt > MAX_AGE_MS) {
       sessionStorage.removeItem(cacheKey(familyId, memberId))
       return null
@@ -41,20 +41,20 @@ export function readHomeCache(
   }
 }
 
-export function writeHomeCache(
+export function writeBucketsPageCache(
   familyId: string,
   memberId: string,
-  data: Omit<HomePageCache, 'savedAt'>,
+  data: Omit<BucketsPageCache, 'savedAt'>,
 ): void {
   try {
-    const payload: HomePageCache = { ...data, savedAt: Date.now() }
+    const payload: BucketsPageCache = { ...data, savedAt: Date.now() }
     sessionStorage.setItem(cacheKey(familyId, memberId), JSON.stringify(payload))
   } catch {
     // Quota or private mode — ignore.
   }
 }
 
-export function clearAllHomeCaches(): void {
+export function clearAllBucketsPageCaches(): void {
   try {
     const keys: string[] = []
     for (let i = 0; i < sessionStorage.length; i++) {

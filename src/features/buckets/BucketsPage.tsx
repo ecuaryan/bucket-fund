@@ -11,37 +11,37 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import {
-  HOME_ADD_SOURCE_ADMIN_BODY,
-  HOME_ADD_SOURCE_LINK_ACTION,
-  HOME_ADD_SOURCE_MANUAL_ACTION,
-  HOME_ADD_SOURCE_TITLE,
-  homeAddSourceMemberBody,
-  homeChildUnallocatedHint,
-  HOME_DB_UPDATE_PENDING_BODY,
-  homeMemberNoBucketsHint,
+  BUCKETS_ADD_SOURCE_ADMIN_BODY,
+  BUCKETS_ADD_SOURCE_LINK_ACTION,
+  BUCKETS_ADD_SOURCE_MANUAL_ACTION,
+  BUCKETS_ADD_SOURCE_TITLE,
+  bucketsAddSourceMemberBody,
+  bucketsChildUnallocatedHint,
+  BUCKETS_DB_UPDATE_PENDING_BODY,
+  bucketsMemberNoBucketsHint,
 } from '@/lib/brand'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import { isCashAccount } from '@/lib/accounts'
-import HomePageSkeleton from '@/components/HomePageSkeleton'
+import BucketsPageSkeleton from '@/components/BucketsPageSkeleton'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import { ClearableInput } from '@/components/ui/ClearableInput'
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
 import {
   childTotalBalance,
-  type HomeBalanceBreakdown,
+  type BucketsBalanceBreakdown,
 } from '@/lib/availableBalance'
 import {
   isAppBackgroundExpired,
   isSessionGateActive,
 } from '@/lib/backgroundSignOut'
-import { readHomeCache, writeHomeCache } from '@/lib/homeCache'
+import { readBucketsPageCache, writeBucketsPageCache } from '@/lib/bucketsPageCache'
 import { formatRelativeTime } from '@/lib/relativeTime'
-import { loadHomePage } from '@/lib/homePage'
+import { loadBucketsPage } from '@/lib/bucketsPageLoad'
 import {
   renameBucketInList,
   reorderBucketList,
   swapBucketOrder,
-} from '@/lib/homeOptimistic'
+} from '@/lib/bucketsPageOptimistic'
 import {
   deleteBucket,
   BUCKET_NAME_MAX_LENGTH,
@@ -72,14 +72,14 @@ import {
 type Bucket = Database['public']['Tables']['buckets']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
 
-export default function HomePage() {
+export default function BucketsPage() {
   const { formatMoney } = useHideAmounts()
   const auth = useAuth()
   const navigate = useNavigate()
   const [buckets, setBuckets] = useState<Bucket[] | null>(null)
   const [accounts, setAccounts] = useState<Account[] | null>(null)
   const [balanceBreakdown, setBalanceBreakdown] =
-    useState<HomeBalanceBreakdown | null>(null)
+    useState<BucketsBalanceBreakdown | null>(null)
   const [balanceUsesFallback, setBalanceUsesFallback] = useState(false)
   const [householdAdminName, setHouseholdAdminName] = useState<string | null>(
     null,
@@ -126,14 +126,14 @@ export default function HomePage() {
     setLoadError(null)
 
     try {
-      const data = await loadHomePage()
+      const data = await loadBucketsPage()
       if (generation !== loadGeneration.current) return
       setBuckets(data.buckets)
       setAccounts(data.accounts)
       setBalanceBreakdown(data.breakdown)
       setBalanceUsesFallback(data.usedFallback)
       setHouseholdAdminName(data.householdAdminName)
-      writeHomeCache(familyId, memberId, {
+      writeBucketsPageCache(familyId, memberId, {
         buckets: data.buckets,
         accounts: data.accounts,
         breakdown: data.breakdown,
@@ -180,7 +180,7 @@ export default function HomePage() {
     }
     if (isAppBackgroundExpired() || isSessionGateActive()) return
 
-    const cached = readHomeCache(familyId, memberId)
+    const cached = readBucketsPageCache(familyId, memberId)
     if (cached) {
       setBuckets(cached.buckets)
       setAccounts(cached.accounts)
@@ -394,7 +394,7 @@ export default function HomePage() {
     accounts === null ||
     balanceBreakdown === null
   ) {
-    return <HomePageSkeleton />
+    return <BucketsPageSkeleton />
   }
 
   // Server-side family pool (admin/member share one number). See migration 16.
@@ -440,7 +440,7 @@ export default function HomePage() {
       : cashAccountsCount > 0
         ? `${formatMoney(balanceBreakdown.totalCash)} across ${cashAccountsCount} money source${cashAccountsCount === 1 ? '' : 's'}`
         : isChild
-          ? homeChildUnallocatedHint(householdAdminName)
+          ? bucketsChildUnallocatedHint(householdAdminName)
           : null
 
   const breakdownOpts = {
@@ -492,7 +492,7 @@ export default function HomePage() {
         <div className="space-y-6">
       {balanceUsesFallback && (
         <p className="rounded-2xl bg-amber-500/10 px-4 py-3 text-sm text-amber-200 ring-1 ring-amber-500/30">
-          {HOME_DB_UPDATE_PENDING_BODY}
+          {BUCKETS_DB_UPDATE_PENDING_BODY}
         </p>
       )}
       {showAddSourceCard ? (
@@ -504,12 +504,12 @@ export default function HomePage() {
             Getting started
           </p>
           <h2 className="mt-1 text-lg font-semibold text-emerald-100">
-            {HOME_ADD_SOURCE_TITLE}
+            {BUCKETS_ADD_SOURCE_TITLE}
           </h2>
           <p className="mt-2 text-sm text-emerald-200/80">
             {isAdmin
-              ? HOME_ADD_SOURCE_ADMIN_BODY
-              : homeAddSourceMemberBody(householdAdminName)}
+              ? BUCKETS_ADD_SOURCE_ADMIN_BODY
+              : bucketsAddSourceMemberBody(householdAdminName)}
           </p>
           {balanceBreakdown.bucketAllocated > 0 ? (
             <p className="mt-2 text-xs text-emerald-200/60">
@@ -524,13 +524,13 @@ export default function HomePage() {
                 onClick={() => setManualSourceOpen(true)}
                 className="inline-flex rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
               >
-                {HOME_ADD_SOURCE_MANUAL_ACTION}
+                {BUCKETS_ADD_SOURCE_MANUAL_ACTION}
               </button>
               <Link
                 to="/admin"
                 className="inline-flex rounded-lg border border-emerald-500/40 px-4 py-2 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-500/10"
               >
-                {HOME_ADD_SOURCE_LINK_ACTION}
+                {BUCKETS_ADD_SOURCE_LINK_ACTION}
               </Link>
             </div>
           ) : null}
@@ -651,7 +651,7 @@ export default function HomePage() {
             <p className="mt-1 text-xs text-zinc-400">
               {canCreateBuckets
                 ? 'Create your first bucket below.'
-                : homeMemberNoBucketsHint(householdAdminName)}
+                : bucketsMemberNoBucketsHint(householdAdminName)}
             </p>
           </div>
         ) : (

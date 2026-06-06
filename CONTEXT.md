@@ -24,7 +24,7 @@ The primary use case is: **open app → move money from one bucket to another �
 
 **Now:** The builder’s family is the first user group — real daily use, discover
 issues in the wild, iterate on UX and sync. Integrity for budgeting gaps is
-**red negative unallocated** on Home (bank cash moved; bucket labels did not —
+**red negative unallocated** in the Buckets tab (bank cash moved; bucket labels did not —
 rebalance by moving money between buckets and unallocated).
 
 **Later (if this becomes a paid product):** Harden operator-side ledger checks
@@ -50,13 +50,13 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 - Manages family members (add/remove spouse or kids, assign roles, set PINs) and assigns linked accounts to children
 - Funds children via Send; sees all family sends and shared-pool history
 - Views family-level transaction history
-- Sees the same Home signals as members (e.g. red unallocated when the pool is over-allocated)
+- Sees the same Buckets tab signals as members (e.g. red unallocated when the pool is over-allocated)
 - **Admin screen:** join code, household members, linked accounts, and **admin sign-in** (email display + password reset via email link — admin-only)
 
 **Member** (e.g. spouse)
 - Operational access only
 - Moves money between buckets
-- Shares one **family unallocated** number with admin on Home (same pool)
+- Shares one **family unallocated** number with admin in the Buckets tab (same pool)
 - Funds children via Send; sees all family sends and shared-pool history
 - Cannot send to admin (adults share money — use buckets for shared goals)
 - Cannot link/unlink accounts or create/delete buckets
@@ -65,7 +65,7 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 **Child**
 - Scoped entirely to their own buckets and balance
 - Cannot see family pool buckets or balances
-- Can create and manage (rename, delete, reorder) **their own** buckets — adults never see these on Home
+- Can create and manage (rename, delete, reorder) **their own** buckets — adults never see these in the Buckets tab
 - Sends to adults (returns money to the shared pool) or other children; sees
   only sends they participate in
 
@@ -85,14 +85,14 @@ Bank-native bucketing (e.g. Ally buckets) is bank-locked. Switching banks means 
 - Do not use **Link bank** for a bank already linked (Admin warns; UI groups by institution).
 - **New links** default to the **family pool** (`accounts.owner_member_id` null). The admin may
   assign an account to a **child** only (many accounts can belong to one child). Adults
-  (admin and member) share the family pool on Home — assigning to a spouse is not in v1 UI.
+  (admin and member) share the family pool in the Buckets tab — assigning to a spouse is not in v1 UI.
 - Children may have zero, one, or multiple linked checking/savings accounts (multiple supported).
 - **Two child money models (do not mix on one kid):**
   - **Virtual-only** (no linked account): balance = net sends − bucket allocations. Card-less kids live here — spending is logged via **Send** (e.g. child → adult when a parent fronts a purchase). Birthday/earnings: kid hands cash to a parent; parent credits them with an **adult → child send**. Back every credit with real cash (deposit to a linked account or bump a **manual money source**) so adult unallocated does not drift red.
   - **Linked** (Teller account assigned to the child): balance = linked bank cash − bucket allocations. Debit-card spending auto-reflects via Teller. Money in/out happens at the **real bank** (transfers, allowance deposits) — **no virtual sends in or out** for that child (`send_money` blocks both directions; Send UI omits linked children and shows an explanation card for linked kids).
 - Virtual siblings can still send to each other; linked ↔ anyone requires a real bank transfer.
 - The family as a whole must have at least one money source (linked bank or manual amount)
-- **Manual money sources:** admin-only, family-pool only (`owner_member_id` null), user-edited amounts (no auto-refresh). Coexist with linked banks; Home breakdown shows linked cash and manual cash separately when both are present.
+- **Manual money sources:** admin-only, family-pool only (`owner_member_id` null), user-edited amounts (no auto-refresh). Coexist with linked banks; Buckets breakdown shows linked cash and manual cash separately when both are present.
 - Re-linking the same bank account (even when Teller issues a new `acc_…` id) preserves
   the prior child assignment and updates one row matched by institution + last four + type
 - Real balances are kept in sync via Teller webhooks (`transactions.processed` triggers a
@@ -117,12 +117,12 @@ do not (e.g. a credit card payment clears), unallocated goes **negative and red*
 — that is the intended “something needs rebalancing” signal, not a separate
 system-error banner.
 
-**Admin and member (shared family pool on Home):**
-- **Unallocated** on Home is one number for both: family cash minus
+**Admin and member (shared family pool in the Buckets tab):**
+- **Unallocated** in the Buckets tab is one number for both: family cash minus
   adult-visible bucket allocations minus each child's total funded balance
   (their linked cash plus net sends). How a child splits that between their
   own buckets and their own unallocated does not change the adult number.
-- **Home breakdown (admin + member):** one card shows the math — linked cash,
+- **Buckets breakdown (admin + member):** one card shows the math — linked cash,
   allocated to buckets, then one line per child with funds (not a single wrapped total).
 - Adult-to-adult sends are not allowed — they would not move the pool anyway.
 - Unallocated ≥ 0 → green; negative → red — move money from bucket(s) into unallocated until the pool matches your intent (every spend should come from somewhere).
@@ -130,11 +130,11 @@ system-error banner.
 **Child:**
 - Unallocated = their cash accounts + net sends − their bucket allocations
 - Virtual-only children (no linked accounts) are funded entirely by sends from adults
-- **Home / Send breakdown:** total balance (linked cash + net sends), in your buckets,
+- **Buckets / Send breakdown:** total balance (linked cash + net sends), in your buckets,
   then unallocated — without exposing other members’ balances
 
 **Members with their own linked accounts (future / optional):**
-- Per-person Teller balances may exist in the schema; Home still presents the
+- Per-person Teller balances may exist in the schema; Buckets still presents the
   shared adult pool for admin/member roles. See `member_available_balance` in SQL.
 
 **When a bank transaction hits via Teller webhook:**
@@ -149,7 +149,7 @@ system-error banner.
 - Named allocations against a member's or family pool's balance
 - **Admin** creates and manages family-pool and adult-owned buckets
 - **Member** moves money and reorders buckets (no create/delete of bucket structure)
-- **Child** creates and manages only their own buckets (hidden from adult Home); moves
+- **Child** creates and manages only their own buckets (hidden from the adult Buckets tab); moves
   money between their unallocated balance and their own buckets only
 - See [README.md § Implementation status](./README.md) for what is shipped on `main`
 - No targets — just current allocated amounts
@@ -197,12 +197,12 @@ system-error banner.
 
 ---
 
-### Home Screen
+### Buckets tab
 - Bucket list with allocated amounts per bucket (adults: shared set, per-person sort order)
 - **Unallocated card** when at least one money source exists: green if ≥ 0, red if < 0
   (red = rebalance signal — cash dropped but bucket labels did not)
 - **No money sources (admin/member):** “Add a money source” CTA instead of the unallocated card —
-  admin can enter an amount manually from Home or link a bank in Admin; members are
+  admin can enter an amount manually from the Buckets tab or link a bank in Admin; members are
   told to ask the household admin. Optional note of total allocated across buckets.
 - No separate "real balance" display — unallocated (when sources exist) is the signal
 
@@ -213,14 +213,14 @@ system-error banner.
 Two different situations — do not conflate them in UX or docs.
 
 **1. Budgeting gap (normal, user-facing)**  
-Bank or manual pool balance changed; bucket labels did not. Home shows negative unallocated
+Bank or manual pool balance changed; bucket labels did not. Buckets shows negative unallocated
 (when money sources exist). The user fixes it with bucket moves. No extra
-“integrity” modal. With no money sources, Home shows the add-a-money-source CTA instead.
+“integrity” modal. With no money sources, Buckets shows the add-a-money-source CTA instead.
 
 **2. System ledger gap (abnormal, operator-facing)**  
 Stored cash, allocations, and per-member math no longer form one consistent
 ledger (bug, migration mistake, bypass of `move_money` / `send_money`). Rare
-when all writes go through RPCs and Home uses one SQL definition. **Deferred**
+when all writes go through RPCs and Buckets uses one SQL definition. **Deferred**
 for family beta; revisit before charging strangers — automated check + operator
 alert (see `check-invariant` stub), not a duplicate of red unallocated.
 
@@ -296,7 +296,7 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
   force-quitting or reopening the PWA after the process ends requires sign-in again (tab
   reload keeps the session). Legacy `localStorage` tokens are migrated only on reload, not on
   navigate.
-- **Home bucket visibility:** admin and member see family-pool + adult-owned buckets
+- **Buckets tab bucket visibility:** admin and member see family-pool + adult-owned buckets
   only (not children's buckets). Each adult orders that list independently via
   `member_bucket_order`. Children see only their own buckets.
 - **Deferred:** optional member email, WebAuthn fast path, children-first polish.
@@ -316,7 +316,7 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
 
 **TODO:** Teller can return **credit** accounts as well as cash (checking,
 savings, etc.). Today we **only count cash subtypes** toward real balance and
-unallocated (`src/lib/accounts.ts` — credit cards are ignored on Home; they
+unallocated (`src/lib/accounts.ts` — credit cards are ignored in the Buckets tab; they
 may still be stored in `accounts` if enrolled). Decide later:
 
 - **Exclude entirely** — do not persist or display credit/loan accounts at
@@ -475,7 +475,7 @@ bucket-my-money/
 │   │   └── layout/         # Shell, nav, header (AppShell)
 │   ├── features/
 │   │   ├── auth/           # Login (email/password today; PIN + biometric planned)
-│   │   ├── buckets/        # Home (/), bucket list, move flow, CRUD
+│   │   ├── buckets/        # Buckets tab (/) — route `/`, bucket list, move flow, CRUD
 │   │   ├── sends/          # Send money flow (SendPage + send_money RPC)
 │   │   ├── history/        # Transaction history
 │   │   └── admin/          # Join code, members, linked accounts, admin sign-in account
@@ -517,12 +517,12 @@ bucket-my-money/
 
 ### 4-tap bucket move flow
 The primary use case must be frictionless:
-1. Home screen → tap bucket to move from
+1. Buckets tab → tap bucket to move from
 2. Enter amount
 3. Tap destination bucket
 4. Confirm → done
 
-Implemented in `src/features/buckets/HomePage.tsx` and
+Implemented in `src/features/buckets/BucketsPage.tsx` and
 `MoveMoneyDialog.tsx` via the `move_money()` Postgres function.
 
 ### Child PIN login
@@ -539,13 +539,13 @@ Implemented in `src/features/buckets/HomePage.tsx` and
 ### Teller webhook Edge Function
 - Verify Teller webhook signature
 - On `transactions.processed`, fetch live balances for affected accounts and update
-  `accounts.current_balance` (unallocated on Home updates on next load / Realtime)
+  `accounts.current_balance` (unallocated in the Buckets tab updates on next load / Realtime)
 - On `enrollment.disconnected`, mark the enrollment inactive
 
 ### Supabase Realtime
 - Subscribe to balance and transaction changes scoped to the authenticated member's family
 - UI updates instantly when any family member makes a move or a Teller sync fires
-- Wired on Home (buckets + accounts) and History (transactions INSERT). Requires
+- Wired in the Buckets tab (buckets + accounts) and History (transactions INSERT). Requires
   tables in the `supabase_realtime` publication and `replica identity full`
   on RLS-protected tables (migrations 00000000000006–07).
 

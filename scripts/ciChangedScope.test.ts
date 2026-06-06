@@ -9,7 +9,7 @@ describe('classifyChangedFiles', () => {
   it('skips db but runs e2e for pure UI changes', () => {
     expect(
       classifyChangedFiles([
-        'src/features/buckets/HomePage.tsx',
+        'src/features/buckets/BucketsPage.tsx',
         'src/components/ui/Sheet.tsx',
       ]),
     ).toEqual({ runDb: false, runE2e: true })
@@ -52,7 +52,7 @@ describe('classifyChangedFiles', () => {
 
   it('runs e2e when UI and docs are mixed', () => {
     expect(
-      classifyChangedFiles(['src/features/buckets/HomePage.tsx', 'README.md']),
+      classifyChangedFiles(['src/features/buckets/BucketsPage.tsx', 'README.md']),
     ).toEqual({ runDb: false, runE2e: true })
   })
 

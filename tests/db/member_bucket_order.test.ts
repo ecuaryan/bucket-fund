@@ -8,7 +8,7 @@ import {
   type Db,
 } from './fixtures'
 
-async function bucketIdsFromHome(client: Db): Promise<string[]> {
+async function bucketIdsFromBucketsPage(client: Db): Promise<string[]> {
   const { data, error } = await client.rpc('get_home_page_data')
   expect(error).toBeNull()
   const row = data as Record<string, unknown>
@@ -25,7 +25,7 @@ describe('reorder_buckets RPC', () => {
     const c = await insertBucket(svc, family.familyId, 'C', null)
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    const before = await bucketIdsFromHome(admin)
+    const before = await bucketIdsFromBucketsPage(admin)
     expect(before).toEqual([a, b, c])
 
     const { error } = await admin.rpc('reorder_buckets', {
@@ -33,7 +33,7 @@ describe('reorder_buckets RPC', () => {
     })
     expect(error).toBeNull()
 
-    const after = await bucketIdsFromHome(admin)
+    const after = await bucketIdsFromBucketsPage(admin)
     expect(after).toEqual([c, a, b])
   })
 
@@ -48,14 +48,14 @@ describe('reorder_buckets RPC', () => {
     const admin = await userClient(family.adminEmail, family.adminPassword)
     const spouse = await userClient(member.email, member.password)
 
-    expect(await bucketIdsFromHome(spouse)).toEqual([a, b, c])
+    expect(await bucketIdsFromBucketsPage(spouse)).toEqual([a, b, c])
 
     const { error } = await admin.rpc('reorder_buckets', {
       p_ordered_bucket_ids: [b, c, a],
     })
     expect(error).toBeNull()
-    expect(await bucketIdsFromHome(admin)).toEqual([b, c, a])
-    expect(await bucketIdsFromHome(spouse)).toEqual([a, b, c])
+    expect(await bucketIdsFromBucketsPage(admin)).toEqual([b, c, a])
+    expect(await bucketIdsFromBucketsPage(spouse)).toEqual([a, b, c])
   })
 
   it('lets a child reorder own buckets', async () => {
@@ -66,13 +66,13 @@ describe('reorder_buckets RPC', () => {
     const y = await insertBucket(svc, family.familyId, 'Y', child.memberId)
 
     const childClient = await userClient(child.email, child.password)
-    expect(await bucketIdsFromHome(childClient)).toEqual([x, y])
+    expect(await bucketIdsFromBucketsPage(childClient)).toEqual([x, y])
 
     const { error } = await childClient.rpc('reorder_buckets', {
       p_ordered_bucket_ids: [y, x],
     })
     expect(error).toBeNull()
-    expect(await bucketIdsFromHome(childClient)).toEqual([y, x])
+    expect(await bucketIdsFromBucketsPage(childClient)).toEqual([y, x])
   })
 
   it('rejects child reorder including a family-pool bucket', async () => {
@@ -87,7 +87,7 @@ describe('reorder_buckets RPC', () => {
       p_ordered_bucket_ids: [own, pool],
     })
     expect(error).not.toBeNull()
-    expect(await bucketIdsFromHome(childClient)).toEqual([own])
+    expect(await bucketIdsFromBucketsPage(childClient)).toEqual([own])
   })
 
   it('rejects unknown or partial bucket id lists', async () => {
@@ -106,6 +106,6 @@ describe('reorder_buckets RPC', () => {
       p_ordered_bucket_ids: [a, '00000000-0000-4000-8000-000000000099'],
     })
     expect(unknown).not.toBeNull()
-    expect(await bucketIdsFromHome(admin)).toEqual([a, b])
+    expect(await bucketIdsFromBucketsPage(admin)).toEqual([a, b])
   })
 })
