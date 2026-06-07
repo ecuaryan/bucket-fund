@@ -75,7 +75,7 @@ function TwoSidedTransfer({
   return (
     <div className={ENTITY_TRANSFER_GRID}>
       <EntityColumn side={left} formatMoney={formatMoney} align="left" />
-      <div className="relative z-10 flex shrink-0 justify-center px-0.5">
+      <div className="flex shrink-0 justify-center px-0.5">
         <HistoryTransferAmountArrow
           amount={amount}
           formatMoney={formatMoney}
