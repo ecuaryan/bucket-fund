@@ -203,7 +203,7 @@ export function transferAmountAccentClass(accent: TransferAmountAccent): string 
 
 /** Rose when balance fell, emerald when it rose. */
 export function balanceTrailArrowClass(delta: number): string {
-  if (delta < 0) return 'text-rose-400/75'
-  if (delta > 0) return 'text-emerald-400/85'
+  if (delta < 0) return 'text-rose-400'
+  if (delta > 0) return 'text-emerald-400'
   return 'text-zinc-500'
 }
