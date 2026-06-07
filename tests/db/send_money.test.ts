@@ -42,7 +42,7 @@ describe('send_money RPC', () => {
     const { data: tx, error } = await svc
       .from('transactions')
       .select(
-        'type, amount, from_member_id, to_member_id, from_member_name, to_member_name, note',
+        'type, amount, from_member_id, to_member_id, from_member_name, to_member_name, to_member_balance_before, to_member_balance_after, unallocated_balance_before, unallocated_balance_after, note',
       )
       .eq('id', txId)
       .single()
@@ -56,6 +56,10 @@ describe('send_money RPC', () => {
       note: 'allowance',
     })
     expect(tx?.from_member_name).toBeTruthy()
+    expect(Number(tx?.to_member_balance_before)).toBe(0)
+    expect(Number(tx?.to_member_balance_after)).toBe(75)
+    expect(Number(tx?.unallocated_balance_before)).toBe(200)
+    expect(Number(tx?.unallocated_balance_after)).toBe(125)
   })
 
   it('keeps snapshotted names after recipient is removed', async () => {

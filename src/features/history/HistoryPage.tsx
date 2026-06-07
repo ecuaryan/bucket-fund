@@ -47,8 +47,11 @@ import { fetchHistoryPage, type HistoryTxRow } from '@/features/history/historyQ
 import {
   bucketEndpointLabel,
   historyBucketMoveSubtitle,
+  historySendSubtitle,
   sendMemberEndpointLabel,
 } from '@/lib/historyLabels'
+import { HistoryEntityTransfer } from '@/features/history/HistoryEntityTransfer'
+import { historyBalanceSides } from '@/lib/historyBalanceSides'
 
 type TxRow = HistoryTxRow
 
@@ -297,9 +300,12 @@ export default function HistoryPage() {
               <h2 className="mb-2 px-1 text-xs font-medium uppercase tracking-wide text-zinc-500">
                 {group.label}
               </h2>
-              <ul className="divide-y divide-zinc-800 rounded-2xl bg-zinc-900 ring-1 ring-zinc-800">
+              <ul className="flex flex-col gap-2">
                 {group.rows.map((row) => (
-                  <li key={row.id} className="px-3 py-3">
+                  <li
+                    key={row.id}
+                    className="rounded-2xl bg-zinc-900 px-3 py-3 ring-1 ring-zinc-800"
+                  >
                     <TxItem
                       row={row}
                       currentMemberId={member.id}
@@ -461,49 +467,70 @@ function TxItem({
   const [draftNote, setDraftNote] = useState('')
   const [savingNote, setSavingNote] = useState(false)
   const [noteError, setNoteError] = useState<string | null>(null)
-  const amount = formatMoney(Number(row.amount))
   const time = timeFormatter.format(new Date(row.created_at))
-  const showMoveActor =
-    viewerRole === 'admin' || viewerRole === 'member'
+  const showActor = viewerRole === 'admin' || viewerRole === 'member'
 
   let title: string
   let subtitle: string
+  let fromLabel: string
+  let toLabel: string
+  let actorMemberId: string | null
+  let actorName: string | null | undefined
 
   if (row.type === 'bucket_move') {
-    const fromLabel = bucketEndpointLabel({
+    fromLabel = bucketEndpointLabel({
       bucketId: row.from_bucket_id,
       snapshotName: row.from_bucket_name,
       joinedName: row.from_bucket?.name,
     })
-    const toLabel = bucketEndpointLabel({
+    toLabel = bucketEndpointLabel({
       bucketId: row.to_bucket_id,
       snapshotName: row.to_bucket_name,
       joinedName: row.to_bucket?.name,
     })
     title = `${fromLabel} → ${toLabel}`
+    actorMemberId = row.from_member_id
+    actorName = row.from_member?.name
     subtitle = historyBucketMoveSubtitle({
       time,
-      actorMemberId: row.from_member_id,
-      actorName: row.from_member?.name,
+      actorMemberId,
+      actorName,
       currentMemberId,
-      showActor: showMoveActor,
+      showActor,
     })
   } else {
     const fromIsMe = row.from_member_id === currentMemberId
     const toIsMe = row.to_member_id === currentMemberId
-    const fromLabel = sendMemberEndpointLabel({
+    fromLabel = sendMemberEndpointLabel({
       snapshotName: row.from_member_name,
       joinedName: row.from_member?.name,
       isMe: fromIsMe,
     })
-    const toLabel = sendMemberEndpointLabel({
+    toLabel = sendMemberEndpointLabel({
       snapshotName: row.to_member_name,
       joinedName: row.to_member?.name,
       isMe: toIsMe,
     })
     title = `${fromLabel} → ${toLabel}`
-    subtitle = `Send · ${time}`
+    actorMemberId = row.from_member_id
+    actorName = row.from_member_name ?? row.from_member?.name
+    subtitle = historySendSubtitle({
+      time,
+      actorMemberId,
+      actorName,
+      currentMemberId,
+      showActor,
+    })
   }
+
+  const amountValue = Number(row.amount)
+  const balanceSides = historyBalanceSides(row, {
+    fromLabel,
+    toLabel,
+    amount: amountValue,
+    currentMemberId,
+  })
+  const showTwoSidedBalance = balanceSides.length >= 2
 
   const sheetTitle = row.note
     ? HISTORY_NOTE_SHEET_TITLE_EDIT
@@ -540,49 +567,51 @@ function TxItem({
     }
   }
 
+  const noteQuote = row.note ? (
+    <button
+      type="button"
+      onClick={() => setNoteExpanded((v) => !v)}
+      aria-expanded={noteExpanded}
+      aria-label={noteExpanded ? 'Collapse note' : 'Expand note'}
+      className={
+        'block w-full text-left text-xs italic leading-snug text-zinc-400 transition hover:text-zinc-300 focus:outline-none focus-visible:text-zinc-300 ' +
+        (noteExpanded ? 'whitespace-pre-wrap break-words' : 'truncate')
+      }
+    >
+      “{row.note}”
+    </button>
+  ) : null
+
+  const noteFooter = (
+    <div className="flex items-end justify-between gap-3">
+      <div className="min-w-0">
+        <button
+          type="button"
+          onClick={openNoteEditor}
+          className="text-xs text-zinc-500 hover:text-zinc-300"
+        >
+          {row.note ? HISTORY_NOTE_EDIT : HISTORY_NOTE_ADD}
+        </button>
+      </div>
+      <p className="shrink-0 text-xs text-zinc-500">{subtitle}</p>
+    </div>
+  )
+
   return (
     <>
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
+      <div className="min-w-0">
+        {showTwoSidedBalance ? null : (
           <p className="truncate text-sm font-medium text-zinc-300">{title}</p>
-          <p className="text-xs text-zinc-400">{subtitle}</p>
-          {row.note ? (
-            <div className="mt-1">
-              <button
-                type="button"
-                onClick={() => setNoteExpanded((v) => !v)}
-                aria-expanded={noteExpanded}
-                aria-label={noteExpanded ? 'Collapse note' : 'Expand note'}
-                className={
-                  'block w-full text-left text-xs italic text-zinc-400 transition hover:text-zinc-300 focus:outline-none focus-visible:text-zinc-300 ' +
-                  (noteExpanded
-                    ? 'whitespace-pre-wrap break-words'
-                    : 'truncate')
-                }
-              >
-                “{row.note}”
-              </button>
-              <button
-                type="button"
-                onClick={openNoteEditor}
-                className="mt-1 text-xs text-zinc-500 hover:text-zinc-300"
-              >
-                {HISTORY_NOTE_EDIT}
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={openNoteEditor}
-              className="mt-1 text-xs text-emerald-400/90 hover:text-emerald-300"
-            >
-              {HISTORY_NOTE_ADD}
-            </button>
-          )}
+        )}
+        <HistoryEntityTransfer
+          sides={balanceSides}
+          amount={amountValue}
+          formatMoney={formatMoney}
+        />
+        <div className="mt-5 flex flex-col gap-1">
+          {noteQuote}
+          {noteFooter}
         </div>
-        <p className="shrink-0 text-sm font-semibold tabular-nums text-zinc-300">
-          {amount}
-        </p>
       </div>
 
       <Sheet

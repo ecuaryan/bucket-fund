@@ -489,6 +489,9 @@ export const BUCKETS_DB_UPDATE_PENDING_BODY =
 /** History filter dropdown + active chip (Send tab transactions only). */
 export const HISTORY_FILTER_SENT_MONEY = 'Sent money'
 
+/** History balance trail when the viewer is the subject kid. */
+export const HISTORY_BALANCE_YOUR_LABEL = 'Your balance'
+
 export const HISTORY_EMPTY_BUCKET_BODY =
   'Move money in or out of this bucket and it will appear here.'
 
