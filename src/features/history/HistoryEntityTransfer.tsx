@@ -27,7 +27,7 @@ function BalanceTrail({
 
   return (
     <p
-      className={`whitespace-nowrap tabular-nums tracking-tight ${
+      className={`tabular-nums tracking-tight ${
         align === 'right' ? 'text-right' : 'text-left'
       }`}
     >
@@ -50,8 +50,10 @@ function EntityColumn({
   const textAlign = align === 'right' ? 'text-right' : 'text-left'
 
   return (
-    <div className="min-w-0 w-full overflow-hidden">
-      <p className={`${ENTITY_LABEL_CLASS} ${textAlign}`}>{side.label}</p>
+    <div className="min-w-0 w-full">
+      <div className="min-w-0 overflow-hidden">
+        <p className={`${ENTITY_LABEL_CLASS} ${textAlign}`}>{side.label}</p>
+      </div>
       <div className={`mt-0.5 text-[11px] leading-tight text-zinc-500 ${textAlign}`}>
         <BalanceTrail side={side} formatMoney={formatMoney} align={align} />
       </div>
