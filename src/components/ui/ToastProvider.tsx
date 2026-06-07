@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { TOAST_DISMISS_LABEL } from '@/lib/brand'
-import { TOAST_AUTO_DISMISS_MS } from '@/lib/toastDismiss'
+import { TOAST_AUTO_DISMISS_MS, TOAST_EXIT_MS } from '@/lib/toastDismiss'
 import {
   registerToastPublisher,
   type ToastPayload,
@@ -8,38 +8,68 @@ import {
 
 type ToastItem = ToastPayload & { id: number }
 
+type ToastState = {
+  item: ToastItem
+  exiting: boolean
+}
+
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [item, setItem] = useState<ToastItem | null>(null)
+  const [toast, setToast] = useState<ToastState | null>(null)
   const idRef = useRef(0)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const clearTimers = useCallback(() => {
+    if (autoTimerRef.current) {
+      clearTimeout(autoTimerRef.current)
+      autoTimerRef.current = null
+    }
+    if (exitTimerRef.current) {
+      clearTimeout(exitTimerRef.current)
+      exitTimerRef.current = null
+    }
+  }, [])
 
   const dismiss = useCallback(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current)
-      timerRef.current = null
+    if (autoTimerRef.current) {
+      clearTimeout(autoTimerRef.current)
+      autoTimerRef.current = null
     }
-    setItem(null)
+    setToast((current) => {
+      if (!current || current.exiting) return current
+      if (exitTimerRef.current) clearTimeout(exitTimerRef.current)
+      exitTimerRef.current = setTimeout(() => {
+        setToast(null)
+        exitTimerRef.current = null
+      }, TOAST_EXIT_MS)
+      return { ...current, exiting: true }
+    })
   }, [])
 
-  const show = useCallback((next: ToastPayload) => {
-    if (timerRef.current) clearTimeout(timerRef.current)
-    const id = ++idRef.current
-    setItem({ ...next, id })
-    if (next.dismiss === 'auto') {
-      timerRef.current = setTimeout(() => {
-        setItem((current) => (current?.id === id ? null : current))
-        timerRef.current = null
-      }, TOAST_AUTO_DISMISS_MS)
-    }
-  }, [])
+  const show = useCallback(
+    (next: ToastPayload) => {
+      clearTimers()
+      const id = ++idRef.current
+      setToast({ item: { ...next, id }, exiting: false })
+      if (next.dismiss === 'auto') {
+        autoTimerRef.current = setTimeout(() => {
+          autoTimerRef.current = null
+          dismiss()
+        }, TOAST_AUTO_DISMISS_MS)
+      }
+    },
+    [clearTimers, dismiss],
+  )
 
   useEffect(() => {
     registerToastPublisher(show)
     return () => {
       registerToastPublisher(null)
-      if (timerRef.current) clearTimeout(timerRef.current)
+      clearTimers()
     }
-  }, [show])
+  }, [show, clearTimers])
+
+  const item = toast?.item ?? null
 
   return (
     <>
@@ -52,17 +82,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             role={item.type === 'error' ? 'alert' : 'status'}
             className={
-              'toast-panel pointer-events-auto flex w-full max-w-md items-start gap-2 rounded-xl px-3 py-2.5 text-sm shadow-xl ring-1 ' +
+              'toast-panel pointer-events-auto flex w-full max-w-md items-start gap-2.5 rounded-xl px-3.5 py-3 text-sm shadow-2xl ring-2 backdrop-blur-md ' +
+              (toast?.exiting ? 'toast-panel-exit ' : '') +
               (item.type === 'success'
-                ? 'bg-zinc-900 text-emerald-300 ring-emerald-500/40'
-                : 'bg-zinc-900 text-red-300 ring-red-500/40')
+                ? 'bg-emerald-950/88 text-emerald-50 ring-emerald-400/60'
+                : 'bg-red-950/88 text-red-50 ring-red-400/60')
             }
           >
-            <p className="min-w-0 flex-1 leading-snug">{item.message}</p>
+            <p className="min-w-0 flex-1 font-medium leading-snug">
+              {item.message}
+            </p>
             <button
               type="button"
               onClick={dismiss}
-              className="shrink-0 rounded p-0.5 text-lg leading-none text-zinc-500 transition hover:bg-zinc-800 hover:text-zinc-300"
+              className="shrink-0 rounded p-0.5 text-lg leading-none text-zinc-400 transition hover:bg-white/10 hover:text-zinc-200"
               aria-label={TOAST_DISMISS_LABEL}
             >
               ×

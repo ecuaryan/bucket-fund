@@ -10,4 +10,7 @@ export function toastDismissMode(
   return 'auto'
 }
 
-export const TOAST_AUTO_DISMISS_MS = 5000
+export const TOAST_AUTO_DISMISS_MS = 7000
+
+/** Keep in sync with `toast-out-*` animation duration in index.css. */
+export const TOAST_EXIT_MS = 160

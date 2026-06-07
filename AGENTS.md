@@ -45,8 +45,9 @@ Entry point for AI coding agents (and humans) working in this repo.
   the action has real impact (money, access, hard-to-undo state)—not for trivial
   reversible edits. Never `window.confirm` (breaks in Cursor’s browser).
 - **Ephemeral feedback:** use `toast` from `@/lib/toast` for action success/errors
-  far from the user’s focus; keep form validation inline. Short copy auto-dismisses;
-  errors and long copy need manual dismiss (no countdown UI).
+  far from the user’s focus (toast sits below the top safe area app-wide); keep form
+  validation inline. Short copy auto-dismisses after 7s; errors and long copy need
+  manual dismiss (no countdown UI).
 - **Child role is locked down.** A child must never be able to query
   family-pool balances, other members' balances, or other members'
   transactions. Validate this at the RLS layer, not the UI layer.

@@ -165,27 +165,39 @@ html {
   }
 
   .toast-viewport {
-    bottom: calc(var(--toast-bottom-base, 1rem) + env(safe-area-inset-bottom, 0px));
-  }
-
-  html[data-toast-layout='app'] {
-    --toast-bottom-base: 6.25rem;
+    top: calc(5rem + env(safe-area-inset-top, 0px));
+    filter: drop-shadow(0 8px 24px rgb(0 0 0 / 0.45));
   }
 
   @media (prefers-reduced-motion: no-preference) {
     .toast-panel {
       animation: toast-in 180ms ease both;
     }
+
+    .toast-panel-exit {
+      animation: toast-out 160ms ease both;
+    }
   }
 
   @keyframes toast-in {
     from {
       opacity: 0;
-      transform: translateY(0.5rem);
+      transform: translateY(-0.5rem);
     }
     to {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  @keyframes toast-out {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-0.5rem);
     }
   }
 

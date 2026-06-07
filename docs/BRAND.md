@@ -50,9 +50,11 @@ The payoff:
   assignment dropdowns (`HOUSEHOLD_LABEL`, not “pool” in user copy).
 - Kid-facing copy: **shared balance** or **household admin**, not “parent,”
   unless you mean a specific person.
-- **Toasts:** ephemeral success/error feedback uses the global toast (above tab bar
-  on signed-in pages). Keep copy short for auto-dismiss; longer text stays in sheets
-  or requires manual dismiss. Form field validation stays inline.
+- **Toasts:** ephemeral success/error feedback uses the global toast, fixed below
+  the top safe area on every screen (same position signed-in and auth). Keep copy
+  short for auto-dismiss (7s); longer text stays in sheets or requires manual
+  dismiss. Errors always need manual dismiss. Form field validation stays inline.
+  No toast call sites on login flows today — inline banners only.
 - **Confirmations:** use the shared `Sheet` for **consequential** actions only—
   money moves, access loss, irreversible structural changes with real impact.
   Skip confirm for low-impact, easily reversible flows (e.g. deleting an empty bucket).

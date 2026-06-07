@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import { BrandLogo } from '@/components/BrandLogo'
-import { useToastLayout } from '@/hooks/useToastLayout'
 
 type AuthShellProps = {
   title?: string
@@ -17,7 +16,6 @@ export function AuthShell({
   showHeader = true,
   children,
 }: AuthShellProps) {
-  useToastLayout('auth')
   return (
     <div className="flex min-h-svh flex-col items-center overflow-y-auto bg-black px-4 pt-[max(2rem,env(safe-area-inset-top,0px))] pb-[calc(10rem+max(0.5rem,env(safe-area-inset-bottom,0px))+var(--keyboard-inset,0px))] sm:justify-center sm:py-12">
       <div className="w-full max-w-sm">
