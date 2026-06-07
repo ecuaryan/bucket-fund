@@ -176,6 +176,9 @@ export function adminMemberLockoutClearedSuccess(name: string): string {
   return `Lockout cleared for ${name}.`
 }
 
+export const MEMBER_NAME_DUPLICATE =
+  'Someone in your household already has that name.'
+
 export function manualSourceAddedSuccess(label: string): string {
   return `Added ${label}.`
 }

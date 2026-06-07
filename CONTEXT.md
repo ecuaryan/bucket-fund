@@ -264,12 +264,13 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
   name to `<email>'s Family`; neither is prompted for at signup. The admin keeps
   a **real email** on `auth.users` (shown on Admin → admin sign-in; password
   reset via the same forgot-password email flow as login).
-- **Member display names:** admin-managed. Admins inline-rename **any** member
-  (including their own row) on Admin → members; the guarded
-  `family_members.update({ name })` is allowed only for admins by the
-  `family_members_update_admin` RLS policy. Non-admins (member/child) cannot
-  rename anyone. Renaming the admin's own row refreshes the auth `member` so the
-  header updates immediately.
+- **Member display names:** admin-managed. Names must be **unique within a
+  family** (case-insensitive) so PIN sign-in, Send, and the admin roster stay
+  unambiguous. Admins inline-rename **any** member (including their own row) on
+  Admin → members; the guarded `family_members.update({ name })` is allowed only
+  for admins by the `family_members_update_admin` RLS policy. Non-admins
+  (member/child) cannot rename anyone. Renaming the admin's own row refreshes
+  the auth `member` so the header updates immediately.
 - **Household name (deferred):** the auto-generated family name is **no longer
   surfaced** in the solo UI — the PIN roster shows `APP_NAME` instead of the
   stored family name. Collecting and naming a real household moves to a future
