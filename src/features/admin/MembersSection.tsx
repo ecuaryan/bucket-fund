@@ -23,6 +23,9 @@ import {
   ADMIN_REMOVE_MEMBER_EFFECT_SIGN_OUT,
   ADMIN_REMOVE_MEMBER_SHEET_INTRO,
   ADMIN_REMOVE_MEMBER_WHAT_HAPPENS,
+  adminMemberAddedSuccess,
+  adminMemberLockoutClearedSuccess,
+  adminMemberRemovedSuccess,
   adminPinSaveSuccess,
   adminRemoveMemberSheetTitle,
   adminPinSheetBody,
@@ -40,6 +43,7 @@ import {
   removeMember,
   setMemberPin,
 } from '@/lib/memberAuth'
+import { toast } from '@/lib/toast'
 type Member = {
   id: string
   name: string
@@ -65,9 +69,6 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
 
   const [members, setMembers] = useState<Member[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [actionError, setActionError] = useState<string | null>(null)
-  const [info, setInfo] = useState<string | null>(null)
-
   const [newName, setNewName] = useState('')
   const [newRole, setNewRole] = useState<'member' | 'child'>('member')
   const [creating, setCreating] = useState(false)
@@ -108,8 +109,6 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     e.preventDefault()
     const name = newName.trim()
     if (!name) return
-    setActionError(null)
-    setInfo(null)
     const familyId =
       auth.status === 'signedIn' ? auth.member?.family_id ?? '' : ''
     const tempId = `pending-${crypto.randomUUID()}`
@@ -145,12 +144,12 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
             )
           : prev,
       )
-      setInfo(`Added ${name}. Set their PIN next.`)
+      toast.success(adminMemberAddedSuccess(name))
       await loadMembers()
       onRosterChanged?.()
     } catch (err) {
       setMembers((prev) => prev?.filter((m) => m.id !== tempId) ?? prev)
-      setActionError(err instanceof Error ? err.message : String(err))
+      toast.error(err instanceof Error ? err.message : String(err))
     } finally {
       setCreating(false)
       setRefreshing(false)
@@ -183,7 +182,6 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     const isSelf = pinTarget.id === selfMemberId
     setSavingPin(true)
     setPinError(null)
-    setInfo(null)
     try {
       await setMemberPin(pinTarget.id, pinValue, {
         signOutOtherDevices: isSelf,
@@ -191,7 +189,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
       if (isSelf) {
         await linkDeviceForPinSignIn(pinTarget.family_id, pinTarget.id)
       }
-      setInfo(adminPinSaveSuccess(pinTarget.name, isSelf))
+      toast.success(adminPinSaveSuccess(pinTarget.name, isSelf))
       setPinTarget(null)
       setPinValue('')
       const pinNow = new Date().toISOString()
@@ -241,8 +239,6 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     const snapshot = members
     setRemoving(true)
     setRemoveError(null)
-    setActionError(null)
-    setInfo(null)
     if (pinTarget?.id === m.id) {
       setPinTarget(null)
       setPinValue('')
@@ -251,7 +247,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     setRefreshing(true)
     try {
       await removeMember(m.id)
-      setInfo(`Removed ${m.name}.`)
+      toast.success(adminMemberRemovedSuccess(m.name))
       setRemoveTarget(null)
       await loadMembers()
       onRosterChanged?.()
@@ -265,11 +261,9 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
   }
 
   async function onClearLockout(m: Member) {
-    setActionError(null)
-    setInfo(null)
     try {
       await clearPinLockout(m.id)
-      setInfo(`Lockout cleared for ${m.name}.`)
+      toast.success(adminMemberLockoutClearedSuccess(m.name))
       setMembers((prev) =>
         prev
           ? prev.map((row) =>
@@ -286,15 +280,13 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
         setRefreshing(false)
       }
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : String(err))
+      toast.error(err instanceof Error ? err.message : String(err))
     }
   }
 
   function startRename(m: Member) {
     setRenameValue(m.name)
     setRenamingId(m.id)
-    setActionError(null)
-    setInfo(null)
   }
 
   function cancelRename() {
@@ -310,8 +302,6 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     }
     setRenamingId(null)
     setRenameValue('')
-    setActionError(null)
-    setInfo(null)
     const snapshot = members
     setMembers((prev) =>
       prev
@@ -325,7 +315,6 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
         .update({ name: next })
         .eq('id', m.id)
       if (error) throw error
-      setInfo(`Renamed to ${next}.`)
       await loadMembers()
       onRosterChanged?.()
       if (m.id === selfMemberId) {
@@ -333,7 +322,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
       }
     } catch (err) {
       setMembers(snapshot)
-      setActionError(err instanceof Error ? err.message : String(err))
+      toast.error(err instanceof Error ? err.message : String(err))
     } finally {
       setRefreshing(false)
     }
@@ -366,17 +355,6 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
           {loadError}
         </p>
       )}
-      {actionError && (
-        <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300 ring-1 ring-red-500/30">
-          {actionError}
-        </p>
-      )}
-      {info && (
-        <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300 ring-1 ring-emerald-500/30">
-          {info}
-        </p>
-      )}
-
       {showPinSetupCta && (
         <div className="rounded-2xl bg-emerald-500/10 p-4 ring-1 ring-emerald-500/30">
           <p className="text-sm font-semibold text-emerald-200">

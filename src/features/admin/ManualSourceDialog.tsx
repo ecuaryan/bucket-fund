@@ -23,7 +23,10 @@ type Props = {
   initialLabel?: string
   initialAmount?: number
   onClose: () => void
-  onSaved: () => void | Promise<void>
+  onSaved: (result: {
+    label: string
+    mode: 'create' | 'edit'
+  }) => void | Promise<void>
 }
 
 export default function ManualSourceDialog({
@@ -87,7 +90,7 @@ export default function ManualSourceDialog({
         await updateManualAccount(accountId, amount, trimmed)
       }
       onClose()
-      await onSaved()
+      await onSaved({ label: trimmed, mode })
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {

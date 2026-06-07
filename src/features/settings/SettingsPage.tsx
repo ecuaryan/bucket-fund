@@ -1,5 +1,6 @@
 import AppVersionFooter from '@/components/AppVersionFooter'
 import DemoHideAmountsToggle from '@/components/DemoHideAmountsToggle'
+import DevToastPreview from '@/components/DevToastPreview'
 import { SETTINGS_PAGE_TITLE } from '@/lib/brand'
 
 export default function SettingsPage() {
@@ -8,6 +9,8 @@ export default function SettingsPage() {
       <header>
         <h1 className="text-xl font-semibold">{SETTINGS_PAGE_TITLE}</h1>
       </header>
+
+      <DevToastPreview />
 
       <DemoHideAmountsToggle />
 

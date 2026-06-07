@@ -5,6 +5,7 @@ import { registerSW } from 'virtual:pwa-register'
 import App from './App.tsx'
 import KeyboardViewport from '@/components/KeyboardViewport'
 import { AuthProvider } from '@/lib/auth'
+import { ToastProvider } from '@/components/ui/ToastProvider'
 import { migrateLegacyStorageKeys } from '@/lib/localStorageMigrate'
 import { registerBackgroundPrivacyShield } from '@/lib/backgroundPrivacyShield'
 import { registerPwaUpdateChecks } from '@/lib/pwaUpdate'
@@ -23,8 +24,10 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <KeyboardViewport />
-        <App />
+        <ToastProvider>
+          <KeyboardViewport />
+          <App />
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

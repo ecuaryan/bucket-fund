@@ -160,11 +160,37 @@ export function adminPinSheetBody(memberName: string, isSelf: boolean): string {
 }
 
 export function adminPinSaveSuccess(memberName: string, isSelf: boolean): string {
-  if (isSelf) {
-    return 'PIN saved. This device is ready for quick sign-in. Any other devices were signed out—use the new PIN there.'
-  }
-  return `PIN saved for ${memberName}. They're signed out everywhere; use the new PIN to sign in. Other devices may still show the app briefly until they refresh.`
+  if (isSelf) return 'PIN saved. Use it on other devices.'
+  return `PIN saved for ${memberName}.`
 }
+
+export function adminMemberAddedSuccess(name: string): string {
+  return `Added ${name}. Set their PIN next.`
+}
+
+export function adminMemberRemovedSuccess(name: string): string {
+  return `Removed ${name}.`
+}
+
+export function adminMemberLockoutClearedSuccess(name: string): string {
+  return `Lockout cleared for ${name}.`
+}
+
+export function manualSourceAddedSuccess(label: string): string {
+  return `Added ${label}.`
+}
+
+export function manualSourceUpdatedSuccess(label: string): string {
+  return `Updated ${label}.`
+}
+
+export function manualSourceRemovedSuccess(label: string): string {
+  return `Removed ${label}.`
+}
+
+export const TOAST_DISMISS_LABEL = 'Dismiss'
+
+export const HISTORY_NOTE_SAVED = 'Note saved.'
 
 /** Admin: linked account or bucket belongs to the shared balance (not a kid). */
 export const HOUSEHOLD_LABEL = 'Household'

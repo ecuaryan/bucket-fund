@@ -26,7 +26,11 @@ import {
   adminRemoveManualSourceSheetTitle,
   adminUnlinkInstitutionSheetIntro,
   adminUnlinkInstitutionSheetTitle,
+  manualSourceAddedSuccess,
+  manualSourceRemovedSuccess,
+  manualSourceUpdatedSuccess,
 } from '@/lib/brand'
+import { toast } from '@/lib/toast'
 import {
   groupAccountsByInstitution,
   type InstitutionGroup,
@@ -87,9 +91,6 @@ export default function AdminPage() {
   const [enrollmentLoadError, setEnrollmentLoadError] = useState<string | null>(
     null,
   )
-  const [assignError, setAssignError] = useState<string | null>(null)
-  const [linkError, setLinkError] = useState<string | null>(null)
-  const [linkInfo, setLinkInfo] = useState<string | null>(null)
   const [unlinkingKey, setUnlinkingKey] = useState<string | null>(null)
   const [reconnectingKey, setReconnectingKey] = useState<string | null>(null)
   const [refreshingKey, setRefreshingKey] = useState<string | null>(null)
@@ -225,11 +226,11 @@ export default function AdminPage() {
   )
 
   function afterLinkSuccess(count: number, verb: 'Linked' | 'Reconnected') {
-    setLinkInfo(
-      count === 0
-        ? `${verb}, but no accounts came back. Try again.`
-        : `${verb} ${count} account${count === 1 ? '' : 's'}.`,
-    )
+    if (count === 0) {
+      toast.error(`${verb}, but no accounts came back. Try again.`)
+    } else {
+      toast.success(`${verb} ${count} account${count === 1 ? '' : 's'}.`)
+    }
     setAccountsSyncing(true)
     void Promise.all([loadAccounts(), loadEnrollments()]).finally(() =>
       setAccountsSyncing(false),
@@ -237,11 +238,9 @@ export default function AdminPage() {
   }
 
   function startLinkBank() {
-    setLinkError(null)
-    setLinkInfo(null)
     teller.open({
       onLinked: (result) => afterLinkSuccess(result.accounts.length, 'Linked'),
-      onError: (msg) => setLinkError(msg),
+      onError: (msg) => toast.error(msg),
     })
   }
 
@@ -260,11 +259,9 @@ export default function AdminPage() {
 
   function onReconnect(group: InstitutionGroup) {
     if (!group.tellerConnectEnrollmentId) {
-      setLinkError('Missing enrollment id for reconnect.')
+      toast.error('Missing enrollment id for reconnect.')
       return
     }
-    setLinkError(null)
-    setLinkInfo(null)
     setReconnectingKey(group.groupKey)
     teller.open(
       {
@@ -274,7 +271,7 @@ export default function AdminPage() {
         },
         onError: (msg) => {
           setReconnectingKey(null)
-          setLinkError(msg)
+          toast.error(msg)
         },
         onExit: () => setReconnectingKey(null),
       },
@@ -284,14 +281,13 @@ export default function AdminPage() {
 
   async function onRefresh(group: InstitutionGroup) {
     if (group.enrollmentIds.length === 0) return
-    setLinkError(null)
     setRefreshingKey(group.groupKey)
     setAccountsSyncing(true)
     try {
       await refreshBalances(group.enrollmentIds)
       await Promise.all([loadAccounts(), loadEnrollments()])
     } catch (e) {
-      setLinkError(e instanceof Error ? e.message : String(e))
+      toast.error(e instanceof Error ? e.message : String(e))
     } finally {
       setRefreshingKey(null)
       setAccountsSyncing(false)
@@ -307,11 +303,12 @@ export default function AdminPage() {
     if (!removeManualTarget) return
     setRemovingManual(true)
     setRemoveManualError(null)
-    setLinkError(null)
     setAccountsSyncing(true)
+    const removedLabel = removeManualTarget.label
     try {
       await deleteManualAccount(removeManualTarget.id)
       setRemoveManualTarget(null)
+      toast.success(manualSourceRemovedSuccess(removedLabel))
       await loadAccounts()
     } catch (e) {
       setRemoveManualError(e instanceof Error ? e.message : String(e))
@@ -331,19 +328,19 @@ export default function AdminPage() {
     const group = unlinkTarget
     setUnlinkTarget(null)
     setUnlinkingKey(group.groupKey)
-    setLinkError(null)
-    setLinkInfo(null)
     try {
       let lastResult: Awaited<ReturnType<typeof disconnectEnrollment>> | null =
         null
       for (const enrollmentId of group.enrollmentIds) {
         lastResult = await disconnectEnrollment(enrollmentId)
       }
-      setLinkInfo(
-        lastResult?.tellerDisconnected
-          ? `Unlinked ${group.institutionName ?? 'bank'} cleanly.`
-          : `Unlinked locally, but Teller-side disconnect may have failed: ${lastResult?.tellerError ?? 'unknown'}. You may want to remove this app from your bank's connected-apps list.`,
-      )
+      if (lastResult?.tellerDisconnected) {
+        toast.success(`Unlinked ${group.institutionName ?? 'bank'} cleanly.`)
+      } else {
+        toast.error(
+          `Unlinked locally, but Teller-side disconnect may have failed: ${lastResult?.tellerError ?? 'unknown'}. You may want to remove this app from your bank's connected-apps list.`,
+        )
+      }
       setAccountsSyncing(true)
       try {
         await Promise.all([loadAccounts(), loadEnrollments()])
@@ -351,7 +348,7 @@ export default function AdminPage() {
         setAccountsSyncing(false)
       }
     } catch (e) {
-      setLinkError(e instanceof Error ? e.message : String(e))
+      toast.error(e instanceof Error ? e.message : String(e))
     } finally {
       setUnlinkingKey(null)
     }
@@ -460,11 +457,6 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {(linkError || teller.error || assignError) && (
-          <p className="mb-3 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300 ring-1 ring-red-500/30">
-            {linkError ?? teller.error ?? assignError}
-          </p>
-        )}
         {enrollmentLoadError && (
           <p className="mb-3 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-200 ring-1 ring-amber-500/30">
             Could not load bank connection details ({enrollmentLoadError}). Linked
@@ -472,12 +464,6 @@ export default function AdminPage() {
             clears.
           </p>
         )}
-        {linkInfo && (
-          <p className="mb-3 rounded-lg bg-emerald-500/10 px-3 py-2 text-xs text-emerald-300 ring-1 ring-emerald-500/30">
-            {linkInfo}
-          </p>
-        )}
-
         {loadError ? (
           <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-300 ring-1 ring-red-500/30">
             {loadError}
@@ -662,7 +648,6 @@ export default function AdminPage() {
                             )}
                             children={childMembers}
                             onAssigned={(ownerMemberId) => {
-                              setAssignError(null)
                               setAccounts((prev) =>
                                 prev
                                   ? prev.map((row) =>
@@ -676,7 +661,7 @@ export default function AdminPage() {
                                   : prev,
                               )
                             }}
-                            onError={setAssignError}
+                            onError={(msg) => toast.error(msg)}
                           />
                         )}
                         <p className="text-sm font-medium tabular-nums text-zinc-300">
@@ -707,7 +692,12 @@ export default function AdminPage() {
           manualDialog?.mode === 'edit' ? manualDialog.amount : undefined
         }
         onClose={() => setManualDialog(null)}
-        onSaved={async () => {
+        onSaved={async ({ label, mode }) => {
+          toast.success(
+            mode === 'create'
+              ? manualSourceAddedSuccess(label)
+              : manualSourceUpdatedSuccess(label),
+          )
           setAccountsSyncing(true)
           try {
             await loadAccounts()

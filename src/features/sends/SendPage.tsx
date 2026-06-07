@@ -24,6 +24,7 @@ import { fetchHouseholdAdminName } from '@/lib/householdAdmin'
 import { subscribeHouseholdRosterRefresh } from '@/lib/householdRosterRefresh'
 import { filterSendRecipients, isLinkedChild } from '@/lib/sendRecipients'
 import { fetchLinkedChildMemberIds, sendMoney } from '@/lib/sends'
+import { toast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import { AmountLimitHint } from '@/components/AmountLimitHint'
@@ -67,7 +68,6 @@ export default function SendPage() {
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
   const [manualSourceOpen, setManualSourceOpen] = useState(false)
   const [linkedChildIds, setLinkedChildIds] = useState<Set<string> | null>(null)
 
@@ -207,7 +207,6 @@ export default function SendPage() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setSubmitError(null)
-    setSuccess(null)
 
     if (!toMemberId) {
       setSubmitError('Choose who to send to.')
@@ -230,7 +229,7 @@ export default function SendPage() {
         note: note.trim() || null,
       })
       const recipient = recipients.find((m) => m.id === toMemberId)
-      setSuccess(
+      toast.success(
         recipient
           ? `Sent ${formatMoney(amount)} to ${recipient.name}.`
           : `Sent ${formatMoney(amount)}.`,
@@ -473,12 +472,6 @@ export default function SendPage() {
               {submitError}
             </p>
           )}
-          {success && (
-            <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300 ring-1 ring-emerald-500/30">
-              {success}
-            </p>
-          )}
-
           <button
             type="submit"
             disabled={submitting || overdraft}
