@@ -2,6 +2,10 @@
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { handleCors, jsonResponse } from '../_shared/http.ts'
+import {
+  MEMBER_NAME_DUPLICATE,
+  memberNameTaken,
+} from '../_shared/memberName.ts'
 import { requireAdmin, serviceClient } from '../_shared/supabase.ts'
 import { memberAuthEmail } from '../_shared/pin.ts'
 
@@ -38,6 +42,20 @@ Deno.serve(async (req: Request) => {
 
   const admin = serviceClient()
 
+  const { data: existingRows, error: listError } = await admin
+    .from('family_members')
+    .select('name')
+    .eq('family_id', auth.familyId)
+
+  if (listError) {
+    console.error('create-member list names', listError)
+    return jsonResponse({ error: 'Could not create member' }, 500)
+  }
+
+  if (memberNameTaken(existingRows?.map((r) => r.name) ?? [], name)) {
+    return jsonResponse({ error: MEMBER_NAME_DUPLICATE }, 409)
+  }
+
   const { data: memberRow, error: insertError } = await admin
     .from('family_members')
     .insert({
@@ -50,6 +68,9 @@ Deno.serve(async (req: Request) => {
 
   if (insertError || !memberRow) {
     console.error('create-member insert', insertError)
+    if (insertError?.code === '23505') {
+      return jsonResponse({ error: MEMBER_NAME_DUPLICATE }, 409)
+    }
     return jsonResponse({ error: 'Could not create member' }, 500)
   }
 

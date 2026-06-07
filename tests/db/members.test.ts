@@ -115,3 +115,50 @@ describe('family_members: admin rename', () => {
     expect(data?.name).toBe('Jamie')
   })
 })
+
+describe('family_members: name unique per family', () => {
+  it('rejects duplicate names (case-insensitive)', async () => {
+    const family = await createAdminFamily('member-dup')
+    const svc = serviceClient()
+    await addMember(family.familyId, 'child', 'Sam')
+
+    const { error } = await svc.from('family_members').insert({
+      family_id: family.familyId,
+      name: ' sam ',
+      role: 'child',
+    })
+
+    expect(error).not.toBeNull()
+    expect(error?.code).toBe('23505')
+  })
+
+  it('rejects rename to another member’s name', async () => {
+    const family = await createAdminFamily('member-dup-rename')
+    await addMember(family.familyId, 'child', 'Sam')
+    const alex = await addMember(family.familyId, 'child', 'Alex')
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+
+    const { error } = await admin
+      .from('family_members')
+      .update({ name: 'Sam' })
+      .eq('id', alex.memberId)
+
+    expect(error).not.toBeNull()
+    expect(error?.code).toBe('23505')
+  })
+
+  it('allows the same name in different families', async () => {
+    const a = await createAdminFamily('member-dup-a')
+    const b = await createAdminFamily('member-dup-b')
+    const svc = serviceClient()
+    await addMember(a.familyId, 'child', 'Sam')
+
+    const { error } = await svc.from('family_members').insert({
+      family_id: b.familyId,
+      name: 'Sam',
+      role: 'child',
+    })
+
+    expect(error).toBeNull()
+  })
+})

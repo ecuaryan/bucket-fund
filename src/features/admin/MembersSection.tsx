@@ -44,6 +44,10 @@ import {
   setMemberPin,
 } from '@/lib/memberAuth'
 import { clientRandomId } from '@/lib/clientRandomId'
+import {
+  humaniseMemberWriteError,
+  validateMemberNameForFamily,
+} from '@/lib/memberName'
 import { toast } from '@/lib/toast'
 type Member = {
   id: string
@@ -110,6 +114,11 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     e.preventDefault()
     const name = newName.trim()
     if (!name) return
+    const duplicate = validateMemberNameForFamily(members ?? [], name)
+    if (duplicate) {
+      toast.error(duplicate)
+      return
+    }
     const familyId =
       auth.status === 'signedIn' ? auth.member?.family_id ?? '' : ''
     const tempId = `pending-${clientRandomId()}`
@@ -301,6 +310,14 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
       cancelRename()
       return
     }
+    const duplicate = validateMemberNameForFamily(members ?? [], next, {
+      exceptMemberId: m.id,
+    })
+    if (duplicate) {
+      toast.error(duplicate)
+      cancelRename()
+      return
+    }
     setRenamingId(null)
     setRenameValue('')
     const snapshot = members
@@ -315,7 +332,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
         .from('family_members')
         .update({ name: next })
         .eq('id', m.id)
-      if (error) throw error
+      if (error) throw new Error(humaniseMemberWriteError(error))
       await loadMembers()
       onRosterChanged?.()
       if (m.id === selfMemberId) {
