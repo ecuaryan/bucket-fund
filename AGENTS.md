@@ -92,6 +92,9 @@ Use the `@/` alias for absolute imports from `src/`.
 ## Testing
 
 - **`npm test`** — unit tests (fast, no Docker).
+- **`npm run db:seed`** / **`npm run db:reset:seed -- <scenario>`** — local Docker
+  demo data only (`scripts/seed/`; see README § Local database scenarios). CI
+  does not run seeds.
 - **`npm run test:db`** — database tests (needs `npm run db:start`): RLS in
   `tests/db/rls.test.ts`, `move_money` in `move_money.test.ts`, `send_money`
   in `send_money.test.ts`, transaction visibility in `transactions.test.ts`.

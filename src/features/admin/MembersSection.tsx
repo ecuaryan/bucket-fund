@@ -43,6 +43,7 @@ import {
   removeMember,
   setMemberPin,
 } from '@/lib/memberAuth'
+import { clientRandomId } from '@/lib/clientRandomId'
 import { toast } from '@/lib/toast'
 type Member = {
   id: string
@@ -111,7 +112,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
     if (!name) return
     const familyId =
       auth.status === 'signedIn' ? auth.member?.family_id ?? '' : ''
-    const tempId = `pending-${crypto.randomUUID()}`
+    const tempId = `pending-${clientRandomId()}`
     const optimistic: Member = {
       id: tempId,
       name,
