@@ -46,7 +46,6 @@ function unallocatedSide(
 }
 
 function sendMemberLabel(
-  memberId: string | null,
   snapshotName: string | null | undefined,
   isMe: boolean,
 ): string {
@@ -147,7 +146,7 @@ export function historyBalanceSides(
 
   if (fromBefore !== null && fromAfter !== null) {
     sides.push({
-      label: sendMemberLabel(row.from_member_id, row.from_member_name, fromIsMe),
+      label: sendMemberLabel(row.from_member_name, fromIsMe),
       delta: -amount,
       before: fromBefore,
       after: fromAfter,
@@ -158,7 +157,7 @@ export function historyBalanceSides(
 
   if (toBefore !== null && toAfter !== null) {
     sides.push({
-      label: sendMemberLabel(row.to_member_id, row.to_member_name, toIsMe),
+      label: sendMemberLabel(row.to_member_name, toIsMe),
       delta: amount,
       before: toBefore,
       after: toAfter,
