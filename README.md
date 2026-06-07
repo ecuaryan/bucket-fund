@@ -53,7 +53,9 @@ use another for `npm run dev` (or `npm run dev:phone`). After pulling SQL change
 | `npm run dev:phone` | Vite on LAN for phone UI testing (same WiFi) |
 | `npm run functions:serve` | Edge Functions (second terminal; needs `supabase/functions/.env`) |
 | `npm run db:stop` | Stop local stack |
-| `npm run db:reset` | Re-apply all migrations (+ optional `seed.sql`) |
+| `npm run db:reset` | Re-apply all migrations (empty data) |
+| `npm run db:seed` | List local seed scenarios (or seed one; see below) |
+| `npm run db:reset:seed -- <scenario>` | Reset DB, then seed a scenario |
 | `npm run db:types` | Regenerate `src/types/database.ts` from local DB |
 | `source scripts/env-local.sh` | Load local API URL + keys into your shell |
 | `node scripts/supabase-env.mjs` | Print `export …` lines (for manual copy) |
@@ -69,6 +71,37 @@ shell, or paste keys from `npm run db:status`). Edge Function secrets stay in
 ```bash
 npm run functions:serve    # second terminal while the app runs
 ```
+
+### Local database scenarios
+
+After `npm run db:start`, seed demo data with fixed credentials (local Docker only):
+
+```bash
+npm run db:seed                    # list scenarios
+npm run db:reset:seed -- all       # wipe + seed every scenario (recommended)
+npm run db:reset:seed -- household # wipe + seed one scenario only
+npm run db:seed -- pin-household   # seed into current DB (run after reset)
+```
+
+Each scenario is its own family. Admin email is **`<scenario>@bmm.dev`** (e.g. `household@bmm.dev`,
+`rebalance@bmm.dev`). Password is always **`asdfasdf`**. After `all`, sign out and sign in with
+another email to switch — no reset needed.
+
+| Scenario | Admin email | What you get |
+| -------- | ----------- | ------------ |
+| `all` | (every row below) | All families at once — credential table printed at end |
+| `solo` | `solo@bmm.dev` | Empty app, good for first-run UX |
+| `household` | `household@bmm.dev` | Admin + shared member + kid, $1k cash, buckets, send |
+| `rebalance` | `rebalance@bmm.dev` | $200 cash, $450 allocated (negative unallocated) |
+| `pin-household` | `pin-household@bmm.dev` | Like `household`, PIN **0000** on Alex and Sam |
+| `linked-kid` | `linked-kid@bmm.dev` | Kid with assigned manual account — Send blocked |
+| `admin-no-pin` | `admin-no-pin@bmm.dev` | Admin only, no PIN — green PIN setup CTA |
+| `kid-view` | `kid-view@bmm.dev` | Admin + kid (PIN **0000**), no shared member |
+| `many-buckets` | `many-buckets@bmm.dev` | 15 pool buckets — scroll and reorder |
+| `history` | `history@bmm.dev` | ~40 moves and sends — History volume |
+| `shared-only` | `shared-only@bmm.dev` | Shared member (PIN **0000**), no kid |
+
+CI does **not** run seeds — database tests still create their own fixtures.
 
 ## Scripts
 

@@ -1,2 +1,5 @@
--- Optional local dev fixtures (not used by CI — tests seed their own data).
--- Add INSERT statements here for a standing demo family if you want.
+-- Local dev data is seeded via TypeScript scenarios (not SQL).
+-- After reset:  npm run db:seed              — list scenarios
+--               npm run db:reset:seed -- all   — reset + seed every scenario
+--               npm run db:reset:seed -- solo — reset + seed one scenario
+-- Sign in as <scenario>@bmm.dev / asdfasdf. See README § Local database scenarios.
