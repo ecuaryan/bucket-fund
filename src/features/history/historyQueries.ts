@@ -10,10 +10,20 @@ export type HistoryTxRow = {
   to_bucket_id: string | null
   from_bucket_name: string | null
   to_bucket_name: string | null
+  from_bucket_balance_before: string | number | null
+  from_bucket_balance_after: string | number | null
+  to_bucket_balance_before: string | number | null
+  to_bucket_balance_after: string | number | null
   from_member_id: string | null
   from_member_name: string | null
   to_member_id: string | null
   to_member_name: string | null
+  from_member_balance_before: string | number | null
+  from_member_balance_after: string | number | null
+  to_member_balance_before: string | number | null
+  to_member_balance_after: string | number | null
+  unallocated_balance_before: string | number | null
+  unallocated_balance_after: string | number | null
   note: string | null
   created_at: string
   from_bucket: { name: string } | null

@@ -197,6 +197,9 @@ system-error banner.
 - **Member names are snapshotted** on each `send` (`from_member_name` /
   `to_member_name`), so History keeps "Alex" after a kid is removed (member ids
   null via `ON DELETE SET NULL`, same pattern as buckets).
+- **Balance snapshots** (optional muted line per row): bucket `allocated_amount`
+  before/after on moves; kid total (`member_child_virtual_balance`) before/after
+  on sends. Not bank or shared unallocated.
 - **Shared balance (admin + Shared) see who moved the money** ("Bucket move · by Jamie")
   so a household can tell who touched the shared pool; kids do not
   see the actor line.

@@ -347,49 +347,79 @@ export type Database = {
           amount: number
           created_at: string
           family_id: string
+          from_bucket_balance_after: number | null
+          from_bucket_balance_before: number | null
           from_bucket_id: string | null
           from_bucket_name: string | null
+          from_member_balance_after: number | null
+          from_member_balance_before: number | null
           from_member_id: string | null
           from_member_name: string | null
           id: string
           note: string | null
+          to_bucket_balance_after: number | null
+          to_bucket_balance_before: number | null
           to_bucket_id: string | null
           to_bucket_name: string | null
+          to_member_balance_after: number | null
+          to_member_balance_before: number | null
           to_member_id: string | null
           to_member_name: string | null
           type: string
+          unallocated_balance_after: number | null
+          unallocated_balance_before: number | null
         }
         Insert: {
           amount: number
           created_at?: string
           family_id: string
+          from_bucket_balance_after?: number | null
+          from_bucket_balance_before?: number | null
           from_bucket_id?: string | null
           from_bucket_name?: string | null
+          from_member_balance_after?: number | null
+          from_member_balance_before?: number | null
           from_member_id?: string | null
           from_member_name?: string | null
           id?: string
           note?: string | null
+          to_bucket_balance_after?: number | null
+          to_bucket_balance_before?: number | null
           to_bucket_id?: string | null
           to_bucket_name?: string | null
+          to_member_balance_after?: number | null
+          to_member_balance_before?: number | null
           to_member_id?: string | null
           to_member_name?: string | null
           type: string
+          unallocated_balance_after?: number | null
+          unallocated_balance_before?: number | null
         }
         Update: {
           amount?: number
           created_at?: string
           family_id?: string
+          from_bucket_balance_after?: number | null
+          from_bucket_balance_before?: number | null
           from_bucket_id?: string | null
           from_bucket_name?: string | null
+          from_member_balance_after?: number | null
+          from_member_balance_before?: number | null
           from_member_id?: string | null
           from_member_name?: string | null
           id?: string
           note?: string | null
+          to_bucket_balance_after?: number | null
+          to_bucket_balance_before?: number | null
           to_bucket_id?: string | null
           to_bucket_name?: string | null
+          to_member_balance_after?: number | null
+          to_member_balance_before?: number | null
           to_member_id?: string | null
           to_member_name?: string | null
           type?: string
+          unallocated_balance_after?: number | null
+          unallocated_balance_before?: number | null
         }
         Relationships: [
           {

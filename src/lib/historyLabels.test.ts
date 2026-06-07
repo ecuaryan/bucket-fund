@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   bucketEndpointLabel,
   historyBucketMoveSubtitle,
+  historySendSubtitle,
   historyMoveActorLabel,
   sendMemberEndpointLabel,
 } from '@/lib/historyLabels'
@@ -148,5 +149,31 @@ describe('historyBucketMoveSubtitle', () => {
         showActor: false,
       }),
     ).toBe('Bucket move · 3:45 PM')
+  })
+})
+
+describe('historySendSubtitle', () => {
+  it('includes sender for adults', () => {
+    expect(
+      historySendSubtitle({
+        time: '3:45 PM',
+        actorMemberId: 'm1',
+        actorName: 'Ryan',
+        currentMemberId: 'm2',
+        showActor: true,
+      }),
+    ).toBe('Send · by Ryan · 3:45 PM')
+  })
+
+  it('uses "you" when the viewer sent', () => {
+    expect(
+      historySendSubtitle({
+        time: '9:00 AM',
+        actorMemberId: 'm1',
+        actorName: 'Ryan',
+        currentMemberId: 'm1',
+        showActor: true,
+      }),
+    ).toBe('Send · by you · 9:00 AM')
   })
 })

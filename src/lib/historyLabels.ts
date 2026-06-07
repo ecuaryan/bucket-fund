@@ -35,7 +35,8 @@ export function historyMoveActorLabel(args: {
   return 'Someone'
 }
 
-export function historyBucketMoveSubtitle(args: {
+function historyTxSubtitle(args: {
+  kind: 'Bucket move' | 'Send'
   time: string
   actorMemberId: string | null | undefined
   actorName: string | null | undefined
@@ -43,6 +44,26 @@ export function historyBucketMoveSubtitle(args: {
   showActor: boolean
 }): string {
   const actor = historyMoveActorLabel(args)
-  if (actor) return `Bucket move · by ${actor} · ${args.time}`
-  return `Bucket move · ${args.time}`
+  if (actor) return `${args.kind} · by ${actor} · ${args.time}`
+  return `${args.kind} · ${args.time}`
+}
+
+export function historyBucketMoveSubtitle(args: {
+  time: string
+  actorMemberId: string | null | undefined
+  actorName: string | null | undefined
+  currentMemberId: string
+  showActor: boolean
+}): string {
+  return historyTxSubtitle({ ...args, kind: 'Bucket move' })
+}
+
+export function historySendSubtitle(args: {
+  time: string
+  actorMemberId: string | null | undefined
+  actorName: string | null | undefined
+  currentMemberId: string
+  showActor: boolean
+}): string {
+  return historyTxSubtitle({ ...args, kind: 'Send' })
 }

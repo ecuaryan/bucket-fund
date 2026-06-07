@@ -35,7 +35,7 @@ describe('move_money RPC', () => {
     const { data: tx, error } = await svc
       .from('transactions')
       .select(
-        'type, amount, from_bucket_id, to_bucket_id, from_bucket_name, to_bucket_name, from_member_id, note',
+        'type, amount, from_bucket_id, to_bucket_id, from_bucket_name, to_bucket_name, from_bucket_balance_before, from_bucket_balance_after, to_bucket_balance_before, to_bucket_balance_after, unallocated_balance_before, unallocated_balance_after, from_member_id, note',
       )
       .eq('id', txId)
       .single()
@@ -50,6 +50,12 @@ describe('move_money RPC', () => {
       from_member_id: family.adminMemberId,
       note: 'test move',
     })
+    expect(Number(tx?.from_bucket_balance_before)).toBe(100)
+    expect(Number(tx?.from_bucket_balance_after)).toBe(60)
+    expect(Number(tx?.to_bucket_balance_before)).toBe(0)
+    expect(Number(tx?.to_bucket_balance_after)).toBe(40)
+    expect(tx?.unallocated_balance_before).toBeNull()
+    expect(tx?.unallocated_balance_after).toBeNull()
   })
 
   it('records the member who performed the move', async () => {
@@ -98,7 +104,7 @@ describe('move_money RPC', () => {
     const { data: tx, error } = await svc
       .from('transactions')
       .select(
-        'from_bucket_id, to_bucket_id, from_bucket_name, to_bucket_name',
+        'from_bucket_id, to_bucket_id, from_bucket_name, to_bucket_name, unallocated_balance_before, unallocated_balance_after',
       )
       .eq('id', txId)
       .single()
@@ -109,6 +115,9 @@ describe('move_money RPC', () => {
       from_bucket_name: 'Snacks',
       to_bucket_name: null,
     })
+    expect(Number(tx?.unallocated_balance_after) - Number(tx?.unallocated_balance_before)).toBe(
+      15,
+    )
   })
 
   it('does not rewrite snapshot names when a bucket is renamed', async () => {
@@ -132,11 +141,14 @@ describe('move_money RPC', () => {
 
     const { data: tx, error } = await svc
       .from('transactions')
-      .select('to_bucket_name')
+      .select(
+        'to_bucket_name, unallocated_balance_before, unallocated_balance_after',
+      )
       .eq('id', txId)
       .single()
     expect(error).toBeNull()
     expect(tx?.to_bucket_name).toBe('Fun')
+    expect(Number(tx?.unallocated_balance_before) - Number(tx?.unallocated_balance_after)).toBe(5)
   })
 
   it('member can move money between adult-visible buckets', async () => {
