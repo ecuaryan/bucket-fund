@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { LoadErrorPanel } from '@/components/ui/LoadErrorPanel'
+import { formatLoadErrorMessage, withAuthLockRetry } from '@/lib/authLockError'
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import {
@@ -75,46 +77,39 @@ export default function SendPage() {
     if (!memberId) return
     setLoadError(null)
     try {
-      const [membersRes, bucketsRes, accountsRes, adminName, linkedIds] =
-        await Promise.all([
-        supabase
-          .from('family_members')
-          .select('id, name, role')
-          .neq('id', memberId)
-          .order('name'),
-        supabase.from('buckets').select('allocated_amount'),
-        supabase.from('accounts').select('*'),
-        fetchHouseholdAdminName(),
-        fetchLinkedChildMemberIds(),
-      ])
-      if (membersRes.error) {
-        setLoadError(membersRes.error.message)
-        return
-      }
-      if (bucketsRes.error) {
-        setLoadError(bucketsRes.error.message)
-        return
-      }
-      if (accountsRes.error) {
-        setLoadError(accountsRes.error.message)
-        return
-      }
+      await withAuthLockRetry(async () => {
+        const [membersRes, bucketsRes, accountsRes, adminName, linkedIds] =
+          await Promise.all([
+            supabase
+              .from('family_members')
+              .select('id, name, role')
+              .neq('id', memberId)
+              .order('name'),
+            supabase.from('buckets').select('allocated_amount'),
+            supabase.from('accounts').select('*'),
+            fetchHouseholdAdminName(),
+            fetchLinkedChildMemberIds(),
+          ])
+        if (membersRes.error) throw new Error(membersRes.error.message)
+        if (bucketsRes.error) throw new Error(bucketsRes.error.message)
+        if (accountsRes.error) throw new Error(accountsRes.error.message)
 
-      const accountRows = accountsRes.data ?? []
-      const { breakdown, usedFallback } = await fetchBucketsBalanceBreakdown({
-        accounts: accountRows,
-        buckets: bucketsRes.data ?? [],
+        const accountRows = accountsRes.data ?? []
+        const { breakdown, usedFallback } = await fetchBucketsBalanceBreakdown({
+          accounts: accountRows,
+          buckets: bucketsRes.data ?? [],
+        })
+        setMembers(membersRes.data ?? [])
+        setAccounts(accountRows)
+        setLinkedChildIds(linkedIds)
+        setHouseholdAdminName(adminName)
+        setBalanceBreakdown(breakdown)
+        setBalanceUsesFallback(usedFallback)
+        setAvailable(breakdown.unallocated)
+        setSendEnabled(!usedFallback)
       })
-      setMembers(membersRes.data ?? [])
-      setAccounts(accountRows)
-      setLinkedChildIds(linkedIds)
-      setHouseholdAdminName(adminName)
-      setBalanceBreakdown(breakdown)
-      setBalanceUsesFallback(usedFallback)
-      setAvailable(breakdown.unallocated)
-      setSendEnabled(!usedFallback)
     } catch (e) {
-      setLoadError(e instanceof Error ? e.message : 'Could not load send screen.')
+      setLoadError(formatLoadErrorMessage(e, 'Could not load send screen.'))
     }
   }, [memberId])
 
@@ -249,9 +244,11 @@ export default function SendPage() {
 
   if (loadError) {
     return (
-      <div className="rounded-2xl bg-red-500/10 p-4 text-sm text-red-300 ring-1 ring-red-500/30">
-        {loadError}
-      </div>
+      <LoadErrorPanel
+        title="Could not load send"
+        message={loadError}
+        onRetry={() => void loadData()}
+      />
     )
   }
 

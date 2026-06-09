@@ -44,6 +44,8 @@ import {
 } from '@/lib/backgroundSignOut'
 import { readBucketsPageCache, writeBucketsPageCache } from '@/lib/bucketsPageCache'
 import { formatRelativeTime } from '@/lib/relativeTime'
+import { formatLoadErrorMessage } from '@/lib/authLockError'
+import { LoadErrorPanel } from '@/components/ui/LoadErrorPanel'
 import { loadBucketsPage } from '@/lib/bucketsPageLoad'
 import {
   renameBucketInList,
@@ -167,7 +169,7 @@ export default function BucketsPage() {
         })
         return
       }
-      setLoadError(msg)
+      setLoadError(formatLoadErrorMessage(e, msg))
     }
   }, [familyId, memberId, navigate])
 
@@ -413,10 +415,11 @@ export default function BucketsPage() {
 
   if (loadError) {
     return (
-      <div className="rounded-2xl bg-red-500/10 p-4 text-sm text-red-300 ring-1 ring-red-500/30">
-        <p className="font-semibold">Could not load buckets</p>
-        <p className="mt-1">{loadError}</p>
-      </div>
+      <LoadErrorPanel
+        title="Could not load buckets"
+        message={loadError}
+        onRetry={() => void loadData()}
+      />
     )
   }
 

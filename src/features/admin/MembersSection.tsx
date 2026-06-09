@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '@/lib/auth'
+import { formatLoadErrorMessage, withAuthLockRetry } from '@/lib/authLockError'
 import { supabase } from '@/lib/supabase'
 import { ClearableInput } from '@/components/ui/ClearableInput'
 import { FieldLabel } from '@/components/ui/FieldLabel'
@@ -93,17 +94,20 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
 
   const loadMembers = useCallback(async () => {
     setLoadError(null)
-    const { data, error } = await supabase
-      .from('family_members')
-      .select(
-        'id, name, role, avatar_url, pin_locked, pin_set_at, pin_failed_attempts, created_at, family_id, user_id',
-      )
-      .order('created_at', { ascending: true })
-    if (error) {
-      setLoadError(error.message)
-      return
+    try {
+      await withAuthLockRetry(async () => {
+        const { data, error } = await supabase
+          .from('family_members')
+          .select(
+            'id, name, role, avatar_url, pin_locked, pin_set_at, pin_failed_attempts, created_at, family_id, user_id',
+          )
+          .order('created_at', { ascending: true })
+        if (error) throw new Error(error.message)
+        setMembers(data ?? [])
+      })
+    } catch (e) {
+      setLoadError(formatLoadErrorMessage(e, 'Could not load household members.'))
     }
-    setMembers(data ?? [])
   }, [])
 
   useEffect(() => {
@@ -369,9 +373,16 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
       </div>
 
       {loadError && (
-        <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300 ring-1 ring-red-500/30">
-          {loadError}
-        </p>
+        <div className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300 ring-1 ring-red-500/30">
+          <p>{loadError}</p>
+          <button
+            type="button"
+            onClick={() => void loadMembers()}
+            className="mt-2 rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-100 ring-1 ring-red-500/40 hover:bg-red-500/30"
+          >
+            Try again
+          </button>
+        </div>
       )}
       {showPinSetupCta && (
         <div className="rounded-2xl bg-emerald-500/10 p-4 ring-1 ring-emerald-500/30">

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { LoadErrorPanel } from '@/components/ui/LoadErrorPanel'
+import { formatLoadErrorMessage, withAuthLockRetry } from '@/lib/authLockError'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import { accountAssignmentChildId, deleteManualAccount } from '@/lib/accounts'
@@ -150,29 +152,40 @@ export default function AdminPage() {
 
   const loadAccounts = useCallback(async () => {
     setLoadError(null)
-    const { data, error } = await supabase
-      .from('accounts')
-      .select('*')
-      .order('created_at', { ascending: true })
-      .order('id', { ascending: true })
-    if (error) {
-      setLoadError(error.message)
-      return
+    try {
+      await withAuthLockRetry(async () => {
+        const { data, error } = await supabase
+          .from('accounts')
+          .select('*')
+          .order('created_at', { ascending: true })
+          .order('id', { ascending: true })
+        if (error) throw new Error(error.message)
+        setAccounts(data ?? [])
+      })
+    } catch (e) {
+      setLoadError(formatLoadErrorMessage(e, 'Could not load accounts.'))
     }
-    setAccounts(data ?? [])
   }, [])
 
   const loadMembers = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('family_members')
-      .select('id, name, role')
-      .order('created_at', { ascending: true })
-    if (error) {
-      setLoadError(error.message)
-      return
+    try {
+      await withAuthLockRetry(async () => {
+        const { data, error } = await supabase
+          .from('family_members')
+          .select('id, name, role')
+          .order('created_at', { ascending: true })
+        if (error) throw new Error(error.message)
+        setMembers(data ?? [])
+      })
+    } catch (e) {
+      setLoadError(formatLoadErrorMessage(e, 'Could not load household members.'))
     }
-    setMembers(data ?? [])
   }, [])
+
+  const retryAdminLoad = useCallback(() => {
+    void loadAccounts()
+    void loadMembers()
+  }, [loadAccounts, loadMembers])
 
   const loadEnrollments = useCallback(async () => {
     setEnrollmentLoadError(null)
@@ -465,9 +478,12 @@ export default function AdminPage() {
           </p>
         )}
         {loadError ? (
-          <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-300 ring-1 ring-red-500/30">
-            {loadError}
-          </p>
+          <LoadErrorPanel
+            title="Could not load money sources"
+            message={loadError}
+            onRetry={retryAdminLoad}
+            className="rounded-lg p-3"
+          />
         ) : accounts === null ? (
           <LoadingStatus label="Loading accounts…" className="py-6" />
         ) : groups.length === 0 ? (

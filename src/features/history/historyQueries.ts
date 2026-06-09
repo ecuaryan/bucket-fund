@@ -1,3 +1,4 @@
+import { formatLoadErrorMessage, withAuthLockRetry } from '@/lib/authLockError'
 import { supabase } from '@/lib/supabase'
 import type { HistoryFilter } from '@/features/history/historyFilters'
 
@@ -44,20 +45,31 @@ export async function fetchHistoryPage(
   beforeCreatedAt: string | null,
   limit: number,
 ): Promise<FetchHistoryPageResult> {
-  let query = supabase
-    .from('transactions')
-    .select(TX_SELECT)
-    .order('created_at', { ascending: false })
-    .limit(limit)
-  if (beforeCreatedAt) query = query.lt('created_at', beforeCreatedAt)
-  if (activeFilter.kind === 'send') {
-    query = query.eq('type', 'send')
-  } else if (activeFilter.kind === 'bucket') {
-    query = query.or(
-      `from_bucket_id.eq.${activeFilter.bucketId},to_bucket_id.eq.${activeFilter.bucketId}`,
-    )
+  try {
+    return await withAuthLockRetry(async () => {
+      let query = supabase
+        .from('transactions')
+        .select(TX_SELECT)
+        .order('created_at', { ascending: false })
+        .limit(limit)
+      if (beforeCreatedAt) query = query.lt('created_at', beforeCreatedAt)
+      if (activeFilter.kind === 'send') {
+        query = query.eq('type', 'send')
+      } else if (activeFilter.kind === 'bucket') {
+        query = query.or(
+          `from_bucket_id.eq.${activeFilter.bucketId},to_bucket_id.eq.${activeFilter.bucketId}`,
+        )
+      }
+      const { data, error } = await query
+      if (error) {
+        return { ok: false as const, error: formatLoadErrorMessage(error.message) }
+      }
+      return { ok: true as const, rows: (data ?? []) as unknown as HistoryTxRow[] }
+    })
+  } catch (error) {
+    return {
+      ok: false,
+      error: formatLoadErrorMessage(error, 'Could not load history.'),
+    }
   }
-  const { data, error } = await query
-  if (error) return { ok: false, error: error.message }
-  return { ok: true, rows: (data ?? []) as unknown as HistoryTxRow[] }
 }

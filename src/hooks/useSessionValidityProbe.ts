@@ -4,8 +4,12 @@ import { useLocation } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import { shouldRunNavSessionProbe } from '@/hooks/sessionNavProbeCooldown'
 import { markAutoSignOut } from '@/lib/autoSignOut'
+import { enqueueAuthRefresh } from '@/lib/authRefreshQueue'
 import { isRevokedRefreshError } from '@/lib/revokedSessionError'
 import { supabase } from '@/lib/supabase'
+
+/** Defer resume probes so the visible tab can finish its first data load. */
+const VISIBILITY_PROBE_DELAY_MS = 1_000
 
 /**
  * After server-side session revocation (e.g. admin reset your PIN), the access
@@ -19,6 +23,18 @@ export function useSessionValidityProbe(): void {
   const location = useLocation()
   const probeGeneration = useRef(0)
   const lastNavProbeAt = useRef(0)
+  const visibilityProbeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  )
+
+  function runRefreshProbe(generation: number) {
+    void enqueueAuthRefresh(() => supabase.auth.refreshSession()).then(
+      ({ error }) => {
+        if (probeGeneration.current !== generation) return
+        handleRefreshError(error)
+      },
+    )
+  }
 
   function handleRefreshError(error: AuthError | null) {
     if (!error || !isRevokedRefreshError(error)) return
@@ -35,10 +51,7 @@ export function useSessionValidityProbe(): void {
     lastNavProbeAt.current = now
 
     const generation = ++probeGeneration.current
-    void supabase.auth.refreshSession().then(({ error }) => {
-      if (probeGeneration.current !== generation) return
-      handleRefreshError(error)
-    })
+    runRefreshProbe(generation)
   }, [auth.status, auth.isPasswordRecovery, location.pathname])
 
   useEffect(() => {
@@ -48,14 +61,17 @@ export function useSessionValidityProbe(): void {
     function onVisibilityChange() {
       if (document.visibilityState !== 'visible') return
 
+      clearTimeout(visibilityProbeTimer.current)
       const generation = ++probeGeneration.current
-      void supabase.auth.refreshSession().then(({ error }) => {
-        if (probeGeneration.current !== generation) return
-        handleRefreshError(error)
-      })
+      visibilityProbeTimer.current = setTimeout(() => {
+        runRefreshProbe(generation)
+      }, VISIBILITY_PROBE_DELAY_MS)
     }
 
     document.addEventListener('visibilitychange', onVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      clearTimeout(visibilityProbeTimer.current)
+    }
   }, [auth.status, auth.isPasswordRecovery])
 }

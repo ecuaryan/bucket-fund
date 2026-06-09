@@ -1,4 +1,5 @@
 import { latestCashSyncAt, sumCashBalance } from '@/lib/accounts'
+import { withAuthLockRetry } from '@/lib/authLockError'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database'
 import type { Json } from '@/types/database'
@@ -143,6 +144,14 @@ export async function fetchAvailableBalance(
 }
 
 export async function fetchBucketsBalanceBreakdown(
+  fallback: { accounts: Account[]; buckets: { allocated_amount: string | number }[] },
+): Promise<{ breakdown: BucketsBalanceBreakdown; usedFallback: boolean }> {
+  return withAuthLockRetry(async () =>
+    fetchBucketsBalanceBreakdownInner(fallback),
+  )
+}
+
+async function fetchBucketsBalanceBreakdownInner(
   fallback: { accounts: Account[]; buckets: { allocated_amount: string | number }[] },
 ): Promise<{ breakdown: BucketsBalanceBreakdown; usedFallback: boolean }> {
   const { data, error } = await supabase.rpc('get_home_balance_breakdown')

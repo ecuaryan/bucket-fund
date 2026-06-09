@@ -17,6 +17,7 @@ import {
   ADMIN_JOIN_CODE_ROTATE_WHAT_HAPPENS,
   ADMIN_JOIN_CODE_TITLE,
 } from '@/lib/brand'
+import { formatLoadErrorMessage, withAuthLockRetry } from '@/lib/authLockError'
 import { supabase } from '@/lib/supabase'
 import { toast } from '@/lib/toast'
 
@@ -32,15 +33,18 @@ export default function FamilyJoinSection() {
 
   const loadCode = useCallback(async () => {
     setLoadError(null)
-    const { data, error } = await supabase
-      .from('families')
-      .select('join_code')
-      .maybeSingle()
-    if (error) {
-      setLoadError(error.message)
-      return
+    try {
+      await withAuthLockRetry(async () => {
+        const { data, error } = await supabase
+          .from('families')
+          .select('join_code')
+          .maybeSingle()
+        if (error) throw new Error(error.message)
+        setJoinCode(data?.join_code ?? null)
+      })
+    } catch (e) {
+      setLoadError(formatLoadErrorMessage(e, 'Could not load join code.'))
     }
-    setJoinCode(data?.join_code ?? null)
   }, [])
 
   useEffect(() => {
@@ -111,9 +115,16 @@ export default function FamilyJoinSection() {
       <p className="mt-1 text-xs text-zinc-400">{ADMIN_JOIN_CODE_INTRO}</p>
 
       {loadError && (
-        <p className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300 ring-1 ring-red-500/30">
-          {loadError}
-        </p>
+        <div className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300 ring-1 ring-red-500/30">
+          <p>{loadError}</p>
+          <button
+            type="button"
+            onClick={() => void loadCode()}
+            className="mt-2 rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-semibold text-red-100 ring-1 ring-red-500/40 hover:bg-red-500/30"
+          >
+            Try again
+          </button>
+        </div>
       )}
       <div className="mt-4 flex flex-col items-center gap-4 rounded-2xl bg-zinc-900 p-4 ring-1 ring-zinc-800 sm:flex-row sm:items-start">
         {qrSrc && (

@@ -1,4 +1,5 @@
 import { isMissingDbFunctionError } from '@/lib/availableBalance'
+import { withAuthLockRetry } from '@/lib/authLockError'
 import { supabase } from '@/lib/supabase'
 
 export type SendMoneyArgs = {
@@ -8,15 +9,17 @@ export type SendMoneyArgs = {
 }
 
 export async function fetchLinkedChildMemberIds(): Promise<Set<string>> {
-  const { data, error } = await supabase.rpc('family_linked_child_member_ids')
-  if (error) {
-    if (isMissingDbFunctionError(error.message)) {
-      return new Set()
+  return withAuthLockRetry(async () => {
+    const { data, error } = await supabase.rpc('family_linked_child_member_ids')
+    if (error) {
+      if (isMissingDbFunctionError(error.message)) {
+        return new Set()
+      }
+      throw error
     }
-    throw error
-  }
-  const ids = (data ?? []) as string[]
-  return new Set(ids)
+    const ids = (data ?? []) as string[]
+    return new Set(ids)
+  })
 }
 
 export async function sendMoney(args: SendMoneyArgs): Promise<string> {
