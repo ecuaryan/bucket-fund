@@ -309,9 +309,12 @@ export const SETTINGS_PAGE_TITLE = 'Settings'
 export const ADMIN_ACCOUNT_TITLE = 'Admin sign-in'
 
 export const ADMIN_ACCOUNT_INTRO =
-  'Email and password for Admin on the web—not household PINs.'
+  'Email and password for Admin—not household PINs.'
 
 export const ADMIN_ACCOUNT_SEND_RESET = 'Email me a reset link'
+
+export const ADMIN_ACCOUNT_RESET_LINK_SENT =
+  'We sent a reset link. Check your inbox (and spam).'
 
 export const ADMIN_ACCOUNT_RESET_HINT =
   'Your current session stays active until you finish the reset from your inbox.'

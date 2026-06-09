@@ -23,6 +23,8 @@ Entry point for AI coding agents (and humans) working in this repo.
 
 ## Operating principles for this codebase
 
+- **Bump `package.json` version in every PR** (patch by default). See
+  [CONTRIBUTING.md § Bump version](./CONTRIBUTING.md#bump-packagejson-version-on-every-pr).
 - **Branch from current `main`.** One open PR at a time. After a merge:
   `git checkout main && git pull`, then `git checkout -b …` for the next task.
   Never continue on a merged branch or branch cut before the previous PR landed.

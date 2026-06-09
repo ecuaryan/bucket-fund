@@ -27,6 +27,23 @@ gh pr create
 
 Merge when all required checks are green.
 
+### Bump `package.json` version on every PR
+
+Each PR should increment the app semver in [`package.json`](./package.json)
+(and let `package-lock.json` follow — run `npm install --package-lock-only`
+if you only changed the version). **Settings** and **Admin** show this
+number at the bottom of each tab via [`src/lib/appVersion.ts`](./src/lib/appVersion.ts)
+(baked in at build time).
+
+| Change | Bump |
+| ------ | ---- |
+| Fixes, copy, small UX | patch (`1.0.2` → `1.0.3`) |
+| New user-facing capability | minor (`1.0.3` → `1.1.0`) |
+| Breaking change | major (`1.1.0` → `2.0.0`) |
+
+Include the version bump in the same PR as the feature or fix — not a
+follow-up on `main`.
+
 ### One PR at a time — always branch from current `main`
 
 We ship **one open PR at a time**. After a PR merges, reset your local tree
