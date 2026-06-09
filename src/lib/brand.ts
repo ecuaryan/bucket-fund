@@ -313,6 +313,9 @@ export const ADMIN_ACCOUNT_INTRO =
 
 export const ADMIN_ACCOUNT_SEND_RESET = 'Email me a reset link'
 
+export const ADMIN_ACCOUNT_RESET_LINK_SENT =
+  'We sent a reset link. Check your inbox (and spam).'
+
 export const ADMIN_ACCOUNT_RESET_HINT =
   'Your current session stays active until you finish the reset from your inbox.'
 

@@ -3,6 +3,7 @@ import { useAuth } from '@/lib/auth'
 import {
   ADMIN_ACCOUNT_INTRO,
   ADMIN_ACCOUNT_RESET_HINT,
+  ADMIN_ACCOUNT_RESET_LINK_SENT,
   ADMIN_ACCOUNT_RESET_SENT,
   ADMIN_ACCOUNT_SEND_RESET,
   ADMIN_ACCOUNT_TITLE,
@@ -55,11 +56,7 @@ export default function AdminAccountSection() {
 
         {sent ? (
           <div className="mt-4 space-y-2 text-sm text-zinc-300">
-            <p>
-              If an account exists for{' '}
-              <strong className="text-zinc-200">{humanEmail}</strong>, we sent a
-              reset link. Check your inbox (and spam).
-            </p>
+            <p>{ADMIN_ACCOUNT_RESET_LINK_SENT}</p>
             <p className="text-xs text-zinc-400">{ADMIN_ACCOUNT_RESET_HINT}</p>
             <p className="text-xs text-zinc-500">{ADMIN_ACCOUNT_RESET_SENT}</p>
           </div>
