@@ -31,8 +31,9 @@ Merge when all required checks are green.
 
 Each PR should increment the app semver in [`package.json`](./package.json)
 (and let `package-lock.json` follow — run `npm install --package-lock-only`
-if you only changed the version). Settings shows this number via
-[`src/lib/appVersion.ts`](./src/lib/appVersion.ts) (baked in at build time).
+if you only changed the version). **Settings** and **Admin** show this
+number at the bottom of each tab via [`src/lib/appVersion.ts`](./src/lib/appVersion.ts)
+(baked in at build time).
 
 | Change | Bump |
 | ------ | ---- |
