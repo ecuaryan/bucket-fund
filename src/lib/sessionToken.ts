@@ -1,3 +1,4 @@
+import { withAuthLockRetry } from '@/lib/authLockError'
 import { supabase } from '@/lib/supabase'
 
 /** Refresh this many seconds before real expiry to absorb clock skew + latency. */
@@ -23,20 +24,24 @@ export function isAccessTokenStale(
  * Functions. Returns null when there is no session or the refresh fails.
  */
 export async function getFreshAccessToken(): Promise<string | null> {
-  const { data } = await supabase.auth.getSession()
-  const session = data.session
-  if (!session) return null
-  if (!isAccessTokenStale(session.expires_at, Date.now())) {
-    return session.access_token
-  }
-  const { data: refreshed, error } = await supabase.auth.refreshSession()
-  if (error || !refreshed.session) return null
-  return refreshed.session.access_token
+  return withAuthLockRetry(async () => {
+    const { data } = await supabase.auth.getSession()
+    const session = data.session
+    if (!session) return null
+    if (!isAccessTokenStale(session.expires_at, Date.now())) {
+      return session.access_token
+    }
+    const { data: refreshed, error } = await supabase.auth.refreshSession()
+    if (error || !refreshed.session) return null
+    return refreshed.session.access_token
+  })
 }
 
 /** Force a token refresh and return the new access token, or null on failure. */
 export async function refreshAccessToken(): Promise<string | null> {
-  const { data, error } = await supabase.auth.refreshSession()
-  if (error || !data.session) return null
-  return data.session.access_token
+  return withAuthLockRetry(async () => {
+    const { data, error } = await supabase.auth.refreshSession()
+    if (error || !data.session) return null
+    return data.session.access_token
+  })
 }

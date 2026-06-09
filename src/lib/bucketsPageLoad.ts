@@ -4,6 +4,7 @@ import {
   parseBreakdownRow,
   type BucketsBalanceBreakdown,
 } from '@/lib/availableBalance'
+import { withAuthLockRetry } from '@/lib/authLockError'
 import { fetchHouseholdAdminName } from '@/lib/householdAdmin'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database'
@@ -94,13 +95,15 @@ export async function fetchBucketsPageDataLegacy(): Promise<BucketsPageCoreData>
 }
 
 export async function loadBucketsPage(): Promise<BucketsPageData> {
-  const [fast, householdAdminName] = await Promise.all([
-    fetchBucketsPageData(),
-    fetchHouseholdAdminName(),
-  ])
-  if (fast) {
-    return { ...fast, householdAdminName }
-  }
-  const legacy = await fetchBucketsPageDataLegacy()
-  return { ...legacy, householdAdminName }
+  return withAuthLockRetry(async () => {
+    const [fast, householdAdminName] = await Promise.all([
+      fetchBucketsPageData(),
+      fetchHouseholdAdminName(),
+    ])
+    if (fast) {
+      return { ...fast, householdAdminName }
+    }
+    const legacy = await fetchBucketsPageDataLegacy()
+    return { ...legacy, householdAdminName }
+  })
 }

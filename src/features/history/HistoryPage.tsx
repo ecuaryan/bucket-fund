@@ -26,6 +26,7 @@ import {
   TRANSACTION_NOTE_FIELD_LABEL,
   TRANSACTION_NOTE_PLACEHOLDER,
 } from '@/lib/brand'
+import { LoadErrorPanel } from '@/components/ui/LoadErrorPanel'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import { ClearableInput } from '@/components/ui/ClearableInput'
@@ -44,6 +45,7 @@ import {
   type HistoryFilter,
 } from '@/features/history/historyFilters'
 import { fetchHistoryPage, type HistoryTxRow } from '@/features/history/historyQueries'
+import { withAuthLockRetry } from '@/lib/authLockError'
 import {
   bucketEndpointLabel,
   historyBucketMoveSubtitle,
@@ -154,16 +156,22 @@ export default function HistoryPage() {
   }, [filterKey])
 
   const loadBuckets = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('buckets')
-      .select('id, name, display_order, created_at')
-      .order('display_order', { ascending: true })
-      .order('created_at', { ascending: true })
-    if (error) return // non-fatal; picker just stays empty
-    setBuckets(data ?? [])
+    try {
+      await withAuthLockRetry(async () => {
+        const { data, error } = await supabase
+          .from('buckets')
+          .select('id, name, display_order, created_at')
+          .order('display_order', { ascending: true })
+          .order('created_at', { ascending: true })
+        if (error) return // non-fatal; picker just stays empty
+        setBuckets(data ?? [])
+      })
+    } catch {
+      // non-fatal; picker just stays empty
+    }
   }, [])
 
-  useEffect(() => {
+  const loadInitialHistory = useCallback(async () => {
     if (!familyId) return
 
     const generation = ++listGeneration.current
@@ -175,17 +183,19 @@ export default function HistoryPage() {
     setHasMore(true)
     setLoadingMore(false)
 
-    void (async () => {
-      const result = await fetchHistoryPage(activeFilter, null, INITIAL_PAGE_SIZE)
-      if (generation !== listGeneration.current) return
-      if (!result.ok) {
-        setLoadError(result.error)
-        return
-      }
-      setRows(result.rows)
-      setHasMore(result.rows.length === INITIAL_PAGE_SIZE)
-    })()
+    const result = await fetchHistoryPage(activeFilter, null, INITIAL_PAGE_SIZE)
+    if (generation !== listGeneration.current) return
+    if (!result.ok) {
+      setLoadError(result.error)
+      return
+    }
+    setRows(result.rows)
+    setHasMore(result.rows.length === INITIAL_PAGE_SIZE)
   }, [familyId, filterKey])
+
+  useEffect(() => {
+    void loadInitialHistory()
+  }, [loadInitialHistory])
 
   useEffect(() => {
     if (!familyId) return
@@ -242,10 +252,11 @@ export default function HistoryPage() {
 
   if (loadError && rows === null) {
     return (
-      <div className="rounded-2xl bg-red-500/10 p-4 text-sm text-red-300 ring-1 ring-red-500/30">
-        <p className="font-semibold">Could not load history</p>
-        <p className="mt-1">{loadError}</p>
-      </div>
+      <LoadErrorPanel
+        title="Could not load history"
+        message={loadError}
+        onRetry={() => void loadInitialHistory()}
+      />
     )
   }
 
