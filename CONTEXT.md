@@ -380,7 +380,7 @@ Teller API (webhooks → Edge Function → Supabase DB)
 - **Family join links:** Admin QR / copy-link use the current origin, e.g.
   `https://bucketmymoney.com/join?code=…`.
 
-### Free Tier Limits (all sufficient for personal/early SaaS use)
+### Free Tier Limits (personal use today; revisit at paid-customer scale)
 | Service | Relevant Limit |
 |---|---|
 | Vercel | 100GB bandwidth, unlimited deploys |
@@ -555,9 +555,21 @@ Implemented in `src/features/buckets/BucketsPage.tsx` and
 ### Supabase Realtime
 - Subscribe to balance and transaction changes scoped to the authenticated member's family
 - UI updates instantly when any family member makes a move or a Teller sync fires
-- Wired in the Buckets tab (buckets + accounts) and History (transactions INSERT). Requires
-  tables in the `supabase_realtime` publication and `replica identity full`
-  on RLS-protected tables (migrations 00000000000006–07).
+- **App shell (always on):** `useMemberRemovalWatch` — `DELETE` on the signed-in
+  member's own `family_members` row so removed users sign out immediately (one
+  narrow channel on the existing session websocket — not a second connection).
+- **Per tab:** Buckets (`buckets`, `accounts`, `transactions` INSERT,
+  `member_bucket_order`), History (`transactions`), Send / nav helpers
+  (`family_members`, `accounts`) — channels mount with the route and tear down on leave.
+- Requires tables in the `supabase_realtime` publication and `replica identity full`
+  on RLS-protected tables (migrations 00000000000006–07, `family_members` in 24).
+
+**Scaling (paid SaaS):** Supabase bills/constrains **concurrent Realtime
+connections** (one per open app session), not channel count on that connection.
+Early production fits the free tier; growth means a paid Supabase plan and
+monitoring connection peaks — not ripping out Realtime. Before very large scale,
+optional consolidation: one app-level channel per family instead of several
+per-tab channels (complexity trade-off, not required for launch).
 
 ### PWA requirements
 - Full `manifest.json` with icons at all required sizes (72, 96, 128, 144, 152, 192, 384, 512px)

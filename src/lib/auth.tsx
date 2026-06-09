@@ -15,10 +15,9 @@ import { clearLocalAuthSession } from '@/lib/authStorage'
 import { isPinBoundDevice } from '@/lib/familyDevice'
 import { setLastPinMemberId } from '@/lib/lastPinMember'
 import {
-  isPinAuthEmail,
-  ORPHAN_MEMBER_MESSAGE,
-  stashOrphanMemberNotice,
-} from '@/lib/pinAuth'
+  absentMembershipAction,
+  signOutRemovedPinMember,
+} from '@/lib/absentMembership'
 import {
   clearPasswordRecoveryFlow,
   markPasswordRecoveryFlow,
@@ -192,14 +191,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (outcome.status === 'absent') {
       // The row genuinely does not exist — the user was removed.
-      if (isPinAuthEmail(session.user.email ?? undefined)) {
-        stashOrphanMemberNotice(ORPHAN_MEMBER_MESSAGE)
-        clearLocalAuthSession()
-        try {
-          await supabase.auth.signOut({ scope: 'local' })
-        } catch {
-          // Best effort — session is unusable without a membership row.
-        }
+      if (absentMembershipAction(session.user.email ?? undefined) === 'pinSignOut') {
+        await signOutRemovedPinMember()
         setState({
           status: 'signedOut',
           session: null,
@@ -322,14 +315,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshMember = useCallback(async () => {
     if (state.status !== 'signedIn') return
-    const outcome = await fetchMemberOutcome(state.session.user.id)
+    const { session } = state
+    const outcome = await fetchMemberOutcome(session.user.id)
+    if (outcome.status === 'absent') {
+      if (absentMembershipAction(session.user.email ?? undefined) === 'pinSignOut') {
+        await signOutRemovedPinMember()
+        setState({
+          status: 'signedOut',
+          session: null,
+          member: null,
+          memberLoading: false,
+          memberError: false,
+        })
+        return
+      }
+      setState({
+        status: 'signedIn',
+        session,
+        member: null,
+        memberLoading: false,
+        memberError: false,
+      })
+      return
+    }
     setState((prev) => {
       if (prev.status !== 'signedIn') return prev
       if (outcome.status === 'error') {
         return { ...prev, memberLoading: false, memberError: true }
-      }
-      if (outcome.status === 'absent') {
-        return { ...prev, member: null, memberLoading: false, memberError: false }
       }
       return {
         ...prev,

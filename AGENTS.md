@@ -25,6 +25,9 @@ Entry point for AI coding agents (and humans) working in this repo.
 
 - **Bump `package.json` version in every PR** (patch by default). See
   [CONTRIBUTING.md § Bump version](./CONTRIBUTING.md#bump-packagejson-version-on-every-pr).
+- **Realtime:** prefer narrow filters and route-scoped channels; app-shell watches
+  (e.g. member removal) are fine — channels share one websocket per session. See
+  [CONTEXT.md § Supabase Realtime](./CONTEXT.md#supabase-realtime).
 - **Branch from current `main`.** One open PR at a time. After a merge:
   `git checkout main && git pull`, then `git checkout -b …` for the next task.
   Never continue on a merged branch or branch cut before the previous PR landed.
