@@ -4,6 +4,11 @@ import { FieldLabel } from '@/components/ui/FieldLabel'
 import { Sheet } from '@/components/ui/Sheet'
 import { AmountLimitHint } from '@/components/AmountLimitHint'
 import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
+import {
+  UNALLOCATED_ENDPOINT_KEY,
+  defaultMoveMoneyEndpoints,
+  endpointKey,
+} from '@/features/buckets/moveMoneyDefaults'
 import { moveMoney } from '@/lib/buckets'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
@@ -13,25 +18,17 @@ type Bucket = Database['public']['Tables']['buckets']['Row']
 
 type Endpoint = { id: string | null; label: string; balance: number | null }
 
-const UNALLOCATED_ID = '__unallocated__'
-
-function endpointKey(id: string | null): string {
-  return id ?? UNALLOCATED_ID
-}
-
 function endpointFromKey(key: string): string | null {
-  return key === UNALLOCATED_ID ? null : key
+  return key === UNALLOCATED_ENDPOINT_KEY ? null : key
 }
 
 type Props = {
   open: boolean
   buckets: Bucket[]
   unallocated: number
-  /** Bucket the user tapped to open the dialog. Pre-fills as the
-   *  source (From) since "I tapped this bucket because I want to
-   *  spend / reallocate out of it" is the more common intent than
-   *  the inverse. The swap button covers the other direction in
-   *  one tap. */
+  /** Bucket the user tapped to open the dialog. Usually pre-fills as
+   *  From; if that bucket or unallocated is $0, the empty side defaults
+   *  to To so funding an empty bucket is one less swap. */
   initialBucketId: string
   onClose: () => void
   onMoved: (move: {
@@ -50,7 +47,7 @@ export default function MoveMoneyDialog({
   onMoved,
 }: Props) {
   const { formatMoney } = useHideAmounts()
-  const [fromKey, setFromKey] = useState<string>(UNALLOCATED_ID)
+  const [fromKey, setFromKey] = useState<string>(UNALLOCATED_ENDPOINT_KEY)
   const [toKey, setToKey] = useState<string>(initialBucketId)
   const [amountStr, setAmountStr] = useState('')
   const [note, setNote] = useState('')
@@ -61,14 +58,22 @@ export default function MoveMoneyDialog({
   // Reset state whenever the dialog re-opens (or the tapped bucket changes).
   useEffect(() => {
     if (!open) return
-    setFromKey(initialBucketId)
-    setToKey(UNALLOCATED_ID)
+    const balanceById = new Map(
+      buckets.map((b) => [b.id, Number(b.allocated_amount)]),
+    )
+    const { fromKey: nextFrom, toKey: nextTo } = defaultMoveMoneyEndpoints(
+      initialBucketId,
+      unallocated,
+      balanceById,
+    )
+    setFromKey(nextFrom)
+    setToKey(nextTo)
     setAmountStr('')
     setNote('')
     setError(null)
     // Defer focus so the input exists in the DOM.
     setTimeout(() => amountRef.current?.focus(), 0)
-  }, [open, initialBucketId])
+  }, [open, initialBucketId, buckets, unallocated])
 
   const endpoints = useMemo<Endpoint[]>(() => {
     const list: Endpoint[] = [

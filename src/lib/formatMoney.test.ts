@@ -2,8 +2,17 @@ import { describe, expect, it } from 'vitest'
 import { formatMoney, HIDDEN_MONEY_LABEL } from '@/lib/formatMoney'
 
 describe('formatMoney', () => {
-  it('formats visible amounts', () => {
+  it('omits insignificant trailing zeros on whole dollars', () => {
+    expect(formatMoney(100, false)).toBe('$100')
+    expect(formatMoney(0, false)).toBe('$0')
+    expect(formatMoney(1000, false)).toBe('$1,000')
+  })
+
+  it('always shows two decimal places when cents matter', () => {
+    expect(formatMoney(1.1, false)).toBe('$1.10')
     expect(formatMoney(1234.5, false)).toBe('$1,234.50')
+    expect(formatMoney(100.05, false)).toBe('$100.05')
+    expect(formatMoney(0.01, false)).toBe('$0.01')
   })
 
   it('masks when hidden', () => {
