@@ -121,6 +121,25 @@ export const ADMIN_JOIN_CODE_ROTATE_CONFIRM = 'Generate new code'
 export const ADMIN_JOIN_CODE_ROTATE_SUCCESS =
   'New join code created. Share it with your household.'
 
+export const PIN_UNBIND_JOIN_CODE_LINK = 'Use a different join code'
+
+export const PIN_UNBIND_JOIN_CODE_SHEET_TITLE = 'Use a different join code?'
+
+export const PIN_UNBIND_JOIN_CODE_SHEET_INTRO =
+  'This device will forget the current household code. Anyone signing in here again will need the join code from Admin—not just their PIN.'
+
+export const PIN_UNBIND_JOIN_CODE_WHAT_HAPPENS = 'What happens'
+
+export const PIN_UNBIND_JOIN_CODE_EFFECT_FORGET =
+  'The saved join code is removed from this phone or tablet.'
+
+export const PIN_UNBIND_JOIN_CODE_EFFECT_REENTER =
+  'To sign in again, someone must enter the current join code once, then use their PIN as usual.'
+
+export const PIN_UNBIND_JOIN_CODE_CONFIRM = 'Forget this code'
+
+export const PIN_HOUSEHOLD_LOAD_ERROR_TITLE = 'Could not load household'
+
 // --- Admin: people & roles ---
 
 export const ADMIN_HOUSEHOLD_MEMBERS_TITLE = 'Household members'
