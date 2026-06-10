@@ -1,5 +1,9 @@
 import { test, expect } from '@playwright/test'
-import { APP_NAME, APP_TAGLINE } from '../../src/lib/brand'
+import {
+  APP_NAME,
+  LOGIN_TAGLINE_LEAD,
+  LOGIN_TAGLINE_PAYOFF,
+} from '../../src/lib/brand'
 import { createAdminFamily, insertBucket, serviceClient } from '../db/fixtures'
 
 test.describe('smoke', () => {
@@ -7,7 +11,8 @@ test.describe('smoke', () => {
     await page.goto('/')
     await expect(page).toHaveURL(/\/login/)
     await expect(page.getByRole('heading', { name: APP_NAME })).toBeVisible()
-    await expect(page.getByText(APP_TAGLINE)).toBeVisible()
+    await expect(page.getByText(LOGIN_TAGLINE_LEAD)).toBeVisible()
+    await expect(page.getByText(LOGIN_TAGLINE_PAYOFF)).toBeVisible()
     await expect(
       page.getByRole('button', { name: 'Get started' }),
     ).toBeVisible()

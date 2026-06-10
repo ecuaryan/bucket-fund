@@ -10,13 +10,12 @@ import { AuthBrandHeader } from '@/components/AuthBrandHeader'
 import { FieldLabel } from '@/components/ui/FieldLabel'
 import { useAuth } from '@/lib/auth'
 import {
-  BANK_LINK_READ_ONLY,
   LOGIN_ALREADY_HAVE_ACCOUNT,
   LOGIN_GET_STARTED,
-  LOGIN_NEW_HERE_INTRO,
   LOGIN_SHARED_SUB,
   LOGIN_SHARED_TITLE,
   LOGIN_SIGNUP_SUBTITLE,
+  LOGIN_SIGNUP_SUCCESS,
   LOGIN_SIGNUP_TITLE,
 } from '@/lib/brand'
 import {
@@ -133,9 +132,7 @@ export default function LoginPage() {
       } else {
         await auth.signUp({ email, password })
         setSignInPreference('email')
-        setInfo(
-          'Account created. Check your email to confirm, then sign in below.',
-        )
+        setInfo(LOGIN_SIGNUP_SUCCESS)
         switchMode('signIn')
         setPassword('')
       }
@@ -221,8 +218,6 @@ export default function LoginPage() {
             </>
           ) : (
             <>
-              <p className="text-sm text-zinc-400">{LOGIN_NEW_HERE_INTRO}</p>
-
               <button
                 type="button"
                 disabled={submitting}
@@ -305,10 +300,6 @@ export default function LoginPage() {
             </>
           )}
         </form>
-
-        <p className="mt-3 text-center text-xs leading-relaxed text-zinc-500">
-          {BANK_LINK_READ_ONLY}
-        </p>
 
         <div className="mt-6 rounded-2xl bg-zinc-900/80 p-4 text-center ring-1 ring-zinc-800">
           <p className="text-sm font-medium text-zinc-300">{LOGIN_SHARED_TITLE}</p>
