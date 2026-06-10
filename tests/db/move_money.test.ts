@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   addMember,
   createAdminFamily,
-  getAvailableBalance,
+  getSpendingMoneyBalance,
   getBucketAllocation,
   insertBucket,
   moveMoney,
@@ -11,6 +11,7 @@ import {
   setBucketAllocation,
   userClient,
 } from './fixtures'
+
 
 describe('move_money RPC', () => {
   it('moves allocated amount between buckets and logs a transaction', async () => {
@@ -35,7 +36,7 @@ describe('move_money RPC', () => {
     const { data: tx, error } = await svc
       .from('transactions')
       .select(
-        'type, amount, from_bucket_id, to_bucket_id, from_bucket_name, to_bucket_name, from_bucket_balance_before, from_bucket_balance_after, to_bucket_balance_before, to_bucket_balance_after, unallocated_balance_before, unallocated_balance_after, from_member_id, note',
+        'type, amount, from_bucket_id, to_bucket_id, from_bucket_name, to_bucket_name, from_bucket_balance_before, from_bucket_balance_after, to_bucket_balance_before, to_bucket_balance_after, spending_money_balance_before, spending_money_balance_after, from_member_id, note',
       )
       .eq('id', txId)
       .single()
@@ -54,8 +55,8 @@ describe('move_money RPC', () => {
     expect(Number(tx?.from_bucket_balance_after)).toBe(60)
     expect(Number(tx?.to_bucket_balance_before)).toBe(0)
     expect(Number(tx?.to_bucket_balance_after)).toBe(40)
-    expect(tx?.unallocated_balance_before).toBeNull()
-    expect(tx?.unallocated_balance_after).toBeNull()
+    expect(tx?.spending_money_balance_before).toBeNull()
+    expect(tx?.spending_money_balance_after).toBeNull()
   })
 
   it('records the member who performed the move', async () => {
@@ -104,7 +105,7 @@ describe('move_money RPC', () => {
     const { data: tx, error } = await svc
       .from('transactions')
       .select(
-        'from_bucket_id, to_bucket_id, from_bucket_name, to_bucket_name, unallocated_balance_before, unallocated_balance_after',
+        'from_bucket_id, to_bucket_id, from_bucket_name, to_bucket_name, spending_money_balance_before, spending_money_balance_after',
       )
       .eq('id', txId)
       .single()
@@ -115,7 +116,7 @@ describe('move_money RPC', () => {
       from_bucket_name: 'Snacks',
       to_bucket_name: null,
     })
-    expect(Number(tx?.unallocated_balance_after) - Number(tx?.unallocated_balance_before)).toBe(
+    expect(Number(tx?.spending_money_balance_after) - Number(tx?.spending_money_balance_before)).toBe(
       15,
     )
   })
@@ -142,13 +143,13 @@ describe('move_money RPC', () => {
     const { data: tx, error } = await svc
       .from('transactions')
       .select(
-        'to_bucket_name, unallocated_balance_before, unallocated_balance_after',
+        'to_bucket_name, spending_money_balance_before, spending_money_balance_after',
       )
       .eq('id', txId)
       .single()
     expect(error).toBeNull()
     expect(tx?.to_bucket_name).toBe('Fun')
-    expect(Number(tx?.unallocated_balance_before) - Number(tx?.unallocated_balance_after)).toBe(5)
+    expect(Number(tx?.spending_money_balance_before) - Number(tx?.spending_money_balance_after)).toBe(5)
   })
 
   it('member can move money between adult-visible buckets', async () => {
@@ -211,7 +212,7 @@ describe('move_money RPC', () => {
     )
 
     const childClient = await userClient(child.email, child.password)
-    expect(await getAvailableBalance(childClient)).toBe(25)
+    expect(await getSpendingMoneyBalance(childClient)).toBe(25)
 
     await moveMoney(childClient, {
       fromBucketId: null,
@@ -220,7 +221,7 @@ describe('move_money RPC', () => {
     })
 
     expect(await getBucketAllocation(svc, kidBucket)).toBe(12)
-    expect(await getAvailableBalance(childClient)).toBe(13)
+    expect(await getSpendingMoneyBalance(childClient)).toBe(13)
   })
 
   it('child can move between their own buckets', async () => {

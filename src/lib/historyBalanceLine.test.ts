@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { HISTORY_BALANCE_YOUR_LABEL } from '@/lib/brand'
+import { SPENDING_MONEY_LABEL } from '@/lib/brand'
 import {
   historyBucketMoveBalanceLine,
   historySendBalanceLine,
+  HISTORY_SPENDING_MONEY_LABEL,
   shouldShowBalanceLabel,
 } from '@/lib/historyBalanceLine'
 
@@ -108,7 +109,7 @@ describe('historySendBalanceLine', () => {
     ).toEqual({ label: 'Sam', before: 15, after: 55 })
   })
 
-  it('uses “Your balance” when viewer is the kid', () => {
+  it('uses “Spending money” when viewer is the kid', () => {
     expect(
       historySendBalanceLine(
         {
@@ -132,7 +133,7 @@ describe('historySendBalanceLine', () => {
         },
         'kid',
       ),
-    ).toEqual({ label: 'Your balance', before: 15, after: 55 })
+    ).toEqual({ label: SPENDING_MONEY_LABEL, before: 15, after: 55 })
   })
 
   it('shows sender kid balance on kid → adult send', () => {
@@ -166,20 +167,20 @@ describe('historySendBalanceLine', () => {
 describe('shouldShowBalanceLabel', () => {
   it('hides when the label matches a title endpoint', () => {
     expect(shouldShowBalanceLabel('Fun', 'Groceries', 'Fun')).toBe(false)
-    expect(shouldShowBalanceLabel('Groceries', 'Groceries', 'Unallocated')).toBe(
+    expect(shouldShowBalanceLabel('Groceries', 'Groceries', HISTORY_SPENDING_MONEY_LABEL)).toBe(
       false,
     )
     expect(shouldShowBalanceLabel('Sam', 'You', 'Sam')).toBe(false)
   })
 
-  it('hides “Your balance”', () => {
+  it('hides “Spending money” when it matches the title endpoint', () => {
     expect(
-      shouldShowBalanceLabel(HISTORY_BALANCE_YOUR_LABEL, 'You', 'Ryan'),
+      shouldShowBalanceLabel(SPENDING_MONEY_LABEL, 'You', 'Ryan'),
     ).toBe(false)
   })
 
   it('shows when the label is not in the title', () => {
-    expect(shouldShowBalanceLabel('Allowance', 'Unallocated', 'Spending')).toBe(
+    expect(shouldShowBalanceLabel('Allowance', HISTORY_SPENDING_MONEY_LABEL, 'Spending')).toBe(
       true,
     )
   })

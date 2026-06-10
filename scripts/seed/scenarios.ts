@@ -59,7 +59,7 @@ export function listScenarios(): { id: SeedTarget; description: string }[] {
     },
     {
       id: 'rebalance',
-      description: 'Admin with $200 cash and $450 in buckets (negative unallocated)',
+      description: 'Admin with $200 cash and $450 in buckets (negative spending money)',
     },
     {
       id: 'pin-household',
@@ -201,7 +201,7 @@ async function seedHousehold(
 
   const joinCode = await getJoinCode(admin.familyId)
   const notes = [
-    'Home shows allocated buckets and shared unallocated.',
+    'Home shows allocated buckets and shared spending money.',
     'History includes moves and a send with a note.',
   ]
   if (options.withPins) {
@@ -433,7 +433,7 @@ async function seedRebalance(id: ScenarioId): Promise<SeedResult> {
     admin,
     joinCode,
     notes: [
-      '$200 cash with $450 allocated — Home unallocated should show negative (rebalance).',
+      '$200 cash with $450 allocated — Home spending money should show negative (rebalance).',
     ],
   }
 }

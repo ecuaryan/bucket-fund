@@ -12,25 +12,25 @@ This document contains the full product brief, technical stack, architecture dec
 **Registrar / DNS:** Cloudflare → Vercel (A + CNAME). Supabase Auth Site URL and
 Teller allowed origins should use `https://bucketmymoney.com`.
 
-Bucket My Money is a **bank-agnostic virtual bucket budgeting PWA** for **you alone or a shared household**. It sits on top of real bank accounts (read via Teller API) and helps you **organize** your cash into buckets for an at-a-glance view: label what is reserved, see what is still unallocated, and when the bank balance moves, decide which bucket covers it (negative unallocated → move money from buckets on purpose). Brand voice and naming notes live in [docs/BRAND.md](./docs/BRAND.md); user-facing strings in `src/lib/brand.ts` (`APP_TAGLINE`, login copy).
+Bucket My Money is a **bank-agnostic virtual bucket budgeting PWA** for **you alone or a shared household**. It sits on top of real bank accounts (read via Teller API) and helps you **organize** your cash into buckets for an at-a-glance view: label what is reserved, see **spending money** (cash not in buckets), and when the bank balance moves, decide which bucket covers it (negative spending money → move money from buckets on purpose). Brand voice and naming notes live in [docs/BRAND.md](./docs/BRAND.md); user-facing strings in `src/lib/brand.ts` (`SPENDING_MONEY_LABEL`, `APP_TAGLINE`, login copy).
 
 The primary use case is: **open app → move money from one bucket to another → done. Target: 4 taps from a cold open.**
 
 ### Product philosophy
 
-**Intentional friction, minimal automation.** When you overspend, you should come in and consciously face the trade-off — moving money from a bucket into unallocated — rather than having the app auto-fix or auto-rebalance. The at-a-glance view surfaces reality so you decide; balance refresh is user-initiated, not background polling.
+**Intentional friction, minimal automation.** When you overspend, you should come in and consciously face the trade-off — moving money from a bucket into **spending money** — rather than having the app auto-fix or auto-rebalance. The at-a-glance view surfaces reality so you decide; balance refresh is user-initiated, not background polling.
 
 ### Product stage
 
 **Now:** The builder’s family is the first user group — real daily use, discover
 issues in the wild, iterate on UX and sync. Integrity for budgeting gaps is
-**red negative unallocated** in the Buckets tab (bank cash moved; bucket labels did not —
-rebalance by moving money between buckets and unallocated).
+**red negative spending money** in the Buckets tab (bank cash moved; bucket labels did not —
+rebalance by moving money between buckets and spending money).
 
 **Later (if this becomes a paid product):** Harden operator-side ledger checks
 (automated SQL or cron, logging, optional admin-only alerts) to catch
 implementation bugs before support tickets — **not** a second user-facing alarm
-for the same situation as negative unallocated. See [Data Integrity](#data-integrity).
+for the same situation as negative spending money. See [Data Integrity](#data-integrity).
 
 ---
 
@@ -53,13 +53,13 @@ UI labels: **Admin**, **Shared**, **Kid** (`memberRoles.ts`). DB/API values rema
 - Manages household members (add/remove people, assign roles, set PINs) and assigns linked accounts to kids
 - Funds kids via Send; sees all family sends and shared-pool history
 - Views family-level transaction history
-- On the **shared balance** with Shared-role members (same unallocated in Buckets)
+- On the **shared balance** with Shared-role members (same spending money in Buckets)
 - **Admin screen:** join code, household members, linked accounts, and **admin sign-in** (email display + password reset via email link — admin-only)
 
 **Shared** (`member`, e.g. spouse or co-budgeter)
 - Operational access only
 - Moves money between buckets
-- Shares one **family unallocated** number with admin in the Buckets tab (same shared balance)
+- Shares one **family spending money** number with admin in the Buckets tab (same shared balance)
 - Funds kids via Send; sees all family sends and shared-pool history
 - Cannot send to admin (shared-balance members share money — use buckets for shared goals)
 - Cannot link/unlink accounts or create/delete buckets
@@ -91,7 +91,7 @@ UI labels: **Admin**, **Shared**, **Kid** (`memberRoles.ts`). DB/API values rema
   shared balance (admin and Shared role) share the family pool in the Buckets tab — assigning to a spouse is not in v1 UI.
 - Kids may have zero, one, or multiple linked checking/savings accounts (multiple supported).
 - **Two kid money models (do not mix on one kid):**
-  - **Virtual-only** (no linked account): balance = net sends − bucket allocations. Card-less kids live here — spending is logged via **Send** (e.g. kid → shared balance when someone fronts a purchase). Birthday/earnings: kid hands cash over; shared balance credits them with a **shared → kid send**. Back every credit with real cash (deposit to a linked account or bump a **manual money source**) so shared unallocated does not drift red.
+  - **Virtual-only** (no linked account): balance = net sends − bucket allocations. Card-less kids live here — spending is logged via **Send** (e.g. kid → shared balance when someone fronts a purchase). Birthday/earnings: kid hands cash over; shared balance credits them with a **shared → kid send**. Back every credit with real cash (deposit to a linked account or bump a **manual money source**) so shared spending money does not drift red.
   - **Linked** (Teller account assigned to the kid): balance = linked bank cash − bucket allocations. Debit-card spending auto-reflects via Teller. Money in/out happens at the **real bank** (transfers, allowance deposits) — **no virtual sends in or out** for that kid (`send_money` blocks both directions; Send UI omits linked kids and shows an explanation card). Admin shows a confirmation sheet before assigning a linked account to a kid (`ADMIN_ASSIGN_ACCOUNT_TO_KID_*` in `brand.ts`).
 - Virtual siblings can still send to each other; linked ↔ anyone requires a real bank transfer.
 - The family as a whole must have at least one money source (linked bank or manual amount)
@@ -109,40 +109,44 @@ UI labels: **Admin**, **Shared**, **Kid** (`memberRoles.ts`). DB/API values rema
 
 ### Balance Model
 
+**Naming:** Users see **Spending money** (`SPENDING_MONEY_LABEL` in `brand.ts`) — everyday
+cash not in buckets. Code, SQL, RPC JSON, and DB columns use **`spending_money`**
+(same pool; `NULL` bucket id in `move_money`). See [docs/BRAND.md § Naming](./docs/BRAND.md#naming-display-vs-code).
+
 **The invariant:**
-> Sum of all bucket allocations + sum of all unallocated balances across every member = total cash from all money sources (linked bank balances + manual amounts).
+> Sum of all bucket allocations + sum of all spending-money balances across every member = total cash from all money sources (linked bank balances + manual amounts).
 
-Every dollar lives in exactly one place — either in a named bucket or in someone's unallocated balance.
+Every dollar lives in exactly one place — either in a named bucket or in someone's spending-money balance.
 
-Unallocated is **derived** from linked cash, bucket allocations, sends, and role
-rules (`member_available_balance` in SQL). When real bank cash drops but buckets
-do not (e.g. a credit card payment clears), unallocated goes **negative and red**
+Spending money is **derived** from linked cash, bucket allocations, sends, and role
+rules (`member_spending_money` in SQL). When real bank cash drops but buckets
+do not (e.g. a credit card payment clears), spending money goes **negative and red**
 — that is the intended “something needs rebalancing” signal, not a separate
 system-error banner.
 
 **Shared balance (admin + Shared role in the Buckets tab):**
-- **Unallocated** in the Buckets tab is one number for both: family cash minus
+- **Spending money** (derived via `member_spending_money()` in SQL) is one number for both: family cash minus
   shared-balance bucket allocations minus each kid's total funded balance
   (their linked cash plus net sends). How a kid splits that between their
-  own buckets and their own unallocated does not change the shared-balance number.
+  own buckets and their own spending money does not change the shared-balance number.
 - **Buckets breakdown (admin + Shared):** one card shows the math — linked cash,
   allocated to buckets, then one line per kid with funds (not a single wrapped total).
 - Shared-balance ↔ shared-balance sends are not allowed — they would not move the pool anyway.
-- Unallocated ≥ 0 → green; negative → red — move money from bucket(s) into unallocated until the pool matches your intent (every spend should come from somewhere).
+- Spending money ≥ 0 → green; negative → red — move money from bucket(s) into spending money until the pool matches your intent (every spend should come from somewhere).
 
 **Kid:**
-- Unallocated = their cash accounts + net sends − their bucket allocations
+- Spending money = their cash accounts + net sends − their bucket allocations
 - Virtual-only kids (no linked accounts) are funded entirely by sends from the shared balance
 - **Buckets / Send breakdown:** total balance (linked cash + net sends), in your buckets,
-  then unallocated — without exposing other members’ balances
+  then spending money — without exposing other members’ balances
 
 **Members with their own linked accounts (future / optional):**
 - Per-person Teller balances may exist in the schema; Buckets still presents the
-  shared adult pool for admin/member roles. See `member_available_balance` in SQL.
+  shared adult pool for admin/member roles. See `member_spending_money` in SQL.
 
 **When a bank transaction hits via Teller webhook:**
 - Real balance updates automatically
-- Unallocated adjusts with it
+- Spending money adjusts with it
 - Buckets are untouched until the user deliberately moves money
 - Every dollar spent has to come from somewhere — user decides which bucket absorbs it
 
@@ -153,22 +157,22 @@ system-error banner.
 - **Admin** creates and manages family-pool and shared-balance buckets
 - **Shared** moves money and reorders buckets (no create/delete of bucket structure)
 - **Kid** creates and manages only their own buckets (hidden from the shared-balance Buckets tab); moves
-  money between their unallocated balance and their own buckets only
+  money between their spending-money balance and their own buckets only
 - See [README.md § Implementation status](./README.md) for what is shipped on `main`
 - No targets — just current allocated amounts
-- Buckets start at zero and are funded by moving money from unallocated or via a send from another member
+- Buckets start at zero and are funded by moving money from spending money or via a send from another member
 
 ---
 
 ### Transactions
 
 **Bucket moves**
-- Move $X from one bucket to another, or between a bucket and unallocated
+- Move $X from one bucket to another, or between a bucket and spending money
 - Core interaction — must be achievable in 4 taps from a cold open
 - Logged with: amount, from, to, timestamp, optional note
 
 **Virtual sends**
-- **Shared balance → virtual kids:** fund a kid's personal unallocated balance (birthday money, earnings, etc.). Not allowed to **linked** kids — their money moves at the bank.
+- **Shared balance → virtual kids:** fund a kid's personal spending-money balance (birthday money, earnings, etc.). Not allowed to **linked** kids — their money moves at the bank.
 - **Shared balance ↔ shared balance:** not supported — same pool; use **buckets** instead.
 - **Virtual kids → anyone:** from the kid's balance; kid → shared balance returns money to
   the pool (digital "handing over cash" when someone fronts a purchase).
@@ -184,7 +188,7 @@ system-error banner.
 
 ### Transaction History
 - **Admin** sees all `send` rows in the family plus `bucket_move` that are not a
-  kid's internal moves (unallocated ↔ their buckets). Shared-balance-initiated moves
+  kid's internal moves (spending money ↔ their buckets). Shared-balance-initiated moves
   involving a kid's bucket (e.g. funding from the family pool) remain visible.
 - **Shared** sees all `send` rows in the family plus `bucket_move` on family-pool
   and shared-balance buckets (each other's moves included). Kids' bucket moves
@@ -193,13 +197,13 @@ system-error banner.
 - Each entry shows: amount, counterparty or bucket name, timestamp, optional note.
 - **Bucket names are snapshotted** on each `bucket_move` (`from_bucket_name` /
   `to_bucket_name`), so history stays accurate after a bucket is renamed or
-  deleted instead of collapsing to "Unallocated → Unallocated".
+  deleted instead of collapsing to "Spending money → Spending money" (uses `SPENDING_MONEY_LABEL`).
 - **Member names are snapshotted** on each `send` (`from_member_name` /
   `to_member_name`), so History keeps "Alex" after a kid is removed (member ids
   null via `ON DELETE SET NULL`, same pattern as buckets).
 - **Balance snapshots** (optional muted line per row): bucket `allocated_amount`
   before/after on moves; kid total (`member_child_virtual_balance`) before/after
-  on sends. Not bank or shared unallocated.
+  on sends. Not bank or shared spending money.
 - **Shared balance (admin + Shared) see who moved the money** ("Bucket move · by Jamie")
   so a household can tell who touched the shared pool; kids do not
   see the actor line.
@@ -208,12 +212,12 @@ system-error banner.
 
 ### Buckets tab
 - Bucket list with allocated amounts per bucket (shared balance: shared set, per-person sort order)
-- **Unallocated card** when at least one money source exists: green if ≥ 0, red if < 0
-  (red = rebalance signal — cash dropped but bucket labels did not)
-- **No money sources (shared balance):** “Add a money source” CTA instead of the unallocated card —
+- **Spending money card** when at least one money source exists: green if ≥ 0, red if < 0
+  (red = rebalance signal — cash dropped but bucket labels did not). Info icon opens guidance sheet.
+- **No money sources (shared balance):** “Add a money source” CTA instead of the spending money card —
   admin can enter an amount manually from the Buckets tab or link a bank in Admin; Shared-role
   users are told to ask the household admin. Optional note of total allocated across buckets.
-- No separate "real balance" display — unallocated (when sources exist) is the signal
+- No separate "real balance" display — spending money (when sources exist) is the signal
 
 ---
 
@@ -222,7 +226,7 @@ system-error banner.
 Two different situations — do not conflate them in UX or docs.
 
 **1. Budgeting gap (normal, user-facing)**  
-Bank or manual pool balance changed; bucket labels did not. Buckets shows negative unallocated
+Bank or manual pool balance changed; bucket labels did not. Buckets shows negative spending money
 (when money sources exist). The user fixes it with bucket moves. No extra
 “integrity” modal. With no money sources, Buckets shows the add-a-money-source CTA instead.
 
@@ -231,7 +235,7 @@ Stored cash, allocations, and per-member math no longer form one consistent
 ledger (bug, migration mistake, bypass of `move_money` / `send_money`). Rare
 when all writes go through RPCs and Buckets uses one SQL definition. **Deferred**
 for family beta; revisit before charging strangers — automated check + operator
-alert (see `check-invariant` stub), not a duplicate of red unallocated.
+alert (see `check-invariant` stub), not a duplicate of red spending money.
 
 **Today:** Money writes only via `move_money` and `send_money`; database tests
 in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
@@ -326,19 +330,19 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
 
 **TODO:** Teller can return **credit** accounts as well as cash (checking,
 savings, etc.). Today we **only count cash subtypes** toward real balance and
-unallocated (`src/lib/accounts.ts` — credit cards are ignored in the Buckets tab; they
+spending money (`src/lib/accounts.ts` — credit cards are ignored in the Buckets tab; they
 may still be stored in `accounts` if enrolled). Decide later:
 
 - **Exclude entirely** — do not persist or display credit/loan accounts at
   all during Teller enroll (simplest mental model: buckets = cash only).
-- **Integrate as liabilities** — show them separately and adjust unallocated,
-  e.g. treat credit card balance as debt that **reduces** effective unallocated
+- **Integrate as liabilities** — show them separately and adjust spending money,
+  e.g. treat credit card balance as debt that **reduces** effective spending money
   (or available-to-allocate) so the family pool reflects “cash minus what you
   owe on cards.”
 - **Display-only** — sync and show card balances for awareness but never fold
   them into the allocation invariant.
 
-Until decided, keep current behavior: **cash accounts only** in unallocated
+Until decided, keep current behavior: **cash accounts only** in spending-money
 math; do not change the invariant without an explicit product decision.
 
 ---
@@ -520,9 +524,9 @@ bucket-my-money/
 ## Key Implementation Notes for Cursor
 
 ### Ledger check (deferred)
-- Family beta relies on derived unallocated + RPC-only writes + `tests/db/`.
+- Family beta relies on derived spending money + RPC-only writes + `tests/db/`.
 - Before paid SaaS: optional SQL `check_family_ledger`, operator logging/alerts
-  after webhooks; reuse `member_available_balance` — do not duplicate formulas in
+  after webhooks; reuse `member_spending_money` — do not duplicate formulas in
   the client. `check-invariant` Edge Function remains a stub until then.
 
 ### 4-tap bucket move flow
@@ -549,7 +553,7 @@ Implemented in `src/features/buckets/BucketsPage.tsx` and
 ### Teller webhook Edge Function
 - Verify Teller webhook signature
 - On `transactions.processed`, fetch live balances for affected accounts and update
-  `accounts.current_balance` (unallocated in the Buckets tab updates on next load / Realtime)
+  `accounts.current_balance` (spending money in the Buckets tab updates on next load / Realtime)
 - On `enrollment.disconnected`, mark the enrollment inactive
 
 ### Supabase Realtime

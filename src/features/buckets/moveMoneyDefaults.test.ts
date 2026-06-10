@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  UNALLOCATED_ENDPOINT_KEY,
+  SPENDING_MONEY_ENDPOINT_KEY,
   defaultMoveMoneyEndpoints,
 } from '@/features/buckets/moveMoneyDefaults'
 
@@ -13,7 +13,7 @@ describe('defaultMoveMoneyEndpoints', () => {
     expect(
       defaultMoveMoneyEndpoints(BUCKET_A, 100, new Map([[BUCKET_A, 0]])),
     ).toEqual({
-      fromKey: UNALLOCATED_ENDPOINT_KEY,
+      fromKey: SPENDING_MONEY_ENDPOINT_KEY,
       toKey: BUCKET_A,
     })
   })
@@ -21,14 +21,14 @@ describe('defaultMoveMoneyEndpoints', () => {
   it('puts zero unallocated in To when the tapped bucket has funds', () => {
     expect(defaultMoveMoneyEndpoints(BUCKET_A, 0, balances)).toEqual({
       fromKey: BUCKET_A,
-      toKey: UNALLOCATED_ENDPOINT_KEY,
+      toKey: SPENDING_MONEY_ENDPOINT_KEY,
     })
   })
 
   it('keeps tapped bucket as From when both sides have money', () => {
     expect(defaultMoveMoneyEndpoints(BUCKET_A, 25, balances)).toEqual({
       fromKey: BUCKET_A,
-      toKey: UNALLOCATED_ENDPOINT_KEY,
+      toKey: SPENDING_MONEY_ENDPOINT_KEY,
     })
   })
 
@@ -37,7 +37,7 @@ describe('defaultMoveMoneyEndpoints', () => {
       defaultMoveMoneyEndpoints(BUCKET_A, 0, new Map([[BUCKET_A, 0]])),
     ).toEqual({
       fromKey: BUCKET_A,
-      toKey: UNALLOCATED_ENDPOINT_KEY,
+      toKey: SPENDING_MONEY_ENDPOINT_KEY,
     })
   })
 })

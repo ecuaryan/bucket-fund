@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { SPENDING_MONEY_LABEL } from '@/lib/brand'
 import {
   bucketEndpointLabel,
   historyBucketMoveSubtitle,
@@ -28,14 +29,14 @@ describe('bucketEndpointLabel', () => {
     ).toBe('Groceries')
   })
 
-  it('shows Unallocated for null bucket id without snapshot', () => {
+  it('shows the unallocated label for null bucket id without snapshot', () => {
     expect(
       bucketEndpointLabel({
         bucketId: null,
         snapshotName: null,
         joinedName: null,
       }),
-    ).toBe('Unallocated')
+    ).toBe(SPENDING_MONEY_LABEL)
   })
 
   it('keeps bucket name after delete via snapshot', () => {

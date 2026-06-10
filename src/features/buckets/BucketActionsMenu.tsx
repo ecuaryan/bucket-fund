@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { SPENDING_MONEY_LABEL_LOWER } from '@/lib/brand'
 
 type Props = {
   isFirst: boolean
@@ -111,7 +112,7 @@ export default function BucketActionsMenu({
                 destructive
                 title={
                   hasAllocation
-                    ? 'This bucket has money allocated; deleting returns it to Unallocated.'
+                    ? `This bucket has money allocated; deleting returns it to ${SPENDING_MONEY_LABEL_LOWER}.`
                     : undefined
                 }
               >

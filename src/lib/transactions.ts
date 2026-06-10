@@ -7,7 +7,7 @@ export async function updateTransactionNote(
   const trimmed = note?.trim() ?? ''
   const { error } = await supabase.rpc('update_transaction_note', {
     p_transaction_id: transactionId,
-    p_note: trimmed === '' ? null : trimmed,
+    p_note: trimmed,
   })
   if (error) {
     throw new Error(humaniseNoteError(error.message))

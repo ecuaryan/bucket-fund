@@ -17,18 +17,22 @@ import {
   BUCKETS_ADD_SOURCE_TITLE,
   bucketsAddSourceMemberBody,
   bucketsDeleteBucketConfirm,
-  bucketsDeleteBucketEffectUnallocated,
+  bucketsDeleteBucketEffectSpendingMoney,
   bucketsDeleteBucketSheetIntro,
   bucketsDeleteBucketSheetTitle,
   BUCKETS_DELETE_BUCKET_EFFECT_HISTORY,
   BUCKETS_DELETE_BUCKET_EFFECT_LABEL,
   BUCKETS_DELETE_BUCKET_WHAT_HAPPENS,
-  bucketsKidUnallocatedHint,
+  bucketsKidSpendingMoneyHint,
   BUCKETS_DB_UPDATE_PENDING_BODY,
   bucketsMemberNoBucketsHint,
+  bucketsSpendingMoneyInfoAriaLabel,
+  SPENDING_MONEY_LABEL,
 } from '@/lib/brand'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
+import SpendingMoneyInfoSheet from '@/features/buckets/SpendingMoneyInfoSheet'
 import { Sheet } from '@/components/ui/Sheet'
+import InfoIconButton from '@/components/ui/InfoIconButton'
 import { isCashAccount } from '@/lib/accounts'
 import BucketsPageSkeleton from '@/components/BucketsPageSkeleton'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
@@ -71,15 +75,15 @@ import { useFlipList } from '@/hooks/useFlipList'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { refreshBalances } from '@/lib/teller'
 import {
-  buildUnallocatedLines,
+  buildSpendingMoneyLines,
   formatBucketsHeaderSubtitle,
-  formatUnallocatedSummary,
-  unallocatedSummary,
-} from '@/lib/unallocatedBreakdown'
+  formatSpendingMoneySummary,
+  spendingMoneySummary,
+} from '@/lib/spendingMoneyBreakdown'
 import {
-  readUnallocatedDetailsOpen,
-  writeUnallocatedDetailsOpen,
-} from '@/lib/unallocatedDetailsStorage'
+  readSpendingMoneyDetailsOpen,
+  writeSpendingMoneyDetailsOpen,
+} from '@/lib/spendingMoneyDetailsStorage'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -110,6 +114,7 @@ export default function BucketsPage() {
   const [deletingBucket, setDeletingBucket] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [spendingMoneyInfoOpen, setSpendingMoneyInfoOpen] = useState(false)
   const [prevDetailsMemberId, setPrevDetailsMemberId] = useState<string | null>(
     null,
   )
@@ -122,7 +127,7 @@ export default function BucketsPage() {
 
   if (memberId !== prevDetailsMemberId) {
     setPrevDetailsMemberId(memberId)
-    setDetailsOpen(memberId ? readUnallocatedDetailsOpen(memberId) : false)
+    setDetailsOpen(memberId ? readSpendingMoneyDetailsOpen(memberId) : false)
   }
 
   const isAdmin = member?.role === 'admin'
@@ -436,7 +441,7 @@ export default function BucketsPage() {
   }
 
   // Server-side family pool (admin/member share one number). See migration 16.
-  const unallocated = balanceBreakdown.unallocated
+  const spendingMoney = balanceBreakdown.spendingMoney
   const isAdult = !isChild
   const childTotal = isChild ? childTotalBalance(balanceBreakdown) : 0
   const showAdultBreakdown =
@@ -452,12 +457,12 @@ export default function BucketsPage() {
   const showBalanceBreakdown = showAdultBreakdown || showChildBreakdown
   const hasMoneySources = accounts.length > 0
   // Once money is in a bucket it is "organized" — show the negative red
-  // unallocated rebalance signal rather than the getting-started CTA. Only
+  // negative spending-money rebalance signal rather than the getting-started CTA. Only
   // adults with nothing set up at all (no sources, nothing allocated) see it.
   const hasAllocations = balanceBreakdown.bucketAllocated > 0
   const showAddSourceCard = isAdult && !hasMoneySources && !hasAllocations
-  const unallocatedColor =
-    unallocated >= 0
+  const spendingMoneyColor =
+    spendingMoney >= 0
       ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30'
       : 'bg-red-500/10 text-red-300 ring-red-500/30'
 
@@ -472,13 +477,13 @@ export default function BucketsPage() {
   // including children, who can't read the accounts table — sees the same value.
   const bankSyncedLabel = formatRelativeTime(balanceBreakdown.bankLastSyncedAt)
 
-  const unallocatedHint =
+  const spendingMoneyHint =
     showAddSourceCard || showBalanceBreakdown
       ? null
       : cashAccountsCount > 0
         ? `${formatMoney(balanceBreakdown.totalCash)} across ${cashAccountsCount} money source${cashAccountsCount === 1 ? '' : 's'}`
         : isChild
-          ? bucketsKidUnallocatedHint(householdAdminName)
+          ? bucketsKidSpendingMoneyHint(householdAdminName)
           : null
 
   const breakdownOpts = {
@@ -488,14 +493,14 @@ export default function BucketsPage() {
     manualAccountsCount,
     childTotal,
   }
-  const breakdownLines = buildUnallocatedLines(balanceBreakdown, breakdownOpts)
-  const collapsedSummary = unallocatedSummary(balanceBreakdown, breakdownOpts)
+  const breakdownLines = buildSpendingMoneyLines(balanceBreakdown, breakdownOpts)
+  const collapsedSummary = spendingMoneySummary(balanceBreakdown, breakdownOpts)
 
   function toggleDetailsOpen() {
     if (!memberId) return
     setDetailsOpen((prev) => {
       const next = !prev
-      writeUnallocatedDetailsOpen(memberId, next)
+      writeSpendingMoneyDetailsOpen(memberId, next)
       return next
     })
   }
@@ -524,7 +529,12 @@ export default function BucketsPage() {
   return (
     <>
       <BusyOverlay
-        busy={syncing && moveBucketId === null && !manualSourceOpen}
+        busy={
+          syncing &&
+          moveBucketId === null &&
+          !manualSourceOpen &&
+          !spendingMoneyInfoOpen
+        }
         label="Updating…"
       >
         <div className="space-y-6">
@@ -575,17 +585,23 @@ export default function BucketsPage() {
         </section>
       ) : (
         <section
-          className={`rounded-2xl px-4 py-5 ring-1 ${unallocatedColor}`}
-          aria-label="Unallocated balance"
+          className={`rounded-2xl px-4 py-5 ring-1 ${spendingMoneyColor}`}
+          aria-label={`${SPENDING_MONEY_LABEL} balance`}
         >
-          <p className="text-xs font-medium uppercase tracking-wide opacity-70">
-            Unallocated
-          </p>
+          <div className="flex items-center gap-0.5">
+            <p className="text-xs font-medium uppercase tracking-wide opacity-70">
+              {SPENDING_MONEY_LABEL}
+            </p>
+            <InfoIconButton
+              label={bucketsSpendingMoneyInfoAriaLabel()}
+              onClick={() => setSpendingMoneyInfoOpen(true)}
+            />
+          </div>
           <p className="mt-1 text-3xl font-semibold tabular-nums">
-            {formatMoney(unallocated)}
+            {formatMoney(spendingMoney)}
           </p>
-          {unallocatedHint ? (
-            <p className="mt-1 text-xs opacity-70">{unallocatedHint}</p>
+          {spendingMoneyHint ? (
+            <p className="mt-1 text-xs opacity-70">{spendingMoneyHint}</p>
           ) : null}
           {showBalanceBreakdown && (
             <>
@@ -600,7 +616,7 @@ export default function BucketsPage() {
                   {detailsOpen
                     ? 'Breakdown'
                     : collapsedSummary
-                      ? formatUnallocatedSummary(collapsedSummary, formatMoney)
+                      ? formatSpendingMoneySummary(collapsedSummary, formatMoney)
                       : 'Breakdown'}
                 </span>
                 <svg
@@ -748,7 +764,7 @@ export default function BucketsPage() {
       <MoveMoneyDialog
         open={moveBucketId !== null}
         buckets={buckets}
-        unallocated={unallocated}
+        spendingMoney={spendingMoney}
         initialBucketId={moveBucketId ?? ''}
         onClose={() => setMoveBucketId(null)}
         onMoved={async () => {
@@ -759,6 +775,12 @@ export default function BucketsPage() {
             setSyncing(false)
           }
         }}
+      />
+
+      <SpendingMoneyInfoSheet
+        open={spendingMoneyInfoOpen}
+        isChild={isChild}
+        onClose={() => setSpendingMoneyInfoOpen(false)}
       />
 
       {deleteTarget ? (
@@ -795,7 +817,7 @@ export default function BucketsPage() {
               </h3>
               <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-zinc-400">
                 <li>
-                  {bucketsDeleteBucketEffectUnallocated(
+                  {bucketsDeleteBucketEffectSpendingMoney(
                     formatMoney(Number(deleteTarget.allocated_amount)),
                   )}
                 </li>

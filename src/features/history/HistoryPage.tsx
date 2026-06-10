@@ -540,6 +540,7 @@ function TxItem({
     toLabel,
     amount: amountValue,
     currentMemberId,
+    viewerRole,
   })
   const showTwoSidedBalance = balanceSides.length >= 2
 

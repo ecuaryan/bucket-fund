@@ -1,4 +1,4 @@
-/** Cash subtypes that count toward unallocated (mirrors Postgres is_cash_account_type). */
+/** Cash subtypes that count toward spending money (mirrors Postgres is_cash_account_type). */
 export const CASH_ACCOUNT_SUBTYPES = new Set([
   'checking',
   'savings',

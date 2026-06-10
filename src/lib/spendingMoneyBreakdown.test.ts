@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { BucketsBalanceBreakdown } from '@/lib/availableBalance'
 import {
-  buildUnallocatedLines,
+  buildSpendingMoneyLines,
   formatBucketsHeaderSubtitle,
-  formatUnallocatedSummary,
-  unallocatedSummary,
-} from '@/lib/unallocatedBreakdown'
+  formatSpendingMoneySummary,
+  spendingMoneySummary,
+} from '@/lib/spendingMoneyBreakdown'
 
 const fmt = (n: number) => `$${n.toFixed(2)}`
 
@@ -16,7 +16,7 @@ function adultBreakdown(
   const bankCash = overrides.bankCash ?? totalCash
   const manualCash = overrides.manualCash ?? 0
   return {
-    unallocated: 100,
+    spendingMoney: 100,
     totalCash,
     bankCash,
     manualCash,
@@ -31,9 +31,9 @@ function adultBreakdown(
   }
 }
 
-describe('buildUnallocatedLines', () => {
+describe('buildSpendingMoneyLines', () => {
   it('builds adult lines with grouped children subtotal', () => {
-    const lines = buildUnallocatedLines(adultBreakdown(), {
+    const lines = buildSpendingMoneyLines(adultBreakdown(), {
       isChild: false,
       cashAccountsCount: 3,
       bankAccountsCount: 3,
@@ -53,7 +53,7 @@ describe('buildUnallocatedLines', () => {
   })
 
   it('omits children subtotal when there are no children', () => {
-    const lines = buildUnallocatedLines(
+    const lines = buildSpendingMoneyLines(
       adultBreakdown({ children: [], childrenSetAside: 0 }),
       { isChild: false, cashAccountsCount: 1, bankAccountsCount: 1, manualAccountsCount: 0, childTotal: 0 },
     )
@@ -64,7 +64,7 @@ describe('buildUnallocatedLines', () => {
   })
 
   it('splits bank and manual cash when both are present', () => {
-    const lines = buildUnallocatedLines(
+    const lines = buildSpendingMoneyLines(
       adultBreakdown({ totalCash: 5000, bankCash: 3000, manualCash: 2000 }),
       {
         isChild: false,
@@ -85,7 +85,7 @@ describe('buildUnallocatedLines', () => {
   })
 
   it('labels manual-only cash as plain "Cash"', () => {
-    const lines = buildUnallocatedLines(
+    const lines = buildSpendingMoneyLines(
       adultBreakdown({
         totalCash: 1100,
         bankCash: 0,
@@ -108,7 +108,7 @@ describe('buildUnallocatedLines', () => {
   })
 
   it('omits allocated line when bucketAllocated is zero', () => {
-    const lines = buildUnallocatedLines(
+    const lines = buildSpendingMoneyLines(
       adultBreakdown({ bucketAllocated: 0 }),
       { isChild: false, cashAccountsCount: 0, bankAccountsCount: 0, manualAccountsCount: 0, childTotal: 0 },
     )
@@ -116,7 +116,7 @@ describe('buildUnallocatedLines', () => {
   })
 
   it('builds child lines', () => {
-    const lines = buildUnallocatedLines(
+    const lines = buildSpendingMoneyLines(
       adultBreakdown({ bucketAllocated: 25 }),
       { isChild: true, cashAccountsCount: 0, bankAccountsCount: 0, manualAccountsCount: 0, childTotal: 100 },
     )
@@ -127,7 +127,7 @@ describe('buildUnallocatedLines', () => {
   })
 
   it('lists zero-balance children on the adult breakdown', () => {
-    const lines = buildUnallocatedLines(
+    const lines = buildSpendingMoneyLines(
       adultBreakdown({
         childrenSetAside: 0,
         children: [
@@ -156,9 +156,9 @@ describe('buildUnallocatedLines', () => {
   })
 })
 
-describe('unallocatedSummary', () => {
+describe('spendingMoneySummary', () => {
   it('formats adult linked cash with account count', () => {
-    const summary = unallocatedSummary(adultBreakdown(), {
+    const summary = spendingMoneySummary(adultBreakdown(), {
       isChild: false,
       cashAccountsCount: 14,
       bankAccountsCount: 14,
@@ -166,24 +166,24 @@ describe('unallocatedSummary', () => {
       childTotal: 0,
     })
     expect(summary).not.toBeNull()
-    expect(formatUnallocatedSummary(summary!, fmt)).toBe(
+    expect(formatSpendingMoneySummary(summary!, fmt)).toBe(
       '$1000.00 across 14 money sources',
     )
   })
 
   it('formats child total balance', () => {
-    const summary = unallocatedSummary(adultBreakdown(), {
+    const summary = spendingMoneySummary(adultBreakdown(), {
       isChild: true,
       cashAccountsCount: 0,
       bankAccountsCount: 0,
       manualAccountsCount: 0,
       childTotal: 75,
     })
-    expect(formatUnallocatedSummary(summary!, fmt)).toBe('Total balance: $75.00')
+    expect(formatSpendingMoneySummary(summary!, fmt)).toBe('Total balance: $75.00')
   })
 
   it('summarizes manual-only cash without "linked"', () => {
-    const summary = unallocatedSummary(
+    const summary = spendingMoneySummary(
       adultBreakdown({ totalCash: 1100, bankCash: 0, manualCash: 1100 }),
       {
         isChild: false,
@@ -193,13 +193,13 @@ describe('unallocatedSummary', () => {
         childTotal: 0,
       },
     )
-    expect(formatUnallocatedSummary(summary!, fmt)).toBe(
+    expect(formatSpendingMoneySummary(summary!, fmt)).toBe(
       '$1100.00 across 2 money sources',
     )
   })
 
   it('summarizes a single money source with count', () => {
-    const summary = unallocatedSummary(
+    const summary = spendingMoneySummary(
       adultBreakdown({ totalCash: 1000, bankCash: 0, manualCash: 1000 }),
       {
         isChild: false,
@@ -209,13 +209,13 @@ describe('unallocatedSummary', () => {
         childTotal: 0,
       },
     )
-    expect(formatUnallocatedSummary(summary!, fmt)).toBe(
+    expect(formatSpendingMoneySummary(summary!, fmt)).toBe(
       '$1000.00 across 1 money source',
     )
   })
 
   it('summarizes mixed linked and manual sources with total count', () => {
-    const summary = unallocatedSummary(
+    const summary = spendingMoneySummary(
       adultBreakdown({ totalCash: 5000, bankCash: 3000, manualCash: 2000 }),
       {
         isChild: false,
@@ -225,7 +225,7 @@ describe('unallocatedSummary', () => {
         childTotal: 0,
       },
     )
-    expect(formatUnallocatedSummary(summary!, fmt)).toBe(
+    expect(formatSpendingMoneySummary(summary!, fmt)).toBe(
       '$5000.00 across 3 money sources',
     )
   })

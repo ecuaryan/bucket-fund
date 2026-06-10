@@ -1,6 +1,6 @@
-import { HISTORY_BALANCE_YOUR_LABEL } from '@/lib/brand'
+import { SPENDING_MONEY_LABEL } from '@/lib/brand'
 import {
-  HISTORY_UNALLOCATED_LABEL,
+  HISTORY_SPENDING_MONEY_LABEL,
   type HistoryBalanceTxRow,
 } from '@/lib/historyBalanceLine'
 
@@ -29,19 +29,53 @@ function bucketSide(
   return { label, delta, before: b, after: a }
 }
 
-function unallocatedSide(
+function spendingMoneySide(
   delta: number,
   before: string | number | null | undefined,
   after: string | number | null | undefined,
+  opts?: { hideAmounts?: boolean },
 ): HistoryBalanceSide | null {
   const b = parseSnapshotAmount(before)
   const a = parseSnapshotAmount(after)
+  if (opts?.hideAmounts) {
+    if (b === null && a === null) return null
+    return {
+      label: HISTORY_SPENDING_MONEY_LABEL,
+      delta,
+      before: null,
+      after: null,
+    }
+  }
   if (b === null || a === null) return null
   return {
-    label: HISTORY_UNALLOCATED_LABEL,
+    label: HISTORY_SPENDING_MONEY_LABEL,
     delta,
     before: b,
     after: a,
+  }
+}
+
+function hideSharedPoolSnapshots(
+  row: HistoryBalanceTxRow,
+  viewerRole: string,
+  currentMemberId: string,
+): boolean {
+  if (viewerRole !== 'child') return false
+  if (row.type === 'send') return true
+  return row.from_member_id !== currentMemberId
+}
+
+/** Strip shared-pool snapshot columns before they reach kid clients. */
+export function redactHistoryTxForChildViewer<T extends HistoryBalanceTxRow>(
+  row: T,
+  viewerRole: string,
+  currentMemberId: string,
+): T {
+  if (!hideSharedPoolSnapshots(row, viewerRole, currentMemberId)) return row
+  return {
+    ...row,
+    spending_money_balance_before: null,
+    spending_money_balance_after: null,
   }
 }
 
@@ -49,11 +83,11 @@ function sendMemberLabel(
   snapshotName: string | null | undefined,
   isMe: boolean,
 ): string {
-  if (isMe) return HISTORY_BALANCE_YOUR_LABEL
+  if (isMe) return SPENDING_MONEY_LABEL
   return snapshotName?.trim() || 'Balance'
 }
 
-/** Two-sided debit/credit view — both entities, including Unallocated when involved. */
+/** Two-sided debit/credit view — both entities, including spending money when involved. */
 export function historyBalanceSides(
   row: HistoryBalanceTxRow,
   args: {
@@ -61,23 +95,28 @@ export function historyBalanceSides(
     toLabel: string
     amount: number
     currentMemberId: string
+    viewerRole?: string
   },
 ): HistoryBalanceSide[] {
-  const { fromLabel, toLabel, amount, currentMemberId } = args
+  const { fromLabel, toLabel, amount, currentMemberId, viewerRole = 'admin' } = args
   if (!Number.isFinite(amount) || amount <= 0) return []
+
+  const hidePool = hideSharedPoolSnapshots(row, viewerRole, currentMemberId)
 
   if (row.type === 'bucket_move') {
     const fromIsBucket = row.from_bucket_id !== null
     const toIsBucket = row.to_bucket_id !== null
-    const unallocOut = unallocatedSide(
+    const unallocOut = spendingMoneySide(
       -amount,
-      row.unallocated_balance_before,
-      row.unallocated_balance_after,
+      row.spending_money_balance_before,
+      row.spending_money_balance_after,
+      { hideAmounts: hidePool },
     )
-    const unallocIn = unallocatedSide(
+    const unallocIn = spendingMoneySide(
       amount,
-      row.unallocated_balance_before,
-      row.unallocated_balance_after,
+      row.spending_money_balance_before,
+      row.spending_money_balance_after,
+      { hideAmounts: hidePool },
     )
 
     if (fromIsBucket && toIsBucket) {
@@ -127,15 +166,17 @@ export function historyBalanceSides(
 
   const fromIsMe = row.from_member_id === currentMemberId
   const toIsMe = row.to_member_id === currentMemberId
-  const unallocOut = unallocatedSide(
+  const unallocOut = spendingMoneySide(
     -amount,
-    row.unallocated_balance_before,
-    row.unallocated_balance_after,
+    row.spending_money_balance_before,
+    row.spending_money_balance_after,
+    { hideAmounts: hidePool },
   )
-  const unallocIn = unallocatedSide(
+  const unallocIn = spendingMoneySide(
     amount,
-    row.unallocated_balance_before,
-    row.unallocated_balance_after,
+    row.spending_money_balance_before,
+    row.spending_money_balance_after,
+    { hideAmounts: hidePool },
   )
 
   const sides: HistoryBalanceSide[] = []
@@ -151,8 +192,10 @@ export function historyBalanceSides(
       before: fromBefore,
       after: fromAfter,
     })
-  } else if (unallocOut) {
+  } else if (unallocOut && !hidePool) {
     sides.push(unallocOut)
+  } else if (hidePool && row.from_member_id !== currentMemberId) {
+    sides.push({ label: fromLabel, delta: -amount, before: null, after: null })
   }
 
   if (toBefore !== null && toAfter !== null) {
@@ -162,8 +205,10 @@ export function historyBalanceSides(
       before: toBefore,
       after: toAfter,
     })
-  } else if (unallocIn) {
+  } else if (unallocIn && !hidePool) {
     sides.push(unallocIn)
+  } else if (hidePool && row.to_member_id !== currentMemberId) {
+    sides.push({ label: toLabel, delta: amount, before: null, after: null })
   }
 
   return sides
@@ -180,13 +225,13 @@ export function formatSignedDelta(
 
 export type TransferAmountAccent = 'fund' | 'release' | 'neutral'
 
-/** Rose when releasing to unallocated; emerald when funding from it; neutral bucket shuffle. */
+/** Rose when releasing to spending money; emerald when funding from it; neutral bucket shuffle. */
 export function transferAmountAccent(sides: HistoryBalanceSide[]): TransferAmountAccent {
   if (sides.length !== 2) return 'neutral'
   const debit = sides[0]!
   const credit = sides[1]!
-  if (debit.label === HISTORY_UNALLOCATED_LABEL) return 'fund'
-  if (credit.label === HISTORY_UNALLOCATED_LABEL) return 'release'
+  if (debit.label === HISTORY_SPENDING_MONEY_LABEL) return 'fund'
+  if (credit.label === HISTORY_SPENDING_MONEY_LABEL) return 'release'
   return 'neutral'
 }
 

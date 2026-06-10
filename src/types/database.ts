@@ -357,6 +357,8 @@ export type Database = {
           from_member_name: string | null
           id: string
           note: string | null
+          spending_money_balance_after: number | null
+          spending_money_balance_before: number | null
           to_bucket_balance_after: number | null
           to_bucket_balance_before: number | null
           to_bucket_id: string | null
@@ -366,8 +368,6 @@ export type Database = {
           to_member_id: string | null
           to_member_name: string | null
           type: string
-          unallocated_balance_after: number | null
-          unallocated_balance_before: number | null
         }
         Insert: {
           amount: number
@@ -383,6 +383,8 @@ export type Database = {
           from_member_name?: string | null
           id?: string
           note?: string | null
+          spending_money_balance_after?: number | null
+          spending_money_balance_before?: number | null
           to_bucket_balance_after?: number | null
           to_bucket_balance_before?: number | null
           to_bucket_id?: string | null
@@ -392,8 +394,6 @@ export type Database = {
           to_member_id?: string | null
           to_member_name?: string | null
           type: string
-          unallocated_balance_after?: number | null
-          unallocated_balance_before?: number | null
         }
         Update: {
           amount?: number
@@ -409,6 +409,8 @@ export type Database = {
           from_member_name?: string | null
           id?: string
           note?: string | null
+          spending_money_balance_after?: number | null
+          spending_money_balance_before?: number | null
           to_bucket_balance_after?: number | null
           to_bucket_balance_before?: number | null
           to_bucket_id?: string | null
@@ -418,8 +420,6 @@ export type Database = {
           to_member_id?: string | null
           to_member_name?: string | null
           type?: string
-          unallocated_balance_after?: number | null
-          unallocated_balance_before?: number | null
         }
         Relationships: [
           {
@@ -461,7 +461,123 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      transactions_client: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          family_id: string | null
+          from_bucket_balance_after: number | null
+          from_bucket_balance_before: number | null
+          from_bucket_id: string | null
+          from_bucket_name: string | null
+          from_member_balance_after: number | null
+          from_member_balance_before: number | null
+          from_member_id: string | null
+          from_member_name: string | null
+          id: string | null
+          note: string | null
+          spending_money_balance_after: number | null
+          spending_money_balance_before: number | null
+          to_bucket_balance_after: number | null
+          to_bucket_balance_before: number | null
+          to_bucket_id: string | null
+          to_bucket_name: string | null
+          to_member_balance_after: number | null
+          to_member_balance_before: number | null
+          to_member_id: string | null
+          to_member_name: string | null
+          type: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          family_id?: string | null
+          from_bucket_balance_after?: number | null
+          from_bucket_balance_before?: number | null
+          from_bucket_id?: string | null
+          from_bucket_name?: string | null
+          from_member_balance_after?: number | null
+          from_member_balance_before?: number | null
+          from_member_id?: string | null
+          from_member_name?: string | null
+          id?: string | null
+          note?: string | null
+          spending_money_balance_after?: never
+          spending_money_balance_before?: never
+          to_bucket_balance_after?: number | null
+          to_bucket_balance_before?: number | null
+          to_bucket_id?: string | null
+          to_bucket_name?: string | null
+          to_member_balance_after?: number | null
+          to_member_balance_before?: number | null
+          to_member_id?: string | null
+          to_member_name?: string | null
+          type?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          family_id?: string | null
+          from_bucket_balance_after?: number | null
+          from_bucket_balance_before?: number | null
+          from_bucket_id?: string | null
+          from_bucket_name?: string | null
+          from_member_balance_after?: number | null
+          from_member_balance_before?: number | null
+          from_member_id?: string | null
+          from_member_name?: string | null
+          id?: string | null
+          note?: string | null
+          spending_money_balance_after?: never
+          spending_money_balance_before?: never
+          to_bucket_balance_after?: number | null
+          to_bucket_balance_before?: number | null
+          to_bucket_id?: string | null
+          to_bucket_name?: string | null
+          to_member_balance_after?: number | null
+          to_member_balance_before?: number | null
+          to_member_id?: string | null
+          to_member_name?: string | null
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_from_bucket_id_fkey"
+            columns: ["from_bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_from_member_id_fkey"
+            columns: ["from_member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_to_bucket_id_fkey"
+            columns: ["to_bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_to_member_id_fkey"
+            columns: ["to_member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       add_manual_account: {
@@ -488,16 +604,12 @@ export type Database = {
         Returns: undefined
       }
       ensure_member_bucket_orders: { Args: never; Returns: undefined }
-      generate_join_code: { Args: never; Returns: string }
       family_linked_child_member_ids: { Args: never; Returns: string[] }
-      get_available_balance: { Args: never; Returns: number }
+      generate_join_code: { Args: never; Returns: string }
       get_home_balance_breakdown: { Args: never; Returns: Json }
       get_home_page_data: { Args: never; Returns: Json }
+      get_spending_money_balance: { Args: never; Returns: number }
       is_cash_account_type: { Args: { p_type: string }; Returns: boolean }
-      member_available_balance: {
-        Args: { p_member_id: string }
-        Returns: number
-      }
       member_child_virtual_balance: {
         Args: { p_child_member_id: string }
         Returns: number
@@ -506,6 +618,7 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: boolean
       }
+      member_spending_money: { Args: { p_member_id: string }; Returns: number }
       move_money: {
         Args: {
           p_amount: number
@@ -523,6 +636,10 @@ export type Database = {
         Args: { p_ordered_bucket_ids: string[] }
         Returns: undefined
       }
+      revoke_member_sessions: {
+        Args: { p_family_id: string; p_user_id: string }
+        Returns: undefined
+      }
       rotate_family_join_code: { Args: never; Returns: string }
       send_money: {
         Args: { p_amount: number; p_note?: string; p_to_member_id: string }
@@ -532,12 +649,12 @@ export type Database = {
         Args: { p_transaction_id: string }
         Returns: boolean
       }
-      update_transaction_note: {
-        Args: { p_note?: string | null; p_transaction_id: string }
-        Returns: undefined
-      }
       update_manual_account: {
         Args: { p_account_id: string; p_amount: number; p_label: string }
+        Returns: undefined
+      }
+      update_transaction_note: {
+        Args: { p_note: string; p_transaction_id: string }
         Returns: undefined
       }
     }
