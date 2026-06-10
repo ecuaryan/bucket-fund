@@ -49,7 +49,7 @@ use another for `npm run dev` (or `npm run dev:phone`). After pulling SQL change
 
 | Command | Purpose |
 | ------- | ------- |
-| `npm run db:start` | Local Postgres + Auth + Studio (port 54323) |
+| `npm run db:start` | Local Postgres + Auth + Studio (54323); signup emails in Inbucket (54324) |
 | `npm run dev:phone` | Vite on LAN for phone UI testing (same WiFi) |
 | `npm run functions:serve` | Edge Functions (second terminal; needs `supabase/functions/.env`) |
 | `npm run db:stop` | Stop local stack |

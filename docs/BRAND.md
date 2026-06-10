@@ -84,7 +84,7 @@ accounts and balances; webhooks refresh balances when activity posts. We do
 
 **`send_money` and `move_money` are virtual** — labels inside the app only.
 
-User-facing reassurance: `BANK_READ_ONLY_ASSURANCE`, `BANK_LINK_READ_ONLY`,
+User-facing reassurance: `BANK_READ_ONLY_ASSURANCE` (Admin money-source copy),
 `ADMIN_LINKED_ACCOUNTS_INTRO`, `BUCKETS_LINK_BANK_*` in `brand.ts` — read-only;
 we read balances and cannot transfer, send, or withdraw money at the bank.
 Balance freshness uses **Refresh** (on-demand re-pull), not background polling.
@@ -99,12 +99,11 @@ limit UI to “checking or savings” only.
 
 | Surface | String source |
 |---------|----------------|
-| Login tagline | `APP_TAGLINE` |
-| New here blurb | `LOGIN_NEW_HERE_INTRO` |
+| Login tagline | `LOGIN_TAGLINE_LEAD` + `LOGIN_TAGLINE_PAYOFF` (pre-setup); `APP_TAGLINE` elsewhere |
 | Returning sign-in divider | `LOGIN_ALREADY_HAVE_ACCOUNT` |
 | Sign-up | `LOGIN_SIGNUP_*`, `LOGIN_HOUSEHOLD_*` |
 | PIN path | `LOGIN_SHARED_*` |
-| Bank read-only note | `BANK_LINK_READ_ONLY`, `BANK_READ_ONLY_ASSURANCE` |
+| Bank read-only note | `BANK_READ_ONLY_ASSURANCE` in Admin (`ADMIN_LINKED_ACCOUNTS_*`, link-bank confirm) |
 | Join code (Admin + PIN) | `JOIN_CODE_*`, `ADMIN_JOIN_CODE_*` |
 | Admin people & roles | `ADMIN_HOUSEHOLD_MEMBERS_*`, `memberRoles.ts` |
 | Admin linked accounts | `ADMIN_LINKED_ACCOUNTS_*` |

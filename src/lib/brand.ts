@@ -14,9 +14,13 @@ export const APP_SHORT_NAME = 'BucketMyMoney' as const
 /** Stable hook for e2e and form tests (`data-bucketmymoney-form`). */
 export const APP_FORM_DATA_ATTR = 'data-bucketmymoney-form' as const
 
-/** Primary promise on auth and marketing surfaces. */
+/** Primary promise after setup (meta, PWA, post–ah-ha surfaces). */
 export const APP_TAGLINE =
   'Bank balance moved? Pick which bucket covers it.'
+
+/** Login screen — value before bank link or first bucket view. */
+export const LOGIN_TAGLINE_LEAD = 'Organize your money into buckets.'
+export const LOGIN_TAGLINE_PAYOFF = 'Spend like you mean it.'
 
 /** Default label beside the shared loading spinner (pages, overlays, auth). */
 export const LOADING_STATUS_LABEL = 'Loading…'
@@ -38,17 +42,11 @@ export const HTML_META_DESCRIPTION = `${APP_TAGLINE} ${PWA_DESCRIPTION}`
 export const OFFLINE_PAGE_BODY =
   'Bucket My Money needs a connection to sync with your bank and household. Your last-seen balances may still be visible in the app.'
 
-/** Above “Get started” on the login screen. */
-export const LOGIN_NEW_HERE_INTRO =
-  'New here? Connect your bank (read-only) and organize your cash with buckets—solo or with your household.'
-
 export const LOGIN_ALREADY_HAVE_ACCOUNT = 'Already have an account?'
 
 /** Login/sign-up footnote. Fact-checked against our Teller usage (see docs/BRAND.md). */
 export const BANK_READ_ONLY_ASSURANCE =
   "we read balances—we can't transfer, send, or withdraw money"
-
-export const BANK_LINK_READ_ONLY = `Read-only bank connection—${BANK_READ_ONLY_ASSURANCE}.`
 
 /** Shown when a stored session can no longer be refreshed (dead refresh token). */
 export const SESSION_EXPIRED_MESSAGE =
@@ -69,7 +67,11 @@ export const LOGIN_GET_STARTED = 'Get started'
 export const LOGIN_SIGNUP_TITLE = 'Create your account'
 
 export const LOGIN_SIGNUP_SUBTITLE =
-  "You'll confirm your email, then sign in. Use buckets on your own, or invite household members later."
+  'Confirm your email, then sign in and set up your buckets.'
+
+/** After sign-up when email confirmation is required before first sign-in. */
+export const LOGIN_SIGNUP_SUCCESS =
+  'Account created. Check your email to confirm, then sign in below.'
 
 export const LOGIN_SHARED_TITLE = 'Sharing a household?'
 
