@@ -23,8 +23,8 @@ export type HistoryTxRow = {
   from_member_balance_after: string | number | null
   to_member_balance_before: string | number | null
   to_member_balance_after: string | number | null
-  unallocated_balance_before: string | number | null
-  unallocated_balance_after: string | number | null
+  spending_money_balance_before: string | number | null
+  spending_money_balance_after: string | number | null
   note: string | null
   created_at: string
   from_bucket: { name: string } | null
@@ -33,6 +33,7 @@ export type HistoryTxRow = {
   to_member: { name: string } | null
 }
 
+const TX_FROM = 'transactions_client' as const
 const TX_SELECT =
   '*, from_bucket:buckets!from_bucket_id(name), to_bucket:buckets!to_bucket_id(name), from_member:family_members!from_member_id(name), to_member:family_members!to_member_id(name)'
 
@@ -48,7 +49,7 @@ export async function fetchHistoryPage(
   try {
     return await withAuthLockRetry(async () => {
       let query = supabase
-        .from('transactions')
+        .from(TX_FROM)
         .select(TX_SELECT)
         .order('created_at', { ascending: false })
         .limit(limit)

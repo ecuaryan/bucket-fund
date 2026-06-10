@@ -5,22 +5,23 @@ Working notes for product name and user-facing copy. Code imports strings from
 
 ## What we’re selling
 
-Not “every dollar lives in a bucket.” Cash sits in **unallocated** until you
-label it; buckets are how you **organize** the money you already have — label
-and reserve it for an at-a-glance view that helps you make day-to-day decisions.
+Not “every dollar lives in a bucket.” Cash sits in **spending money** (the pool
+not yet in a bucket) until you label it; buckets are how you **organize** the
+money you already have — label and reserve it for an at-a-glance view that helps
+you make day-to-day decisions.
 
 The payoff:
 
 - **Accountability after the bank moves** — Teller updates cash; buckets stay
-  until you move money. You pick which bucket (or unallocated cushion) covers it.
+  until you move money. You pick which bucket (or spending-money cushion) covers it.
 - **Intentional friction** — minimal automation by design. When you overspend,
-  you come in and consciously move money from a bucket into unallocated;
+  you come in and consciously move money from a bucket into spending money;
   confronting the trade-off is the value, not a chore to automate away. The
   at-a-glance view surfaces reality so you *decide*; it does not auto-fix.
-- **Tradeoffs** — negative unallocated means it is time to pull from buckets
+- **Tradeoffs** — negative spending money means it is time to pull from buckets
   on purpose, not that income “came from” somewhere new.
 - **Works alone or together** — one person with buckets, or a household sharing
-  unallocated and optional member PINs.
+  spending money and optional member PINs.
 
 **Canonical tagline (`APP_TAGLINE`):** *Bank balance moved? Pick which bucket covers it.*
 
@@ -44,10 +45,12 @@ The payoff:
   See `src/lib/memberRoles.ts` and Admin strings in `brand.ts`.
 - **Shared balance** is the collective money pool (admin + Shared role). Say
   “people on the shared balance” or “shared balance” in copy—not “adults” or
-  “partners”—when describing who shares household buckets and unallocated.
+  “partners”—when describing who shares household buckets and spending money.
 - Say **household admin** (not “your admin”) when a non-admin needs the person
-  who manages Admin. Use **unallocated** in the Buckets tab/Send; **Household** in Admin
-  assignment dropdowns (`HOUSEHOLD_LABEL`, not “pool” in user copy).
+  who manages Admin. Use **Spending money** (`SPENDING_MONEY_LABEL` in `brand.ts`)
+  in the Buckets tab, Move money, History, and related Send copy; **Household**
+  in Admin assignment dropdowns (`HOUSEHOLD_LABEL`, not “pool” in user copy).
+  Matches SQL/RPC: `spending_money`, `member_spending_money()`, etc.
 - Kid-facing copy: **shared balance** or **household admin**, not “parent,”
   unless you mean a specific person.
 - **Toasts:** ephemeral success/error feedback uses the global toast, fixed below
@@ -92,8 +95,15 @@ Do not promise “we never see transactions” if we later fetch transaction his
 today we mainly use the transactions product for balance sync webhooks.
 
 Link copy: **one or more accounts**; **cash account types** count toward
-unallocated (see `CASH_ACCOUNT_SUBTYPES` in `src/lib/accounts.ts`) — do not
+spending money (see `CASH_ACCOUNT_SUBTYPES` in `src/lib/accounts.ts`) — do not
 limit UI to “checking or savings” only.
+
+## Ubiquitous language: spending money
+
+Product, UI, TypeScript, SQL, and RPCs all use **spending money** for the pool
+not assigned to buckets (`SPENDING_MONEY_LABEL`, `spending_money` JSON key,
+`member_spending_money()`, `spending_money_balance_*` columns). `NULL` bucket id
+in `move_money` means the spending-money pool.
 
 ## Copy map (auth & admin)
 
@@ -121,7 +131,9 @@ limit UI to “checking or savings” only.
 | Household admin (hints) | `householdAdminLabel()`, `HOUSEHOLD_ADMIN_PHRASE` fallback |
 | Buckets tab: no linked accounts | `bucketsLinkBankMemberBody()` |
 | Buckets tab: member empty buckets | `bucketsMemberNoBucketsHint()` |
-| Buckets tab: kid unallocated hint | `bucketsKidUnallocatedHint()` |
+| Buckets tab: kid spending-money hint | `bucketsKidSpendingMoneyHint()` |
+| Buckets tab: spending money info sheet | `bucketsSpendingMoneyInfoPoints()`, `bucketsSpendingMoneyInfoSheetTitle()` |
+| Spending money label (all UI) | `SPENDING_MONEY_LABEL`, `SPENDING_MONEY_LABEL_LOWER` |
 | History sent-money filter | `HISTORY_FILTER_SENT_MONEY` |
 | History empty state | `HISTORY_EMPTY_*` |
 | PIN sign-in: empty roster | `pinNoMembersYet()` |

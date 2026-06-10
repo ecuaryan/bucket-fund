@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   addMember,
   createAdminFamily,
-  getAvailableBalance,
+  getSpendingMoneyBalance,
   insertBucket,
   memberBalance,
   moveMoney,
@@ -34,15 +34,15 @@ describe('send_money RPC', () => {
     })
 
     expect(txId).toBeTruthy()
-    expect(await getAvailableBalance(admin)).toBe(125)
+    expect(await getSpendingMoneyBalance(admin)).toBe(125)
 
     const childClient = await userClient(child.email, child.password)
-    expect(await getAvailableBalance(childClient)).toBe(75)
+    expect(await getSpendingMoneyBalance(childClient)).toBe(75)
 
     const { data: tx, error } = await svc
       .from('transactions')
       .select(
-        'type, amount, from_member_id, to_member_id, from_member_name, to_member_name, to_member_balance_before, to_member_balance_after, unallocated_balance_before, unallocated_balance_after, note',
+        'type, amount, from_member_id, to_member_id, from_member_name, to_member_name, to_member_balance_before, to_member_balance_after, spending_money_balance_before, spending_money_balance_after, note',
       )
       .eq('id', txId)
       .single()
@@ -58,8 +58,8 @@ describe('send_money RPC', () => {
     expect(tx?.from_member_name).toBeTruthy()
     expect(Number(tx?.to_member_balance_before)).toBe(0)
     expect(Number(tx?.to_member_balance_after)).toBe(75)
-    expect(Number(tx?.unallocated_balance_before)).toBe(200)
-    expect(Number(tx?.unallocated_balance_after)).toBe(125)
+    expect(Number(tx?.spending_money_balance_before)).toBe(200)
+    expect(Number(tx?.spending_money_balance_after)).toBe(125)
   })
 
   it('keeps snapshotted names after recipient is removed', async () => {
@@ -115,7 +115,7 @@ describe('send_money RPC', () => {
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
     await sendMoney(admin, { toMemberId: child.memberId, amount: 75 })
-    expect(await getAvailableBalance(admin)).toBe(125)
+    expect(await getSpendingMoneyBalance(admin)).toBe(125)
 
     const kidBucket = await insertBucket(
       svc,
@@ -130,8 +130,8 @@ describe('send_money RPC', () => {
       amount: 75,
     })
 
-    expect(await getAvailableBalance(childClient)).toBe(0)
-    expect(await getAvailableBalance(admin)).toBe(125)
+    expect(await getSpendingMoneyBalance(childClient)).toBe(0)
+    expect(await getSpendingMoneyBalance(admin)).toBe(125)
   })
 
   it('rejects send when unallocated is insufficient', async () => {
@@ -156,8 +156,8 @@ describe('send_money RPC', () => {
     })
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(/insufficient unallocated/i)
-    expect(await getAvailableBalance(admin)).toBe(-50)
+    expect(error?.message).toMatch(/insufficient spending money/i)
+    expect(await getSpendingMoneyBalance(admin)).toBe(-50)
   })
 
   it('rejects send to self', async () => {
@@ -193,13 +193,13 @@ describe('send_money RPC', () => {
     expect(await memberBalance(svc, child.memberId)).toBe(40)
 
     const childClient = await userClient(child.email, child.password)
-    expect(await getAvailableBalance(childClient)).toBe(40)
+    expect(await getSpendingMoneyBalance(childClient)).toBe(40)
 
     await sendMoney(childClient, { toMemberId: member.memberId, amount: 15 })
 
-    expect(await getAvailableBalance(childClient)).toBe(25)
+    expect(await getSpendingMoneyBalance(childClient)).toBe(25)
     // Child → adult returns funds to the shared pool (not personal send_net).
-    expect(await getAvailableBalance(await userClient(member.email, member.password))).toBe(75)
+    expect(await getSpendingMoneyBalance(await userClient(member.email, member.password))).toBe(75)
   })
 
   it('rejects adult-to-adult send', async () => {
@@ -350,8 +350,8 @@ describe('send_money RPC', () => {
     const childAClient = await userClient(childA.email, childA.password)
     await sendMoney(childAClient, { toMemberId: childB.memberId, amount: 15 })
 
-    expect(await getAvailableBalance(childAClient)).toBe(25)
-    expect(await getAvailableBalance(await userClient(childB.email, childB.password))).toBe(15)
+    expect(await getSpendingMoneyBalance(childAClient)).toBe(25)
+    expect(await getSpendingMoneyBalance(await userClient(childB.email, childB.password))).toBe(15)
   })
 
   it('adult can still send to virtual child when another child is linked', async () => {
@@ -384,9 +384,9 @@ describe('send_money RPC', () => {
     })
 
     expect(txId).toBeTruthy()
-    expect(await getAvailableBalance(admin)).toBe(140)
+    expect(await getSpendingMoneyBalance(admin)).toBe(140)
     expect(
-      await getAvailableBalance(
+      await getSpendingMoneyBalance(
         await userClient(virtualChild.email, virtualChild.password),
       ),
     ).toBe(60)

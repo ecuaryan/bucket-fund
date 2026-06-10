@@ -17,6 +17,9 @@ export type FamilyFixture = {
 
 const PASSWORD = 'test-password-12xy'
 
+/** Authenticated SELECT surface (RLS + redacted pool snapshots for kids). */
+export const TRANSACTIONS_CLIENT = 'transactions_client' as const
+
 export function serviceClient(): Db {
   const { url, serviceRoleKey } = requireDbEnv()
   return createClient<Database>(url, serviceRoleKey, {
@@ -178,15 +181,15 @@ export async function updateTransactionNote(
   if (error) throw error
 }
 
-export async function getAvailableBalance(client: Db): Promise<number> {
-  const { data, error } = await client.rpc('get_available_balance')
+export async function getSpendingMoneyBalance(client: Db): Promise<number> {
+  const { data, error } = await client.rpc('get_spending_money_balance')
   if (error) throw error
   return Number(data)
 }
 
 /** Service role — same formula as Buckets tab / send_money. */
 export async function memberBalance(svc: Db, memberId: string): Promise<number> {
-  const { data, error } = await svc.rpc('member_available_balance', {
+  const { data, error } = await svc.rpc('member_spending_money', {
     p_member_id: memberId,
   })
   if (error) throw error

@@ -92,7 +92,7 @@ another email to switch — no reset needed.
 | `all` | (every row below) | All families at once — credential table printed at end |
 | `solo` | `solo@bmm.dev` | Empty app, good for first-run UX |
 | `household` | `household@bmm.dev` | Admin + shared member + kid, $1k cash, buckets, send |
-| `rebalance` | `rebalance@bmm.dev` | $200 cash, $450 allocated (negative unallocated) |
+| `rebalance` | `rebalance@bmm.dev` | $200 cash, $450 allocated (negative spending money) |
 | `pin-household` | `pin-household@bmm.dev` | Like `household`, PIN **0000** on Alex and Sam |
 | `linked-kid` | `linked-kid@bmm.dev` | Kid with assigned manual account — Send blocked |
 | `admin-no-pin` | `admin-no-pin@bmm.dev` | Admin only, no PIN — green PIN setup CTA |
@@ -194,7 +194,7 @@ High-level snapshot of what exists on `main` today. Product truth lives in
 [CONTEXT.md](./CONTEXT.md) (including [product stage](./CONTEXT.md#product-stage));
 this section tracks build progress only.
 
-**Rollout:** Builder’s family is the first beta. Negative unallocated in the Buckets tab
+**Rollout:** Builder’s family is the first beta. Negative spending money in the Buckets tab
 is the user-facing “rebalance your buckets” signal. Automated operator ledger
 checks are deferred until a possible paid SaaS phase.
 
@@ -204,7 +204,7 @@ checks are deferred until a possible paid SaaS phase.
   `bootstrap_family` metadata prevents duplicate families for PIN users)
 - Family join code + QR, avatar + 4-digit PIN login, admin member/PIN management
 - Per-member bucket ordering; shared balance does not see kids' buckets in the Buckets tab
-- Buckets tab: unallocated pool, bucket list, Realtime sync
+- Buckets tab: spending money pool (`SPENDING_MONEY_LABEL`), bucket list, Realtime sync
 - Bucket CRUD: create, inline rename, reorder, delete (with fund reclaim)
 - Move money flow (`move_money` Postgres fn + MoveMoneyDialog)
 - Send money (`send_money` RPC + Send page; shared balance funds kids; blocked shared↔shared)
@@ -224,7 +224,7 @@ checks are deferred until a possible paid SaaS phase.
 ### Deferred (family beta → paid SaaS if ever)
 
 - Automated operator ledger monitoring (`check-invariant`, violation logging,
-  optional admin-only alerts). Not required for negative unallocated workflow.
+  optional admin-only alerts). Not required for negative spending money workflow.
 
 ## TODO
 
@@ -334,7 +334,7 @@ Full list and behavior matrix: <https://teller.io/docs/guides/sandbox>
 
 - [ ] Operator ledger monitoring: SQL family-wide check (same formulas as the Buckets tab),
       logging/alerts for the operator — not a user-facing duplicate of red
-      unallocated. Scaffold: `supabase/functions/check-invariant/`. See
+      spending money. Scaffold: `supabase/functions/check-invariant/`. See
       CONTEXT.md § Data Integrity.
 
 ### Other follow-ups
@@ -348,10 +348,10 @@ Full list and behavior matrix: <https://teller.io/docs/guides/sandbox>
       RPC). Optional note field included.
 - [x] Member management UI (admin: add Shared/Kid, set PIN, unlock, rotate join code).
 - [x] Account assignment UI (Admin: family pool by default; assign to kids).
-- [x] Send money flow (shared balance → kids; shared unallocated in the Buckets tab).
+- [x] Send money flow (shared balance → kids; shared spending money in the Buckets tab).
 - [ ] **Credit cards:** exclude from enroll/storage vs integrate (e.g.
-      subtract card balance from unallocated / show as liability). Today only
-      cash account types count toward Buckets unallocated. See CONTEXT.md §
+      subtract card balance from spending money / show as liability). Today only
+      cash account types count toward Buckets spending money. See CONTEXT.md §
       “Credit cards & linked liabilities”.
 
 ## License

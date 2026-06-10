@@ -38,7 +38,7 @@ export async function assignAccountOwner(
 
 // Account subtypes Teller returns. Anything in this set is treated as
 // real, allocatable cash on hand. Everything else (credit cards,
-// loans, investments, etc.) is excluded from the unallocated pool —
+// loans, investments, etc.) is excluded from the spending-money pool —
 // you can't allocate borrowed money or unrealised stock gains into a
 // "groceries" bucket.
 //

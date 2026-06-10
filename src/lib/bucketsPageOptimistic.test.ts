@@ -19,7 +19,7 @@ function bucket(id: string, name: string, allocated: number): Bucket {
 }
 
 const breakdown = (over: Partial<BucketsBalanceBreakdown> = {}): BucketsBalanceBreakdown => ({
-  unallocated: 100,
+  spendingMoney: 100,
   totalCash: 200,
   bankCash: 200,
   manualCash: 0,
@@ -77,7 +77,7 @@ describe('renameBucketInList', () => {
 describe('applyBucketMove', () => {
   const buckets = [bucket('a', 'A', 50), bucket('b', 'B', 50)]
 
-  it('moves from unallocated to bucket', () => {
+  it('moves from spending money to bucket', () => {
     const { buckets: nextBuckets, breakdown: nextBreakdown } = applyBucketMove(
       buckets,
       breakdown(),
@@ -85,13 +85,13 @@ describe('applyBucketMove', () => {
       'a',
       25,
     )
-    expect(nextBreakdown.unallocated).toBe(75)
+    expect(nextBreakdown.spendingMoney).toBe(75)
     expect(nextBreakdown.bucketAllocated).toBe(125)
     expect(Number(nextBuckets[0].allocated_amount)).toBe(75)
     expect(Number(nextBuckets[1].allocated_amount)).toBe(50)
   })
 
-  it('moves between buckets without changing unallocated', () => {
+  it('moves between buckets without changing spending money', () => {
     const { buckets: nextBuckets, breakdown: nextBreakdown } = applyBucketMove(
       buckets,
       breakdown(),
@@ -99,7 +99,7 @@ describe('applyBucketMove', () => {
       'b',
       20,
     )
-    expect(nextBreakdown.unallocated).toBe(100)
+    expect(nextBreakdown.spendingMoney).toBe(100)
     expect(nextBreakdown.bucketAllocated).toBe(100)
     expect(Number(nextBuckets[0].allocated_amount)).toBe(30)
     expect(Number(nextBuckets[1].allocated_amount)).toBe(70)

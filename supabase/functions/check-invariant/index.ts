@@ -5,13 +5,13 @@
 //
 // Computes:
 //   sum(allocated_amount across buckets where family_id = $1)
-//     + sum(unallocated balances across members in that family)
+//     + sum(spending money balances across members in that family)
 //     === sum(current_balance across accounts where family_id = $1)
 //
 // DEFERRED (family beta): see CONTEXT.md § Data Integrity. User-facing
-// rebalancing uses negative unallocated on Buckets tab. Before paid SaaS, implement
+// rebalancing uses negative spending money on Buckets tab. Before paid SaaS, implement
 // operator-side checks here (or in SQL) — logging/alerts, not a duplicate
-// of the red-unallocated UX.
+// of the red-spending-money UX.
 //
 // If built: verify ledger identity; child clients must not receive family-wide
 // raw balances from this path.
@@ -29,14 +29,14 @@ type CheckInvariantResponse = {
   ok: boolean
   family_id: string
   total_allocated: number
-  total_unallocated: number
+  total_spending_money: number
   total_real_balance: number
   violation_amount: number
 }
 
 Deno.serve(async (req: Request) => {
-  // TODO (paid SaaS phase): reuse member_available_balance / cash sums in SQL;
-  // operator alert + logging — not an in-app banner for normal negative unallocated.
+  // TODO (paid SaaS phase): reuse member_spending_money / cash sums in SQL;
+  // operator alert + logging — not an in-app banner for normal negative spending money.
 
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 })
@@ -47,7 +47,7 @@ Deno.serve(async (req: Request) => {
     ok: true,
     family_id: body.family_id,
     total_allocated: 0,
-    total_unallocated: 0,
+    total_spending_money: 0,
     total_real_balance: 0,
     violation_amount: 0,
   }

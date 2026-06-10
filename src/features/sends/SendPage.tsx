@@ -20,6 +20,7 @@ import {
   SEND_LINKED_KID_BODY,
   SEND_LINKED_KID_TITLE,
   SEND_LINKED_KIDS_EXCLUDED_HINT,
+  SPENDING_MONEY_LABEL_LOWER,
 } from '@/lib/brand'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import { fetchHouseholdAdminName } from '@/lib/householdAdmin'
@@ -105,7 +106,7 @@ export default function SendPage() {
         setHouseholdAdminName(adminName)
         setBalanceBreakdown(breakdown)
         setBalanceUsesFallback(usedFallback)
-        setAvailable(breakdown.unallocated)
+        setAvailable(breakdown.spendingMoney)
         setSendEnabled(!usedFallback)
       })
     } catch (e) {
@@ -349,7 +350,7 @@ export default function SendPage() {
       ) : (
         <section
           className={`rounded-2xl px-4 py-4 ring-1 ${availableColor}`}
-          aria-label="Your unallocated balance"
+          aria-label={`Your ${SPENDING_MONEY_LABEL_LOWER} balance`}
         >
           <p className="text-xs font-medium uppercase tracking-wide opacity-70">
             You can send

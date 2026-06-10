@@ -9,7 +9,9 @@ import {
   setBucketAllocation,
   updateTransactionNote,
   userClient,
+  TRANSACTIONS_CLIENT,
 } from './fixtures'
+
 
 describe('RLS: transaction history visibility', () => {
   it('member sees bucket_move between family-pool buckets', async () => {
@@ -29,7 +31,7 @@ describe('RLS: transaction history visibility', () => {
 
     const memberClient = await userClient(member.email, member.password)
     const { data, error } = await memberClient
-      .from('transactions')
+      .from(TRANSACTIONS_CLIENT)
       .select('id')
       .eq('id', txId)
 
@@ -60,7 +62,7 @@ describe('RLS: transaction history visibility', () => {
 
     const memberClient = await userClient(member.email, member.password)
     const { data, error } = await memberClient
-      .from('transactions')
+      .from(TRANSACTIONS_CLIENT)
       .select('id')
       .eq('id', txId)
 
@@ -90,7 +92,7 @@ describe('RLS: transaction history visibility', () => {
 
     const childClient = await userClient(child.email, child.password)
     const { data, error } = await childClient
-      .from('transactions')
+      .from(TRANSACTIONS_CLIENT)
       .select('id')
       .eq('id', txId)
 
@@ -115,7 +117,7 @@ describe('RLS: transaction history visibility', () => {
 
     const childClient = await userClient(child.email, child.password)
     const { data, error } = await childClient
-      .from('transactions')
+      .from(TRANSACTIONS_CLIENT)
       .select('id')
       .eq('id', txId)
 
@@ -146,7 +148,7 @@ describe('RLS: transaction history visibility', () => {
 
     const memberClient = await userClient(member.email, member.password)
     const { data, error } = await memberClient
-      .from('transactions')
+      .from(TRANSACTIONS_CLIENT)
       .select('id, type, from_member_id, to_member_id')
       .eq('id', txId)
       .single()
@@ -181,7 +183,7 @@ describe('RLS: transaction history visibility', () => {
     })
 
     const { data, error } = await admin
-      .from('transactions')
+      .from(TRANSACTIONS_CLIENT)
       .select('id')
       .eq('id', txId)
 
@@ -218,7 +220,7 @@ describe('RLS: transaction history visibility', () => {
     })
 
     const { data, error } = await admin
-      .from('transactions')
+      .from(TRANSACTIONS_CLIENT)
       .select('id')
       .eq('id', txId)
 
@@ -248,7 +250,7 @@ describe('RLS: transaction history visibility', () => {
     })
 
     const { data, error } = await admin
-      .from('transactions')
+      .from(TRANSACTIONS_CLIENT)
       .select('id, type')
       .eq('id', txId)
       .single()
@@ -283,7 +285,7 @@ describe('update_transaction_note', () => {
     })
 
     const { data: afterAdd, error: addError } = await childClient
-      .from('transactions')
+      .from(TRANSACTIONS_CLIENT)
       .select('note')
       .eq('id', txId)
       .single()
@@ -296,7 +298,7 @@ describe('update_transaction_note', () => {
     })
 
     const { data: afterEdit, error: editError } = await childClient
-      .from('transactions')
+      .from(TRANSACTIONS_CLIENT)
       .select('note')
       .eq('id', txId)
       .single()
@@ -322,7 +324,7 @@ describe('update_transaction_note', () => {
     await updateTransactionNote(admin, { transactionId: txId, note: null })
 
     const { data, error } = await admin
-      .from('transactions')
+      .from(TRANSACTIONS_CLIENT)
       .select('note')
       .eq('id', txId)
       .single()

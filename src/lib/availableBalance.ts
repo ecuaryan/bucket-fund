@@ -22,7 +22,7 @@ export type ChildSetAsideLine = {
 }
 
 export type BucketsBalanceBreakdown = {
-  unallocated: number
+  spendingMoney: number
   totalCash: number
   bankCash: number
   manualCash: number
@@ -35,12 +35,12 @@ export type BucketsBalanceBreakdown = {
 
 /** Net sends for a child (positive when funded by family). */
 export function childFamilyFunding(breakdown: BucketsBalanceBreakdown): number {
-  return breakdown.unallocated + breakdown.bucketAllocated - breakdown.totalCash
+  return breakdown.spendingMoney + breakdown.bucketAllocated - breakdown.totalCash
 }
 
 /** Child's total funds before bucket splits (linked cash + net sends). */
 export function childTotalBalance(breakdown: BucketsBalanceBreakdown): number {
-  return breakdown.unallocated + breakdown.bucketAllocated
+  return breakdown.spendingMoney + breakdown.bucketAllocated
 }
 
 function parseChildLines(raw: unknown): ChildSetAsideLine[] {
@@ -76,7 +76,7 @@ export function parseBreakdownRow(data: Json): BucketsBalanceBreakdown | null {
   const manualCash =
     row.manual_cash !== undefined ? num('manual_cash') : 0
   return {
-    unallocated: num('unallocated'),
+    spendingMoney: num('spending_money'),
     totalCash,
     bankCash,
     manualCash,
@@ -88,10 +88,10 @@ export function parseBreakdownRow(data: Json): BucketsBalanceBreakdown | null {
 }
 
 /**
- * Client-side unallocated estimate (cash − visible bucket allocations).
+ * Client-side spending-money estimate (cash − visible bucket allocations).
  * Omits child virtual draw and sends — use only when the RPC is unavailable.
  */
-export function computeClientUnallocated(
+export function computeClientSpendingMoney(
   accounts: Account[],
   buckets: { allocated_amount: string | number }[],
 ): number {
@@ -121,7 +121,7 @@ function clientBreakdownFallback(
     0,
   )
   return {
-    unallocated: totalCash - bucketAllocated,
+    spendingMoney: totalCash - bucketAllocated,
     totalCash,
     bankCash,
     manualCash,
@@ -140,7 +140,7 @@ export async function fetchAvailableBalance(
   fallback: { accounts: Account[]; buckets: { allocated_amount: string | number }[] },
 ): Promise<{ balance: number; usedFallback: boolean }> {
   const { breakdown, usedFallback } = await fetchBucketsBalanceBreakdown(fallback)
-  return { balance: breakdown.unallocated, usedFallback }
+  return { balance: breakdown.spendingMoney, usedFallback }
 }
 
 export async function fetchBucketsBalanceBreakdown(
@@ -166,13 +166,13 @@ async function fetchBucketsBalanceBreakdownInner(
     error != null && isMissingDbFunctionError(error.message)
 
   const { data: legacy, error: legacyError } = await supabase.rpc(
-    'get_available_balance',
+    'get_spending_money_balance',
   )
 
   if (!legacyError) {
     const partial = clientBreakdownFallback(fallback.accounts, fallback.buckets)
     return {
-      breakdown: { ...partial, unallocated: Number(legacy ?? 0) },
+      breakdown: { ...partial, spendingMoney: Number(legacy ?? 0) },
       // Breakdown RPC may be missing (migration 19); balance RPC is still authoritative.
       usedFallback: false,
     }

@@ -22,6 +22,19 @@ export const APP_TAGLINE =
 export const LOGIN_TAGLINE_LEAD = 'Organize your money into buckets.'
 export const LOGIN_TAGLINE_PAYOFF = 'Spend like you mean it.'
 
+/**
+ * User-facing name for the per-balance pool that is not assigned to any bucket.
+ * New income lands here; purchases are covered by moving bucket money back in.
+ * Matches SQL/RPC/TS: `spending_money`, `member_spending_money()`, etc.
+ *
+ * To feel out alternative wording, edit this one line (e.g. 'Available',
+ * 'To spend'); every surface updates from here.
+ */
+export const SPENDING_MONEY_LABEL = 'Spending money'
+
+/** Lowercase form for mid-sentence copy (derived so the word swaps in one place). */
+export const SPENDING_MONEY_LABEL_LOWER = SPENDING_MONEY_LABEL.toLowerCase()
+
 /** Default label beside the shared loading spinner (pages, overlays, auth). */
 export const LOADING_STATUS_LABEL = 'Loading…'
 
@@ -151,7 +164,7 @@ export const ADMIN_HOUSEHOLD_MEMBERS_INTRO =
 
 /** Role and PIN implications when adding household members. */
 export const ADMIN_HOUSEHOLD_MEMBERS_DETAILS = [
-  'People on the shared balance—including you—share all household buckets and the same unallocated amount.',
+  `People on the shared balance—including you—share all household buckets and the same ${SPENDING_MONEY_LABEL_LOWER}.`,
   'Fund kids with Send.',
   'Each kid only sees what you Send them and their own buckets—not the shared balance or household bank accounts.',
   'Tell each person their PIN—they cannot change it themselves.',
@@ -340,10 +353,10 @@ export const ADMIN_REMOVE_MEMBER_EFFECT_READD =
   'To use the app again, add them back to the household and set a new PIN.'
 
 export const ADMIN_REMOVE_KID_EFFECT_BUCKETS =
-  'Their personal buckets are removed. No cash is lost—that money stays in your household and shows as unallocated in Buckets.'
+  `Their personal buckets are removed. No cash is lost—that money stays in your household and shows as ${SPENDING_MONEY_LABEL_LOWER} in Buckets.`
 
 export const ADMIN_REMOVE_KID_EFFECT_ACCOUNTS =
-  'Any bank accounts assigned to them become household accounts and count toward unallocated.'
+  `Any bank accounts assigned to them become household accounts and count toward ${SPENDING_MONEY_LABEL_LOWER}.`
 
 export const ADMIN_REMOVE_SHARED_EFFECT_LOGIN =
   'Their PIN and sign-in are deleted.'
@@ -387,10 +400,10 @@ export function bucketsDeleteBucketSheetIntro(formattedAmount: string): string {
 
 export const BUCKETS_DELETE_BUCKET_WHAT_HAPPENS = 'What happens'
 
-export function bucketsDeleteBucketEffectUnallocated(
+export function bucketsDeleteBucketEffectSpendingMoney(
   formattedAmount: string,
 ): string {
-  return `${formattedAmount} returns to unallocated. Cash is not lost.`
+  return `${formattedAmount} returns to ${SPENDING_MONEY_LABEL_LOWER}. Cash is not lost.`
 }
 
 export const BUCKETS_DELETE_BUCKET_EFFECT_LABEL =
@@ -407,10 +420,35 @@ export function bucketsDeleteBucketConfirm(name: string): string {
 export const BUCKETS_REORDER_POPOVER_LABEL =
   'Press and hold the reorder grip, then drag'
 
-export function bucketsKidUnallocatedHint(
+export function bucketsKidSpendingMoneyHint(
   adminName: string | null | undefined,
 ): string {
   return `When someone on the shared balance sends you money, move it into buckets—or ask ${householdAdminLabel(adminName)} to link your bank account.`
+}
+
+export function bucketsSpendingMoneyInfoAriaLabel(): string {
+  return `What is ${SPENDING_MONEY_LABEL_LOWER}?`
+}
+
+export function bucketsSpendingMoneyInfoSheetTitle(): string {
+  return `About ${SPENDING_MONEY_LABEL_LOWER}`
+}
+
+/** Guidance bullets for the Spending money info sheet on the Buckets tab. */
+export function bucketsSpendingMoneyInfoPoints(isChild: boolean): readonly string[] {
+  if (isChild) {
+    return [
+      `This is money not in your buckets yet.`,
+      'Move money into buckets to set it aside for something specific.',
+      `When you spend, move from that bucket back to ${SPENDING_MONEY_LABEL_LOWER}.`,
+    ] as const
+  }
+  return [
+    'Everyday money — paydays, bills, groceries, and card purchases flow through here.',
+    `Buckets are money you've set aside from it.`,
+    `When you spend, move from the covering bucket back here.`,
+    `Red? You've set aside more than you have — move from a bucket to rebalance.`,
+  ] as const
 }
 
 export const BUCKETS_LINK_BANK_TITLE = 'Link a bank account'
@@ -454,8 +492,8 @@ export const BREAKDOWN_CASH_LABEL = 'Cash'
 export const BREAKDOWN_LINKED_CASH_LABEL = 'Linked cash'
 export const BREAKDOWN_MANUAL_CASH_LABEL = 'Manual cash'
 
-/** Collapsed Unallocated toggle, e.g. "$1,234.56 across 14 money sources". */
-export function unallocatedMoneySourcesCountText(count: number): string | undefined {
+/** Collapsed spending-money breakdown toggle, e.g. "$1,234.56 across 14 money sources". */
+export function spendingMoneySourcesCountText(count: number): string | undefined {
   if (count <= 0) return undefined
   return `across ${count} money source${count === 1 ? '' : 's'}`
 }
@@ -486,13 +524,13 @@ export function bucketsMemberNoBucketsHint(
 // --- Send ---
 
 export const SEND_SHARED_BALANCE_INTRO =
-  'Fund a kid’s unallocated from the shared balance in Buckets.'
+  `Fund a kid’s ${SPENDING_MONEY_LABEL_LOWER} from the shared balance in Buckets.`
 
 export const SEND_SHARED_BALANCE_NO_ACCOUNTS_BODY =
   'Send uses cash from the household balance in Buckets. Link a bank account in Admin first so we know how much you can send.'
 
 export const SEND_KID_INTRO =
-  'Send your unallocated to another household member.'
+  `Send your ${SPENDING_MONEY_LABEL_LOWER} to another household member.`
 
 export const SEND_LINKED_KID_TITLE = 'Your money is in your bank account'
 
@@ -514,13 +552,13 @@ export const BUCKETS_DB_UPDATE_PENDING_BODY =
 export const HISTORY_FILTER_SENT_MONEY = 'Sent money'
 
 /** History balance trail when the viewer is the subject kid. */
-export const HISTORY_BALANCE_YOUR_LABEL = 'Your balance'
+export const HISTORY_BALANCE_YOUR_LABEL = SPENDING_MONEY_LABEL
 
 export const HISTORY_EMPTY_BUCKET_BODY =
   'Move money in or out of this bucket and it will appear here.'
 
 export const HISTORY_EMPTY_BODY =
-  'Move money between buckets and unallocated in Buckets—it will appear here.'
+  `Move money between buckets and ${SPENDING_MONEY_LABEL_LOWER} in Buckets—it will appear here.`
 
 export const HISTORY_EMPTY_SENDS_BODY =
   'Send money to a household member and it will appear here.'

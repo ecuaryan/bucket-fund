@@ -1,3 +1,5 @@
+import { SPENDING_MONEY_LABEL } from '@/lib/brand'
+
 /** Label for one endpoint of a bucket_move row in History. */
 export function bucketEndpointLabel(args: {
   bucketId: string | null
@@ -7,7 +9,7 @@ export function bucketEndpointLabel(args: {
   if (args.snapshotName) return args.snapshotName
   if (args.joinedName) return args.joinedName
   if (args.bucketId) return 'Bucket'
-  return 'Unallocated'
+  return SPENDING_MONEY_LABEL
 }
 
 /** Label for one endpoint of a send row in History. */
