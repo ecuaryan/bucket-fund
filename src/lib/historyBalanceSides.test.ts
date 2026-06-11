@@ -262,6 +262,116 @@ describe('historyBalanceSides', () => {
     })
   })
 
+  it('float→bucket after destination bucket deleted still returns both sides', () => {
+    const sides = historyBalanceSides(
+      {
+        ...baseRow,
+        type: 'bucket_move',
+        from_bucket_id: null,
+        to_bucket_id: null,
+        to_bucket_name: 'Temp',
+        float_balance_before: 100,
+        float_balance_after: 50,
+        to_bucket_balance_before: 0,
+        to_bucket_balance_after: 50,
+      },
+      {
+        fromLabel: FLOAT_LABEL,
+        toLabel: 'Temp',
+        amount: 50,
+        currentMemberId: 'a',
+      },
+    )
+    expect(sides).toEqual([
+      {
+        label: HISTORY_FLOAT_LABEL,
+        delta: -50,
+        before: 100,
+        after: 50,
+      },
+      { label: 'Temp', delta: 50, before: 0, after: 50 },
+    ])
+  })
+
+  it('bucket→float after source bucket deleted still returns both sides', () => {
+    const sides = historyBalanceSides(
+      {
+        ...baseRow,
+        type: 'bucket_move',
+        from_bucket_id: null,
+        to_bucket_id: null,
+        from_bucket_name: 'Groceries',
+        from_bucket_balance_before: 120,
+        from_bucket_balance_after: 70,
+        float_balance_before: 10,
+        float_balance_after: 60,
+      },
+      {
+        fromLabel: 'Groceries',
+        toLabel: FLOAT_LABEL,
+        amount: 50,
+        currentMemberId: 'a',
+      },
+    )
+    expect(sides).toEqual([
+      { label: 'Groceries', delta: -50, before: 120, after: 70 },
+      {
+        label: HISTORY_FLOAT_LABEL,
+        delta: 50,
+        before: 10,
+        after: 60,
+      },
+    ])
+  })
+
+  it('bucket→bucket after both buckets deleted still returns both sides', () => {
+    const sides = historyBalanceSides(
+      {
+        ...baseRow,
+        type: 'bucket_move',
+        from_bucket_id: null,
+        to_bucket_id: null,
+        from_bucket_name: 'Fun',
+        to_bucket_name: 'Vacation',
+        from_bucket_balance_before: 49,
+        from_bucket_balance_after: 48,
+        to_bucket_balance_before: 5000,
+        to_bucket_balance_after: 5001,
+      },
+      { fromLabel: 'Fun', toLabel: 'Vacation', amount: 1, currentMemberId: 'a' },
+    )
+    expect(sides).toHaveLength(2)
+    expect(sides[0]).toMatchObject({ label: 'Fun', delta: -1, before: 49, after: 48 })
+    expect(sides[1]).toMatchObject({
+      label: 'Vacation',
+      delta: 1,
+      before: 5000,
+      after: 5001,
+    })
+  })
+
+  it('bucket→bucket after one bucket deleted still classifies as bucket shuffle', () => {
+    const sides = historyBalanceSides(
+      {
+        ...baseRow,
+        type: 'bucket_move',
+        from_bucket_id: 'f',
+        to_bucket_id: null,
+        from_bucket_name: 'Fun',
+        to_bucket_name: 'Vacation',
+        from_bucket_balance_before: 49,
+        from_bucket_balance_after: 48,
+        to_bucket_balance_before: 5000,
+        to_bucket_balance_after: 5001,
+      },
+      { fromLabel: 'Fun', toLabel: 'Vacation', amount: 1, currentMemberId: 'a' },
+    )
+    expect(sides).toHaveLength(2)
+    expect(sides[0]).toMatchObject({ label: 'Fun', delta: -1 })
+    expect(sides[1]).toMatchObject({ label: 'Vacation', delta: 1 })
+    expect(transferAmountAccent(sides)).toBe('neutral')
+  })
+
   it('kid viewing adult pool fund shows float label without amounts', () => {
     const sides = historyBalanceSides(
       {

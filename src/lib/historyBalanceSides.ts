@@ -17,6 +17,21 @@ function parseSnapshotAmount(value: string | number | null | undefined): number 
   return Number.isFinite(n) ? n : null
 }
 
+/** Durable bucket endpoint — survives ON DELETE SET NULL on live FKs. */
+function hadBucketEndpoint(
+  bucketId: string | null | undefined,
+  bucketName: string | null | undefined,
+  balanceBefore: string | number | null | undefined,
+  balanceAfter: string | number | null | undefined,
+): boolean {
+  if (bucketId != null) return true
+  if (bucketName?.trim()) return true
+  return (
+    parseSnapshotAmount(balanceBefore) !== null &&
+    parseSnapshotAmount(balanceAfter) !== null
+  )
+}
+
 function bucketSide(
   label: string,
   delta: number,
@@ -104,8 +119,18 @@ export function historyBalanceSides(
   const hidePool = hideSharedPoolSnapshots(row, viewerRole, currentMemberId)
 
   if (row.type === 'bucket_move') {
-    const fromIsBucket = row.from_bucket_id !== null
-    const toIsBucket = row.to_bucket_id !== null
+    const fromIsBucket = hadBucketEndpoint(
+      row.from_bucket_id,
+      row.from_bucket_name,
+      row.from_bucket_balance_before,
+      row.from_bucket_balance_after,
+    )
+    const toIsBucket = hadBucketEndpoint(
+      row.to_bucket_id,
+      row.to_bucket_name,
+      row.to_bucket_balance_before,
+      row.to_bucket_balance_after,
+    )
     const unallocOut = floatSide(
       -amount,
       row.float_balance_before,
