@@ -1,7 +1,9 @@
-# Scheduled set-aside — product & implementation spec
+# Schedule — product & implementation spec
 
-Design spec for recurring **Float → bucket** plans on the shared household pool.
-Use this when implementing migrations, RPCs, cron, UI, and tests.
+Design spec for **automatically organizing money** from shared **Float** into
+household buckets on calendar days the user chooses. User-facing name: **Schedule**
+(not “scheduled set-aside”). SQL/RPC tables may use `set_aside_*` prefixes — that is
+implementation detail only.
 
 **Status:** Approved for implementation (v1).  
 **Related:** [CONTEXT.md](../CONTEXT.md), [docs/BRAND.md](./BRAND.md), `src/lib/brand.ts`.
@@ -10,11 +12,15 @@ Use this when implementing migrations, RPCs, cron, UI, and tests.
 
 ## Goal
 
-Admin configures one or more **scheduled set-aside plans** that move money from shared
-**Float** into household buckets on calendar days. Shared partner sees upcoming runs
-and amounts (read-only). Runs even when Float would go red — same rules as manual
-set-aside. Multiple plans per household; **twice-a-month is one plan with two days**,
-not two duplicate plans.
+Admin configures one or more **schedules** — automatic `move_money` runs (Float →
+buckets) on chosen calendar days (default **3 AM local**). Shared partner sees
+upcoming runs and amounts (read-only). Same [money rules](#money-rules) as manual
+moves. Multiple schedules per household; **twice-a-month is one schedule with two
+days**, not two duplicate schedules.
+
+**Voice:** *Automatically organize your money into buckets on the days you choose.*
+Manual one-off moves keep the existing **Set aside** dialog title (production); the
+**Schedule** feature name does not need to repeat “set aside.”
 
 ---
 
@@ -22,31 +28,30 @@ not two duplicate plans.
 
 ### In
 
-- Household pool set-aside plans only (`move_money`, Float → family-pool buckets).
-- Multiple named plans per family.
-- Schedule types: interval (week / 2 weeks / N months) and monthly (once or twice per
+- Household pool schedules only (`move_money`, Float → family-pool buckets).
+- Multiple named schedules per family.
+- Cadence: interval (week / 2 weeks / N months) and monthly (once or twice per
   month with configurable days + **Last day of month**).
-- Server-scheduled execution via **pg_cron → Postgres RPC** (no Edge Function).
+- Server execution via **pg_cron → Postgres RPC** (no Edge Function).
 - Admin: create, edit, pause, delete, **Run now** (with confirm sheet).
-- Shared: read-only plan cards on Buckets tab.
-- History: **individual move rows**; scheduled runs show **Scheduled** instead of a
+- Shared: read-only schedule cards on Buckets tab.
+- History: **individual move rows**; automatic runs show **Scheduled** instead of a
   user name; optional small row indicator.
-- Bucket row hint when bucket is on an active plan (icon or subtitle).
-- Float set-aside rule alignment (all roles) — see [Money rules](#money-rules).
-- Family **IANA timezone** (e.g. `America/Denver`).
+- Bucket row hint when bucket is on an active schedule (icon or subtitle).
+- Float → bucket rule alignment (all roles) — see [Money rules](#money-rules).
+- Family **IANA timezone**; **`set_aside_run_hour`** default **3** (local).
 
 ### Out (defer; schema may leave hooks)
 
-- Kid self-service set-aside **plans** (manual kid set-aside already exists).
+- Kid **schedules** (manual kid moves already exist).
 - Scheduled **Send to a kid** (`send_money` on a schedule; virtual kids only).
 - History filters / search (individual rows + Scheduled label is enough for v1).
 - Skip-next-run (pause is sufficient).
-- End-by-date (“runs until …”) — runs until paused or deleted (“when I cancel”).
+- End-by-date — runs until paused or deleted (“when I cancel”).
 - “Configured by [name]” on cards (neutral copy is fine).
 
 Future: `owner_member_id` on plans (null = household), `plan_kind` (`set_aside` |
-`send`) — **`send`** = scheduled Send to a kid via `send_money`, not a separate
-“allowance” concept.
+`send`) — **`send`** = scheduled Send to a kid via `send_money`.
 
 ---
 
@@ -54,10 +59,10 @@ Future: `owner_member_id` on plans (null = household), `plan_kind` (`set_aside` 
 
 | Capability | Admin | Shared (`member`) | Kid |
 | --- | --- | --- | --- |
-| View household plans | ✓ | ✓ read-only | — |
+| View household schedules | ✓ | ✓ read-only | — |
 | Create / edit / pause / delete | ✓ | — | — |
 | Run now | ✓ | — | — |
-| Scheduled execution | server | — | — |
+| Automatic execution | server | — | — |
 
 RLS and RPCs must enforce this — not UI-only.
 
@@ -65,9 +70,9 @@ RLS and RPCs must enforce this — not UI-only.
 
 ## Schedule model
 
-Users pick **which days** money is set aside (bank-style — no time-of-day picker in
-the UI). The server runs due plans **once per local morning** at a household default
-hour (see [Run hour](#run-hour) below).
+Users pick **which days** money is organized (bank-style — no time-of-day picker in
+the UI). The server runs due schedules **once per local morning** at a household
+default hour (see [Run hour](#run-hour) below).
 
 ### A. Interval (bank-style)
 
@@ -75,11 +80,11 @@ hour (see [Run hour](#run-hour) below).
 - Every 2 weeks
 - Every 2 / 3 / 4 / 6 months (same engine; ship all if trivial)
 
-Fields: `start_date` (“First set-aside on”), `interval_count`, `interval_unit`
+Fields: `start_date` (“First run on”), `interval_count`, `interval_unit`
 (`week` | `month`).
 
 **Which days:** starting from `start_date`, run every N weeks or N months on that
-same cadence. Example: first set-aside **Jun 11**, every **2 weeks** → Jun 11, Jun 25,
+same cadence. Example: first run **Jun 11**, every **2 weeks** → Jun 11, Jun 25,
 Jul 9, … (the start date is the anchor so “every 2 weeks” doesn’t drift to the wrong
 weekday).
 
@@ -97,8 +102,8 @@ fires **once per matching day** (separate run records on the 1st and 15th).
 ### Run hour
 
 On a due day, execute **once** after **`families.set_aside_run_hour`** in the family’s
-timezone (24-hour clock, **default 3** → ~3:00 AM local — buckets organized before
-most people wake up). No time picker in v1 UI; same default for all households until
+timezone (24-hour clock, **default 3** → ~3:00 AM local — organized before most
+people wake up). No time picker in v1 UI; same default for all households until
 we add an optional Admin setting later.
 
 Hourly `pg_cron` checks: local date is a run day **and** `local_hour >= set_aside_run_hour`
@@ -118,45 +123,45 @@ Runs until **paused** or **deleted** — no end date in v1.
 
 ## Money rules
 
-Unified for **manual set-aside**, **Run now**, and **scheduled runs** — one RPC path,
-no automation-only bypass.
+Unified for **manual Set aside**, **Run now**, and **automatic runs** — one RPC path.
 
 | Move | Rule |
 | --- | --- |
-| **Float → bucket** (set-aside) | Allow even if Float goes **negative** |
+| **Float → bucket** | Allow even if Float goes **negative** |
 | **Bucket → anything** | Block if `allocated_amount` &lt; amount (bucket cannot go negative) |
 | **`send_money`** | Keep existing insufficient-Float check (unchanged) |
 
 ### Confirm sheet (intentional friction)
 
-When a **manual** set-aside or **Run now** would cross **Float ≥ 0 → Float &lt; 0**:
+When a **manual** Set aside or **Run now** would cross **Float ≥ 0 → Float &lt; 0**:
 
 - Show consequential `Sheet` (copy in `brand.ts`) before submitting.
 - **Skip** confirm if Float is already negative.
-- **Skip** confirm for scheduled cron runs (user pre-configured the plan).
+- **Skip** confirm for automatic cron runs (user chose the schedule).
 
 Implementation notes:
 
 - **RPC:** Float → bucket must not raise insufficient Float for **any** role (today
   only kids are blocked at RPC; adults already pass). Bucket-source checks stay for all roles.
-- **UI:** `MoveMoneyDialog` — do not block set-aside when amount &gt; Float; gate
+- **UI:** `MoveMoneyDialog` — do not block Set aside when amount &gt; Float; gate
   submit with confirm sheet when crossing into red Float.
 
 ---
 
 ## Data model
 
-Next migration after `00000000000047_…`.
+Next migration after `00000000000047_…`. Table names `set_aside_*` are legacy SQL
+identifiers; UI says **Schedule**.
 
 ```text
 families
-  timezone text not null              -- IANA; default from first plan setup
+  timezone text not null              -- IANA; default from first schedule setup
   set_aside_run_hour smallint not null default 3   -- 0–23 local; when due-day runs fire
 
 set_aside_plans
   id uuid pk
   family_id uuid not null
-  name text                    -- optional label
+  name text                    -- optional label ("Payday", etc.)
   paused boolean not null default false
   schedule_type text not null  -- 'interval' | 'monthly'
   start_date date              -- interval schedules
@@ -207,7 +212,7 @@ Optional later: `owner_member_id uuid null` on plans for kid scope.
 2. Validate lines: buckets exist, family-pool scope, same `family_id`.
 3. If any line invalid → record failed run or reject without partial moves.
 4. Insert `set_aside_runs` row.
-5. For each line: `move_money(null, bucket_id, amount, note)` with plan name note;
+5. For each line: `move_money(null, bucket_id, amount, note)` with schedule name note;
    set `set_aside_run_id` on each transaction.
 6. Single transaction — all lines or none.
 
@@ -251,73 +256,75 @@ At large scale: optional denormalized `next_run_on` column + index.
 
 ## UI — Buckets tab
 
-Section **Scheduled set-aside** below Float card.
+Section **Schedule** below Float card.
+
+**Empty state (admin):** `SCHEDULE_EMPTY_BODY` — *Automatically organize your money
+into buckets on the days you choose.*
 
 ### Plan total (required)
 
-Every plan shows the **sum of all line amounts** prominently — that’s how people
+Every schedule shows the **sum of all line amounts** prominently — that’s how people
 verify they entered the right numbers (they often know the payday total before the
 per-bucket split).
 
 | Surface | Total |
 | --- | --- |
-| **Plan editor** | **Running total** updates as lines change; sticky/footer so it stays visible while scrolling lines. Label e.g. **Total per run · $1,240.00** |
-| **Plan card** (admin + Shared) | Same total on every card — not buried in line list |
+| **Schedule editor** | **Running total** updates as lines change; sticky/footer so it stays visible while scrolling lines. Label e.g. **Total per run · $1,240.00** |
+| **Schedule card** (admin + Shared) | Same total on every card — not buried in line list |
 | **Run now** confirm sheet | Total again, with full line list |
 | **Review** step (before save) | Total + lines |
 
-Optional context next to total: current **Float** (informational only — set-aside
-may run above Float per [Money rules](#money-rules)). Do not hide total behind an
+Optional context next to total: current **Float** (informational only — runs may
+execute above Float per [Money rules](#money-rules)). Do not hide total behind an
 expand/collapse.
 
 ### Shared (read-only)
 
-Plan cards: name, schedule summary, next run, line summary, **total per run**,
+Schedule cards: name, cadence summary, next run, line summary, **total per run**,
 **Paused** badge, last run status. No Edit / Pause / Run now.
 
 ### Admin
 
-Same cards + **Add plan**, **Edit**, **Pause / Resume**, **Run now**.
+Same cards + **Add schedule**, **Edit schedule**, **Pause / Resume**, **Run now**.
 
-### Plan editor (Sheet)
+### Schedule editor (Sheet)
 
 1. Name (optional)
 2. Lines: bucket + amount; **running total** always visible ([Plan total](#plan-total-required))
 3. Frequency (branching fields per [Schedule model](#schedule-model))
-4. Family timezone (first plan: default from browser; editable)
+4. Family timezone (first schedule: default from browser; editable)
 5. Review → Save (total + lines repeated)
 
 ### Run now
 
 Confirm sheet: all lines, **total per run**, current Float (context), red-Float
 warning if applicable, consequential copy. Confirm button includes total (e.g.
-`Run payday split — $1,240.00`) — avoid accidental runs.
+`Run Payday — $1,240.00`) — avoid accidental runs.
 
 ### Bucket polish
 
-Active plan lines → subtle recurring icon or “+$X on schedule” on bucket row (both
-roles see hints on shared buckets).
-
-### Brand
-
-Extend **Set aside** language — not “automation” in user-facing copy. Update
-`bucketsFloatInfoPoints` bullet 2 when shipping (`brand.ts` TODO).
+Active schedule lines → subtle icon or “+$X on schedule” on bucket row (both roles
+see hints on shared buckets).
 
 ### UI naming (canonical)
 
-Use these labels consistently (constants in `brand.ts`):
+Constants in `brand.ts`:
 
 | Surface | Label |
 | --- | --- |
-| Buckets section header | **Scheduled set-aside** (`SCHEDULED_SET_ASIDE_SECTION_TITLE`) |
-| Admin add CTA | **Schedule set-aside** (`SCHEDULED_SET_ASIDE_ADD_LABEL`) |
-| History actor (scheduled run) | **Scheduled** (`HISTORY_SCHEDULED_MOVE_LABEL`) |
+| Buckets section header | **Schedule** (`SCHEDULE_SECTION_TITLE`) |
+| Empty state body | *Automatically organize your money into buckets on the days you choose.* (`SCHEDULE_EMPTY_BODY`) |
+| Admin add CTA | **Add schedule** (`SCHEDULE_ADD_LABEL`) |
+| History actor (automatic run) | **Scheduled** (`HISTORY_SCHEDULED_MOVE_LABEL`) |
 | Manual move dialog | **Set aside** / **Use from bucket** / **Move money** (unchanged) |
 
-Avoid in UI: automation, recurring transfer, auto-fund, rules.
+**Say:** organize your money, automatic (in helper sentences), schedule, days you choose.  
+**Avoid in UI:** scheduled set-aside, organize Float, automation, auto-fund, recurring transfer, rules.
 
-User-entered plan names optional (“Payday split”); default display from frequency
-when blank.
+User-entered schedule names optional (“Payday”); default display from frequency when blank.
+
+When shipping, extend `bucketsFloatInfoPoints` bullet 2 for automatic organization
+(e.g. buckets change when you move money **or on a schedule you choose**).
 
 ---
 
@@ -327,12 +334,12 @@ when blank.
 
 | Run type | Subtitle actor |
 | --- | --- |
-| Scheduled | `Bucket move · Scheduled · {time}` |
+| Automatic (cron) | `Bucket move · Scheduled · {time}` |
 | Run now | `Bucket move · by {name} · {time}` |
 | Ordinary manual | unchanged |
 
 Use `set_aside_run_id` + run `trigger` to choose label. Optional row icon for
-scheduled moves. Auto-note on tx optional (`Payday split`).
+scheduled moves. Auto-note on tx optional (schedule name).
 
 ---
 
@@ -340,11 +347,11 @@ scheduled moves. Auto-note on tx optional (`Payday split`).
 
 | Case | Behavior |
 | --- | --- |
-| Bucket deleted | Delete bucket sheet warns if on a plan; editor shows stale line; **block run** until fixed |
-| Bucket renamed | Plan uses `bucket_id`; UI shows current name |
-| Plan paused | No scheduled or manual run until resumed; Shared sees **Paused** |
+| Bucket deleted | Delete bucket sheet warns if on a schedule; editor shows stale line; **block run** until fixed |
+| Bucket renamed | Schedule uses `bucket_id`; UI shows current name |
+| Schedule paused | No automatic or manual run until resumed; Shared sees **Paused** |
 | Cron retry | `(plan_id, run_on)` unique prevents double execution |
-| Insufficient Float on set-aside | **Allow**; Float goes red (all roles) |
+| Insufficient Float on run | **Allow**; Float goes red (all roles) |
 
 ---
 
@@ -354,10 +361,10 @@ scheduled moves. Auto-note on tx optional (`Payday split`).
 | --- | --- |
 | `tests/db/` | Schedule matching (interval, monthly, twice, last day, TZ); run RPC idempotency; RLS; atomic multi-line; deleted bucket blocks run; kid/adult Float → bucket when Float insufficient |
 | Unit | Next-run date helpers; schedule display strings |
-| Seed | `scheduled-set-aside` scenario (optional) |
+| Seed | `schedule` scenario (optional) |
 | Manual | Admin CRUD, pause, run now; Shared read-only; History Scheduled label; confirm sheet |
 
-Also extend `move_money.test.ts`: adult + child set-aside with zero/negative Float succeeds;
+Also extend `move_money.test.ts`: adult + child Float → bucket with zero/negative Float succeeds;
 bucket-source insufficient still fails.
 
 ---
@@ -368,11 +375,11 @@ One PR at a time ([CONTRIBUTING.md](../CONTRIBUTING.md)); bump `package.json` pa
 
 | PR | Scope |
 | --- | --- |
-| **1** | Align `move_money`: allow Float → bucket without insufficient-Float check (**all roles**; removes kid-only RPC guard) + db tests |
+| **1** | Align `move_money`: allow Float → bucket without insufficient-Float check (**all roles**) + db tests |
 | **2** | Migration: tables, `set_aside_run_id`, run RPCs, RLS, db tests |
 | **3** | pg_cron migration + `run_due_set_aside_plans` |
-| **4** | MoveMoneyDialog: allow set-aside over Float + red-Float confirm sheet + `brand.ts` |
-| **5** | Admin plan CRUD UI + editor (all frequency types) + pause |
+| **4** | MoveMoneyDialog: allow Set aside over Float + red-Float confirm sheet + `brand.ts` |
+| **5** | Admin Schedule UI + editor (all frequency types) + pause |
 | **6** | Shared read-only cards + bucket indicators |
 | **7** | Run now + confirm sheet |
 | **8** | History Scheduled subtitle + optional row icon |
@@ -384,22 +391,21 @@ PR 1–2 can merge logic if preferred; keep migrations reviewable.
 
 ## Docs to update when shipping
 
-Track doc/code alignment as PRs land:
-
 | Doc | Status (design) | At ship |
 | --- | --- | --- |
-| [docs/SCHEDULED_SET_ASIDE.md](./SCHEDULED_SET_ASIDE.md) | **Current** — update if design changes | Mark **shipped**; fix any drift |
-| [CONTEXT.md](../CONTEXT.md) | Updated (spec link, balance rules, out of scope) | Change section to **shipped**; remove implementation notes |
-| [AGENTS.md](../AGENTS.md) | Updated (read list + code location) | — |
-| [docs/BRAND.md](./BRAND.md) | Updated (set-aside + scheduled copy rules) | Add any new `brand.ts` keys to copy map |
-| [README.md](../README.md) | — | Optional: pg_cron + free-tier activity note |
-| `src/lib/brand.ts` | TODO bullets for Float info + confirm copy | Implement strings in PR 4 / 5 / 7 / 8 |
+| [docs/SCHEDULE.md](./SCHEDULE.md) | **Current** | Mark **shipped**; fix any drift |
+| [CONTEXT.md](../CONTEXT.md) | Updated | Change section to **shipped**; remove implementation notes |
+| [AGENTS.md](../AGENTS.md) | Updated | — |
+| [docs/BRAND.md](./BRAND.md) | Updated | Add any new `brand.ts` keys to copy map |
+| [README.md](../README.md) | Updated | Optional: pg_cron + free-tier activity note |
+| `src/lib/brand.ts` | Placeholder Schedule strings + TODO confirm copy | Full strings in PR 4 / 5 / 7 / 8 |
 
 ---
 
 ## Philosophy note
 
-Scheduled set-aside is **user-configured** allocation, not auto-rebalance when the
-bank moves. Red Float after a scheduled run is the same signal as today — refresh,
-add a money source, or move bucket → Float. Shared read-only visibility lets a
-partner plan around upcoming bucket funding without triggering runs.
+**Schedule** is **user-configured automatic organization** — not auto-rebalance when
+the bank moves. The app runs `move_money` on days the user chose; it does not decide
+which bucket covers a charge. Red Float after a run is the same signal as today.
+Shared read-only visibility lets a partner see what will be organized and when,
+without triggering runs.

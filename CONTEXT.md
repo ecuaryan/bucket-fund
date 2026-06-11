@@ -153,8 +153,8 @@ system-error banner.
 **Set-aside (Float → bucket):** All roles may set aside more than current Float (Float
 may go **red** until paydays refresh or the user rebalances). **Bucket → anything** still
 requires enough in the source bucket. **`send_money`** still blocks insufficient Float.
-Manual set-aside that crosses Float from ≥ 0 to negative uses a confirm sheet; scheduled
-set-aside runs do not (see [docs/SCHEDULED_SET_ASIDE.md](./docs/SCHEDULED_SET_ASIDE.md)).
+Manual set-aside that crosses Float from ≥ 0 to negative uses a confirm sheet; automatic
+Schedule runs do not (see [docs/SCHEDULE.md](./docs/SCHEDULE.md)).
 *Implementation note:* RPC/UI alignment for over-Float set-aside is part of that work;
 today the move UI blocks amount &gt; Float and kids are blocked at RPC.
 
@@ -323,13 +323,14 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
   `member_bucket_order`. Children see only their own buckets.
 - **Deferred:** optional member email, WebAuthn fast path, children-first polish.
 
-### Scheduled set-aside (spec approved — not yet implemented)
+### Schedule (spec approved — not yet implemented)
 
-Recurring **Float → bucket** plans for the shared household pool (payday splits).
-Admin configures and pauses; Shared sees schedules read-only; server runs on
-calendar days (default **3 AM local**) via pg_cron. Full spec: [docs/SCHEDULED_SET_ASIDE.md](./docs/SCHEDULED_SET_ASIDE.md).
+**Schedule** — automatically organize money from shared Float into household buckets
+on calendar days the user chooses (default **3 AM local**). Admin configures and
+pauses; Shared sees schedules read-only; server runs via pg_cron. Full spec:
+[docs/SCHEDULE.md](./docs/SCHEDULE.md).
 
-Deferred with that feature: kid set-aside **plans**, scheduled **Send to a kid**
+Deferred with that feature: kid **schedules**, scheduled **Send to a kid**
 (`send_money` on a schedule).
 
 ---

@@ -17,8 +17,8 @@ Entry point for AI coding agents (and humans) working in this repo.
      no `tailwind.config.ts`). Do not generate v3 patterns.
    - `production-database.mdc` — no destructive hosted SQL; local Docker for data.
 4. **[README.md](./README.md)** — dev setup, scripts, security TODOs (Teller + production database).
-5. **[docs/SCHEDULED_SET_ASIDE.md](./docs/SCHEDULED_SET_ASIDE.md)** — recurring
-   Float → bucket plans (payday set-aside): schedule model, RPCs, cron, roles, History.
+5. **[docs/SCHEDULE.md](./docs/SCHEDULE.md)** — **Schedule** feature (automatic
+   organization into buckets): cadence, RPCs, cron, roles, History.
 6. **[docs/BRAND.md](./docs/BRAND.md)** — product voice, Float terminology,
    and the full **Product narrative** (word-for-word). User-facing strings live in
    `src/lib/brand.ts`.
@@ -84,7 +84,7 @@ Entry point for AI coding agents (and humans) working in this repo.
 | App shell, nav, layouts         | `src/components/layout/`              |
 | Auth flows (login, PIN, biometric) | `src/features/auth/`               |
 | Buckets list + move flow        | `src/features/buckets/`               |
-| Scheduled set-aside plans       | `src/features/buckets/` (+ [docs/SCHEDULED_SET_ASIDE.md](./docs/SCHEDULED_SET_ASIDE.md)) |
+| Schedule (automatic bucket organization) | `src/features/buckets/` (+ [docs/SCHEDULE.md](./docs/SCHEDULE.md)) |
 | Send money flow                 | `src/features/sends/`                 |
 | Transaction history             | `src/features/history/`               |
 | Account linking / Teller Connect | `src/features/admin/` (not `accounts/` yet) |

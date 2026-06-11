@@ -447,8 +447,8 @@ export function bucketsFloatInfoPoints(isChild: boolean): readonly string[] {
       `Move between your ${FLOAT_LABEL_LOWER} and your buckets to organize your money.`,
     ] as const
   }
-  // Bank refresh updates Float only, not buckets. When scheduled set-aside ships,
-  // extend bullet 2 (e.g. "when you move money or on a schedule you set").
+  // Bank refresh updates Float only, not buckets. When Schedule ships, extend
+  // bullet 2 (e.g. "when you move money or on a schedule you choose").
   return [
     `Paydays, bills, and card payments update your ${FLOAT_LABEL_LOWER} when balances refresh — not your buckets.`,
     `Buckets only change when you move money in the app.`,
@@ -491,15 +491,19 @@ export function bucketsFloatStatusGuide(isChild: boolean): readonly FloatStatusG
   ] as const
 }
 
-// --- Scheduled set-aside (UI naming — feature not yet implemented) ---
+// --- Schedule (UI — feature not yet implemented) ---
 
 /** Buckets tab section header. */
-export const SCHEDULED_SET_ASIDE_SECTION_TITLE = 'Scheduled set-aside'
+export const SCHEDULE_SECTION_TITLE = 'Schedule'
 
-/** Admin primary CTA to create a plan. */
-export const SCHEDULED_SET_ASIDE_ADD_LABEL = 'Schedule set-aside'
+/** Admin primary CTA to create a schedule. */
+export const SCHEDULE_ADD_LABEL = 'Add schedule'
 
-/** History subtitle label for moves from a scheduled run (not a member name). */
+/** Empty state when no schedules exist (admin). */
+export const SCHEDULE_EMPTY_BODY =
+  'Automatically organize your money into buckets on the days you choose.'
+
+/** History subtitle label for moves from an automatic run (not a member name). */
 export const HISTORY_SCHEDULED_MOVE_LABEL = 'Scheduled'
 
 export const BUCKETS_LINK_BANK_TITLE = 'Link a bank account'
