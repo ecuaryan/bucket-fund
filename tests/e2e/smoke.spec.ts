@@ -29,7 +29,10 @@ test.describe('smoke', () => {
 
     await expect(page).toHaveURL('/')
     await expect(page.getByRole('heading', { name: 'Buckets' })).toBeVisible()
-    await expect(page.getByLabel('Add a money source')).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Getting started' })).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Add a money source' }),
+    ).toBeVisible()
   })
 
   test('forgot password page loads from login', async ({ page }) => {
