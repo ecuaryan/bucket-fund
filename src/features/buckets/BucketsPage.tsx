@@ -15,6 +15,8 @@ import {
   BUCKETS_ADD_SOURCE_LINK_ACTION,
   BUCKETS_ADD_SOURCE_MANUAL_ACTION,
   BUCKETS_ADD_SOURCE_TITLE,
+  BUCKETS_EMPTY_BODY,
+  BUCKETS_EMPTY_TITLE,
   bucketsAddSourceMemberBody,
   bucketsDeleteBucketConfirm,
   bucketsDeleteBucketEffectSpendingMoney,
@@ -27,10 +29,14 @@ import {
   BUCKETS_DB_UPDATE_PENDING_BODY,
   bucketsMemberNoBucketsHint,
   bucketsSpendingMoneyInfoAriaLabel,
+  FLOAT_HERO_SUBTITLE,
+  FLOAT_NEGATIVE_HINT,
   SPENDING_MONEY_LABEL,
 } from '@/lib/brand'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
+import OnboardingCoachCard from '@/features/buckets/OnboardingCoachCard'
 import SpendingMoneyInfoSheet from '@/features/buckets/SpendingMoneyInfoSheet'
+import SuggestedBucketChips from '@/features/buckets/SuggestedBucketChips'
 import { Sheet } from '@/components/ui/Sheet'
 import InfoIconButton from '@/components/ui/InfoIconButton'
 import { isCashAccount } from '@/lib/accounts'
@@ -84,6 +90,15 @@ import {
   readSpendingMoneyDetailsOpen,
   writeSpendingMoneyDetailsOpen,
 } from '@/lib/spendingMoneyDetailsStorage'
+import {
+  getOnboardingCoachState,
+  shouldShowOnboardingCoach,
+} from '@/lib/onboardingCoach'
+import {
+  readOnboardingCoachDismissed,
+  writeOnboardingCoachDismissed,
+} from '@/lib/onboardingCoachStorage'
+import type { MoveMoneyIntent } from '@/lib/moveMoneyDialogCopy'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -115,6 +130,11 @@ export default function BucketsPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [spendingMoneyInfoOpen, setSpendingMoneyInfoOpen] = useState(false)
+  const [coachDismissed, setCoachDismissed] = useState(true)
+  const [movePreferredIntent, setMovePreferredIntent] = useState<
+    MoveMoneyIntent | undefined
+  >(undefined)
+  const createBucketInputRef = useRef<HTMLInputElement | null>(null)
   const [prevDetailsMemberId, setPrevDetailsMemberId] = useState<string | null>(
     null,
   )
@@ -128,6 +148,7 @@ export default function BucketsPage() {
   if (memberId !== prevDetailsMemberId) {
     setPrevDetailsMemberId(memberId)
     setDetailsOpen(memberId ? readSpendingMoneyDetailsOpen(memberId) : false)
+    setCoachDismissed(memberId ? readOnboardingCoachDismissed(memberId) : true)
   }
 
   const isAdmin = member?.role === 'admin'
@@ -460,7 +481,14 @@ export default function BucketsPage() {
   // negative spending-money rebalance signal rather than the getting-started CTA. Only
   // adults with nothing set up at all (no sources, nothing allocated) see it.
   const hasAllocations = balanceBreakdown.bucketAllocated > 0
-  const showAddSourceCard = isAdult && !hasMoneySources && !hasAllocations
+  const coachState = getOnboardingCoachState({
+    hasMoneySources,
+    bucketCount: buckets.length,
+    hasAllocations,
+  })
+  const showCoach = shouldShowOnboardingCoach(isAdult, coachDismissed, coachState)
+  const showAddSourceCard =
+    isAdult && !hasMoneySources && !hasAllocations && !showCoach
   const spendingMoneyColor =
     spendingMoney >= 0
       ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30'
@@ -478,13 +506,15 @@ export default function BucketsPage() {
   const bankSyncedLabel = formatRelativeTime(balanceBreakdown.bankLastSyncedAt)
 
   const spendingMoneyHint =
-    showAddSourceCard || showBalanceBreakdown
+    showAddSourceCard || showCoach
       ? null
-      : cashAccountsCount > 0
-        ? `${formatMoney(balanceBreakdown.totalCash)} across ${cashAccountsCount} money source${cashAccountsCount === 1 ? '' : 's'}`
-        : isChild
-          ? bucketsKidSpendingMoneyHint(householdAdminName)
-          : null
+      : spendingMoney < 0
+        ? FLOAT_NEGATIVE_HINT
+        : showBalanceBreakdown
+          ? null
+          : isChild
+            ? bucketsKidSpendingMoneyHint(householdAdminName)
+            : FLOAT_HERO_SUBTITLE
 
   const breakdownOpts = {
     isChild,
@@ -543,6 +573,26 @@ export default function BucketsPage() {
           {BUCKETS_DB_UPDATE_PENDING_BODY}
         </p>
       )}
+      {showCoach ? (
+        <OnboardingCoachCard
+          state={coachState}
+          isAdmin={isAdmin}
+          adminName={householdAdminName}
+          onAddSource={() => setManualSourceOpen(true)}
+          onFocusCreateBucket={() => createBucketInputRef.current?.focus()}
+          onSetAside={() => {
+            const target =
+              buckets.find((b) => Number(b.allocated_amount) === 0) ?? buckets[0]
+            if (!target) return
+            setMovePreferredIntent('setAside')
+            setMoveBucketId(target.id)
+          }}
+          onDismiss={() => {
+            if (memberId) writeOnboardingCoachDismissed(memberId)
+            setCoachDismissed(true)
+          }}
+        />
+      ) : null}
       {showAddSourceCard ? (
         <section
           className="rounded-2xl bg-emerald-500/10 px-4 py-5 ring-1 ring-emerald-500/30"
@@ -700,11 +750,11 @@ export default function BucketsPage() {
         {buckets.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-zinc-700 p-6 text-center">
             <p className="text-sm font-medium text-zinc-300">
-              {canCreateBuckets ? 'Start organizing your money' : 'No buckets yet'}
+              {canCreateBuckets ? BUCKETS_EMPTY_TITLE : 'No buckets yet'}
             </p>
             <p className="mt-1 text-xs text-zinc-400">
               {canCreateBuckets
-                ? 'Create your first bucket below.'
+                ? BUCKETS_EMPTY_BODY
                 : bucketsMemberNoBucketsHint(householdAdminName)}
             </p>
           </div>
@@ -732,6 +782,7 @@ export default function BucketsPage() {
           <>
             <form onSubmit={onCreateBucket} className="mt-4 flex gap-2">
               <ClearableInput
+                ref={createBucketInputRef}
                 wrapperClassName="min-w-0 flex-1"
                 type="text"
                 value={newBucketName}
@@ -751,6 +802,15 @@ export default function BucketsPage() {
                 {creating ? 'Adding…' : 'Add'}
               </button>
             </form>
+            {buckets.length === 0 ? (
+              <SuggestedBucketChips
+                disabled={creating}
+                onSelect={(name) => {
+                  setNewBucketName(name)
+                  if (createError) setCreateError(null)
+                }}
+              />
+            ) : null}
             {createError && (
               <p className="mt-2 text-xs text-red-300">{createError}</p>
             )}
@@ -766,7 +826,11 @@ export default function BucketsPage() {
         buckets={buckets}
         spendingMoney={spendingMoney}
         initialBucketId={moveBucketId ?? ''}
-        onClose={() => setMoveBucketId(null)}
+        preferredIntent={movePreferredIntent}
+        onClose={() => {
+          setMoveBucketId(null)
+          setMovePreferredIntent(undefined)
+        }}
         onMoved={async () => {
           setSyncing(true)
           try {

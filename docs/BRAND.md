@@ -5,25 +5,62 @@ Working notes for product name and user-facing copy. Code imports strings from
 
 ## What we’re selling
 
-Not “every dollar lives in a bucket.” Cash sits in **spending money** (the pool
-not yet in a bucket) until you label it; buckets are how you **organize** the
-money you already have — label and reserve it for an at-a-glance view that helps
-you make day-to-day decisions.
+Not “every dollar lives in a bucket.” Cash sits in your **Float** (the running
+balance not yet in a bucket) until you label it; buckets are how you **organize**
+the money you already have — label and reserve it for an at-a-glance view that
+helps you make day-to-day decisions.
 
 The payoff:
 
 - **Accountability after the bank moves** — Teller updates cash; buckets stay
-  until you move money. You pick which bucket (or spending-money cushion) covers it.
+  until you move money. You pick which bucket covers it.
 - **Intentional friction** — minimal automation by design. When you overspend,
-  you come in and consciously move money from a bucket into spending money;
+  you come in and consciously move money from a bucket back into your Float;
   confronting the trade-off is the value, not a chore to automate away. The
   at-a-glance view surfaces reality so you *decide*; it does not auto-fix.
-- **Tradeoffs** — negative spending money means it is time to pull from buckets
-  on purpose, not that income “came from” somewhere new.
+- **Tradeoffs** — negative Float means it is time to pull from buckets on
+  purpose, not that income “came from” somewhere new.
 - **Works alone or together** — one person with buckets, or a household sharing
-  spending money and optional member PINs.
+  a Float and optional member PINs.
 
 **Canonical tagline (`APP_TAGLINE`):** *Bank balance moved? Pick which bucket covers it.*
+
+## Product narrative
+
+*Canonical product story — reference for marketing, agents, and copy decisions.
+Distill for UI; do not paste wholesale into the app.*
+
+Your bank balance is lying to you.
+
+Not intentionally — but when you glance at your account and see $4,000 sitting there, it feels like you have $4,000. You don't. You have rent due Friday, a car insurance payment auto-drafting next week, and a grocery run that needs to happen before the weekend. That $4,000 is already spoken for — you just can't see it yet.
+
+That gap between what your bank shows and what you actually have is where bad spending decisions live.
+
+Bucket My Money closes that gap. It gives your money jobs before you spend it, so you always know the honest answer to the only question that matters in the moment: can I actually afford this?
+
+### How it works
+
+Your money lives in two places: your Float and your Buckets.
+
+Your Float is the center of gravity. Every paycheck lands there. Every bill, every credit card charge, every automatic payment pulls from there. It's your running balance — the number that tells you the truth about where you stand.
+
+Buckets are money you've deliberately set aside from your Float for a specific purpose. Vacation. Emergency fund. Car maintenance. Christmas. Whatever matters to your life. You decide the buckets, you decide how much goes in each one. Once money is in a bucket, it has a job — it's no longer part of your Float.
+
+### The one rule
+
+When you spend money, decide which bucket covers it — then move that amount back to your Float.
+
+That's it. That single habit is what makes the system work. You swiped your card at the gas station — open the app, move money from your Gasoline bucket back to your Float. Now your Float reflects reality. When that charge hits your credit card and eventually clears your bank account, the Float is ready for it.
+
+If your Float is green, you're living within your means. If it's red, your buckets have more in them than your actual bank balance supports — and you have a decision to make. Which bucket are you pulling from to get back to zero? That's the honest conversation the app forces you to have with yourself.
+
+### What this isn't
+
+Bucket My Money is not a transaction tracker. It won't categorize your Starbucks runs or generate a pie chart of your spending habits. There are plenty of apps that do that, and most people abandon them within a month because they're exhausting to maintain.
+
+This is simpler. It's a clarity tool. It tells you where your money is, so you can make deliberate decisions instead of hopeful ones. The discipline it requires is minimal by design — one small action when you spend, and your Float stays honest.
+
+If you're the kind of person who has ever looked at their bank account two days after a purchase and thought "I didn't realize I had that little" — this app is for you.
 
 ## Voice
 
@@ -45,9 +82,9 @@ The payoff:
   See `src/lib/memberRoles.ts` and Admin strings in `brand.ts`.
 - **Shared balance** is the collective money pool (admin + Shared role). Say
   “people on the shared balance” or “shared balance” in copy—not “adults” or
-  “partners”—when describing who shares household buckets and spending money.
+  “partners”—when describing who shares household buckets and Float.
 - Say **household admin** (not “your admin”) when a non-admin needs the person
-  who manages Admin. Use **Spending money** (`SPENDING_MONEY_LABEL` in `brand.ts`)
+  who manages Admin. Use **Float** (`SPENDING_MONEY_LABEL` in `brand.ts`)
   in the Buckets tab, Move money, History, and related Send copy; **Household**
   in Admin assignment dropdowns (`HOUSEHOLD_LABEL`, not “pool” in user copy).
   Matches SQL/RPC: `spending_money`, `member_spending_money()`, etc.
@@ -63,6 +100,13 @@ The payoff:
   Skip confirm for low-impact, easily reversible flows (e.g. deleting an empty bucket).
   Never `window.confirm` (unreliable in embedded browsers). Copy in `brand.ts`;
   match member-removal patterns (intro, bullets, Cancel + action).
+- **Bank refresh vs buckets:** linked-account balance updates change **Float only**
+  — bucket amounts stay put until someone **moves money** (future: optional
+  scheduled set-aside counts as a move the user configured). In-app copy must not
+  imply the app moves money at the bank; say *refresh*, *update*, or *when your
+  bank balance changes* for Float. Info sheet bullets stay short (three max for
+  adults). Do not say *sync* for bank balances — it suggests two-way connection;
+  use **refresh** (see above).
 
 ## Display name
 
@@ -95,15 +139,15 @@ Do not promise “we never see transactions” if we later fetch transaction his
 today we mainly use the transactions product for balance sync webhooks.
 
 Link copy: **one or more accounts**; **cash account types** count toward
-spending money (see `CASH_ACCOUNT_SUBTYPES` in `src/lib/accounts.ts`) — do not
+Float (see `CASH_ACCOUNT_SUBTYPES` in `src/lib/accounts.ts`) — do not
 limit UI to “checking or savings” only.
 
-## Ubiquitous language: spending money
+## Ubiquitous language: Float
 
-Product, UI, TypeScript, SQL, and RPCs all use **spending money** for the pool
-not assigned to buckets (`SPENDING_MONEY_LABEL`, `spending_money` JSON key,
+**UI** says **Float** (`SPENDING_MONEY_LABEL` in `brand.ts`). **Code, SQL, and
+RPCs** keep `spending_money` (`spending_money` JSON key,
 `member_spending_money()`, `spending_money_balance_*` columns). `NULL` bucket id
-in `move_money` means the spending-money pool.
+in `move_money` means the Float pool.
 
 ## Copy map (auth & admin)
 
@@ -131,9 +175,13 @@ in `move_money` means the spending-money pool.
 | Household admin (hints) | `householdAdminLabel()`, `HOUSEHOLD_ADMIN_PHRASE` fallback |
 | Buckets tab: no linked accounts | `bucketsLinkBankMemberBody()` |
 | Buckets tab: member empty buckets | `bucketsMemberNoBucketsHint()` |
-| Buckets tab: kid spending-money hint | `bucketsKidSpendingMoneyHint()` |
-| Buckets tab: spending money info sheet | `bucketsSpendingMoneyInfoPoints()`, `bucketsSpendingMoneyInfoSheetTitle()` |
-| Spending money label (all UI) | `SPENDING_MONEY_LABEL`, `SPENDING_MONEY_LABEL_LOWER` |
+| Buckets tab: kid Float hint | `bucketsKidSpendingMoneyHint()` |
+| Buckets tab: Float info sheet | `bucketsSpendingMoneyInfoPoints()`, `bucketsSpendingMoneyInfoSheetTitle()` |
+| Float label (all UI) | `SPENDING_MONEY_LABEL`, `SPENDING_MONEY_LABEL_LOWER` |
+| Float hero subtitle | `FLOAT_HERO_SUBTITLE` |
+| Onboarding coach | `ONBOARDING_COACH_*`, `onboardingCoachStepBody()` |
+| Move money intents | `moveMoneyDialogCopy.ts` |
+| Product narrative (full text) | [Product narrative](#product-narrative) in this doc |
 | History sent-money filter | `HISTORY_FILTER_SENT_MONEY` |
 | History empty state | `HISTORY_EMPTY_*` |
 | PIN sign-in: empty roster | `pinNoMembersYet()` |

@@ -17,8 +17,8 @@ Entry point for AI coding agents (and humans) working in this repo.
      no `tailwind.config.ts`). Do not generate v3 patterns.
    - `production-database.mdc` — no destructive hosted SQL; local Docker for data.
 4. **[README.md](./README.md)** — dev setup, scripts, security TODOs (Teller + production database).
-5. **[docs/BRAND.md](./docs/BRAND.md)** — product voice, positioning (solo +
-   household), and display-name candidates. User-facing strings live in
+5. **[docs/BRAND.md](./docs/BRAND.md)** — product voice, Float terminology,
+   and the full **Product narrative** (word-for-word). User-facing strings live in
    `src/lib/brand.ts`.
 
 ## Operating principles for this codebase
@@ -38,9 +38,9 @@ Entry point for AI coding agents (and humans) working in this repo.
   at the top of
   [supabase/migrations/00000000000000_initial_schema.sql](./supabase/migrations/00000000000000_initial_schema.sql).
 - **The ledger identity is the contract.** Cash (linked banks + manual money sources) = allocations +
-  spending money, with spending money derived in SQL (`member_spending_money()`).
-  **User-facing label:** **Spending money** (`SPENDING_MONEY_LABEL` in `src/lib/brand.ts`).
-  **User signal for “rebalance”:** negative red spending money in the Buckets tab — not a
+  spending money, with Float derived in SQL (`member_spending_money()`).
+  **User-facing label:** **Float** (`SPENDING_MONEY_LABEL` in `src/lib/brand.ts`).
+  **User signal for “rebalance”:** negative red Float in the Buckets tab — not a
   separate integrity banner. **Operator ledger checks** (automated family-wide
   verification, `check-invariant`) are deferred until a possible paid SaaS;
   see CONTEXT.md § Data Integrity. Do not add a second user-facing alarm for

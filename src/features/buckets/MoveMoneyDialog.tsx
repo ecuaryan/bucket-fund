@@ -11,6 +11,14 @@ import {
 } from '@/features/buckets/moveMoneyDefaults'
 import { moveMoney } from '@/lib/buckets'
 import { SPENDING_MONEY_LABEL } from '@/lib/brand'
+import {
+  detectMoveMoneyIntent,
+  moveMoneyCoverHint,
+  moveMoneyDialogSubmitLabel,
+  moveMoneyDialogSubmittingLabel,
+  moveMoneyDialogTitle,
+  type MoveMoneyIntent,
+} from '@/lib/moveMoneyDialogCopy'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
 import type { Database } from '@/types/database'
@@ -28,9 +36,11 @@ type Props = {
   buckets: Bucket[]
   spendingMoney: number
   /** Bucket the user tapped to open the dialog. Usually pre-fills as
-   *  From; if that bucket or spending money is $0, the empty side defaults
+   *  From; if that bucket or Float is $0, the empty side defaults
    *  to To so funding an empty bucket is one less swap. */
   initialBucketId: string
+  /** Override intent for coach flows (e.g. force set-aside). */
+  preferredIntent?: MoveMoneyIntent
   onClose: () => void
   onMoved: (move: {
     fromBucketId: string | null
@@ -44,6 +54,7 @@ export default function MoveMoneyDialog({
   buckets,
   spendingMoney,
   initialBucketId,
+  preferredIntent,
   onClose,
   onMoved,
 }: Props) {
@@ -62,19 +73,31 @@ export default function MoveMoneyDialog({
     const balanceById = new Map(
       buckets.map((b) => [b.id, Number(b.allocated_amount)]),
     )
-    const { fromKey: nextFrom, toKey: nextTo } = defaultMoveMoneyEndpoints(
-  initialBucketId,
-  spendingMoney,
-      balanceById,
-    )
-    setFromKey(nextFrom)
-    setToKey(nextTo)
+    if (preferredIntent === 'setAside') {
+      setFromKey(SPENDING_MONEY_ENDPOINT_KEY)
+      setToKey(initialBucketId)
+    } else if (preferredIntent === 'cover') {
+      setFromKey(initialBucketId)
+      setToKey(SPENDING_MONEY_ENDPOINT_KEY)
+    } else {
+      const { fromKey: nextFrom, toKey: nextTo } = defaultMoveMoneyEndpoints(
+        initialBucketId,
+        spendingMoney,
+        balanceById,
+      )
+      setFromKey(nextFrom)
+      setToKey(nextTo)
+    }
     setAmountStr('')
     setNote('')
     setError(null)
     // Defer focus so the input exists in the DOM.
     setTimeout(() => amountRef.current?.focus(), 0)
-  }, [open, initialBucketId, buckets, spendingMoney])
+  }, [open, initialBucketId, buckets, spendingMoney, preferredIntent])
+
+  const intent = detectMoveMoneyIntent({ fromKey, toKey, preferredIntent })
+  const dialogTitle = moveMoneyDialogTitle(intent)
+  const coverHint = intent === 'cover' ? moveMoneyCoverHint() : null
 
   const endpoints = useMemo<Endpoint[]>(() => {
     const list: Endpoint[] = [
@@ -145,9 +168,9 @@ export default function MoveMoneyDialog({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} aria-label="Move money">
+    <Sheet open={open} onClose={onClose} aria-label={dialogTitle}>
       <header className="mb-4 flex items-baseline justify-between">
-        <h2 className="text-lg font-semibold text-zinc-300">Move money</h2>
+        <h2 className="text-lg font-semibold text-zinc-300">{dialogTitle}</h2>
         <button
           type="button"
           onClick={onClose}
@@ -211,6 +234,10 @@ export default function MoveMoneyDialog({
               </button>
             </div>
           </div>
+
+          {coverHint ? (
+            <p className="text-xs text-zinc-400">{coverHint}</p>
+          ) : null}
 
           <label className="block">
             <FieldLabel>Amount</FieldLabel>
@@ -293,10 +320,16 @@ export default function MoveMoneyDialog({
               className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting
-                ? 'Moving…'
-                : amountValid && toEndpoint
-                  ? `Move ${formatMoney(amount)} to ${toEndpoint.label}`
-                  : 'Move'}
+                ? moveMoneyDialogSubmittingLabel(intent)
+                : amountValid
+                  ? moveMoneyDialogSubmitLabel(
+                      intent,
+                      formatMoney(amount),
+                      intent === 'cover'
+                        ? fromEndpoint?.label
+                        : toEndpoint?.label,
+                    )
+                  : moveMoneyDialogSubmitLabel(intent, '', undefined)}
             </button>
           </div>
         </form>

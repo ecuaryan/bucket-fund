@@ -19,18 +19,16 @@ export const APP_TAGLINE =
   'Bank balance moved? Pick which bucket covers it.'
 
 /** Login screen — value before bank link or first bucket view. */
-export const LOGIN_TAGLINE_LEAD = 'Organize your money into buckets.'
-export const LOGIN_TAGLINE_PAYOFF = 'Spend like you mean it.'
+export const LOGIN_TAGLINE_LEAD = 'Your bank balance is lying to you.'
+export const LOGIN_TAGLINE_PAYOFF = 'See where your money actually is.'
 
 /**
  * User-facing name for the per-balance pool that is not assigned to any bucket.
- * New income lands here; purchases are covered by moving bucket money back in.
+ * Paychecks land here; bills and card charges pull from here; bucket money
+ * returns here when you cover a purchase.
  * Matches SQL/RPC/TS: `spending_money`, `member_spending_money()`, etc.
- *
- * To feel out alternative wording, edit this one line (e.g. 'Available',
- * 'To spend'); every surface updates from here.
  */
-export const SPENDING_MONEY_LABEL = 'Spending money'
+export const SPENDING_MONEY_LABEL = 'Float'
 
 /** Lowercase form for mid-sentence copy (derived so the word swaps in one place). */
 export const SPENDING_MONEY_LABEL_LOWER = SPENDING_MONEY_LABEL.toLowerCase()
@@ -53,7 +51,7 @@ export const HTML_META_DESCRIPTION = `${APP_TAGLINE} ${PWA_DESCRIPTION}`
 
 /** Sync with public/offline.html main `<p>`. */
 export const OFFLINE_PAGE_BODY =
-  'Bucket My Money needs a connection to sync with your bank and household. Your last-seen balances may still be visible in the app.'
+  'Bucket My Money needs a connection to refresh balances and stay current with your household. Your last-seen balances may still be visible in the app.'
 
 export const LOGIN_ALREADY_HAVE_ACCOUNT = 'Already have an account?'
 
@@ -434,20 +432,66 @@ export function bucketsSpendingMoneyInfoSheetTitle(): string {
   return `About ${SPENDING_MONEY_LABEL_LOWER}`
 }
 
-/** Guidance bullets for the Spending money info sheet on the Buckets tab. */
+/** Subtitle under the Float amount when the breakdown panel is hidden. */
+export const FLOAT_HERO_SUBTITLE = 'Left over after buckets'
+
+/** One-line hint when Float is negative. */
+export const FLOAT_NEGATIVE_HINT = 'Move from a bucket to rebalance.'
+
+/** Hint when moving from a bucket back to Float after a purchase. */
+export const MOVE_MONEY_COVER_HINT =
+  "Your bank already took this — you're picking which bucket pays."
+
+/** Guidance bullets for the Float info sheet on the Buckets tab. */
 export function bucketsSpendingMoneyInfoPoints(isChild: boolean): readonly string[] {
   if (isChild) {
     return [
-      `This is money not in your buckets yet.`,
-      'Move money into buckets to set it aside for something specific.',
-      `When you spend, move from that bucket back to ${SPENDING_MONEY_LABEL_LOWER}.`,
+      `Money not in your buckets yet — that's your ${SPENDING_MONEY_LABEL_LOWER}.`,
+      `Buckets only change when you move money.`,
+      `When you spend, move from that bucket back to your ${SPENDING_MONEY_LABEL_LOWER}.`,
+    ] as const
+  }
+  // Bank refresh updates Float only, not buckets. If scheduled set-aside ships,
+  // extend bullet 2 (e.g. "when you move money or on a schedule you set").
+  return [
+    `Paydays, bills, and card payments update your ${SPENDING_MONEY_LABEL_LOWER} when balances refresh — not your buckets.`,
+    `Buckets only change when you move money — set aside from float, or move back from a bucket before a charge clears.`,
+  ] as const
+}
+
+export type FloatStatusGuide = {
+  tone: 'green' | 'red'
+  label: string
+  body: string
+}
+
+/** Green/red Float meanings — rendered with matching colors in the info sheet. */
+export function bucketsFloatStatusGuide(isChild: boolean): readonly FloatStatusGuide[] {
+  if (isChild) {
+    return [
+      {
+        tone: 'green',
+        label: 'Green',
+        body: `Your cash covers what's in your buckets.`,
+      },
+      {
+        tone: 'red',
+        label: 'Red',
+        body: `Buckets total more than your cash — move from a bucket to rebalance.`,
+      },
     ] as const
   }
   return [
-    'Everyday money — paydays, bills, groceries, and card purchases flow through here.',
-    `Buckets are money you've set aside from it.`,
-    `When you spend, move from the covering bucket back here.`,
-    `Red? You've set aside more than you have — move from a bucket to rebalance.`,
+    {
+      tone: 'green',
+      label: 'Green',
+      body: `Your cash covers your buckets — nothing over-allocated.`,
+    },
+    {
+      tone: 'red',
+      label: 'Red',
+      body: `Buckets total more than your cash — move from a bucket to rebalance. Often a charge cleared before you covered it.`,
+    },
   ] as const
 }
 
@@ -457,6 +501,47 @@ export const BUCKETS_LINK_BANK_ADMIN_BODY =
   `Connect banks in Admin. To change which accounts you share at a bank, Unlink it and link again. Read-only—${BANK_READ_ONLY_ASSURANCE}.`
 
 export const BUCKETS_LINK_BANK_ADMIN_ACTION = 'Link in Admin'
+
+export const BUCKETS_EMPTY_TITLE = 'Give your money a job'
+
+export const BUCKETS_EMPTY_BODY = 'Create your first bucket below.'
+
+export const SUGGESTED_BUCKET_NAMES = ['Groceries', 'Rent', 'Fun'] as const
+
+export const SUGGESTED_BUCKETS_LABEL = 'Try:'
+
+export const ONBOARDING_COACH_TITLE = 'Getting started'
+
+export const ONBOARDING_COACH_STEP_ADD_SOURCE = 'Add a money source'
+
+export const ONBOARDING_COACH_STEP_CREATE_BUCKET = 'Create a bucket'
+
+export const ONBOARDING_COACH_STEP_SET_ASIDE = 'Set money aside'
+
+export const ONBOARDING_COACH_ADD_SOURCE_ACTION = 'Add a money source'
+
+export const ONBOARDING_COACH_CREATE_BUCKET_ACTION = 'Create a bucket'
+
+export const ONBOARDING_COACH_SET_ASIDE_ACTION = 'Set money aside'
+
+export const ONBOARDING_COACH_DISMISS_LABEL = 'Dismiss'
+
+export function onboardingCoachStepBody(
+  step: 'addSource' | 'createBucket' | 'setAside',
+  adminName: string | null | undefined,
+  isAdmin: boolean,
+): string {
+  switch (step) {
+    case 'addSource':
+      return isAdmin
+        ? `Add a money source so your ${SPENDING_MONEY_LABEL_LOWER} reflects what you have to organize.`
+        : `Ask ${householdAdminLabel(adminName)} to add a money source so your ${SPENDING_MONEY_LABEL_LOWER} reflects reality.`
+    case 'createBucket':
+      return 'Create buckets for the jobs your money has — rent, groceries, vacation, whatever matters.'
+    case 'setAside':
+      return `Move money from your ${SPENDING_MONEY_LABEL_LOWER} into a bucket to set it aside.`
+  }
+}
 
 export const BUCKETS_ADD_SOURCE_TITLE = 'Start organizing your money'
 
@@ -506,7 +591,7 @@ export const SEND_ADD_SOURCE_ADMIN_BODY =
 export function bucketsLinkBankMemberBody(
   adminName: string | null | undefined,
 ): string {
-  return `No bank accounts are linked yet. Ask ${householdAdminLabel(adminName)} to connect a bank account so balances stay in sync with your buckets.`
+  return `No bank accounts are linked yet. Ask ${householdAdminLabel(adminName)} to connect a bank account so balances can refresh and your float stays current.`
 }
 
 export function sendLinkBankMemberBody(
