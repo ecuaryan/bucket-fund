@@ -150,13 +150,12 @@ system-error banner.
 - Buckets are untouched until the user deliberately moves money
 - Every dollar spent has to come from somewhere — user decides which bucket absorbs it
 
-**Set-aside (Float → bucket):** All roles may set aside more than current Float (Float
-may go **red** until paydays refresh or the user rebalances). **Bucket → anything** still
-requires enough in the source bucket. **`send_money`** still blocks insufficient Float.
-Manual set-aside that crosses Float from ≥ 0 to negative uses a confirm sheet; scheduled
-set-aside runs do not (see [docs/SCHEDULED_SET_ASIDE.md](./docs/SCHEDULED_SET_ASIDE.md)).
-*Implementation note:* RPC/UI alignment for over-Float set-aside is part of that work;
-today the move UI blocks amount &gt; Float and kids are blocked at RPC.
+**Set aside (manual):** All roles may move Float → bucket even when Float would go
+red. **Bucket → anything** still requires enough in the source bucket. **`send_money`**
+unchanged. Manual **Set aside** that crosses Float from ≥ 0 to negative uses a confirm
+sheet; automatic **auto-organize** runs do not. See [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md).
+*Implementation note:* RPC/UI alignment for over-Float Set aside is part of Auto-organize
+PR 1 / 4; not shipped yet.
 
 ---
 
@@ -323,13 +322,15 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
   `member_bucket_order`. Children see only their own buckets.
 - **Deferred:** optional member email, WebAuthn fast path, children-first polish.
 
-### Scheduled set-aside (spec approved — not yet implemented)
+### Auto-organize (spec approved — not yet implemented)
 
-Recurring **Float → bucket** plans for the shared household pool (payday splits).
-Admin configures and pauses; Shared sees schedules read-only; server runs on
-calendar days via pg_cron. Full spec: [docs/SCHEDULED_SET_ASIDE.md](./docs/SCHEDULED_SET_ASIDE.md).
+**Auto-organize** — automatically organize money from shared Float into household
+buckets on calendar days the user chooses (default **3 AM local**). Admin configures
+and pauses; Shared sees auto-organizes read-only; server runs via pg_cron. Schema:
+`auto_organizes` / `auto_organize_*`. Full spec: [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md).
 
-Deferred with that feature: kid set-aside **plans**, automated allowance **sends**.
+Deferred with that feature: kid **auto-organizes**, scheduled **Send to a kid**
+(`send_money` via auto-organize `send` kind).
 
 ---
 
