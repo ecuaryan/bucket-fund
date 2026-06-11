@@ -27,7 +27,7 @@ type BottomNavProps = {
 export default function BottomNav({ tabs }: BottomNavProps) {
   const { pathname } = useLocation()
   const activeIndex = activeNavTabIndex(tabs, pathname)
-  const { listRef, setTabRef, centerX } = useNavBubbleIndicator(activeIndex)
+  const { listRef, setTabRef, setIconAnchorRef, centerX } = useNavBubbleIndicator(activeIndex)
 
   return (
     <nav
@@ -60,6 +60,7 @@ export default function BottomNav({ tabs }: BottomNavProps) {
           <TabLink
             key={navTabKey(item, index)}
             ref={setTabRef(index)}
+            iconAnchorRef={setIconAnchorRef(index)}
             item={item}
           />
         ))}
@@ -79,21 +80,21 @@ function tabProps(item: NavTabItem): { to: string; label: string; tab: NavTabId 
   return { to: item.to, label: item.label, tab: item.tab }
 }
 
-const TabLink = forwardRef<HTMLLIElement, { item: NavTabItem }>(function TabLink(
-  { item },
-  ref,
-) {
+const TabLink = forwardRef<
+  HTMLLIElement,
+  { item: NavTabItem; iconAnchorRef: (el: HTMLDivElement | null) => void }
+>(function TabLink({ item, iconAnchorRef }, ref) {
   const { to, label, tab } = tabProps(item)
 
   return (
-    <li ref={ref} className="min-w-0 flex-1">
+    <li ref={ref} className="relative min-w-0 flex-1">
       <NavLink
         to={to}
         end
         aria-label={label}
         className={({ isActive }) =>
           [
-            'relative flex w-full flex-col items-center overflow-visible px-0.5 text-[10px] font-medium leading-none sm:text-[11px]',
+            'relative flex w-full flex-col items-center overflow-visible text-[10px] font-medium leading-none sm:text-[11px]',
             isActive ? 'text-emerald-300' : 'text-zinc-400 hover:text-zinc-300',
           ].join(' ')
         }
@@ -101,27 +102,29 @@ const TabLink = forwardRef<HTMLLIElement, { item: NavTabItem }>(function TabLink
         {({ isActive }) => (
           <>
             <div
-              className="absolute left-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center"
-              style={{
-                top: -NAV_BUBBLE_RADIUS_PX,
-                width: NAV_BUBBLE_SIZE_PX,
-                height: NAV_BUBBLE_SIZE_PX,
-              }}
+              ref={iconAnchorRef}
+              className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center"
+              style={{ transform: `translateY(-${NAV_BUBBLE_RADIUS_PX}px)` }}
             >
-              <span
-                className={
-                  'inline-flex h-5 w-5 shrink-0 origin-center items-center justify-center ' +
-                  iconMotion
-                }
-                style={{
-                  transform: navIconTransform(
-                    isActive,
-                    tab === 'buckets' ? NAV_BUCKET_ACTIVE_SCALE : NAV_ICON_ACTIVE_SCALE,
-                  ),
-                }}
+              <div
+                className="flex items-center justify-center"
+                style={{ width: NAV_BUBBLE_SIZE_PX, height: NAV_BUBBLE_SIZE_PX }}
               >
-                <NavTabIcon tab={tab} size="default" />
-              </span>
+                <span
+                  className={
+                    'inline-flex h-5 w-5 shrink-0 origin-center items-center justify-center ' +
+                    iconMotion
+                  }
+                  style={{
+                    transform: navIconTransform(
+                      isActive,
+                      tab === 'buckets' ? NAV_BUCKET_ACTIVE_SCALE : NAV_ICON_ACTIVE_SCALE,
+                    ),
+                  }}
+                >
+                  <NavTabIcon tab={tab} size="default" />
+                </span>
+              </div>
             </div>
             <div
               className="w-full shrink-0"
@@ -130,7 +133,7 @@ const TabLink = forwardRef<HTMLLIElement, { item: NavTabItem }>(function TabLink
             />
             <span
               className={
-                'flex w-full shrink-0 items-start justify-center truncate motion-safe:transition-[font-weight,color] motion-safe:duration-300 ' +
+                'flex w-full shrink-0 items-start justify-center truncate text-center motion-safe:transition-[font-weight,color] motion-safe:duration-300 ' +
                 (isActive ? 'font-semibold' : '')
               }
               style={{ height: NAV_LABEL_ROW_PX }}
