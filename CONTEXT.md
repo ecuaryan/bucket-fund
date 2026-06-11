@@ -329,7 +329,8 @@ Recurring **Float → bucket** plans for the shared household pool (payday split
 Admin configures and pauses; Shared sees schedules read-only; server runs on
 calendar days via pg_cron. Full spec: [docs/SCHEDULED_SET_ASIDE.md](./docs/SCHEDULED_SET_ASIDE.md).
 
-Deferred with that feature: kid set-aside **plans**, automated allowance **sends**.
+Deferred with that feature: kid set-aside **plans**, scheduled **Send to a kid**
+(`send_money` on a schedule).
 
 ---
 

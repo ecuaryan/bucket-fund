@@ -38,14 +38,15 @@ not two duplicate plans.
 ### Out (defer; schema may leave hooks)
 
 - Kid self-service set-aside **plans** (manual kid set-aside already exists).
-- Automated **allowance sends** (`send_money` on a schedule).
+- Scheduled **Send to a kid** (`send_money` on a schedule; virtual kids only).
 - History filters / search (individual rows + Scheduled label is enough for v1).
 - Skip-next-run (pause is sufficient).
 - End-by-date (“runs until …”) — runs until paused or deleted (“when I cancel”).
 - “Configured by [name]” on cards (neutral copy is fine).
 
 Future: `owner_member_id` on plans (null = household), `plan_kind` (`set_aside` |
-`allowance`).
+`send`) — **`send`** = scheduled Send to a kid via `send_money`, not a separate
+“allowance” concept.
 
 ---
 
