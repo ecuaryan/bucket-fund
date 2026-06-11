@@ -129,5 +129,13 @@ export function HistoryEntityTransfer({
     return <EntityColumn side={side} formatMoney={formatMoney} align="left" />
   }
 
+  if (Number.isFinite(amount) && amount > 0) {
+    return (
+      <div className="mt-1">
+        <HistoryTransferAmountArrow amount={amount} formatMoney={formatMoney} />
+      </div>
+    )
+  }
+
   return null
 }
