@@ -327,7 +327,7 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
 
 Recurring **Float → bucket** plans for the shared household pool (payday splits).
 Admin configures and pauses; Shared sees schedules read-only; server runs on
-calendar days via pg_cron. Full spec: [docs/SCHEDULED_SET_ASIDE.md](./docs/SCHEDULED_SET_ASIDE.md).
+calendar days (default **3 AM local**) via pg_cron. Full spec: [docs/SCHEDULED_SET_ASIDE.md](./docs/SCHEDULED_SET_ASIDE.md).
 
 Deferred with that feature: kid set-aside **plans**, scheduled **Send to a kid**
 (`send_money` on a schedule).

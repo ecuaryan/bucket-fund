@@ -65,8 +65,9 @@ RLS and RPCs must enforce this — not UI-only.
 
 ## Schedule model
 
-Day-based scheduling only — **no time-of-day picker** (same mental model as bank
-recurring transfers).
+Users pick **which days** money is set aside (bank-style — no time-of-day picker in
+the UI). The server runs due plans **once per local morning** at a household default
+hour (see [Run hour](#run-hour) below).
 
 ### A. Interval (bank-style)
 
@@ -77,7 +78,10 @@ recurring transfers).
 Fields: `start_date` (“First set-aside on”), `interval_count`, `interval_unit`
 (`week` | `month`).
 
-Run when today in **family timezone** falls on the rhythm anchored to `start_date`.
+**Which days:** starting from `start_date`, run every N weeks or N months on that
+same cadence. Example: first set-aside **Jun 11**, every **2 weeks** → Jun 11, Jun 25,
+Jul 9, … (the start date is the anchor so “every 2 weeks” doesn’t drift to the wrong
+weekday).
 
 ### B. Monthly (calendar days)
 
@@ -87,8 +91,18 @@ Run when today in **family timezone** falls on the rhythm anchored to `start_dat
 Each day: **1–31** or **Last day of month** (explicit UI option; use sentinel `0`
 in `days_of_month`).
 
-Run when today’s local calendar day matches any configured day. Twice-monthly fires
-**once per matching day** (separate run records on the 1st and 15th).
+**Which days:** run on each matching **calendar day** every month. Twice-monthly
+fires **once per matching day** (separate run records on the 1st and 15th).
+
+### Run hour
+
+On a due day, execute **once** after **`families.set_aside_run_hour`** in the family’s
+timezone (24-hour clock, **default 3** → ~3:00 AM local — buckets organized before
+most people wake up). No time picker in v1 UI; same default for all households until
+we add an optional Admin setting later.
+
+Hourly `pg_cron` checks: local date is a run day **and** `local_hour >= set_aside_run_hour`
+**and** no run yet for `(plan_id, run_on)`.
 
 ### Display examples
 
@@ -136,7 +150,8 @@ Next migration after `00000000000047_…`.
 
 ```text
 families
-  timezone text not null   -- IANA; default sensible US TZ or from first plan setup
+  timezone text not null              -- IANA; default from first plan setup
+  set_aside_run_hour smallint not null default 3   -- 0–23 local; when due-day runs fire
 
 set_aside_plans
   id uuid pk
@@ -202,9 +217,9 @@ Manual: require `auth_role() = 'admin'` and set `triggered_by_member_id`.
 
 Service role / cron only. For each non-paused plan:
 
-- Compute family **local date** from `families.timezone`.
-- If schedule matches today **and** no run for `(plan_id, run_on)` →
-  `run_set_aside_plan(..., 'scheduled', null)`.
+- Compute family **local date and hour** from `families.timezone`.
+- If schedule matches **today’s local date**, `local_hour >= set_aside_run_hour`,
+  and no run for `(plan_id, run_on)` → `run_set_aside_plan(..., 'scheduled', null)`.
 
 ### CRUD
 
@@ -217,7 +232,7 @@ Admin-only writes on plans + lines (RPC or RLS-gated tables). Admin + Shared rea
 **Postgres-only** — no Edge Function invocations for the tick.
 
 ```sql
--- Hourly: safe across timezones; cheap at family scale
+-- Hourly: on due days, first tick at or after set_aside_run_hour (default 3 AM local)
 select cron.schedule(
   'run-due-set-asides',
   '0 * * * *',
