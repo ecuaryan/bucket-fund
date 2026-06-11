@@ -17,8 +17,8 @@ Entry point for AI coding agents (and humans) working in this repo.
      no `tailwind.config.ts`). Do not generate v3 patterns.
    - `production-database.mdc` — no destructive hosted SQL; local Docker for data.
 4. **[README.md](./README.md)** — dev setup, scripts, security TODOs (Teller + production database).
-5. **[docs/SCHEDULE.md](./docs/SCHEDULE.md)** — **Schedule** feature (automatic
-   organization into buckets): cadence, RPCs, cron, roles, History.
+5. **[docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md)** — **Auto-organize** feature:
+   cadence, `auto_organize_*` schema/RPCs, cron, roles, History.
 6. **[docs/BRAND.md](./docs/BRAND.md)** — product voice, Float terminology,
    and the full **Product narrative** (word-for-word). User-facing strings live in
    `src/lib/brand.ts`.
@@ -47,6 +47,10 @@ Entry point for AI coding agents (and humans) working in this repo.
   verification, `check-invariant`) are deferred until a possible paid SaaS;
   see CONTEXT.md § Data Integrity. Do not add a second user-facing alarm for
   normal bank-vs-bucket drift.
+- **Product ↔ code naming:** Use one vocabulary for features — UI labels in
+  `brand.ts` and schema/RPC names should mean the same thing (e.g. **Auto-organize**
+  → `auto_organize_*`); do not introduce parallel backend aliases. See
+  [docs/AUTO_ORGANIZE.md § Naming](./docs/AUTO_ORGANIZE.md#naming).
 - **Money writes only via RPCs.** `move_money` and `send_money`; extend
   `tests/db/` when changing balance logic.
 - **Destructive / consequential UI:** confirm with `Sheet` + `brand.ts` copy when
@@ -84,7 +88,7 @@ Entry point for AI coding agents (and humans) working in this repo.
 | App shell, nav, layouts         | `src/components/layout/`              |
 | Auth flows (login, PIN, biometric) | `src/features/auth/`               |
 | Buckets list + move flow        | `src/features/buckets/`               |
-| Schedule (automatic bucket organization) | `src/features/buckets/` (+ [docs/SCHEDULE.md](./docs/SCHEDULE.md)) |
+| Auto-organize | `src/features/buckets/` (+ `src/lib/autoOrganize.ts` when added); [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md) |
 | Send money flow                 | `src/features/sends/`                 |
 | Transaction history             | `src/features/history/`               |
 | Account linking / Teller Connect | `src/features/admin/` (not `accounts/` yet) |

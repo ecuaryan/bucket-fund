@@ -14,7 +14,8 @@ covers it when the bank balance moves. Tagline and auth copy live in
 Product story (full text): [docs/BRAND.md § Product narrative](./docs/BRAND.md#product-narrative).
 
 See [CONTEXT.md](./CONTEXT.md) for the full product brief, balance model,
-and architecture. **Schedule** (automatic organization into buckets): [docs/SCHEDULE.md](./docs/SCHEDULE.md).
+and architecture. **Auto-organize** (automatic organization into buckets;
+`auto_organize_*` schema): [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md).
 See [AGENTS.md](./AGENTS.md) for AI agent / contributor
 entry points.
 

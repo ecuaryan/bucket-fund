@@ -106,8 +106,8 @@ If you're the kind of person who has ever looked at their bank account two days 
   Never `window.confirm` (unreliable in embedded browsers). Copy in `brand.ts`;
   match member-removal patterns (intro, bullets, Cancel + action).
 - **Bank refresh vs buckets:** linked-account balance updates change **Float only**
-  — bucket amounts stay put until someone **moves money** or a **Schedule** run
-  fires (admin-configured; see [SCHEDULE.md](./SCHEDULE.md)). In-app copy must not
+  — bucket amounts stay put until someone **moves money** or an **auto-organize** run
+  fires (admin-configured; see [AUTO_ORGANIZE.md](./AUTO_ORGANIZE.md)). In-app copy must not
   imply the app moves money at the bank; say *refresh*, *update*, or *when your
   bank balance changes* for Float. Info sheet bullets stay short (three max for
   adults). Do not say *sync* for bank balances — use **refresh** (see above).
@@ -116,12 +116,14 @@ If you're the kind of person who has ever looked at their bank account two days 
   **`send_money`** keeps the insufficient-Float guard. When a manual **Set aside**
   (or admin **Run now**) would cross Float from **≥ 0 to negative**, confirm with a
   consequential `Sheet` first; skip confirm if Float is already red; automatic
-  Schedule runs skip confirm.
-- **Schedule:** feature name **Schedule** — *automatically organize your money into
-  buckets on the days you choose.* Not “scheduled set-aside,” “organize Float,” or
-  “automation.” Header **Schedule**; CTA **Add schedule**; History **Scheduled**.
-  Manual dialog keeps **Set aside** (production). Constants: `SCHEDULE_*`,
-  `HISTORY_SCHEDULED_MOVE_LABEL` in `brand.ts`. Full spec: [SCHEDULE.md](./SCHEDULE.md).
+  auto-organize runs skip confirm.
+- **Auto-organize:** feature name **Auto-organize** — subtitle *Organize your money
+  into buckets on the days you choose.* Guardrail: *You choose the days and amounts
+  — the app runs the moves.* Not “scheduled set-aside,” “organize Float,” or
+  “automation.” Header **Auto-organize**; CTA **Add auto-organize**; History
+  **Scheduled**. Manual dialog keeps **Set aside** (production). Constants:
+  `AUTO_ORGANIZE_*`, `HISTORY_SCHEDULED_MOVE_LABEL` in `brand.ts`. Schema:
+  `auto_organizes`, `auto_organize_*` (see [AUTO_ORGANIZE.md](./AUTO_ORGANIZE.md)).
   User-configured automatic organization ≠ auto-rebalance when the bank moves.
 
 ## Display name

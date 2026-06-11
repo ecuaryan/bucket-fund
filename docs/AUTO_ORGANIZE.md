@@ -1,9 +1,11 @@
-# Schedule — product & implementation spec
+# Auto-organize — product & implementation spec
 
 Design spec for **automatically organizing money** from shared **Float** into
-household buckets on calendar days the user chooses. User-facing name: **Schedule**
-(not “scheduled set-aside”). SQL/RPC tables may use `set_aside_*` prefixes — that is
-implementation detail only.
+household buckets on calendar days the user chooses.
+
+**One vocabulary:** customers see **Auto-organize**; Postgres, RPCs, TypeScript
+(`src/lib/autoOrganize.ts`), and tests use **`auto_organize_*`** — no parallel
+`schedules` layer so product and code stay aligned over time.
 
 **Status:** Approved for implementation (v1).  
 **Related:** [CONTEXT.md](../CONTEXT.md), [docs/BRAND.md](./BRAND.md), `src/lib/brand.ts`.
@@ -12,15 +14,15 @@ implementation detail only.
 
 ## Goal
 
-Admin configures one or more **schedules** — automatic `move_money` runs (Float →
+Admin configures one or more **auto-organizes** — automatic `move_money` runs (Float →
 buckets) on chosen calendar days (default **3 AM local**). Shared partner sees
 upcoming runs and amounts (read-only). Same [money rules](#money-rules) as manual
-moves. Multiple schedules per household; **twice-a-month is one schedule with two
-days**, not two duplicate schedules.
+moves. Multiple auto-organizes per household; **twice-a-month is one auto-organize
+with two days**, not two duplicate entries.
 
-**Voice:** *Automatically organize your money into buckets on the days you choose.*
-Manual one-off moves keep the existing **Set aside** dialog title (production); the
-**Schedule** feature name does not need to repeat “set aside.”
+**Voice:** section **Auto-organize**; subtitle *Organize your money into buckets on
+the days you choose.* Manual one-off moves keep **Set aside** (production) — a
+different label for one manual move, not the feature name.
 
 ---
 
@@ -28,30 +30,31 @@ Manual one-off moves keep the existing **Set aside** dialog title (production); 
 
 ### In
 
-- Household pool schedules only (`move_money`, Float → family-pool buckets).
-- Multiple named schedules per family.
+- Household pool auto-organizes only (`move_money`, Float → family-pool buckets).
+- Multiple named auto-organizes per family.
 - Cadence: interval (week / 2 weeks / N months) and monthly (once or twice per
   month with configurable days + **Last day of month**).
 - Server execution via **pg_cron → Postgres RPC** (no Edge Function).
 - Admin: create, edit, pause, delete, **Run now** (with confirm sheet).
-- Shared: read-only schedule cards on Buckets tab.
+- Shared: read-only auto-organize cards on Buckets tab.
 - History: **individual move rows**; automatic runs show **Scheduled** instead of a
   user name; optional small row indicator.
-- Bucket row hint when bucket is on an active schedule (icon or subtitle).
+- Bucket row hint when bucket is on an active auto-organize (icon or subtitle).
 - Float → bucket rule alignment (all roles) — see [Money rules](#money-rules).
-- Family **IANA timezone**; **`set_aside_run_hour`** default **3** (local).
+- Family **IANA timezone**; **`auto_organize_run_hour`** default **3** (local).
 
 ### Out (defer; schema may leave hooks)
 
-- Kid **schedules** (manual kid moves already exist).
-- Scheduled **Send to a kid** (`send_money` on a schedule; virtual kids only).
+- Kid **auto-organizes** (manual kid moves already exist).
+- Scheduled **Send to a kid** (`send_money` via auto-organize `send` kind; virtual kids only).
 - History filters / search (individual rows + Scheduled label is enough for v1).
 - Skip-next-run (pause is sufficient).
 - End-by-date — runs until paused or deleted (“when I cancel”).
 - “Configured by [name]” on cards (neutral copy is fine).
 
-Future: `owner_member_id` on plans (null = household), `plan_kind` (`set_aside` |
-`send`) — **`send`** = scheduled Send to a kid via `send_money`.
+Future: `owner_member_id` on `auto_organizes` (null = household), `auto_organize_kind`
+(`organize` | `send`) — **`send`** = scheduled Send to a kid via `send_money`. v1 rows
+are **`organize`** only (Float → buckets).
 
 ---
 
@@ -59,7 +62,7 @@ Future: `owner_member_id` on plans (null = household), `plan_kind` (`set_aside` 
 
 | Capability | Admin | Shared (`member`) | Kid |
 | --- | --- | --- | --- |
-| View household schedules | ✓ | ✓ read-only | — |
+| View household auto-organizes | ✓ | ✓ read-only | — |
 | Create / edit / pause / delete | ✓ | — | — |
 | Run now | ✓ | — | — |
 | Automatic execution | server | — | — |
@@ -68,10 +71,10 @@ RLS and RPCs must enforce this — not UI-only.
 
 ---
 
-## Schedule model
+## Auto-organize model
 
 Users pick **which days** money is organized (bank-style — no time-of-day picker in
-the UI). The server runs due schedules **once per local morning** at a household
+the UI). The server runs due auto-organizes **once per local morning** at a household
 default hour (see [Run hour](#run-hour) below).
 
 ### A. Interval (bank-style)
@@ -101,13 +104,13 @@ fires **once per matching day** (separate run records on the 1st and 15th).
 
 ### Run hour
 
-On a due day, execute **once** after **`families.set_aside_run_hour`** in the family’s
+On a due day, execute **once** after **`families.auto_organize_run_hour`** in the family’s
 timezone (24-hour clock, **default 3** → ~3:00 AM local — organized before most
 people wake up). No time picker in v1 UI; same default for all households until
 we add an optional Admin setting later.
 
-Hourly `pg_cron` checks: local date is a run day **and** `local_hour >= set_aside_run_hour`
-**and** no run yet for `(plan_id, run_on)`.
+Hourly `pg_cron` checks: local date is a run day **and** `local_hour >= auto_organize_run_hour`
+**and** no run yet for `(auto_organize_id, run_on)`.
 
 ### Display examples
 
@@ -137,7 +140,7 @@ When a **manual** Set aside or **Run now** would cross **Float ≥ 0 → Float &
 
 - Show consequential `Sheet` (copy in `brand.ts`) before submitting.
 - **Skip** confirm if Float is already negative.
-- **Skip** confirm for automatic cron runs (user chose the schedule).
+- **Skip** confirm for automatic cron runs (user chose the auto-organize).
 
 Implementation notes:
 
@@ -148,39 +151,73 @@ Implementation notes:
 
 ---
 
+## Naming
+
+**Principle:** UI hyphenates (**Auto-organize**); code snake_cases (`auto_organize_*`).
+Do not introduce a second product term (`schedules`, `set_aside_*`) in schema or RPCs.
+
+| Concept | UI (when shown) | Postgres / RPC / TS |
+| --- | --- | --- |
+| Feature section | **Auto-organize** | — |
+| Section guardrail | *You choose the days and amounts — the app runs the moves.* | `AUTO_ORGANIZE_GUARDRAIL` |
+| Empty state | *Organize your money into buckets on the days you choose.* | `AUTO_ORGANIZE_EMPTY_BODY` |
+| Admin add CTA | **Add auto-organize** | `AUTO_ORGANIZE_ADD_LABEL` |
+| One configured auto-organize | auto-organize (card/editor) | **`auto_organizes`** row |
+| Bucket + amount rows | lines | **`auto_organize_lines`** |
+| One execution (cron or Run now) | run | **`auto_organize_runs`** row |
+| FK on `transactions` | — | **`auto_organize_run_id`** |
+| Local hour on due days | — | **`families.auto_organize_run_hour`** |
+| Execute one | Run now / automatic run | **`run_auto_organize(auto_organize_id, …)`** |
+| Cron entry point | — | **`run_due_auto_organizes()`** |
+| Cron job name | — | **`run-due-auto-organizes`** |
+| Future kind | — | **`auto_organize_kind`**: `organize` \| `send` (v1 = organize only) |
+| History actor (automatic) | **Scheduled** | `HISTORY_SCHEDULED_MOVE_LABEL` |
+| Manual move dialog | **Set aside** / **Use from bucket** / **Move money** | unchanged |
+
+**Say in UI:** organize your money, auto-organize, days you choose.  
+**Avoid in UI:** scheduled set-aside, organize Float, automation, auto-fund,
+recurring transfer, rules, schedule (as a feature synonym — use auto-organize).
+
+User-entered names optional (“Payday”); default display from frequency when blank.
+
+Manual one-off Float → bucket stays **`Set aside`** in the move dialog only — not an
+`auto_organizes` table concern.
+
+---
+
 ## Data model
 
-Next migration after `00000000000047_…`. Table names `set_aside_*` are legacy SQL
-identifiers; UI says **Schedule**.
+Next migration after `00000000000047_…`.
 
 ```text
 families
-  timezone text not null              -- IANA; default from first schedule setup
-  set_aside_run_hour smallint not null default 3   -- 0–23 local; when due-day runs fire
+  timezone text not null              -- IANA; default from first auto-organize setup
+  auto_organize_run_hour smallint not null default 3   -- 0–23 local; when due-day runs fire
 
-set_aside_plans
+auto_organizes
   id uuid pk
   family_id uuid not null
   name text                    -- optional label ("Payday", etc.)
   paused boolean not null default false
-  schedule_type text not null  -- 'interval' | 'monthly'
-  start_date date              -- interval schedules
+  auto_organize_type text not null  -- 'interval' | 'monthly'
+  start_date date              -- interval auto-organizes
   interval_count int           -- 1, 2, 3, 4, 6
   interval_unit text           -- 'week' | 'month'
   days_of_month int[]          -- monthly; 0 = last day
   created_by_member_id uuid
   created_at, updated_at
+  -- v1 implicit auto_organize_kind = 'organize'; add column when Send auto-organizes ship
 
-set_aside_plan_lines
+auto_organize_lines
   id uuid pk
-  plan_id uuid not null references set_aside_plans on delete cascade
+  auto_organize_id uuid not null references auto_organizes on delete cascade
   bucket_id uuid not null references buckets
   amount numeric(14,2) not null
   sort_order int not null
 
-set_aside_runs
+auto_organize_runs
   id uuid pk
-  plan_id uuid not null
+  auto_organize_id uuid not null
   family_id uuid not null
   run_on date not null         -- local calendar date this run is for
   trigger text not null        -- 'scheduled' | 'manual'
@@ -190,45 +227,45 @@ set_aside_runs
   created_at timestamptz
 
 transactions
-  set_aside_run_id uuid null references set_aside_runs(id)
+  auto_organize_run_id uuid null references auto_organize_runs(id)
 ```
 
 Indexes / constraints:
 
-- `(plan_id, run_on)` **unique** — idempotent cron (one run per plan per local day).
-- `(family_id)` on plans and runs for RLS.
+- `(auto_organize_id, run_on)` **unique** — idempotent cron (one run per auto-organize per local day).
+- `(family_id)` on `auto_organizes` and `auto_organize_runs` for RLS.
 
-Optional later: `owner_member_id uuid null` on plans for kid scope.
+Optional later: `owner_member_id uuid null` on `auto_organizes` for kid scope.
 
 ---
 
 ## RPCs
 
-### `run_set_aside_plan(plan_id, trigger, member_id?)`
+### `run_auto_organize(auto_organize_id, trigger, member_id?)`
 
 `SECURITY DEFINER`. Callable by service role (scheduled) and admin (manual only).
 
-1. Lock plan; reject if **paused** (including manual — must unpause first).
+1. Lock row; reject if **paused** (including manual — must unpause first).
 2. Validate lines: buckets exist, family-pool scope, same `family_id`.
 3. If any line invalid → record failed run or reject without partial moves.
-4. Insert `set_aside_runs` row.
-5. For each line: `move_money(null, bucket_id, amount, note)` with schedule name note;
-   set `set_aside_run_id` on each transaction.
+4. Insert `auto_organize_runs` row.
+5. For each line: `move_money(null, bucket_id, amount, note)` with auto-organize name note;
+   set `auto_organize_run_id` on each transaction.
 6. Single transaction — all lines or none.
 
 Manual: require `auth_role() = 'admin'` and set `triggered_by_member_id`.
 
-### `run_due_set_aside_plans(p_as_of timestamptz default now())`
+### `run_due_auto_organizes(p_as_of timestamptz default now())`
 
-Service role / cron only. For each non-paused plan:
+Service role / cron only. For each non-paused auto-organize:
 
 - Compute family **local date and hour** from `families.timezone`.
-- If schedule matches **today’s local date**, `local_hour >= set_aside_run_hour`,
-  and no run for `(plan_id, run_on)` → `run_set_aside_plan(..., 'scheduled', null)`.
+- If cadence matches **today’s local date**, `local_hour >= auto_organize_run_hour`,
+  and no run for `(auto_organize_id, run_on)` → `run_auto_organize(..., 'scheduled', null)`.
 
 ### CRUD
 
-Admin-only writes on plans + lines (RPC or RLS-gated tables). Admin + Shared read.
+Admin-only writes on `auto_organizes` + `auto_organize_lines` (RPC or RLS-gated tables). Admin + Shared read.
 
 ---
 
@@ -237,11 +274,11 @@ Admin-only writes on plans + lines (RPC or RLS-gated tables). Admin + Shared rea
 **Postgres-only** — no Edge Function invocations for the tick.
 
 ```sql
--- Hourly: on due days, first tick at or after set_aside_run_hour (default 3 AM local)
+-- Hourly: on due days, first tick at or after auto_organize_run_hour (default 3 AM local)
 select cron.schedule(
-  'run-due-set-asides',
+  'run-due-auto-organizes',
   '0 * * * *',
-  $$ select public.run_due_set_aside_plans(now()); $$
+  $$ select public.run_due_auto_organizes(now()); $$
 );
 ```
 
@@ -256,21 +293,22 @@ At large scale: optional denormalized `next_run_on` column + index.
 
 ## UI — Buckets tab
 
-Section **Schedule** below Float card.
+Section **Auto-organize** below Float card. Always show `AUTO_ORGANIZE_GUARDRAIL`
+under the header (admin + Shared) so the feature is not confused with auto-rebalance
+when the bank moves.
 
-**Empty state (admin):** `SCHEDULE_EMPTY_BODY` — *Automatically organize your money
-into buckets on the days you choose.*
+**Empty state (admin):** `AUTO_ORGANIZE_EMPTY_BODY` + **Add auto-organize** CTA.
 
 ### Plan total (required)
 
-Every schedule shows the **sum of all line amounts** prominently — that’s how people
+Every auto-organize shows the **sum of all line amounts** prominently — that’s how people
 verify they entered the right numbers (they often know the payday total before the
 per-bucket split).
 
 | Surface | Total |
 | --- | --- |
-| **Schedule editor** | **Running total** updates as lines change; sticky/footer so it stays visible while scrolling lines. Label e.g. **Total per run · $1,240.00** |
-| **Schedule card** (admin + Shared) | Same total on every card — not buried in line list |
+| **Auto-organize editor** | **Running total** updates as lines change; sticky/footer so it stays visible while scrolling lines. Label e.g. **Total per run · $1,240.00** |
+| **Auto-organize card** (admin + Shared) | Same total on every card — not buried in line list |
 | **Run now** confirm sheet | Total again, with full line list |
 | **Review** step (before save) | Total + lines |
 
@@ -280,19 +318,19 @@ expand/collapse.
 
 ### Shared (read-only)
 
-Schedule cards: name, cadence summary, next run, line summary, **total per run**,
+Auto-organize cards: name, cadence summary, next run, line summary, **total per run**,
 **Paused** badge, last run status. No Edit / Pause / Run now.
 
 ### Admin
 
-Same cards + **Add schedule**, **Edit schedule**, **Pause / Resume**, **Run now**.
+Same cards + **Add auto-organize**, **Edit**, **Pause / Resume**, **Run now**.
 
-### Schedule editor (Sheet)
+### Auto-organize editor (Sheet)
 
 1. Name (optional)
 2. Lines: bucket + amount; **running total** always visible ([Plan total](#plan-total-required))
-3. Frequency (branching fields per [Schedule model](#schedule-model))
-4. Family timezone (first schedule: default from browser; editable)
+3. Frequency (branching fields per [Auto-organize model](#auto-organize-model))
+4. Family timezone (first auto-organize: default from browser; editable)
 5. Review → Save (total + lines repeated)
 
 ### Run now
@@ -303,28 +341,12 @@ warning if applicable, consequential copy. Confirm button includes total (e.g.
 
 ### Bucket polish
 
-Active schedule lines → subtle icon or “+$X on schedule” on bucket row (both roles
+Active auto-organize lines → subtle icon or “+$X in auto-organize” on bucket row (both roles
 see hints on shared buckets).
 
-### UI naming (canonical)
-
-Constants in `brand.ts`:
-
-| Surface | Label |
-| --- | --- |
-| Buckets section header | **Schedule** (`SCHEDULE_SECTION_TITLE`) |
-| Empty state body | *Automatically organize your money into buckets on the days you choose.* (`SCHEDULE_EMPTY_BODY`) |
-| Admin add CTA | **Add schedule** (`SCHEDULE_ADD_LABEL`) |
-| History actor (automatic run) | **Scheduled** (`HISTORY_SCHEDULED_MOVE_LABEL`) |
-| Manual move dialog | **Set aside** / **Use from bucket** / **Move money** (unchanged) |
-
-**Say:** organize your money, automatic (in helper sentences), schedule, days you choose.  
-**Avoid in UI:** scheduled set-aside, organize Float, automation, auto-fund, recurring transfer, rules.
-
-User-entered schedule names optional (“Payday”); default display from frequency when blank.
-
 When shipping, extend `bucketsFloatInfoPoints` bullet 2 for automatic organization
-(e.g. buckets change when you move money **or on a schedule you choose**).
+(e.g. buckets change when you move money **or when auto-organize runs on days you
+choose**).
 
 ---
 
@@ -338,8 +360,8 @@ When shipping, extend `bucketsFloatInfoPoints` bullet 2 for automatic organizati
 | Run now | `Bucket move · by {name} · {time}` |
 | Ordinary manual | unchanged |
 
-Use `set_aside_run_id` + run `trigger` to choose label. Optional row icon for
-scheduled moves. Auto-note on tx optional (schedule name).
+Use `auto_organize_run_id` + run `trigger` to choose label. Optional row icon for
+automatic moves. Auto-note on tx optional (auto-organize name).
 
 ---
 
@@ -347,10 +369,10 @@ scheduled moves. Auto-note on tx optional (schedule name).
 
 | Case | Behavior |
 | --- | --- |
-| Bucket deleted | Delete bucket sheet warns if on a schedule; editor shows stale line; **block run** until fixed |
-| Bucket renamed | Schedule uses `bucket_id`; UI shows current name |
-| Schedule paused | No automatic or manual run until resumed; Shared sees **Paused** |
-| Cron retry | `(plan_id, run_on)` unique prevents double execution |
+| Bucket deleted | Delete bucket sheet warns if in an auto-organize; editor shows stale line; **block run** until fixed |
+| Bucket renamed | Auto-organize uses `bucket_id`; UI shows current name |
+| Auto-organize paused | No automatic or manual run until resumed; Shared sees **Paused** |
+| Cron retry | `(auto_organize_id, run_on)` unique prevents double execution |
 | Insufficient Float on run | **Allow**; Float goes red (all roles) |
 
 ---
@@ -359,9 +381,9 @@ scheduled moves. Auto-note on tx optional (schedule name).
 
 | Layer | Coverage |
 | --- | --- |
-| `tests/db/` | Schedule matching (interval, monthly, twice, last day, TZ); run RPC idempotency; RLS; atomic multi-line; deleted bucket blocks run; kid/adult Float → bucket when Float insufficient |
-| Unit | Next-run date helpers; schedule display strings |
-| Seed | `schedule` scenario (optional) |
+| `tests/db/` | `auto_organize.test.ts` (or extend): matching, `run_auto_organize`, `run_due_auto_organizes`, idempotency, RLS |
+| Unit | Next-run date helpers; auto-organize display strings |
+| Seed | `auto-organize` scenario (optional) |
 | Manual | Admin CRUD, pause, run now; Shared read-only; History Scheduled label; confirm sheet |
 
 Also extend `move_money.test.ts`: adult + child Float → bucket with zero/negative Float succeeds;
@@ -376,10 +398,10 @@ One PR at a time ([CONTRIBUTING.md](../CONTRIBUTING.md)); bump `package.json` pa
 | PR | Scope |
 | --- | --- |
 | **1** | Align `move_money`: allow Float → bucket without insufficient-Float check (**all roles**) + db tests |
-| **2** | Migration: tables, `set_aside_run_id`, run RPCs, RLS, db tests |
-| **3** | pg_cron migration + `run_due_set_aside_plans` |
+| **2** | Migration: `auto_organizes`, `auto_organize_lines`, `auto_organize_runs`, `auto_organize_run_id`, run RPCs, RLS, db tests |
+| **3** | pg_cron migration + `run_due_auto_organizes` |
 | **4** | MoveMoneyDialog: allow Set aside over Float + red-Float confirm sheet + `brand.ts` |
-| **5** | Admin Schedule UI + editor (all frequency types) + pause |
+| **5** | Admin Auto-organize UI + editor (all frequency types) + pause |
 | **6** | Shared read-only cards + bucket indicators |
 | **7** | Run now + confirm sheet |
 | **8** | History Scheduled subtitle + optional row icon |
@@ -393,19 +415,19 @@ PR 1–2 can merge logic if preferred; keep migrations reviewable.
 
 | Doc | Status (design) | At ship |
 | --- | --- | --- |
-| [docs/SCHEDULE.md](./SCHEDULE.md) | **Current** | Mark **shipped**; fix any drift |
+| [docs/AUTO_ORGANIZE.md](./AUTO_ORGANIZE.md) | **Current** | Mark **shipped**; fix any drift |
 | [CONTEXT.md](../CONTEXT.md) | Updated | Change section to **shipped**; remove implementation notes |
 | [AGENTS.md](../AGENTS.md) | Updated | — |
 | [docs/BRAND.md](./BRAND.md) | Updated | Add any new `brand.ts` keys to copy map |
 | [README.md](../README.md) | Updated | Optional: pg_cron + free-tier activity note |
-| `src/lib/brand.ts` | Placeholder Schedule strings + TODO confirm copy | Full strings in PR 4 / 5 / 7 / 8 |
+| `src/lib/brand.ts` | Placeholder Auto-organize strings + TODO confirm copy | Full strings in PR 4 / 5 / 7 / 8 |
 
 ---
 
 ## Philosophy note
 
-**Schedule** is **user-configured automatic organization** — not auto-rebalance when
-the bank moves. The app runs `move_money` on days the user chose; it does not decide
-which bucket covers a charge. Red Float after a run is the same signal as today.
-Shared read-only visibility lets a partner see what will be organized and when,
-without triggering runs.
+**Auto-organize** is **user-configured automatic organization** — not auto-rebalance
+when the bank moves. The app runs `move_money` on days the user chose; it does not
+decide which bucket covers a charge. Red Float after a run is the same signal as
+today. Shared read-only visibility lets a partner see what will be organized and
+when, without triggering runs.
