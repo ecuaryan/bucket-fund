@@ -60,17 +60,17 @@ export function applyBucketMove(
     }
   }
 
-  let spendingMoney = breakdown.spendingMoney
+  let float = breakdown.float
   let bucketAllocated = breakdown.bucketAllocated
 
   if (fromBucketId === null) {
-    spendingMoney -= amount
+    float -= amount
   } else {
     adjustBucket(fromBucketId, -amount)
   }
 
   if (toBucketId === null) {
-    spendingMoney += amount
+    float += amount
   } else {
     adjustBucket(toBucketId, amount)
   }
@@ -83,6 +83,6 @@ export function applyBucketMove(
 
   return {
     buckets: nextBuckets,
-    breakdown: { ...breakdown, spendingMoney, bucketAllocated },
+    breakdown: { ...breakdown, float, bucketAllocated },
   }
 }

@@ -84,10 +84,10 @@ If you're the kind of person who has ever looked at their bank account two days 
   “people on the shared balance” or “shared balance” in copy—not “adults” or
   “partners”—when describing who shares household buckets and Float.
 - Say **household admin** (not “your admin”) when a non-admin needs the person
-  who manages Admin. Use **Float** (`SPENDING_MONEY_LABEL` in `brand.ts`)
+  who manages Admin. Use **Float** (`FLOAT_LABEL` in `brand.ts`)
   in the Buckets tab, Move money, History, and related Send copy; **Household**
   in Admin assignment dropdowns (`HOUSEHOLD_LABEL`, not “pool” in user copy).
-  Matches SQL/RPC: `spending_money`, `member_spending_money()`, etc.
+  Matches SQL/RPC: `float`, `member_float()`, etc.
 - Kid-facing copy: **shared balance** or **household admin**, not “parent,”
   unless you mean a specific person.
 - **Toasts:** ephemeral success/error feedback uses the global toast, fixed below
@@ -144,9 +144,9 @@ limit UI to “checking or savings” only.
 
 ## Ubiquitous language: Float
 
-**UI** says **Float** (`SPENDING_MONEY_LABEL` in `brand.ts`). **Code, SQL, and
-RPCs** keep `spending_money` (`spending_money` JSON key,
-`member_spending_money()`, `spending_money_balance_*` columns). `NULL` bucket id
+**UI** says **Float** (`FLOAT_LABEL` in `brand.ts`). **Code, SQL, and
+RPCs** keep `float` (`float` JSON key,
+`member_float()`, `float_balance_*` columns). `NULL` bucket id
 in `move_money` means the Float pool.
 
 ## Copy map (auth & admin)
@@ -175,9 +175,9 @@ in `move_money` means the Float pool.
 | Household admin (hints) | `householdAdminLabel()`, `HOUSEHOLD_ADMIN_PHRASE` fallback |
 | Buckets tab: no linked accounts | `bucketsLinkBankMemberBody()` |
 | Buckets tab: member empty buckets | `bucketsMemberNoBucketsHint()` |
-| Buckets tab: kid Float hint | `bucketsKidSpendingMoneyHint()` |
-| Buckets tab: Float info sheet | `bucketsSpendingMoneyInfoPoints()`, `bucketsSpendingMoneyInfoSheetTitle()` |
-| Float label (all UI) | `SPENDING_MONEY_LABEL`, `SPENDING_MONEY_LABEL_LOWER` |
+| Buckets tab: kid Float hint | `bucketsKidFloatHint()` |
+| Buckets tab: Float info sheet | `bucketsFloatInfoPoints()`, `bucketsFloatInfoSheetTitle()` |
+| Float label (all UI) | `FLOAT_LABEL`, `FLOAT_LABEL_LOWER` |
 | Float hero subtitle | `FLOAT_HERO_SUBTITLE` |
 | Onboarding coach | `ONBOARDING_COACH_*`, `onboardingCoachStepBody()` |
 | Move money intents | `moveMoneyDialogCopy.ts` |

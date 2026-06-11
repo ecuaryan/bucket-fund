@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SPENDING_MONEY_LABEL } from '@/lib/brand'
+import { FLOAT_LABEL } from '@/lib/brand'
 import {
   bucketEndpointLabel,
   historyBucketMoveSubtitle,
@@ -36,7 +36,7 @@ describe('bucketEndpointLabel', () => {
         snapshotName: null,
         joinedName: null,
       }),
-    ).toBe(SPENDING_MONEY_LABEL)
+    ).toBe(FLOAT_LABEL)
   })
 
   it('keeps bucket name after delete via snapshot', () => {

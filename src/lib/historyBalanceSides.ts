@@ -1,6 +1,6 @@
-import { SPENDING_MONEY_LABEL } from '@/lib/brand'
+import { FLOAT_LABEL } from '@/lib/brand'
 import {
-  HISTORY_SPENDING_MONEY_LABEL,
+  HISTORY_FLOAT_LABEL,
   type HistoryBalanceTxRow,
 } from '@/lib/historyBalanceLine'
 
@@ -29,7 +29,7 @@ function bucketSide(
   return { label, delta, before: b, after: a }
 }
 
-function spendingMoneySide(
+function floatSide(
   delta: number,
   before: string | number | null | undefined,
   after: string | number | null | undefined,
@@ -40,7 +40,7 @@ function spendingMoneySide(
   if (opts?.hideAmounts) {
     if (b === null && a === null) return null
     return {
-      label: HISTORY_SPENDING_MONEY_LABEL,
+      label: HISTORY_FLOAT_LABEL,
       delta,
       before: null,
       after: null,
@@ -48,7 +48,7 @@ function spendingMoneySide(
   }
   if (b === null || a === null) return null
   return {
-    label: HISTORY_SPENDING_MONEY_LABEL,
+    label: HISTORY_FLOAT_LABEL,
     delta,
     before: b,
     after: a,
@@ -74,8 +74,8 @@ export function redactHistoryTxForChildViewer<T extends HistoryBalanceTxRow>(
   if (!hideSharedPoolSnapshots(row, viewerRole, currentMemberId)) return row
   return {
     ...row,
-    spending_money_balance_before: null,
-    spending_money_balance_after: null,
+    float_balance_before: null,
+    float_balance_after: null,
   }
 }
 
@@ -83,11 +83,11 @@ function sendMemberLabel(
   snapshotName: string | null | undefined,
   isMe: boolean,
 ): string {
-  if (isMe) return SPENDING_MONEY_LABEL
+  if (isMe) return FLOAT_LABEL
   return snapshotName?.trim() || 'Balance'
 }
 
-/** Two-sided debit/credit view — both entities, including spending money when involved. */
+/** Two-sided debit/credit view — both entities, including float when involved. */
 export function historyBalanceSides(
   row: HistoryBalanceTxRow,
   args: {
@@ -106,16 +106,16 @@ export function historyBalanceSides(
   if (row.type === 'bucket_move') {
     const fromIsBucket = row.from_bucket_id !== null
     const toIsBucket = row.to_bucket_id !== null
-    const unallocOut = spendingMoneySide(
+    const unallocOut = floatSide(
       -amount,
-      row.spending_money_balance_before,
-      row.spending_money_balance_after,
+      row.float_balance_before,
+      row.float_balance_after,
       { hideAmounts: hidePool },
     )
-    const unallocIn = spendingMoneySide(
+    const unallocIn = floatSide(
       amount,
-      row.spending_money_balance_before,
-      row.spending_money_balance_after,
+      row.float_balance_before,
+      row.float_balance_after,
       { hideAmounts: hidePool },
     )
 
@@ -166,16 +166,16 @@ export function historyBalanceSides(
 
   const fromIsMe = row.from_member_id === currentMemberId
   const toIsMe = row.to_member_id === currentMemberId
-  const unallocOut = spendingMoneySide(
+  const unallocOut = floatSide(
     -amount,
-    row.spending_money_balance_before,
-    row.spending_money_balance_after,
+    row.float_balance_before,
+    row.float_balance_after,
     { hideAmounts: hidePool },
   )
-  const unallocIn = spendingMoneySide(
+  const unallocIn = floatSide(
     amount,
-    row.spending_money_balance_before,
-    row.spending_money_balance_after,
+    row.float_balance_before,
+    row.float_balance_after,
     { hideAmounts: hidePool },
   )
 
@@ -225,13 +225,13 @@ export function formatSignedDelta(
 
 export type TransferAmountAccent = 'fund' | 'release' | 'neutral'
 
-/** Rose when releasing to spending money; emerald when funding from it; neutral bucket shuffle. */
+/** Rose when releasing to float; emerald when funding from it; neutral bucket shuffle. */
 export function transferAmountAccent(sides: HistoryBalanceSide[]): TransferAmountAccent {
   if (sides.length !== 2) return 'neutral'
   const debit = sides[0]!
   const credit = sides[1]!
-  if (debit.label === HISTORY_SPENDING_MONEY_LABEL) return 'fund'
-  if (credit.label === HISTORY_SPENDING_MONEY_LABEL) return 'release'
+  if (debit.label === HISTORY_FLOAT_LABEL) return 'fund'
+  if (credit.label === HISTORY_FLOAT_LABEL) return 'release'
   return 'neutral'
 }
 

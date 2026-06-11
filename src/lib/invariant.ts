@@ -3,10 +3,10 @@
  *
  * The system-wide invariant (see CONTEXT.md "Balance Model"):
  *
- *   sum(bucket allocations) + sum(spending money balances across members)
+ *   sum(bucket allocations) + sum(float balances across members)
  *     === sum(real Teller balances across all linked accounts)
  *
- * User-facing “rebalance” signal is negative spending money on Buckets tab (see
+ * User-facing “rebalance” signal is negative float on Buckets tab (see
  * CONTEXT.md § Data Integrity). Automated operator ledger checks are
  * deferred until a possible paid SaaS (`check-invariant` stub).
  *

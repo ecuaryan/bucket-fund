@@ -1,8 +1,8 @@
 import { Sheet } from '@/components/ui/Sheet'
 import {
   bucketsFloatStatusGuide,
-  bucketsSpendingMoneyInfoPoints,
-  bucketsSpendingMoneyInfoSheetTitle,
+  bucketsFloatInfoPoints,
+  bucketsFloatInfoSheetTitle,
   type FloatStatusGuide,
 } from '@/lib/brand'
 
@@ -26,9 +26,9 @@ const STATUS_STYLES: Record<
   },
 }
 
-export default function SpendingMoneyInfoSheet({ open, isChild, onClose }: Props) {
-  const title = bucketsSpendingMoneyInfoSheetTitle()
-  const points = bucketsSpendingMoneyInfoPoints(isChild)
+export default function FloatInfoSheet({ open, isChild, onClose }: Props) {
+  const title = bucketsFloatInfoSheetTitle()
+  const points = bucketsFloatInfoPoints(isChild)
   const statusGuide = bucketsFloatStatusGuide(isChild)
 
   return (

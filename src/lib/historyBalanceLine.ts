@@ -1,4 +1,4 @@
-import { SPENDING_MONEY_LABEL } from '@/lib/brand'
+import { FLOAT_LABEL } from '@/lib/brand'
 
 export type HistoryBalanceLine = {
   label: string
@@ -40,13 +40,13 @@ export type HistoryBalanceTxRow = {
   from_member_balance_after: string | number | null
   to_member_balance_before: string | number | null
   to_member_balance_after: string | number | null
-  spending_money_balance_before: string | number | null
-  spending_money_balance_after: string | number | null
+  float_balance_before: string | number | null
+  float_balance_after: string | number | null
   from_bucket?: { name: string } | null
   to_bucket?: { name: string } | null
 }
 
-export const HISTORY_SPENDING_MONEY_LABEL = SPENDING_MONEY_LABEL
+export const HISTORY_FLOAT_LABEL = FLOAT_LABEL
 
 /** One muted balance line for a bucket move (destination bucket, else source). */
 export function historyBucketMoveBalanceLine(
@@ -99,7 +99,7 @@ export function historySendBalanceLine(
   if (toPair && row.to_member_id) {
     const label =
       row.to_member_id === currentMemberId
-        ? SPENDING_MONEY_LABEL
+        ? FLOAT_LABEL
         : row.to_member_name?.trim() || 'Balance'
     return { label, ...toPair }
   }
@@ -111,7 +111,7 @@ export function historySendBalanceLine(
   if (fromPair && row.from_member_id) {
     const label =
       row.from_member_id === currentMemberId
-        ? SPENDING_MONEY_LABEL
+        ? FLOAT_LABEL
         : row.from_member_name?.trim() || 'Balance'
     return { label, ...fromPair }
   }
@@ -125,7 +125,7 @@ export function shouldShowBalanceLabel(
   fromEndpoint: string,
   toEndpoint: string,
 ): boolean {
-  if (balanceLabel === SPENDING_MONEY_LABEL) return false
+  if (balanceLabel === FLOAT_LABEL) return false
   if (balanceLabel === fromEndpoint || balanceLabel === toEndpoint) return false
   return true
 }

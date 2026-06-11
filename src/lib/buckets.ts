@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { humaniseBucketWriteError, validateBucketName } from '@/lib/bucketName'
-import { SPENDING_MONEY_LABEL_LOWER } from '@/lib/brand'
+import { FLOAT_LABEL_LOWER } from '@/lib/brand'
 
 export {
   BUCKET_NAME_MAX_LENGTH,
@@ -25,7 +25,7 @@ export type MoveMoneyArgs = {
 export async function moveMoney(args: MoveMoneyArgs): Promise<string> {
   // Cast: the Supabase type generator doesn't model nullability for
   // function args, but the SQL function accepts null for either
-  // NULL bucket id (meaning the spending-money pool). Runtime is fine.
+  // NULL bucket id (meaning the float pool). Runtime is fine.
   const { data, error } = await supabase.rpc('move_money', {
     p_from_bucket_id: args.fromBucketId,
     p_to_bucket_id: args.toBucketId,
@@ -60,7 +60,7 @@ export async function renameBucket(
 
 /**
  * Delete a bucket. The bucket's `allocated_amount` automatically
- * returns to spending money because it is computed
+ * returns to float because it is computed
  * as `cash_balance - sum(allocated)` and the deleted row drops out
  * of the sum. Any historical `transactions` referencing this bucket
  * keep their rows; the FKs are `on delete set null` so the audit
@@ -115,8 +115,8 @@ function humaniseMoveError(msg: string): string {
   if (lower.includes('children can only move to their own buckets')) {
     return 'You can only move money to your own buckets.'
   }
-  if (lower.includes('insufficient spending money balance')) {
-    return `Not enough ${SPENDING_MONEY_LABEL_LOWER} for that amount.`
+  if (lower.includes('insufficient float balance')) {
+    return `Not enough ${FLOAT_LABEL_LOWER} for that amount.`
   }
   if (lower.includes('not in your family')) {
     return "That bucket isn't in your household."

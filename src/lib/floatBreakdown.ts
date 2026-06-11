@@ -2,7 +2,7 @@ import {
   BREAKDOWN_CASH_LABEL,
   BREAKDOWN_LINKED_CASH_LABEL,
   BREAKDOWN_MANUAL_CASH_LABEL,
-  spendingMoneySourcesCountText,
+  floatSourcesCountText,
 } from '@/lib/brand'
 import type { BucketsBalanceBreakdown } from '@/lib/availableBalance'
 
@@ -14,7 +14,7 @@ export type BreakdownLine = {
   indent?: boolean
 }
 
-export type SpendingMoneySummary = {
+export type FloatSummary = {
   label: string
   amount: number
   /** When set, rendered as "<money> <countText>" (e.g. "across 2 sources"). */
@@ -29,7 +29,7 @@ type BuildOpts = {
   childTotal: number
 }
 
-export function buildSpendingMoneyLines(
+export function buildFloatLines(
   breakdown: BucketsBalanceBreakdown,
   opts: BuildOpts,
 ): BreakdownLine[] {
@@ -129,10 +129,10 @@ export function buildSpendingMoneyLines(
   return lines
 }
 
-export function spendingMoneySummary(
+export function floatSummary(
   breakdown: BucketsBalanceBreakdown,
   opts: BuildOpts,
-): SpendingMoneySummary | null {
+): FloatSummary | null {
   if (opts.isChild) {
     if (opts.childTotal <= 0) return null
     return { label: 'Total balance', amount: opts.childTotal }
@@ -143,12 +143,12 @@ export function spendingMoneySummary(
   return {
     label: BREAKDOWN_CASH_LABEL,
     amount: breakdown.totalCash,
-    countText: spendingMoneySourcesCountText(opts.cashAccountsCount),
+    countText: floatSourcesCountText(opts.cashAccountsCount),
   }
 }
 
-export function formatSpendingMoneySummary(
-  summary: SpendingMoneySummary,
+export function formatFloatSummary(
+  summary: FloatSummary,
   formatMoney: (amount: number) => string,
 ): string {
   if (summary.countText) {

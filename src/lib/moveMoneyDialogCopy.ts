@@ -1,4 +1,4 @@
-import { SPENDING_MONEY_ENDPOINT_KEY } from '@/features/buckets/moveMoneyDefaults'
+import { FLOAT_ENDPOINT_KEY } from '@/features/buckets/moveMoneyDefaults'
 import { MOVE_MONEY_COVER_HINT } from '@/lib/brand'
 
 export type MoveMoneyIntent = 'setAside' | 'cover' | 'move'
@@ -13,8 +13,8 @@ type IntentInput = {
 export function detectMoveMoneyIntent(input: IntentInput): MoveMoneyIntent {
   if (input.preferredIntent) return input.preferredIntent
 
-  const fromIsFloat = input.fromKey === SPENDING_MONEY_ENDPOINT_KEY
-  const toIsFloat = input.toKey === SPENDING_MONEY_ENDPOINT_KEY
+  const fromIsFloat = input.fromKey === FLOAT_ENDPOINT_KEY
+  const toIsFloat = input.toKey === FLOAT_ENDPOINT_KEY
 
   if (fromIsFloat && !toIsFloat) return 'setAside'
   if (!fromIsFloat && toIsFloat) return 'cover'

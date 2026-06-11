@@ -19,23 +19,23 @@ import {
   BUCKETS_EMPTY_TITLE,
   bucketsAddSourceMemberBody,
   bucketsDeleteBucketConfirm,
-  bucketsDeleteBucketEffectSpendingMoney,
+  bucketsDeleteBucketEffectFloat,
   bucketsDeleteBucketSheetIntro,
   bucketsDeleteBucketSheetTitle,
   BUCKETS_DELETE_BUCKET_EFFECT_HISTORY,
   BUCKETS_DELETE_BUCKET_EFFECT_LABEL,
   BUCKETS_DELETE_BUCKET_WHAT_HAPPENS,
-  bucketsKidSpendingMoneyHint,
+  bucketsKidFloatHint,
   BUCKETS_DB_UPDATE_PENDING_BODY,
   bucketsMemberNoBucketsHint,
-  bucketsSpendingMoneyInfoAriaLabel,
+  bucketsFloatInfoAriaLabel,
   FLOAT_HERO_SUBTITLE,
   FLOAT_NEGATIVE_HINT,
-  SPENDING_MONEY_LABEL,
+  FLOAT_LABEL,
 } from '@/lib/brand'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import OnboardingCoachCard from '@/features/buckets/OnboardingCoachCard'
-import SpendingMoneyInfoSheet from '@/features/buckets/SpendingMoneyInfoSheet'
+import FloatInfoSheet from '@/features/buckets/FloatInfoSheet'
 import SuggestedBucketChips from '@/features/buckets/SuggestedBucketChips'
 import { Sheet } from '@/components/ui/Sheet'
 import InfoIconButton from '@/components/ui/InfoIconButton'
@@ -81,15 +81,15 @@ import { useFlipList } from '@/hooks/useFlipList'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { refreshBalances } from '@/lib/teller'
 import {
-  buildSpendingMoneyLines,
+  buildFloatLines,
   formatBucketsHeaderSubtitle,
-  formatSpendingMoneySummary,
-  spendingMoneySummary,
-} from '@/lib/spendingMoneyBreakdown'
+  formatFloatSummary,
+  floatSummary,
+} from '@/lib/floatBreakdown'
 import {
-  readSpendingMoneyDetailsOpen,
-  writeSpendingMoneyDetailsOpen,
-} from '@/lib/spendingMoneyDetailsStorage'
+  readFloatDetailsOpen,
+  writeFloatDetailsOpen,
+} from '@/lib/floatDetailsStorage'
 import {
   getOnboardingCoachState,
   shouldShowOnboardingCoach,
@@ -129,7 +129,7 @@ export default function BucketsPage() {
   const [deletingBucket, setDeletingBucket] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const [spendingMoneyInfoOpen, setSpendingMoneyInfoOpen] = useState(false)
+  const [floatInfoOpen, setFloatInfoOpen] = useState(false)
   const [coachDismissed, setCoachDismissed] = useState(true)
   const [movePreferredIntent, setMovePreferredIntent] = useState<
     MoveMoneyIntent | undefined
@@ -147,7 +147,7 @@ export default function BucketsPage() {
 
   if (memberId !== prevDetailsMemberId) {
     setPrevDetailsMemberId(memberId)
-    setDetailsOpen(memberId ? readSpendingMoneyDetailsOpen(memberId) : false)
+    setDetailsOpen(memberId ? readFloatDetailsOpen(memberId) : false)
     setCoachDismissed(memberId ? readOnboardingCoachDismissed(memberId) : true)
   }
 
@@ -462,7 +462,7 @@ export default function BucketsPage() {
   }
 
   // Server-side family pool (admin/member share one number). See migration 16.
-  const spendingMoney = balanceBreakdown.spendingMoney
+  const float = balanceBreakdown.float
   const isAdult = !isChild
   const childTotal = isChild ? childTotalBalance(balanceBreakdown) : 0
   const showAdultBreakdown =
@@ -478,7 +478,7 @@ export default function BucketsPage() {
   const showBalanceBreakdown = showAdultBreakdown || showChildBreakdown
   const hasMoneySources = accounts.length > 0
   // Once money is in a bucket it is "organized" — show the negative red
-  // negative spending-money rebalance signal rather than the getting-started CTA. Only
+  // negative float rebalance signal rather than the getting-started CTA. Only
   // adults with nothing set up at all (no sources, nothing allocated) see it.
   const hasAllocations = balanceBreakdown.bucketAllocated > 0
   const coachState = getOnboardingCoachState({
@@ -489,8 +489,8 @@ export default function BucketsPage() {
   const showCoach = shouldShowOnboardingCoach(isAdult, coachDismissed, coachState)
   const showAddSourceCard =
     isAdult && !hasMoneySources && !hasAllocations && !showCoach
-  const spendingMoneyColor =
-    spendingMoney >= 0
+  const floatColor =
+    float >= 0
       ? 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30'
       : 'bg-red-500/10 text-red-300 ring-red-500/30'
 
@@ -505,15 +505,15 @@ export default function BucketsPage() {
   // including children, who can't read the accounts table — sees the same value.
   const bankSyncedLabel = formatRelativeTime(balanceBreakdown.bankLastSyncedAt)
 
-  const spendingMoneyHint =
+  const floatHint =
     showAddSourceCard || showCoach
       ? null
-      : spendingMoney < 0
+      : float < 0
         ? FLOAT_NEGATIVE_HINT
         : showBalanceBreakdown
           ? null
           : isChild
-            ? bucketsKidSpendingMoneyHint(householdAdminName)
+            ? bucketsKidFloatHint(householdAdminName)
             : FLOAT_HERO_SUBTITLE
 
   const breakdownOpts = {
@@ -523,14 +523,14 @@ export default function BucketsPage() {
     manualAccountsCount,
     childTotal,
   }
-  const breakdownLines = buildSpendingMoneyLines(balanceBreakdown, breakdownOpts)
-  const collapsedSummary = spendingMoneySummary(balanceBreakdown, breakdownOpts)
+  const breakdownLines = buildFloatLines(balanceBreakdown, breakdownOpts)
+  const collapsedSummary = floatSummary(balanceBreakdown, breakdownOpts)
 
   function toggleDetailsOpen() {
     if (!memberId) return
     setDetailsOpen((prev) => {
       const next = !prev
-      writeSpendingMoneyDetailsOpen(memberId, next)
+      writeFloatDetailsOpen(memberId, next)
       return next
     })
   }
@@ -563,7 +563,7 @@ export default function BucketsPage() {
           syncing &&
           moveBucketId === null &&
           !manualSourceOpen &&
-          !spendingMoneyInfoOpen
+          !floatInfoOpen
         }
         label="Updating…"
       >
@@ -635,23 +635,23 @@ export default function BucketsPage() {
         </section>
       ) : (
         <section
-          className={`rounded-2xl px-4 py-5 ring-1 ${spendingMoneyColor}`}
-          aria-label={`${SPENDING_MONEY_LABEL} balance`}
+          className={`rounded-2xl px-4 py-5 ring-1 ${floatColor}`}
+          aria-label={`${FLOAT_LABEL} balance`}
         >
           <div className="flex items-center gap-0.5">
             <p className="text-xs font-medium uppercase tracking-wide opacity-70">
-              {SPENDING_MONEY_LABEL}
+              {FLOAT_LABEL}
             </p>
             <InfoIconButton
-              label={bucketsSpendingMoneyInfoAriaLabel()}
-              onClick={() => setSpendingMoneyInfoOpen(true)}
+              label={bucketsFloatInfoAriaLabel()}
+              onClick={() => setFloatInfoOpen(true)}
             />
           </div>
           <p className="mt-1 text-3xl font-semibold tabular-nums">
-            {formatMoney(spendingMoney)}
+            {formatMoney(float)}
           </p>
-          {spendingMoneyHint ? (
-            <p className="mt-1 text-xs opacity-70">{spendingMoneyHint}</p>
+          {floatHint ? (
+            <p className="mt-1 text-xs opacity-70">{floatHint}</p>
           ) : null}
           {showBalanceBreakdown && (
             <>
@@ -666,7 +666,7 @@ export default function BucketsPage() {
                   {detailsOpen
                     ? 'Breakdown'
                     : collapsedSummary
-                      ? formatSpendingMoneySummary(collapsedSummary, formatMoney)
+                      ? formatFloatSummary(collapsedSummary, formatMoney)
                       : 'Breakdown'}
                 </span>
                 <svg
@@ -824,7 +824,7 @@ export default function BucketsPage() {
       <MoveMoneyDialog
         open={moveBucketId !== null}
         buckets={buckets}
-        spendingMoney={spendingMoney}
+        float={float}
         initialBucketId={moveBucketId ?? ''}
         preferredIntent={movePreferredIntent}
         onClose={() => {
@@ -841,10 +841,10 @@ export default function BucketsPage() {
         }}
       />
 
-      <SpendingMoneyInfoSheet
-        open={spendingMoneyInfoOpen}
+      <FloatInfoSheet
+        open={floatInfoOpen}
         isChild={isChild}
-        onClose={() => setSpendingMoneyInfoOpen(false)}
+        onClose={() => setFloatInfoOpen(false)}
       />
 
       {deleteTarget ? (
@@ -881,7 +881,7 @@ export default function BucketsPage() {
               </h3>
               <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-zinc-400">
                 <li>
-                  {bucketsDeleteBucketEffectSpendingMoney(
+                  {bucketsDeleteBucketEffectFloat(
                     formatMoney(Number(deleteTarget.allocated_amount)),
                   )}
                 </li>

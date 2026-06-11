@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   addMember,
   createAdminFamily,
-  getSpendingMoneyBalance,
+  getFloatBalance,
   insertBucket,
   sendMoney,
   serviceClient,
@@ -11,8 +11,8 @@ import {
 } from './fixtures'
 
 
-describe('spending money RPC security', () => {
-  it('authenticated cannot call member_spending_money for another member', async () => {
+describe('float RPC security', () => {
+  it('authenticated cannot call member_float for another member', async () => {
     const family = await createAdminFamily('sm-cross-probe')
     const child = await addMember(family.familyId, 'child', 'Alex')
     const svc = serviceClient()
@@ -27,25 +27,25 @@ describe('spending money RPC security', () => {
     const admin = await userClient(family.adminEmail, family.adminPassword)
     const childClient = await userClient(child.email, child.password)
 
-    const adminPool = await svc.rpc('member_spending_money', {
+    const adminPool = await svc.rpc('member_float', {
       p_member_id: family.adminMemberId,
     })
     expect(adminPool.error).toBeNull()
     const adminBalance = Number(adminPool.data)
 
-    const childProbe = await childClient.rpc('member_spending_money', {
+    const childProbe = await childClient.rpc('member_float', {
       p_member_id: family.adminMemberId,
     })
     expect(childProbe.error).not.toBeNull()
 
-    const adminProbe = await admin.rpc('member_spending_money', {
+    const adminProbe = await admin.rpc('member_float', {
       p_member_id: child.memberId,
     })
     expect(adminProbe.error).not.toBeNull()
 
     expect(adminBalance).toBe(500)
-    expect(await getSpendingMoneyBalance(admin)).toBe(adminBalance)
-    expect(await getSpendingMoneyBalance(childClient)).toBe(0)
+    expect(await getFloatBalance(admin)).toBe(adminBalance)
+    expect(await getFloatBalance(childClient)).toBe(0)
   })
 
   it('child breakdown omits family pool and other children', async () => {
@@ -100,13 +100,13 @@ describe('spending money RPC security', () => {
     const childClient = await userClient(child.email, child.password)
     const { data, error } = await childClient
       .from(TRANSACTIONS_CLIENT)
-      .select('spending_money_balance_before, spending_money_balance_after, type')
+      .select('float_balance_before, float_balance_after, type')
       .eq('type', 'send')
       .single()
 
     expect(error).toBeNull()
-    expect(data?.spending_money_balance_before).toBeNull()
-    expect(data?.spending_money_balance_after).toBeNull()
+    expect(data?.float_balance_before).toBeNull()
+    expect(data?.float_balance_after).toBeNull()
 
     const denied = await childClient
       .from('transactions')

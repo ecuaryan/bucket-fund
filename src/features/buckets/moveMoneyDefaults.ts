@@ -1,19 +1,19 @@
-export const SPENDING_MONEY_ENDPOINT_KEY = '__spending_money__'
+export const FLOAT_ENDPOINT_KEY = '__float__'
 
 export function endpointKey(id: string | null): string {
-  return id ?? SPENDING_MONEY_ENDPOINT_KEY
+  return id ?? FLOAT_ENDPOINT_KEY
 }
 
 /** Default From/To when opening Move money from a tapped bucket row. */
 export function defaultMoveMoneyEndpoints(
   initialBucketId: string,
-  spendingMoney: number,
+  float: number,
   bucketBalanceById: ReadonlyMap<string, number>,
 ): { fromKey: string; toKey: string } {
   const tappedKey = initialBucketId
-  const otherKey = SPENDING_MONEY_ENDPOINT_KEY
+  const otherKey = FLOAT_ENDPOINT_KEY
   const tappedBalance = bucketBalanceById.get(initialBucketId) ?? 0
-  const otherBalance = spendingMoney
+  const otherBalance = float
 
   const tappedIsZero = tappedBalance === 0
   const otherIsZero = otherBalance === 0

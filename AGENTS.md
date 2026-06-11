@@ -38,8 +38,8 @@ Entry point for AI coding agents (and humans) working in this repo.
   at the top of
   [supabase/migrations/00000000000000_initial_schema.sql](./supabase/migrations/00000000000000_initial_schema.sql).
 - **The ledger identity is the contract.** Cash (linked banks + manual money sources) = allocations +
-  spending money, with Float derived in SQL (`member_spending_money()`).
-  **User-facing label:** **Float** (`SPENDING_MONEY_LABEL` in `src/lib/brand.ts`).
+  float, derived in SQL (`member_float()`).
+  **User-facing label:** **Float** (`FLOAT_LABEL` in `src/lib/brand.ts`).
   **User signal for “rebalance”:** negative red Float in the Buckets tab — not a
   separate integrity banner. **Operator ledger checks** (automated family-wide
   verification, `check-invariant`) are deferred until a possible paid SaaS;

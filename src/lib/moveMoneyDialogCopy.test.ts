@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SPENDING_MONEY_ENDPOINT_KEY } from '@/features/buckets/moveMoneyDefaults'
+import { FLOAT_ENDPOINT_KEY } from '@/features/buckets/moveMoneyDefaults'
 import {
   detectMoveMoneyIntent,
   moveMoneyDialogSubmitLabel,
@@ -10,7 +10,7 @@ describe('detectMoveMoneyIntent', () => {
   it('detects set aside from float to bucket', () => {
     expect(
       detectMoveMoneyIntent({
-        fromKey: SPENDING_MONEY_ENDPOINT_KEY,
+        fromKey: FLOAT_ENDPOINT_KEY,
         toKey: 'bucket-1',
       }),
     ).toBe('setAside')
@@ -20,7 +20,7 @@ describe('detectMoveMoneyIntent', () => {
     expect(
       detectMoveMoneyIntent({
         fromKey: 'bucket-1',
-        toKey: SPENDING_MONEY_ENDPOINT_KEY,
+        toKey: FLOAT_ENDPOINT_KEY,
       }),
     ).toBe('cover')
   })

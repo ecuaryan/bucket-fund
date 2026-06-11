@@ -347,6 +347,8 @@ export type Database = {
           amount: number
           created_at: string
           family_id: string
+          float_balance_after: number | null
+          float_balance_before: number | null
           from_bucket_balance_after: number | null
           from_bucket_balance_before: number | null
           from_bucket_id: string | null
@@ -357,8 +359,6 @@ export type Database = {
           from_member_name: string | null
           id: string
           note: string | null
-          spending_money_balance_after: number | null
-          spending_money_balance_before: number | null
           to_bucket_balance_after: number | null
           to_bucket_balance_before: number | null
           to_bucket_id: string | null
@@ -373,6 +373,8 @@ export type Database = {
           amount: number
           created_at?: string
           family_id: string
+          float_balance_after?: number | null
+          float_balance_before?: number | null
           from_bucket_balance_after?: number | null
           from_bucket_balance_before?: number | null
           from_bucket_id?: string | null
@@ -383,8 +385,6 @@ export type Database = {
           from_member_name?: string | null
           id?: string
           note?: string | null
-          spending_money_balance_after?: number | null
-          spending_money_balance_before?: number | null
           to_bucket_balance_after?: number | null
           to_bucket_balance_before?: number | null
           to_bucket_id?: string | null
@@ -399,6 +399,8 @@ export type Database = {
           amount?: number
           created_at?: string
           family_id?: string
+          float_balance_after?: number | null
+          float_balance_before?: number | null
           from_bucket_balance_after?: number | null
           from_bucket_balance_before?: number | null
           from_bucket_id?: string | null
@@ -409,8 +411,6 @@ export type Database = {
           from_member_name?: string | null
           id?: string
           note?: string | null
-          spending_money_balance_after?: number | null
-          spending_money_balance_before?: number | null
           to_bucket_balance_after?: number | null
           to_bucket_balance_before?: number | null
           to_bucket_id?: string | null
@@ -466,6 +466,8 @@ export type Database = {
           amount: number | null
           created_at: string | null
           family_id: string | null
+          float_balance_after: number | null
+          float_balance_before: number | null
           from_bucket_balance_after: number | null
           from_bucket_balance_before: number | null
           from_bucket_id: string | null
@@ -476,8 +478,6 @@ export type Database = {
           from_member_name: string | null
           id: string | null
           note: string | null
-          spending_money_balance_after: number | null
-          spending_money_balance_before: number | null
           to_bucket_balance_after: number | null
           to_bucket_balance_before: number | null
           to_bucket_id: string | null
@@ -492,6 +492,8 @@ export type Database = {
           amount?: number | null
           created_at?: string | null
           family_id?: string | null
+          float_balance_after?: never
+          float_balance_before?: never
           from_bucket_balance_after?: number | null
           from_bucket_balance_before?: number | null
           from_bucket_id?: string | null
@@ -502,8 +504,6 @@ export type Database = {
           from_member_name?: string | null
           id?: string | null
           note?: string | null
-          spending_money_balance_after?: never
-          spending_money_balance_before?: never
           to_bucket_balance_after?: number | null
           to_bucket_balance_before?: number | null
           to_bucket_id?: string | null
@@ -518,6 +518,8 @@ export type Database = {
           amount?: number | null
           created_at?: string | null
           family_id?: string | null
+          float_balance_after?: never
+          float_balance_before?: never
           from_bucket_balance_after?: number | null
           from_bucket_balance_before?: number | null
           from_bucket_id?: string | null
@@ -528,8 +530,6 @@ export type Database = {
           from_member_name?: string | null
           id?: string | null
           note?: string | null
-          spending_money_balance_after?: never
-          spending_money_balance_before?: never
           to_bucket_balance_after?: number | null
           to_bucket_balance_before?: number | null
           to_bucket_id?: string | null
@@ -606,19 +606,19 @@ export type Database = {
       ensure_member_bucket_orders: { Args: never; Returns: undefined }
       family_linked_child_member_ids: { Args: never; Returns: string[] }
       generate_join_code: { Args: never; Returns: string }
+      get_float_balance: { Args: never; Returns: number }
       get_home_balance_breakdown: { Args: never; Returns: Json }
       get_home_page_data: { Args: never; Returns: Json }
-      get_spending_money_balance: { Args: never; Returns: number }
       is_cash_account_type: { Args: { p_type: string }; Returns: boolean }
       member_child_virtual_balance: {
         Args: { p_child_member_id: string }
         Returns: number
       }
+      member_float: { Args: { p_member_id: string }; Returns: number }
       member_has_linked_account: {
         Args: { p_member_id: string }
         Returns: boolean
       }
-      member_spending_money: { Args: { p_member_id: string }; Returns: number }
       move_money: {
         Args: {
           p_amount: number

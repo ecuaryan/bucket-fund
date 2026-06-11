@@ -5,12 +5,12 @@ import { Sheet } from '@/components/ui/Sheet'
 import { AmountLimitHint } from '@/components/AmountLimitHint'
 import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
 import {
-  SPENDING_MONEY_ENDPOINT_KEY,
+  FLOAT_ENDPOINT_KEY,
   defaultMoveMoneyEndpoints,
   endpointKey,
 } from '@/features/buckets/moveMoneyDefaults'
 import { moveMoney } from '@/lib/buckets'
-import { SPENDING_MONEY_LABEL } from '@/lib/brand'
+import { FLOAT_LABEL } from '@/lib/brand'
 import {
   detectMoveMoneyIntent,
   moveMoneyCoverHint,
@@ -28,13 +28,13 @@ type Bucket = Database['public']['Tables']['buckets']['Row']
 type Endpoint = { id: string | null; label: string; balance: number | null }
 
 function endpointFromKey(key: string): string | null {
-  return key === SPENDING_MONEY_ENDPOINT_KEY ? null : key
+  return key === FLOAT_ENDPOINT_KEY ? null : key
 }
 
 type Props = {
   open: boolean
   buckets: Bucket[]
-  spendingMoney: number
+  float: number
   /** Bucket the user tapped to open the dialog. Usually pre-fills as
    *  From; if that bucket or Float is $0, the empty side defaults
    *  to To so funding an empty bucket is one less swap. */
@@ -52,14 +52,14 @@ type Props = {
 export default function MoveMoneyDialog({
   open,
   buckets,
-  spendingMoney,
+  float,
   initialBucketId,
   preferredIntent,
   onClose,
   onMoved,
 }: Props) {
   const { formatMoney } = useHideAmounts()
-  const [fromKey, setFromKey] = useState<string>(SPENDING_MONEY_ENDPOINT_KEY)
+  const [fromKey, setFromKey] = useState<string>(FLOAT_ENDPOINT_KEY)
   const [toKey, setToKey] = useState<string>(initialBucketId)
   const [amountStr, setAmountStr] = useState('')
   const [note, setNote] = useState('')
@@ -74,15 +74,15 @@ export default function MoveMoneyDialog({
       buckets.map((b) => [b.id, Number(b.allocated_amount)]),
     )
     if (preferredIntent === 'setAside') {
-      setFromKey(SPENDING_MONEY_ENDPOINT_KEY)
+      setFromKey(FLOAT_ENDPOINT_KEY)
       setToKey(initialBucketId)
     } else if (preferredIntent === 'cover') {
       setFromKey(initialBucketId)
-      setToKey(SPENDING_MONEY_ENDPOINT_KEY)
+      setToKey(FLOAT_ENDPOINT_KEY)
     } else {
       const { fromKey: nextFrom, toKey: nextTo } = defaultMoveMoneyEndpoints(
         initialBucketId,
-        spendingMoney,
+        float,
         balanceById,
       )
       setFromKey(nextFrom)
@@ -93,7 +93,7 @@ export default function MoveMoneyDialog({
     setError(null)
     // Defer focus so the input exists in the DOM.
     setTimeout(() => amountRef.current?.focus(), 0)
-  }, [open, initialBucketId, buckets, spendingMoney, preferredIntent])
+  }, [open, initialBucketId, buckets, float, preferredIntent])
 
   const intent = detectMoveMoneyIntent({ fromKey, toKey, preferredIntent })
   const dialogTitle = moveMoneyDialogTitle(intent)
@@ -103,8 +103,8 @@ export default function MoveMoneyDialog({
     const list: Endpoint[] = [
       {
         id: null,
-        label: SPENDING_MONEY_LABEL,
-        balance: spendingMoney,
+        label: FLOAT_LABEL,
+        balance: float,
       },
       ...buckets.map((b) => ({
         id: b.id,
@@ -113,7 +113,7 @@ export default function MoveMoneyDialog({
       })),
     ]
     return list
-  }, [buckets, spendingMoney])
+  }, [buckets, float])
 
   const fromEndpoint = endpoints.find((e) => endpointKey(e.id) === fromKey)
   const toEndpoint = endpoints.find((e) => endpointKey(e.id) === toKey)

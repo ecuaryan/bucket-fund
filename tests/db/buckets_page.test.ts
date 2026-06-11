@@ -23,7 +23,7 @@ describe('Buckets page bootstrap (get_home_page_data RPC)', () => {
     expect(Array.isArray(row.accounts)).toBe(true)
     expect(row.breakdown).toBeTruthy()
     const breakdown = row.breakdown as Record<string, unknown>
-    expect(typeof breakdown.spending_money).toBe('number')
+    expect(typeof breakdown.float).toBe('number')
   })
 })
 
