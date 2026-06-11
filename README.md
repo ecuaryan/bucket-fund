@@ -11,6 +11,7 @@ household. Sits on top of real bank accounts (read via Teller) so you can
 organize your cash into buckets for an at-a-glance view, and decide which bucket
 covers it when the bank balance moves. Tagline and auth copy live in
 `src/lib/brand.ts`; see [docs/BRAND.md](./docs/BRAND.md) for voice and naming.
+Product story (full text): [docs/BRAND.md § Product narrative](./docs/BRAND.md#product-narrative).
 
 See [CONTEXT.md](./CONTEXT.md) for the full product brief, balance model,
 and architecture. See [AGENTS.md](./AGENTS.md) for AI agent / contributor

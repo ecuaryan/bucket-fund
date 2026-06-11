@@ -12,20 +12,20 @@ This document contains the full product brief, technical stack, architecture dec
 **Registrar / DNS:** Cloudflare → Vercel (A + CNAME). Supabase Auth Site URL and
 Teller allowed origins should use `https://bucketmymoney.com`.
 
-Bucket My Money is a **bank-agnostic virtual bucket budgeting PWA** for **you alone or a shared household**. It sits on top of real bank accounts (read via Teller API) and helps you **organize** your cash into buckets for an at-a-glance view: label what is reserved, see **spending money** (cash not in buckets), and when the bank balance moves, decide which bucket covers it (negative spending money → move money from buckets on purpose). Brand voice and naming notes live in [docs/BRAND.md](./docs/BRAND.md); user-facing strings in `src/lib/brand.ts` (`SPENDING_MONEY_LABEL`, `APP_TAGLINE`, login copy).
+Bucket My Money is a **bank-agnostic virtual bucket budgeting PWA** for **you alone or a shared household**. It sits on top of real bank accounts (read via Teller API) and helps you **organize** your cash into buckets for an at-a-glance view: label what is reserved, see your **Float** (cash not in buckets — the running balance paydays and bills flow through), and when the bank balance moves, decide which bucket covers it (negative Float → move money from buckets on purpose). Brand voice and naming notes live in [docs/BRAND.md](./docs/BRAND.md); user-facing strings in `src/lib/brand.ts` (`SPENDING_MONEY_LABEL` is `'Float'`, `APP_TAGLINE`, login copy). Full product narrative (word-for-word): [docs/BRAND.md § Product narrative](./docs/BRAND.md#product-narrative).
 
 The primary use case is: **open app → move money from one bucket to another → done. Target: 4 taps from a cold open.**
 
 ### Product philosophy
 
-**Intentional friction, minimal automation.** When you overspend, you should come in and consciously face the trade-off — moving money from a bucket into **spending money** — rather than having the app auto-fix or auto-rebalance. The at-a-glance view surfaces reality so you decide; balance refresh is user-initiated, not background polling.
+**Intentional friction, minimal automation.** When you overspend, you should come in and consciously face the trade-off — moving money from a bucket back into your **Float** — rather than having the app auto-fix or auto-rebalance. The at-a-glance view surfaces reality so you decide; balance refresh is user-initiated, not background polling. This is a clarity tool, not a transaction tracker: one small move when you spend keeps your Float honest.
 
 ### Product stage
 
 **Now:** The builder’s family is the first user group — real daily use, discover
 issues in the wild, iterate on UX and sync. Integrity for budgeting gaps is
-**red negative spending money** in the Buckets tab (bank cash moved; bucket labels did not —
-rebalance by moving money between buckets and spending money).
+**red negative Float** in the Buckets tab (bank cash moved; bucket labels did not —
+rebalance by moving money between buckets and Float).
 
 **Later (if this becomes a paid product):** Harden operator-side ledger checks
 (automated SQL or cron, logging, optional admin-only alerts) to catch

@@ -1,7 +1,9 @@
 import { Sheet } from '@/components/ui/Sheet'
 import {
+  bucketsFloatStatusGuide,
   bucketsSpendingMoneyInfoPoints,
   bucketsSpendingMoneyInfoSheetTitle,
+  type FloatStatusGuide,
 } from '@/lib/brand'
 
 type Props = {
@@ -10,9 +12,24 @@ type Props = {
   onClose: () => void
 }
 
+const STATUS_STYLES: Record<
+  FloatStatusGuide['tone'],
+  { card: string; label: string }
+> = {
+  green: {
+    card: 'bg-emerald-500/10 ring-emerald-500/30',
+    label: 'text-emerald-300',
+  },
+  red: {
+    card: 'bg-red-500/10 ring-red-500/30',
+    label: 'text-red-300',
+  },
+}
+
 export default function SpendingMoneyInfoSheet({ open, isChild, onClose }: Props) {
   const title = bucketsSpendingMoneyInfoSheetTitle()
   const points = bucketsSpendingMoneyInfoPoints(isChild)
+  const statusGuide = bucketsFloatStatusGuide(isChild)
 
   return (
     <Sheet open={open} onClose={onClose} aria-label={title}>
@@ -32,6 +49,24 @@ export default function SpendingMoneyInfoSheet({ open, isChild, onClose }: Props
           <li key={point}>{point}</li>
         ))}
       </ul>
+      <div className="mt-4 space-y-2">
+        {statusGuide.map(({ tone, label, body }) => {
+          const styles = STATUS_STYLES[tone]
+          return (
+            <div
+              key={tone}
+              className={`rounded-lg px-3 py-2.5 ring-1 ${styles.card}`}
+            >
+              <p
+                className={`text-xs font-semibold uppercase tracking-wide ${styles.label}`}
+              >
+                {label}
+              </p>
+              <p className="mt-1 text-sm text-zinc-300">{body}</p>
+            </div>
+          )
+        })}
+      </div>
     </Sheet>
   )
 }

@@ -109,7 +109,7 @@ describe('historySendBalanceLine', () => {
     ).toEqual({ label: 'Sam', before: 15, after: 55 })
   })
 
-  it('uses “Spending money” when viewer is the kid', () => {
+  it('uses Float label when viewer is the kid', () => {
     expect(
       historySendBalanceLine(
         {
@@ -173,7 +173,7 @@ describe('shouldShowBalanceLabel', () => {
     expect(shouldShowBalanceLabel('Sam', 'You', 'Sam')).toBe(false)
   })
 
-  it('hides “Spending money” when it matches the title endpoint', () => {
+  it('hides Float label when it matches the title endpoint', () => {
     expect(
       shouldShowBalanceLabel(SPENDING_MONEY_LABEL, 'You', 'Ryan'),
     ).toBe(false)
