@@ -23,8 +23,8 @@ export type HistoryTxRow = {
   from_member_balance_after: string | number | null
   to_member_balance_before: string | number | null
   to_member_balance_after: string | number | null
-  spending_money_balance_before: string | number | null
-  spending_money_balance_after: string | number | null
+  float_balance_before: string | number | null
+  float_balance_after: string | number | null
   note: string | null
   created_at: string
   from_bucket: { name: string } | null

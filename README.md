@@ -205,7 +205,7 @@ checks are deferred until a possible paid SaaS phase.
   `bootstrap_family` metadata prevents duplicate families for PIN users)
 - Family join code + QR, avatar + 4-digit PIN login, admin member/PIN management
 - Per-member bucket ordering; shared balance does not see kids' buckets in the Buckets tab
-- Buckets tab: spending money pool (`SPENDING_MONEY_LABEL`), bucket list, Realtime sync
+- Buckets tab: spending money pool (`FLOAT_LABEL`), bucket list, Realtime sync
 - Bucket CRUD: create, inline rename, reorder, delete (with fund reclaim)
 - Move money flow (`move_money` Postgres fn + MoveMoneyDialog)
 - Send money (`send_money` RPC + Send page; shared balance funds kids; blocked shared↔shared)

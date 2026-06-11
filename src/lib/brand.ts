@@ -26,12 +26,12 @@ export const LOGIN_TAGLINE_PAYOFF = 'See where your money actually is.'
  * User-facing name for the per-balance pool that is not assigned to any bucket.
  * Paychecks land here; bills and card charges pull from here; bucket money
  * returns here when you cover a purchase.
- * Matches SQL/RPC/TS: `spending_money`, `member_spending_money()`, etc.
+ * Matches SQL/RPC/TS: `float`, `member_float()`, etc.
  */
-export const SPENDING_MONEY_LABEL = 'Float'
+export const FLOAT_LABEL = 'Float'
 
 /** Lowercase form for mid-sentence copy (derived so the word swaps in one place). */
-export const SPENDING_MONEY_LABEL_LOWER = SPENDING_MONEY_LABEL.toLowerCase()
+export const FLOAT_LABEL_LOWER = FLOAT_LABEL.toLowerCase()
 
 /** Default label beside the shared loading spinner (pages, overlays, auth). */
 export const LOADING_STATUS_LABEL = 'Loading…'
@@ -162,7 +162,7 @@ export const ADMIN_HOUSEHOLD_MEMBERS_INTRO =
 
 /** Role and PIN implications when adding household members. */
 export const ADMIN_HOUSEHOLD_MEMBERS_DETAILS = [
-  `People on the shared balance—including you—share all household buckets and the same ${SPENDING_MONEY_LABEL_LOWER}.`,
+  `People on the shared balance—including you—share all household buckets and the same ${FLOAT_LABEL_LOWER}.`,
   'Fund kids with Send.',
   'Each kid only sees what you Send them and their own buckets—not the shared balance or household bank accounts.',
   'Tell each person their PIN—they cannot change it themselves.',
@@ -351,10 +351,10 @@ export const ADMIN_REMOVE_MEMBER_EFFECT_READD =
   'To use the app again, add them back to the household and set a new PIN.'
 
 export const ADMIN_REMOVE_KID_EFFECT_BUCKETS =
-  `Their personal buckets are removed. No cash is lost—that money stays in your household and shows as ${SPENDING_MONEY_LABEL_LOWER} in Buckets.`
+  `Their personal buckets are removed. No cash is lost—that money stays in your household and shows as ${FLOAT_LABEL_LOWER} in Buckets.`
 
 export const ADMIN_REMOVE_KID_EFFECT_ACCOUNTS =
-  `Any bank accounts assigned to them become household accounts and count toward ${SPENDING_MONEY_LABEL_LOWER}.`
+  `Any bank accounts assigned to them become household accounts and count toward ${FLOAT_LABEL_LOWER}.`
 
 export const ADMIN_REMOVE_SHARED_EFFECT_LOGIN =
   'Their PIN and sign-in are deleted.'
@@ -398,10 +398,10 @@ export function bucketsDeleteBucketSheetIntro(formattedAmount: string): string {
 
 export const BUCKETS_DELETE_BUCKET_WHAT_HAPPENS = 'What happens'
 
-export function bucketsDeleteBucketEffectSpendingMoney(
+export function bucketsDeleteBucketEffectFloat(
   formattedAmount: string,
 ): string {
-  return `${formattedAmount} returns to ${SPENDING_MONEY_LABEL_LOWER}. Cash is not lost.`
+  return `${formattedAmount} returns to ${FLOAT_LABEL_LOWER}. Cash is not lost.`
 }
 
 export const BUCKETS_DELETE_BUCKET_EFFECT_LABEL =
@@ -418,18 +418,18 @@ export function bucketsDeleteBucketConfirm(name: string): string {
 export const BUCKETS_REORDER_POPOVER_LABEL =
   'Press and hold the reorder grip, then drag'
 
-export function bucketsKidSpendingMoneyHint(
+export function bucketsKidFloatHint(
   adminName: string | null | undefined,
 ): string {
   return `When someone on the shared balance sends you money, move it into buckets—or ask ${householdAdminLabel(adminName)} to link your bank account.`
 }
 
-export function bucketsSpendingMoneyInfoAriaLabel(): string {
-  return `What is ${SPENDING_MONEY_LABEL_LOWER}?`
+export function bucketsFloatInfoAriaLabel(): string {
+  return `What is ${FLOAT_LABEL_LOWER}?`
 }
 
-export function bucketsSpendingMoneyInfoSheetTitle(): string {
-  return `About ${SPENDING_MONEY_LABEL_LOWER}`
+export function bucketsFloatInfoSheetTitle(): string {
+  return `About ${FLOAT_LABEL_LOWER}`
 }
 
 /** Subtitle under the Float amount when the breakdown panel is hidden. */
@@ -443,18 +443,18 @@ export const MOVE_MONEY_COVER_HINT =
   "Your bank already took this — you're picking which bucket pays."
 
 /** Guidance bullets for the Float info sheet on the Buckets tab. */
-export function bucketsSpendingMoneyInfoPoints(isChild: boolean): readonly string[] {
+export function bucketsFloatInfoPoints(isChild: boolean): readonly string[] {
   if (isChild) {
     return [
-      `Money not in your buckets yet — that's your ${SPENDING_MONEY_LABEL_LOWER}.`,
+      `Money not in your buckets yet — that's your ${FLOAT_LABEL_LOWER}.`,
       `Buckets only change when you move money.`,
-      `When you spend, move from that bucket back to your ${SPENDING_MONEY_LABEL_LOWER}.`,
+      `When you spend, move from that bucket back to your ${FLOAT_LABEL_LOWER}.`,
     ] as const
   }
   // Bank refresh updates Float only, not buckets. If scheduled set-aside ships,
   // extend bullet 2 (e.g. "when you move money or on a schedule you set").
   return [
-    `Paydays, bills, and card payments update your ${SPENDING_MONEY_LABEL_LOWER} when balances refresh — not your buckets.`,
+    `Paydays, bills, and card payments update your ${FLOAT_LABEL_LOWER} when balances refresh — not your buckets.`,
     `Buckets only change when you move money — set aside from float, or move back from a bucket before a charge clears.`,
   ] as const
 }
@@ -534,12 +534,12 @@ export function onboardingCoachStepBody(
   switch (step) {
     case 'addSource':
       return isAdmin
-        ? `Add a money source so your ${SPENDING_MONEY_LABEL_LOWER} reflects what you have to organize.`
-        : `Ask ${householdAdminLabel(adminName)} to add a money source so your ${SPENDING_MONEY_LABEL_LOWER} reflects reality.`
+        ? `Add a money source so your ${FLOAT_LABEL_LOWER} reflects what you have to organize.`
+        : `Ask ${householdAdminLabel(adminName)} to add a money source so your ${FLOAT_LABEL_LOWER} reflects reality.`
     case 'createBucket':
       return 'Create buckets for the jobs your money has — rent, groceries, vacation, whatever matters.'
     case 'setAside':
-      return `Move money from your ${SPENDING_MONEY_LABEL_LOWER} into a bucket to set it aside.`
+      return `Move money from your ${FLOAT_LABEL_LOWER} into a bucket to set it aside.`
   }
 }
 
@@ -577,8 +577,8 @@ export const BREAKDOWN_CASH_LABEL = 'Cash'
 export const BREAKDOWN_LINKED_CASH_LABEL = 'Linked cash'
 export const BREAKDOWN_MANUAL_CASH_LABEL = 'Manual cash'
 
-/** Collapsed spending-money breakdown toggle, e.g. "$1,234.56 across 14 money sources". */
-export function spendingMoneySourcesCountText(count: number): string | undefined {
+/** Collapsed float breakdown toggle, e.g. "$1,234.56 across 14 money sources". */
+export function floatSourcesCountText(count: number): string | undefined {
   if (count <= 0) return undefined
   return `across ${count} money source${count === 1 ? '' : 's'}`
 }
@@ -609,13 +609,13 @@ export function bucketsMemberNoBucketsHint(
 // --- Send ---
 
 export const SEND_SHARED_BALANCE_INTRO =
-  `Fund a kid’s ${SPENDING_MONEY_LABEL_LOWER} from the shared balance in Buckets.`
+  `Fund a kid’s ${FLOAT_LABEL_LOWER} from the shared balance in Buckets.`
 
 export const SEND_SHARED_BALANCE_NO_ACCOUNTS_BODY =
   'Send uses cash from the household balance in Buckets. Link a bank account in Admin first so we know how much you can send.'
 
 export const SEND_KID_INTRO =
-  `Send your ${SPENDING_MONEY_LABEL_LOWER} to another household member.`
+  `Send your ${FLOAT_LABEL_LOWER} to another household member.`
 
 export const SEND_LINKED_KID_TITLE = 'Your money is in your bank account'
 
@@ -637,13 +637,13 @@ export const BUCKETS_DB_UPDATE_PENDING_BODY =
 export const HISTORY_FILTER_SENT_MONEY = 'Sent money'
 
 /** History balance trail when the viewer is the subject kid. */
-export const HISTORY_BALANCE_YOUR_LABEL = SPENDING_MONEY_LABEL
+export const HISTORY_BALANCE_YOUR_LABEL = FLOAT_LABEL
 
 export const HISTORY_EMPTY_BUCKET_BODY =
   'Move money in or out of this bucket and it will appear here.'
 
 export const HISTORY_EMPTY_BODY =
-  `Move money between buckets and ${SPENDING_MONEY_LABEL_LOWER} in Buckets—it will appear here.`
+  `Move money between buckets and ${FLOAT_LABEL_LOWER} in Buckets—it will appear here.`
 
 export const HISTORY_EMPTY_SENDS_BODY =
   'Send money to a household member and it will appear here.'

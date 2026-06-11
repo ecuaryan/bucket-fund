@@ -1,7 +1,7 @@
 import { isMissingDbFunctionError } from '@/lib/availableBalance'
 import { withAuthLockRetry } from '@/lib/authLockError'
 import { supabase } from '@/lib/supabase'
-import { SPENDING_MONEY_LABEL_LOWER } from '@/lib/brand'
+import { FLOAT_LABEL_LOWER } from '@/lib/brand'
 
 export type SendMoneyArgs = {
   toMemberId: string
@@ -42,8 +42,8 @@ export async function sendMoney(args: SendMoneyArgs): Promise<string> {
 
 function humaniseSendError(msg: string): string {
   const lower = msg.toLowerCase()
-  if (lower.includes('insufficient spending money')) {
-    return `Not enough ${SPENDING_MONEY_LABEL_LOWER} for that amount.`
+  if (lower.includes('insufficient float')) {
+    return `Not enough ${FLOAT_LABEL_LOWER} for that amount.`
   }
   if (lower.includes('cannot send to yourself')) {
     return 'Pick someone else in your household.'

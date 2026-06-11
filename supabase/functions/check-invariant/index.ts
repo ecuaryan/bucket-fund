@@ -29,13 +29,13 @@ type CheckInvariantResponse = {
   ok: boolean
   family_id: string
   total_allocated: number
-  total_spending_money: number
+  total_float: number
   total_real_balance: number
   violation_amount: number
 }
 
 Deno.serve(async (req: Request) => {
-  // TODO (paid SaaS phase): reuse member_spending_money / cash sums in SQL;
+  // TODO (paid SaaS phase): reuse member_float / cash sums in SQL;
   // operator alert + logging — not an in-app banner for normal negative spending money.
 
   if (req.method !== 'POST') {
@@ -47,7 +47,7 @@ Deno.serve(async (req: Request) => {
     ok: true,
     family_id: body.family_id,
     total_allocated: 0,
-    total_spending_money: 0,
+    total_float: 0,
     total_real_balance: 0,
     violation_amount: 0,
   }

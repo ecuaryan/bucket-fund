@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { SPENDING_MONEY_LABEL } from '@/lib/brand'
+import { FLOAT_LABEL } from '@/lib/brand'
 import {
   historyBucketMoveBalanceLine,
   historySendBalanceLine,
-  HISTORY_SPENDING_MONEY_LABEL,
+  HISTORY_FLOAT_LABEL,
   shouldShowBalanceLabel,
 } from '@/lib/historyBalanceLine'
 
@@ -133,7 +133,7 @@ describe('historySendBalanceLine', () => {
         },
         'kid',
       ),
-    ).toEqual({ label: SPENDING_MONEY_LABEL, before: 15, after: 55 })
+    ).toEqual({ label: FLOAT_LABEL, before: 15, after: 55 })
   })
 
   it('shows sender kid balance on kid → adult send', () => {
@@ -167,7 +167,7 @@ describe('historySendBalanceLine', () => {
 describe('shouldShowBalanceLabel', () => {
   it('hides when the label matches a title endpoint', () => {
     expect(shouldShowBalanceLabel('Fun', 'Groceries', 'Fun')).toBe(false)
-    expect(shouldShowBalanceLabel('Groceries', 'Groceries', HISTORY_SPENDING_MONEY_LABEL)).toBe(
+    expect(shouldShowBalanceLabel('Groceries', 'Groceries', HISTORY_FLOAT_LABEL)).toBe(
       false,
     )
     expect(shouldShowBalanceLabel('Sam', 'You', 'Sam')).toBe(false)
@@ -175,12 +175,12 @@ describe('shouldShowBalanceLabel', () => {
 
   it('hides Float label when it matches the title endpoint', () => {
     expect(
-      shouldShowBalanceLabel(SPENDING_MONEY_LABEL, 'You', 'Ryan'),
+      shouldShowBalanceLabel(FLOAT_LABEL, 'You', 'Ryan'),
     ).toBe(false)
   })
 
   it('shows when the label is not in the title', () => {
-    expect(shouldShowBalanceLabel('Allowance', HISTORY_SPENDING_MONEY_LABEL, 'Spending')).toBe(
+    expect(shouldShowBalanceLabel('Allowance', HISTORY_FLOAT_LABEL, 'Spending')).toBe(
       true,
     )
   })
