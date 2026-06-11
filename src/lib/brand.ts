@@ -447,8 +447,8 @@ export function bucketsFloatInfoPoints(isChild: boolean): readonly string[] {
       `Move between your ${FLOAT_LABEL_LOWER} and your buckets to organize your money.`,
     ] as const
   }
-  // Bank refresh updates Float only, not buckets. When scheduled set-aside ships,
-  // extend bullet 2 (e.g. "when you move money or on a schedule you set").
+  // Bank refresh updates Float only, not buckets. When Schedule ships, extend
+  // bullet 2 (e.g. "when you move money or when auto-organize runs on days you choose").
   return [
     `Paydays, bills, and card payments update your ${FLOAT_LABEL_LOWER} when balances refresh — not your buckets.`,
     `Buckets only change when you move money in the app.`,
@@ -491,15 +491,23 @@ export function bucketsFloatStatusGuide(isChild: boolean): readonly FloatStatusG
   ] as const
 }
 
-// --- Scheduled set-aside (UI naming — feature not yet implemented) ---
+// --- Auto-organize (UI — feature not yet implemented) ---
 
-/** Buckets tab section header. */
-export const SCHEDULED_SET_ASIDE_SECTION_TITLE = 'Scheduled set-aside'
+/** Buckets tab section header. Schema: `auto_organizes`. */
+export const AUTO_ORGANIZE_SECTION_TITLE = 'Auto-organize'
 
-/** Admin primary CTA to create a plan. */
-export const SCHEDULED_SET_ASIDE_ADD_LABEL = 'Schedule set-aside'
+/** One line under the section header (admin + Shared). */
+export const AUTO_ORGANIZE_GUARDRAIL =
+  'You choose the days and amounts — the app runs the moves.'
 
-/** History subtitle label for moves from a scheduled run (not a member name). */
+/** Admin primary CTA to create an auto-organize. */
+export const AUTO_ORGANIZE_ADD_LABEL = 'Add auto-organize'
+
+/** Empty state when no auto-organizes exist (admin). */
+export const AUTO_ORGANIZE_EMPTY_BODY =
+  'Organize your money into buckets on the days you choose.'
+
+/** History subtitle label for moves from an automatic run (not a member name). */
 export const HISTORY_SCHEDULED_MOVE_LABEL = 'Scheduled'
 
 export const BUCKETS_LINK_BANK_TITLE = 'Link a bank account'

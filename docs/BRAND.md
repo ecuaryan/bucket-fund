@@ -106,23 +106,25 @@ If you're the kind of person who has ever looked at their bank account two days 
   Never `window.confirm` (unreliable in embedded browsers). Copy in `brand.ts`;
   match member-removal patterns (intro, bullets, Cancel + action).
 - **Bank refresh vs buckets:** linked-account balance updates change **Float only**
-  — bucket amounts stay put until someone **moves money** or a **scheduled set-aside**
-  runs (admin-configured; see [SCHEDULED_SET_ASIDE.md](./SCHEDULED_SET_ASIDE.md)).
-  In-app copy must not imply the app moves money at the bank; say *refresh*, *update*,
-  or *when your bank balance changes* for Float. Info sheet bullets stay short (three
-  max for adults). Do not say *sync* for bank balances — it suggests two-way connection;
-  use **refresh** (see above).
-- **Set-aside from Float:** moving Float → bucket may make Float **negative** (payday
-  on the way). **Bucket → anything** still cannot exceed the bucket balance. Applies to
-  all roles for set-aside; **`send_money`** keeps the insufficient-Float guard. When a
-  manual set-aside (or admin **Run now** on a plan) would cross Float from **≥ 0 to
-  negative**, confirm with a consequential `Sheet` first; skip confirm if Float is already
-  red; scheduled runs skip confirm (user pre-configured the plan). Copy in `brand.ts`.
-- **Scheduled set-aside:** user-facing label **Scheduled set-aside** / **Schedule
-  set-aside** — not “automation.” History rows from a scheduled run show **Scheduled**
-  instead of a member name. Shared role sees plans read-only on Buckets. Constants:
-  `SCHEDULED_SET_ASIDE_*`, `HISTORY_SCHEDULED_MOVE_LABEL` in `brand.ts`. Full spec:
-  [SCHEDULED_SET_ASIDE.md](./SCHEDULED_SET_ASIDE.md).
+  — bucket amounts stay put until someone **moves money** or an **auto-organize** run
+  fires (admin-configured; see [AUTO_ORGANIZE.md](./AUTO_ORGANIZE.md)). In-app copy must not
+  imply the app moves money at the bank; say *refresh*, *update*, or *when your
+  bank balance changes* for Float. Info sheet bullets stay short (three max for
+  adults). Do not say *sync* for bank balances — use **refresh** (see above).
+- **Set aside (manual):** moving Float → bucket may make Float **negative**.
+  **Bucket → anything** still cannot exceed the bucket balance. Applies to all roles;
+  **`send_money`** keeps the insufficient-Float guard. When a manual **Set aside**
+  (or admin **Run now**) would cross Float from **≥ 0 to negative**, confirm with a
+  consequential `Sheet` first; skip confirm if Float is already red; automatic
+  auto-organize runs skip confirm.
+- **Auto-organize:** feature name **Auto-organize** — subtitle *Organize your money
+  into buckets on the days you choose.* Guardrail: *You choose the days and amounts
+  — the app runs the moves.* Not “scheduled set-aside,” “organize Float,” or
+  “automation.” Header **Auto-organize**; CTA **Add auto-organize**; History
+  **Scheduled**. Manual dialog keeps **Set aside** (production). Constants:
+  `AUTO_ORGANIZE_*`, `HISTORY_SCHEDULED_MOVE_LABEL` in `brand.ts`. Schema:
+  `auto_organizes`, `auto_organize_*` (see [AUTO_ORGANIZE.md](./AUTO_ORGANIZE.md)).
+  User-configured automatic organization ≠ auto-rebalance when the bank moves.
 
 ## Display name
 
