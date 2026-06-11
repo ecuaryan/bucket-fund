@@ -253,10 +253,27 @@ At large scale: optional denormalized `next_run_on` column + index.
 
 Section **Scheduled set-aside** below Float card.
 
+### Plan total (required)
+
+Every plan shows the **sum of all line amounts** prominently — that’s how people
+verify they entered the right numbers (they often know the payday total before the
+per-bucket split).
+
+| Surface | Total |
+| --- | --- |
+| **Plan editor** | **Running total** updates as lines change; sticky/footer so it stays visible while scrolling lines. Label e.g. **Total per run · $1,240.00** |
+| **Plan card** (admin + Shared) | Same total on every card — not buried in line list |
+| **Run now** confirm sheet | Total again, with full line list |
+| **Review** step (before save) | Total + lines |
+
+Optional context next to total: current **Float** (informational only — set-aside
+may run above Float per [Money rules](#money-rules)). Do not hide total behind an
+expand/collapse.
+
 ### Shared (read-only)
 
-Plan cards: name, schedule summary, next run, line summary, total, **Paused** badge,
-last run status. No Edit / Pause / Run now.
+Plan cards: name, schedule summary, next run, line summary, **total per run**,
+**Paused** badge, last run status. No Edit / Pause / Run now.
 
 ### Admin
 
@@ -265,15 +282,16 @@ Same cards + **Add plan**, **Edit**, **Pause / Resume**, **Run now**.
 ### Plan editor (Sheet)
 
 1. Name (optional)
-2. Lines: bucket + amount, running total
+2. Lines: bucket + amount; **running total** always visible ([Plan total](#plan-total-required))
 3. Frequency (branching fields per [Schedule model](#schedule-model))
 4. Family timezone (first plan: default from browser; editable)
-5. Review → Save
+5. Review → Save (total + lines repeated)
 
 ### Run now
 
-Confirm sheet: all lines, total, current Float, red-Float warning if applicable,
-consequential copy. Button label includes amount (avoid accidental runs).
+Confirm sheet: all lines, **total per run**, current Float (context), red-Float
+warning if applicable, consequential copy. Confirm button includes total (e.g.
+`Run payday split — $1,240.00`) — avoid accidental runs.
 
 ### Bucket polish
 
