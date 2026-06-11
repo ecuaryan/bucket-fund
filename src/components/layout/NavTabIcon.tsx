@@ -4,21 +4,28 @@ export type NavTabId = 'buckets' | 'send' | 'history' | 'settings' | 'admin'
 
 type Props = {
   tab: NavTabId
+  size?: 'default' | 'prominent'
 }
 
-const iconClass = 'h-5 w-5 shrink-0'
+const iconSizes = {
+  default: 'h-5 w-5 shrink-0',
+  prominent: 'h-[1.875rem] w-[1.875rem] shrink-0',
+} as const
 
-export default function NavTabIcon({ tab }: Props) {
+const bucketPx = { default: 20, prominent: 30 } as const
+
+export default function NavTabIcon({ tab, size = 'default' }: Props) {
+  const className = iconSizes[size]
   switch (tab) {
     case 'buckets':
       return (
         <img
           src={APP_ICON_NAV}
           alt=""
-          width={20}
-          height={20}
+          width={bucketPx[size]}
+          height={bucketPx[size]}
           aria-hidden="true"
-          className={iconClass}
+          className={className + ' object-contain'}
         />
       )
     case 'send':
@@ -30,7 +37,7 @@ export default function NavTabIcon({ tab }: Props) {
           stroke="currentColor"
           strokeWidth={1.5}
           aria-hidden="true"
-          className={iconClass}
+          className={iconSizes.default}
         >
           <path
             strokeLinecap="round"
@@ -48,7 +55,7 @@ export default function NavTabIcon({ tab }: Props) {
           stroke="currentColor"
           strokeWidth={1.5}
           aria-hidden="true"
-          className={iconClass}
+          className={iconSizes.default}
         >
           <path
             strokeLinecap="round"
@@ -66,7 +73,7 @@ export default function NavTabIcon({ tab }: Props) {
           stroke="currentColor"
           strokeWidth={1.5}
           aria-hidden="true"
-          className={iconClass}
+          className={iconSizes.default}
         >
           <path
             strokeLinecap="round"
@@ -89,7 +96,7 @@ export default function NavTabIcon({ tab }: Props) {
           stroke="currentColor"
           strokeWidth={1.5}
           aria-hidden="true"
-          className={iconClass}
+          className={iconSizes.default}
         >
           <path
             strokeLinecap="round"

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { BrandLogo } from '@/components/BrandLogo'
-import NavTabIcon, { type NavTabId } from '@/components/layout/NavTabIcon'
+import BottomNav from '@/components/layout/BottomNav'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import SignOutIcon from '@/components/ui/SignOutIcon'
 import {
@@ -12,6 +12,8 @@ import {
 import { useAuth } from '@/lib/auth'
 import { useScrollToTopOnPathname } from '@/hooks/useScrollToTopOnPathname'
 import { useSendRecipients } from '@/hooks/useSendRecipients'
+import { NAV_CENTER_MAIN_PB } from '@/components/layout/navLayout'
+import { buildNavTabs } from '@/components/layout/navTabs'
 
 export default function AppShell() {
   useScrollToTopOnPathname()
@@ -29,6 +31,7 @@ export default function AppShell() {
     'You'
   const isAdmin = member?.role === 'admin'
   const { showSendNav } = useSendRecipients()
+  const navTabs = buildNavTabs(showSendNav, isAdmin)
 
   async function onSignOut() {
     setSigningOut(true)
@@ -75,50 +78,15 @@ export default function AppShell() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-md flex-1 px-4 pt-6 pb-[calc(10rem+max(0.5rem,env(safe-area-inset-bottom,0px))+var(--keyboard-inset,0px))]">
+      <main
+        className={
+          'mx-auto w-full max-w-md flex-1 px-4 pt-6 ' + NAV_CENTER_MAIN_PB
+        }
+      >
         <Outlet />
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-zinc-800 bg-zinc-900/95 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] backdrop-blur">
-        <ul className="mx-auto flex max-w-md items-stretch px-1 py-1.5 sm:px-2">
-          <TabLink to="/" label={NAV_BUCKETS_LABEL} tab="buckets" />
-          {showSendNav && <TabLink to="/send" label="Send" tab="send" />}
-          <TabLink to="/history" label="History" tab="history" />
-          <TabLink to="/settings" label="Settings" tab="settings" />
-          {isAdmin && <TabLink to="/admin" label="Admin" tab="admin" />}
-        </ul>
-      </nav>
+      <BottomNav tabs={navTabs} />
     </div>
-  )
-}
-
-function TabLink({
-  to,
-  label,
-  tab,
-}: {
-  to: string
-  label: string
-  tab: NavTabId
-}) {
-  return (
-    <li className="min-w-0 flex-1">
-      <NavLink
-        to={to}
-        end
-        aria-label={label}
-        className={({ isActive }) =>
-          [
-            'flex h-[3.25rem] w-full flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 text-[10px] font-medium leading-none sm:text-[11px]',
-            isActive
-              ? 'bg-emerald-500/15 text-emerald-300'
-              : 'text-zinc-400 hover:text-zinc-300',
-          ].join(' ')
-        }
-      >
-        <NavTabIcon tab={tab} />
-        <span className="max-w-full truncate">{label}</span>
-      </NavLink>
-    </li>
   )
 }
