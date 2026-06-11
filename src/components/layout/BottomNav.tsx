@@ -27,7 +27,7 @@ type BottomNavProps = {
 export default function BottomNav({ tabs }: BottomNavProps) {
   const { pathname } = useLocation()
   const activeIndex = activeNavTabIndex(tabs, pathname)
-  const { listRef, setTabRef, setIconAnchorRef, centerX } = useNavBubbleIndicator(activeIndex)
+  const { listRef, setTabRef, centerX } = useNavBubbleIndicator(activeIndex)
 
   return (
     <nav
@@ -57,12 +57,7 @@ export default function BottomNav({ tabs }: BottomNavProps) {
           />
         ) : null}
         {tabs.map((item, index) => (
-          <TabLink
-            key={navTabKey(item, index)}
-            ref={setTabRef(index)}
-            iconAnchorRef={setIconAnchorRef(index)}
-            item={item}
-          />
+          <TabLink key={navTabKey(item, index)} ref={setTabRef(index)} item={item} />
         ))}
       </ul>
     </nav>
@@ -80,14 +75,14 @@ function tabProps(item: NavTabItem): { to: string; label: string; tab: NavTabId 
   return { to: item.to, label: item.label, tab: item.tab }
 }
 
-const TabLink = forwardRef<
-  HTMLLIElement,
-  { item: NavTabItem; iconAnchorRef: (el: HTMLDivElement | null) => void }
->(function TabLink({ item, iconAnchorRef }, ref) {
+const TabLink = forwardRef<HTMLLIElement, { item: NavTabItem }>(function TabLink(
+  { item },
+  ref,
+) {
   const { to, label, tab } = tabProps(item)
 
   return (
-    <li ref={ref} className="relative min-w-0 flex-1">
+    <li ref={ref} className="min-w-0 flex-1">
       <NavLink
         to={to}
         end
@@ -101,30 +96,28 @@ const TabLink = forwardRef<
       >
         {({ isActive }) => (
           <>
+            {/* inset-x-0 + justify-center avoids left-1/2 drift; keep top + -translate-y-1/2 for border alignment */}
             <div
-              ref={iconAnchorRef}
-              className="pointer-events-none absolute inset-x-0 top-0 z-10 flex justify-center"
-              style={{ transform: `translateY(-${NAV_BUBBLE_RADIUS_PX}px)` }}
+              className="pointer-events-none absolute inset-x-0 top-0 z-10 flex -translate-y-1/2 justify-center"
+              style={{
+                marginTop: -NAV_BUBBLE_RADIUS_PX,
+                height: NAV_BUBBLE_SIZE_PX,
+              }}
             >
-              <div
-                className="flex items-center justify-center"
-                style={{ width: NAV_BUBBLE_SIZE_PX, height: NAV_BUBBLE_SIZE_PX }}
+              <span
+                className={
+                  'inline-flex h-5 w-5 shrink-0 origin-center items-center justify-center ' +
+                  iconMotion
+                }
+                style={{
+                  transform: navIconTransform(
+                    isActive,
+                    tab === 'buckets' ? NAV_BUCKET_ACTIVE_SCALE : NAV_ICON_ACTIVE_SCALE,
+                  ),
+                }}
               >
-                <span
-                  className={
-                    'inline-flex h-5 w-5 shrink-0 origin-center items-center justify-center ' +
-                    iconMotion
-                  }
-                  style={{
-                    transform: navIconTransform(
-                      isActive,
-                      tab === 'buckets' ? NAV_BUCKET_ACTIVE_SCALE : NAV_ICON_ACTIVE_SCALE,
-                    ),
-                  }}
-                >
-                  <NavTabIcon tab={tab} size="default" />
-                </span>
-              </div>
+                <NavTabIcon tab={tab} size="default" />
+              </span>
             </div>
             <div
               className="w-full shrink-0"

@@ -1,23 +1,18 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 
-/** Tracks horizontal center of the active tab icon anchor for the sliding bubble. */
+/** Tracks horizontal center of the active tab for the sliding bubble indicator. */
 export function useNavBubbleIndicator(activeIndex: number) {
   const listRef = useRef<HTMLUListElement>(null)
   const tabRefs = useRef<(HTMLLIElement | null)[]>([])
-  const iconAnchorRefs = useRef<(HTMLDivElement | null)[]>([])
   const [centerX, setCenterX] = useState<number | null>(null)
 
   const measure = useCallback(() => {
+    const li = tabRefs.current[activeIndex]
     const list = listRef.current
-    if (!list) return
-
-    const anchor = iconAnchorRefs.current[activeIndex]
-    const target = anchor ?? tabRefs.current[activeIndex]
-    if (!target) return
-
+    if (!li || !list) return
     const listRect = list.getBoundingClientRect()
-    const targetRect = target.getBoundingClientRect()
-    setCenterX(targetRect.left - listRect.left + targetRect.width / 2)
+    const liRect = li.getBoundingClientRect()
+    setCenterX(liRect.left - listRect.left + liRect.width / 2)
   }, [activeIndex])
 
   useLayoutEffect(() => {
@@ -33,9 +28,6 @@ export function useNavBubbleIndicator(activeIndex: number) {
     for (const li of tabRefs.current) {
       if (li) ro.observe(li)
     }
-    for (const anchor of iconAnchorRefs.current) {
-      if (anchor) ro.observe(anchor)
-    }
     window.addEventListener('resize', measure)
     return () => {
       ro.disconnect()
@@ -50,12 +42,5 @@ export function useNavBubbleIndicator(activeIndex: number) {
     [],
   )
 
-  const setIconAnchorRef = useCallback(
-    (index: number) => (el: HTMLDivElement | null) => {
-      iconAnchorRefs.current[index] = el
-    },
-    [],
-  )
-
-  return { listRef, setTabRef, setIconAnchorRef, centerX }
+  return { listRef, setTabRef, centerX }
 }
