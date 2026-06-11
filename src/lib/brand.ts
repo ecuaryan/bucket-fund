@@ -436,11 +436,7 @@ export function bucketsFloatInfoSheetTitle(): string {
 export const FLOAT_HERO_SUBTITLE = 'Left over after buckets'
 
 /** One-line hint when Float is negative. */
-export const FLOAT_NEGATIVE_HINT = 'Move from a bucket to rebalance.'
-
-/** Hint when moving from a bucket back to Float after a purchase. */
-export const MOVE_MONEY_COVER_HINT =
-  "Your bank already took this — you're picking which bucket pays."
+export const FLOAT_NEGATIVE_HINT = 'Your buckets total more than your cash.'
 
 /** Guidance bullets for the Float info sheet on the Buckets tab. */
 export function bucketsFloatInfoPoints(isChild: boolean): readonly string[] {
@@ -448,14 +444,14 @@ export function bucketsFloatInfoPoints(isChild: boolean): readonly string[] {
     return [
       `Money not in your buckets yet — that's your ${FLOAT_LABEL_LOWER}.`,
       `Buckets only change when you move money.`,
-      `When you spend, move from that bucket back to your ${FLOAT_LABEL_LOWER}.`,
+      `Move between your ${FLOAT_LABEL_LOWER} and your buckets to organize your money.`,
     ] as const
   }
-  // Bank refresh updates Float only, not buckets. If scheduled set-aside ships,
+  // Bank refresh updates Float only, not buckets. When scheduled set-aside ships,
   // extend bullet 2 (e.g. "when you move money or on a schedule you set").
   return [
     `Paydays, bills, and card payments update your ${FLOAT_LABEL_LOWER} when balances refresh — not your buckets.`,
-    `Buckets only change when you move money — set aside from float, or move back from a bucket before a charge clears.`,
+    `Buckets only change when you move money in the app.`,
   ] as const
 }
 
@@ -477,7 +473,7 @@ export function bucketsFloatStatusGuide(isChild: boolean): readonly FloatStatusG
       {
         tone: 'red',
         label: 'Red',
-        body: `Buckets total more than your cash — move from a bucket to rebalance.`,
+        body: `Buckets total more than your cash.`,
       },
     ] as const
   }
@@ -490,10 +486,21 @@ export function bucketsFloatStatusGuide(isChild: boolean): readonly FloatStatusG
     {
       tone: 'red',
       label: 'Red',
-      body: `Buckets total more than your cash — move from a bucket to rebalance. Often a charge cleared before you covered it.`,
+      body: `Buckets total more than your cash.`,
     },
   ] as const
 }
+
+// --- Scheduled set-aside (UI naming — feature not yet implemented) ---
+
+/** Buckets tab section header. */
+export const SCHEDULED_SET_ASIDE_SECTION_TITLE = 'Scheduled set-aside'
+
+/** Admin primary CTA to create a plan. */
+export const SCHEDULED_SET_ASIDE_ADD_LABEL = 'Schedule set-aside'
+
+/** History subtitle label for moves from a scheduled run (not a member name). */
+export const HISTORY_SCHEDULED_MOVE_LABEL = 'Scheduled'
 
 export const BUCKETS_LINK_BANK_TITLE = 'Link a bank account'
 
