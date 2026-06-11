@@ -57,7 +57,11 @@ export default function BottomNav({ tabs }: BottomNavProps) {
           />
         ) : null}
         {tabs.map((item, index) => (
-          <TabLink key={navTabKey(item, index)} ref={setTabRef(index)} item={item} />
+          <TabLink
+            key={navTabKey(item, index)}
+            ref={setTabRef(index)}
+            item={item}
+          />
         ))}
       </ul>
     </nav>
@@ -89,18 +93,18 @@ const TabLink = forwardRef<HTMLLIElement, { item: NavTabItem }>(function TabLink
         aria-label={label}
         className={({ isActive }) =>
           [
-            'relative flex w-full flex-col items-center overflow-visible text-[10px] font-medium leading-none sm:text-[11px]',
+            'relative flex w-full flex-col items-center overflow-visible px-0.5 text-[10px] font-medium leading-none sm:text-[11px]',
             isActive ? 'text-emerald-300' : 'text-zinc-400 hover:text-zinc-300',
           ].join(' ')
         }
       >
         {({ isActive }) => (
           <>
-            {/* inset-x-0 + justify-center avoids left-1/2 drift; keep top + -translate-y-1/2 for border alignment */}
             <div
-              className="pointer-events-none absolute inset-x-0 top-0 z-10 flex -translate-y-1/2 justify-center"
+              className="absolute left-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center"
               style={{
-                marginTop: -NAV_BUBBLE_RADIUS_PX,
+                top: -NAV_BUBBLE_RADIUS_PX,
+                width: NAV_BUBBLE_SIZE_PX,
                 height: NAV_BUBBLE_SIZE_PX,
               }}
             >
@@ -126,7 +130,7 @@ const TabLink = forwardRef<HTMLLIElement, { item: NavTabItem }>(function TabLink
             />
             <span
               className={
-                'flex w-full shrink-0 items-start justify-center truncate text-center motion-safe:transition-[font-weight,color] motion-safe:duration-300 ' +
+                'flex w-full shrink-0 items-start justify-center truncate motion-safe:transition-[font-weight,color] motion-safe:duration-300 ' +
                 (isActive ? 'font-semibold' : '')
               }
               style={{ height: NAV_LABEL_ROW_PX }}

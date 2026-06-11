@@ -25,7 +25,7 @@ export default function NavTabIcon({ tab, size = 'default' }: Props) {
           width={bucketPx[size]}
           height={bucketPx[size]}
           aria-hidden="true"
-          className={className + ' block object-contain'}
+          className={className + ' object-contain'}
         />
       )
     case 'send':
@@ -37,7 +37,7 @@ export default function NavTabIcon({ tab, size = 'default' }: Props) {
           stroke="currentColor"
           strokeWidth={1.5}
           aria-hidden="true"
-          className={iconSizes.default + ' block shrink-0'}
+          className={iconSizes.default}
         >
           <path
             strokeLinecap="round"
@@ -55,7 +55,7 @@ export default function NavTabIcon({ tab, size = 'default' }: Props) {
           stroke="currentColor"
           strokeWidth={1.5}
           aria-hidden="true"
-          className={iconSizes.default + ' block shrink-0'}
+          className={iconSizes.default}
         >
           <path
             strokeLinecap="round"
@@ -73,7 +73,7 @@ export default function NavTabIcon({ tab, size = 'default' }: Props) {
           stroke="currentColor"
           strokeWidth={1.5}
           aria-hidden="true"
-          className={iconSizes.default + ' block shrink-0'}
+          className={iconSizes.default}
         >
           <path
             strokeLinecap="round"
@@ -96,7 +96,7 @@ export default function NavTabIcon({ tab, size = 'default' }: Props) {
           stroke="currentColor"
           strokeWidth={1.5}
           aria-hidden="true"
-          className={iconSizes.default + ' block shrink-0'}
+          className={iconSizes.default}
         >
           <path
             strokeLinecap="round"
