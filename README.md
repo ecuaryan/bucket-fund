@@ -14,7 +14,8 @@ covers it when the bank balance moves. Tagline and auth copy live in
 Product story (full text): [docs/BRAND.md § Product narrative](./docs/BRAND.md#product-narrative).
 
 See [CONTEXT.md](./CONTEXT.md) for the full product brief, balance model,
-and architecture. See [AGENTS.md](./AGENTS.md) for AI agent / contributor
+and architecture. Scheduled set-aside (payday plans): [docs/SCHEDULED_SET_ASIDE.md](./docs/SCHEDULED_SET_ASIDE.md).
+See [AGENTS.md](./AGENTS.md) for AI agent / contributor
 entry points.
 
 ## Stack

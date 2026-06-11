@@ -18,8 +18,13 @@ The payoff:
   you come in and consciously move money from a bucket back into your Float;
   confronting the trade-off is the value, not a chore to automate away. The
   at-a-glance view surfaces reality so you *decide*; it does not auto-fix.
-- **Tradeoffs** — negative Float means it is time to pull from buckets on
-  purpose, not that income “came from” somewhere new.
+- **Tradeoffs** — negative Float means labels and bank cash don't match yet — not
+  that income “came from” somewhere new.
+- **Organizing, not prescribing** — copy states what Float and buckets *are* and
+  what the numbers mean. Avoid telling people *when* or *why* they should move money
+  (no “before the charge clears”, “your bank already took this”, etc.). Factual
+  hints (balances, limits) are fine; workflow coaching belongs in optional surfaces
+  like onboarding, not every move sheet.
 - **Works alone or together** — one person with buckets, or a household sharing
   a Float and optional member PINs.
 
@@ -101,12 +106,23 @@ If you're the kind of person who has ever looked at their bank account two days 
   Never `window.confirm` (unreliable in embedded browsers). Copy in `brand.ts`;
   match member-removal patterns (intro, bullets, Cancel + action).
 - **Bank refresh vs buckets:** linked-account balance updates change **Float only**
-  — bucket amounts stay put until someone **moves money** (future: optional
-  scheduled set-aside counts as a move the user configured). In-app copy must not
-  imply the app moves money at the bank; say *refresh*, *update*, or *when your
-  bank balance changes* for Float. Info sheet bullets stay short (three max for
-  adults). Do not say *sync* for bank balances — it suggests two-way connection;
+  — bucket amounts stay put until someone **moves money** or a **scheduled set-aside**
+  runs (admin-configured; see [SCHEDULED_SET_ASIDE.md](./SCHEDULED_SET_ASIDE.md)).
+  In-app copy must not imply the app moves money at the bank; say *refresh*, *update*,
+  or *when your bank balance changes* for Float. Info sheet bullets stay short (three
+  max for adults). Do not say *sync* for bank balances — it suggests two-way connection;
   use **refresh** (see above).
+- **Set-aside from Float:** moving Float → bucket may make Float **negative** (payday
+  on the way). **Bucket → anything** still cannot exceed the bucket balance. Applies to
+  all roles for set-aside; **`send_money`** keeps the insufficient-Float guard. When a
+  manual set-aside (or admin **Run now** on a plan) would cross Float from **≥ 0 to
+  negative**, confirm with a consequential `Sheet` first; skip confirm if Float is already
+  red; scheduled runs skip confirm (user pre-configured the plan). Copy in `brand.ts`.
+- **Scheduled set-aside:** user-facing label **Scheduled set-aside** / **Schedule
+  set-aside** — not “automation.” History rows from a scheduled run show **Scheduled**
+  instead of a member name. Shared role sees plans read-only on Buckets. Constants:
+  `SCHEDULED_SET_ASIDE_*`, `HISTORY_SCHEDULED_MOVE_LABEL` in `brand.ts`. Full spec:
+  [SCHEDULED_SET_ASIDE.md](./SCHEDULED_SET_ASIDE.md).
 
 ## Display name
 

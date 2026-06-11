@@ -150,6 +150,14 @@ system-error banner.
 - Buckets are untouched until the user deliberately moves money
 - Every dollar spent has to come from somewhere — user decides which bucket absorbs it
 
+**Set-aside (Float → bucket):** All roles may set aside more than current Float (Float
+may go **red** until paydays refresh or the user rebalances). **Bucket → anything** still
+requires enough in the source bucket. **`send_money`** still blocks insufficient Float.
+Manual set-aside that crosses Float from ≥ 0 to negative uses a confirm sheet; scheduled
+set-aside runs do not (see [docs/SCHEDULED_SET_ASIDE.md](./docs/SCHEDULED_SET_ASIDE.md)).
+*Implementation note:* RPC/UI alignment for over-Float set-aside is part of that work;
+today the move UI blocks amount &gt; Float and kids are blocked at RPC.
+
 ---
 
 ### Buckets
@@ -315,11 +323,18 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
   `member_bucket_order`. Children see only their own buckets.
 - **Deferred:** optional member email, WebAuthn fast path, children-first polish.
 
+### Scheduled set-aside (spec approved — not yet implemented)
+
+Recurring **Float → bucket** plans for the shared household pool (payday splits).
+Admin configures and pauses; Shared sees schedules read-only; server runs on
+calendar days via pg_cron. Full spec: [docs/SCHEDULED_SET_ASIDE.md](./docs/SCHEDULED_SET_ASIDE.md).
+
+Deferred with that feature: kid set-aside **plans**, automated allowance **sends**.
+
 ---
 
 ### Out of Scope (defer these)
 - Push notifications
-- Recurring allocations ("every payday, put $200 in groceries")
 - Transaction history filters and search
 - Super-admin / platform management UI
 - Automated operator ledger monitoring (family-wide invariant job, violation

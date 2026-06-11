@@ -13,7 +13,6 @@ import { moveMoney } from '@/lib/buckets'
 import { FLOAT_LABEL } from '@/lib/brand'
 import {
   detectMoveMoneyIntent,
-  moveMoneyCoverHint,
   moveMoneyDialogSubmitLabel,
   moveMoneyDialogSubmittingLabel,
   moveMoneyDialogTitle,
@@ -97,7 +96,6 @@ export default function MoveMoneyDialog({
 
   const intent = detectMoveMoneyIntent({ fromKey, toKey, preferredIntent })
   const dialogTitle = moveMoneyDialogTitle(intent)
-  const coverHint = intent === 'cover' ? moveMoneyCoverHint() : null
 
   const endpoints = useMemo<Endpoint[]>(() => {
     const list: Endpoint[] = [
@@ -234,10 +232,6 @@ export default function MoveMoneyDialog({
               </button>
             </div>
           </div>
-
-          {coverHint ? (
-            <p className="text-xs text-zinc-400">{coverHint}</p>
-          ) : null}
 
           <label className="block">
             <FieldLabel>Amount</FieldLabel>

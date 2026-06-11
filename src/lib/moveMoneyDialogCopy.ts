@@ -1,5 +1,4 @@
 import { FLOAT_ENDPOINT_KEY } from '@/features/buckets/moveMoneyDefaults'
-import { MOVE_MONEY_COVER_HINT } from '@/lib/brand'
 
 export type MoveMoneyIntent = 'setAside' | 'cover' | 'move'
 
@@ -66,8 +65,4 @@ export function moveMoneyDialogSubmittingLabel(intent: MoveMoneyIntent): string 
     default:
       return 'Moving…'
   }
-}
-
-export function moveMoneyCoverHint(): string {
-  return MOVE_MONEY_COVER_HINT
 }
