@@ -10,7 +10,11 @@ import {
   endpointKey,
 } from '@/features/buckets/moveMoneyDefaults'
 import { moveMoney } from '@/lib/buckets'
-import { FLOAT_LABEL } from '@/lib/brand'
+import {
+  AUTO_ORGANIZE_SET_ASIDE_FLOAT_CONFIRM_TITLE,
+  FLOAT_LABEL,
+  autoOrganizeSetAsideFloatConfirmBody,
+} from '@/lib/brand'
 import {
   detectMoveMoneyIntent,
   moveMoneyDialogSubmitLabel,
@@ -64,6 +68,7 @@ export default function MoveMoneyDialog({
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [floatConfirmOpen, setFloatConfirmOpen] = useState(false)
   const amountRef = useRef<HTMLInputElement | null>(null)
 
   // Reset state whenever the dialog re-opens (or the tapped bucket changes).
@@ -90,7 +95,7 @@ export default function MoveMoneyDialog({
     setAmountStr('')
     setNote('')
     setError(null)
-    // Defer focus so the input exists in the DOM.
+    setFloatConfirmOpen(false)
     setTimeout(() => amountRef.current?.focus(), 0)
   }, [open, initialBucketId, buckets, float, preferredIntent])
 
@@ -120,8 +125,10 @@ export default function MoveMoneyDialog({
   const amountValid = Number.isFinite(amount) && amount > 0
   const sameEndpoint = fromKey === toKey
   const fromBalance = fromEndpoint?.balance
+  const fromIsFloat = fromKey === FLOAT_ENDPOINT_KEY
   const overdraft =
     amountValid &&
+    !fromIsFloat &&
     fromBalance !== null &&
     fromBalance !== undefined &&
     amount > fromBalance
@@ -136,11 +143,15 @@ export default function MoveMoneyDialog({
     !overdraft
       ? `${fromEndpoint.label} has ${formatMoney(fromBalance)} available.`
       : null
+  const needsFloatConfirm =
+    amountValid &&
+    fromIsFloat &&
+    float >= 0 &&
+    amount > float
+
   const canSubmit = amountValid && !sameEndpoint && !overdraft && !submitting
 
-  async function onSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    if (!canSubmit) return
+  async function performMove() {
     setSubmitting(true)
     setError(null)
     try {
@@ -150,6 +161,7 @@ export default function MoveMoneyDialog({
         amount,
         note: note.trim() || null,
       })
+      setFloatConfirmOpen(false)
       onClose()
       await Promise.resolve(
         onMoved({
@@ -163,6 +175,16 @@ export default function MoveMoneyDialog({
     } finally {
       setSubmitting(false)
     }
+  }
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!canSubmit) return
+    if (needsFloatConfirm) {
+      setFloatConfirmOpen(true)
+      return
+    }
+    await performMove()
   }
 
   return (
@@ -326,6 +348,33 @@ export default function MoveMoneyDialog({
                   : moveMoneyDialogSubmitLabel(intent, '', undefined)}
             </button>
           </div>
+        {floatConfirmOpen ? (
+          <div className="space-y-4 border-t border-zinc-800 pt-4">
+            <h3 className="text-lg font-semibold text-zinc-100">
+              {AUTO_ORGANIZE_SET_ASIDE_FLOAT_CONFIRM_TITLE}
+            </h3>
+            <p className="text-sm text-zinc-300">
+              {autoOrganizeSetAsideFloatConfirmBody(formatMoney(amount))}
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setFloatConfirmOpen(false)}
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-zinc-300 hover:bg-zinc-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => void performMove()}
+                className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50"
+              >
+                {submitting ? 'Moving…' : 'Set aside anyway'}
+              </button>
+            </div>
+          </div>
+        ) : null}
         </form>
     </Sheet>
   )

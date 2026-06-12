@@ -56,7 +56,11 @@ export function historyBucketMoveSubtitle(args: {
   actorName: string | null | undefined
   currentMemberId: string
   showActor: boolean
+  autoOrganizeRunTrigger?: string | null
 }): string {
+  if (args.autoOrganizeRunTrigger === 'scheduled') {
+    return `Bucket move · Scheduled · ${args.time}`
+  }
   return historyTxSubtitle({ ...args, kind: 'Bucket move' })
 }
 

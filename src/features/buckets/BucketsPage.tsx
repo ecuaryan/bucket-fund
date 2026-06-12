@@ -74,6 +74,7 @@ import {
 } from '@/lib/buckets'
 import type { Database } from '@/types/database'
 import MoveMoneyDialog from '@/features/buckets/MoveMoneyDialog'
+import AutoOrganizeSection from '@/features/buckets/AutoOrganizeSection'
 import SortableBucketList from '@/features/buckets/SortableBucketList'
 import { ReorderHintProvider } from '@/features/buckets/ReorderHintContext'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
@@ -153,6 +154,7 @@ export default function BucketsPage() {
 
   const isAdmin = member?.role === 'admin'
   const isChild = member?.role === 'child'
+  const canSeeAutoOrganize = !isChild
   const canCreateBuckets = isAdmin || isChild
   const canManageStructure = isAdmin || isChild
 
@@ -818,6 +820,18 @@ export default function BucketsPage() {
         )}
       </section>
       </ReorderHintProvider>
+
+      {canSeeAutoOrganize && familyId && memberId ? (
+        <AutoOrganizeSection
+          isAdmin={isAdmin}
+          memberId={memberId}
+          familyId={familyId}
+          accessToken={accessToken}
+          buckets={buckets ?? []}
+          float={float}
+          onChanged={loadData}
+        />
+      ) : null}
         </div>
       </BusyOverlay>
 

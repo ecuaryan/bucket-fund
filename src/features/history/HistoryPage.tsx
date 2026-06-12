@@ -508,6 +508,7 @@ function TxItem({
       actorName,
       currentMemberId,
       showActor,
+      autoOrganizeRunTrigger: row.auto_organize_run_trigger,
     })
   } else {
     const fromIsMe = row.from_member_id === currentMemberId

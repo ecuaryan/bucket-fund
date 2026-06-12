@@ -27,6 +27,8 @@ export type HistoryTxRow = {
   float_balance_after: string | number | null
   note: string | null
   created_at: string
+  auto_organize_run_id: string | null
+  auto_organize_run_trigger: string | null
   from_bucket: { name: string } | null
   to_bucket: { name: string } | null
   from_member: { name: string } | null

@@ -101,6 +101,163 @@ export type Database = {
           },
         ]
       }
+      auto_organize_lines: {
+        Row: {
+          amount: number
+          auto_organize_id: string
+          bucket_id: string
+          id: string
+          sort_order: number
+        }
+        Insert: {
+          amount: number
+          auto_organize_id: string
+          bucket_id: string
+          id?: string
+          sort_order: number
+        }
+        Update: {
+          amount?: number
+          auto_organize_id?: string
+          bucket_id?: string
+          id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto_organize_lines_auto_organize_id_fkey"
+            columns: ["auto_organize_id"]
+            isOneToOne: false
+            referencedRelation: "auto_organizes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auto_organize_lines_bucket_id_fkey"
+            columns: ["bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      auto_organize_runs: {
+        Row: {
+          auto_organize_id: string
+          created_at: string
+          error_message: string | null
+          family_id: string
+          id: string
+          run_on: string
+          status: string
+          trigger: string
+          triggered_by_member_id: string | null
+        }
+        Insert: {
+          auto_organize_id: string
+          created_at?: string
+          error_message?: string | null
+          family_id: string
+          id?: string
+          run_on: string
+          status: string
+          trigger: string
+          triggered_by_member_id?: string | null
+        }
+        Update: {
+          auto_organize_id?: string
+          created_at?: string
+          error_message?: string | null
+          family_id?: string
+          id?: string
+          run_on?: string
+          status?: string
+          trigger?: string
+          triggered_by_member_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto_organize_runs_auto_organize_id_fkey"
+            columns: ["auto_organize_id"]
+            isOneToOne: false
+            referencedRelation: "auto_organizes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auto_organize_runs_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auto_organize_runs_triggered_by_member_id_fkey"
+            columns: ["triggered_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      auto_organizes: {
+        Row: {
+          auto_organize_type: string
+          created_at: string
+          created_by_member_id: string | null
+          days_of_month: number[] | null
+          family_id: string
+          id: string
+          interval_count: number | null
+          interval_unit: string | null
+          name: string | null
+          paused: boolean
+          start_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_organize_type: string
+          created_at?: string
+          created_by_member_id?: string | null
+          days_of_month?: number[] | null
+          family_id: string
+          id?: string
+          interval_count?: number | null
+          interval_unit?: string | null
+          name?: string | null
+          paused?: boolean
+          start_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_organize_type?: string
+          created_at?: string
+          created_by_member_id?: string | null
+          days_of_month?: number[] | null
+          family_id?: string
+          id?: string
+          interval_count?: number | null
+          interval_unit?: string | null
+          name?: string | null
+          paused?: boolean
+          start_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto_organizes_created_by_member_id_fkey"
+            columns: ["created_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auto_organizes_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       buckets: {
         Row: {
           allocated_amount: number
@@ -148,25 +305,31 @@ export type Database = {
       }
       families: {
         Row: {
+          auto_organize_run_hour: number
           created_at: string
           id: string
           join_code: string
           name: string
           plan: string
+          timezone: string
         }
         Insert: {
+          auto_organize_run_hour?: number
           created_at?: string
           id?: string
           join_code: string
           name: string
           plan?: string
+          timezone?: string
         }
         Update: {
+          auto_organize_run_hour?: number
           created_at?: string
           id?: string
           join_code?: string
           name?: string
           plan?: string
+          timezone?: string
         }
         Relationships: []
       }
@@ -345,6 +508,7 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
+          auto_organize_run_id: string | null
           created_at: string
           family_id: string
           float_balance_after: number | null
@@ -371,6 +535,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          auto_organize_run_id?: string | null
           created_at?: string
           family_id: string
           float_balance_after?: number | null
@@ -397,6 +562,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          auto_organize_run_id?: string | null
           created_at?: string
           family_id?: string
           float_balance_after?: number | null
@@ -422,6 +588,13 @@ export type Database = {
           type?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "transactions_auto_organize_run_id_fkey"
+            columns: ["auto_organize_run_id"]
+            isOneToOne: false
+            referencedRelation: "auto_organize_runs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transactions_family_id_fkey"
             columns: ["family_id"]
@@ -464,6 +637,8 @@ export type Database = {
       transactions_client: {
         Row: {
           amount: number | null
+          auto_organize_run_id: string | null
+          auto_organize_run_trigger: string | null
           created_at: string | null
           family_id: string | null
           float_balance_after: number | null
@@ -488,59 +663,14 @@ export type Database = {
           to_member_name: string | null
           type: string | null
         }
-        Insert: {
-          amount?: number | null
-          created_at?: string | null
-          family_id?: string | null
-          float_balance_after?: never
-          float_balance_before?: never
-          from_bucket_balance_after?: number | null
-          from_bucket_balance_before?: number | null
-          from_bucket_id?: string | null
-          from_bucket_name?: string | null
-          from_member_balance_after?: number | null
-          from_member_balance_before?: number | null
-          from_member_id?: string | null
-          from_member_name?: string | null
-          id?: string | null
-          note?: string | null
-          to_bucket_balance_after?: number | null
-          to_bucket_balance_before?: number | null
-          to_bucket_id?: string | null
-          to_bucket_name?: string | null
-          to_member_balance_after?: number | null
-          to_member_balance_before?: number | null
-          to_member_id?: string | null
-          to_member_name?: string | null
-          type?: string | null
-        }
-        Update: {
-          amount?: number | null
-          created_at?: string | null
-          family_id?: string | null
-          float_balance_after?: never
-          float_balance_before?: never
-          from_bucket_balance_after?: number | null
-          from_bucket_balance_before?: number | null
-          from_bucket_id?: string | null
-          from_bucket_name?: string | null
-          from_member_balance_after?: number | null
-          from_member_balance_before?: number | null
-          from_member_id?: string | null
-          from_member_name?: string | null
-          id?: string | null
-          note?: string | null
-          to_bucket_balance_after?: number | null
-          to_bucket_balance_before?: number | null
-          to_bucket_id?: string | null
-          to_bucket_name?: string | null
-          to_member_balance_after?: number | null
-          to_member_balance_before?: number | null
-          to_member_id?: string | null
-          to_member_name?: string | null
-          type?: string | null
-        }
         Relationships: [
+          {
+            foreignKeyName: "transactions_auto_organize_run_id_fkey"
+            columns: ["auto_organize_run_id"]
+            isOneToOne: false
+            referencedRelation: "auto_organize_runs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transactions_family_id_fkey"
             columns: ["family_id"]
@@ -580,6 +710,18 @@ export type Database = {
       }
     }
     Functions: {
+      _auto_organize_apply_line: {
+        Args: {
+          p_amount: number
+          p_auto_organize_run_id: string
+          p_family_id: string
+          p_float_member_id: string
+          p_from_member_id: string
+          p_note: string
+          p_to_bucket_id: string
+        }
+        Returns: string
+      }
       add_manual_account: {
         Args: { p_amount: number; p_label: string }
         Returns: string
@@ -587,6 +729,17 @@ export type Database = {
       auth_family_id: { Args: never; Returns: string }
       auth_member_id: { Args: never; Returns: string }
       auth_role: { Args: never; Returns: string }
+      auto_organize_is_due_on: {
+        Args: {
+          p_auto_organize_type: string
+          p_days_of_month: number[]
+          p_interval_count: number
+          p_interval_unit: string
+          p_local_date: string
+          p_start_date: string
+        }
+        Returns: boolean
+      }
       bucket_move_is_child_internal: {
         Args: {
           p_from_bucket_id: string
@@ -641,6 +794,16 @@ export type Database = {
         Returns: undefined
       }
       rotate_family_join_code: { Args: never; Returns: string }
+      run_auto_organize: {
+        Args: {
+          p_auto_organize_id: string
+          p_run_on?: string
+          p_trigger: string
+          p_triggered_by_member_id?: string
+        }
+        Returns: string
+      }
+      run_due_auto_organizes: { Args: { p_as_of?: string }; Returns: number }
       send_money: {
         Args: { p_amount: number; p_note?: string; p_to_member_id: string }
         Returns: string
