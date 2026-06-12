@@ -3,6 +3,7 @@ import { Sheet } from '@/components/ui/Sheet'
 import { ScrollFade } from '@/components/ui/ScrollFade'
 import {
   AUTO_ORGANIZE_ADD_LABEL,
+  AUTO_ORGANIZE_ADD_REQUIRES_BUCKETS_HINT,
   AUTO_ORGANIZE_BUCKETS_LABEL,
   AUTO_ORGANIZE_DELETE_LABEL,
   AUTO_ORGANIZE_DELETE_SHEET_BODY,
@@ -10,6 +11,7 @@ import {
   AUTO_ORGANIZE_EDIT_LABEL,
   AUTO_ORGANIZE_EMPTY_BODY,
   AUTO_ORGANIZE_GUARDRAIL,
+  AUTO_ORGANIZE_NO_BUCKETS_ERROR,
   AUTO_ORGANIZE_PAUSE_LABEL,
   AUTO_ORGANIZE_PAUSED_LABEL,
   AUTO_ORGANIZE_PAUSED_STATUS,
@@ -185,16 +187,27 @@ function AutoOrganizeCard({
             <p className="mt-1 text-xs text-zinc-400">{row.cadenceSummary}</p>
           ) : null}
           {row.paused ? (
-            <p
-              id={pausedStatusId}
-              className="mt-1.5 text-xs font-medium text-amber-200/90"
-            >
-              {isAdmin
-                ? AUTO_ORGANIZE_PAUSED_STATUS
-                : AUTO_ORGANIZE_PAUSED_STATUS_SHARED}
-            </p>
+            <>
+              <p
+                id={pausedStatusId}
+                className="mt-1.5 text-xs font-medium text-amber-200/90"
+              >
+                {isAdmin
+                  ? AUTO_ORGANIZE_PAUSED_STATUS
+                  : AUTO_ORGANIZE_PAUSED_STATUS_SHARED}
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">{row.nextRunLabel}</p>
+              {row.lastRunLabel ? (
+                <p className="mt-0.5 text-xs text-zinc-500">{row.lastRunLabel}</p>
+              ) : null}
+            </>
           ) : (
-            <p className="mt-1 text-xs text-zinc-400">{row.nextRunLabel}</p>
+            <>
+              <p className="mt-1 text-xs text-zinc-400">{row.nextRunLabel}</p>
+              {row.lastRunLabel ? (
+                <p className="mt-0.5 text-xs text-zinc-500">{row.lastRunLabel}</p>
+              ) : null}
+            </>
           )}
         </div>
         <p
@@ -214,7 +227,7 @@ function AutoOrganizeCard({
             onClick={() => setLinesOpen((open) => !open)}
             aria-expanded={linesOpen}
             aria-controls={bucketsPanelId}
-            className="flex w-full items-center justify-between gap-2 rounded-lg py-1 text-left text-xs text-zinc-400 transition hover:text-zinc-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+            className="flex w-full items-center justify-start gap-1.5 rounded-lg py-1 text-left text-xs text-zinc-400 transition hover:text-zinc-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
           >
             <span className="min-w-0 truncate font-semibold">
               {linesOpen
@@ -274,9 +287,14 @@ function AutoOrganizeCard({
           </button>
           <button
             type="button"
-            disabled={busyId === row.id || row.paused}
+            disabled={busyId === row.id || row.paused || row.totalPerRun <= 0}
             onClick={onRunNow}
             aria-describedby={row.paused ? pausedStatusId : undefined}
+            title={
+              row.totalPerRun <= 0 && !row.paused
+                ? AUTO_ORGANIZE_NO_BUCKETS_ERROR
+                : undefined
+            }
             className="rounded-lg px-3 py-1.5 text-xs font-semibold text-emerald-200 ring-1 ring-emerald-500/40 hover:bg-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
           >
             {AUTO_ORGANIZE_RUN_NOW_LABEL}
@@ -451,20 +469,25 @@ export default function AutoOrganizeSection({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-300">
-            {AUTO_ORGANIZE_SECTION_TITLE}
-          </h2>
+          <h2 className="text-lg font-semibold">{AUTO_ORGANIZE_SECTION_TITLE}</h2>
           <p className="mt-1 text-xs text-zinc-400">{AUTO_ORGANIZE_GUARDRAIL}</p>
         </div>
         {isAdmin && rows && !empty ? (
-          <button
-            type="button"
-            disabled={poolBuckets.length === 0}
-            onClick={openAddEditor}
-            className={addButtonClassName}
-          >
-            {AUTO_ORGANIZE_ADD_LABEL}
-          </button>
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <button
+              type="button"
+              disabled={poolBuckets.length === 0}
+              onClick={openAddEditor}
+              className={addButtonClassName}
+            >
+              {AUTO_ORGANIZE_ADD_LABEL}
+            </button>
+            {poolBuckets.length === 0 ? (
+              <p className="text-right text-xs text-zinc-500">
+                {AUTO_ORGANIZE_ADD_REQUIRES_BUCKETS_HINT}
+              </p>
+            ) : null}
+          </div>
         ) : null}
       </div>
 
@@ -477,6 +500,11 @@ export default function AutoOrganizeSection({
       {empty && isAdmin ? (
         <div className="rounded-2xl border border-dashed border-zinc-700 px-4 py-5 text-center">
           <p className="text-sm text-zinc-300">{AUTO_ORGANIZE_EMPTY_BODY}</p>
+          {poolBuckets.length === 0 ? (
+            <p className="mt-2 text-xs text-zinc-500">
+              {AUTO_ORGANIZE_ADD_REQUIRES_BUCKETS_HINT}
+            </p>
+          ) : null}
           <button
             type="button"
             disabled={poolBuckets.length === 0}
@@ -512,6 +540,7 @@ export default function AutoOrganizeSection({
         initial={editing}
         buckets={poolBuckets}
         memberId={memberId}
+        householdTimezone={rows?.[0]?.familyTimezone ?? null}
         onClose={() => setEditorOpen(false)}
         onSaved={async () => {
           await loadRows()

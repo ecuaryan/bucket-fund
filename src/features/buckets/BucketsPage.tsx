@@ -731,7 +731,7 @@ export default function BucketsPage() {
                 aria-expanded={detailsOpen}
                 aria-controls={detailsPanelId}
                 onClick={toggleDetailsOpen}
-                className="mt-2 flex w-full items-center justify-between gap-2 rounded-lg py-1 text-left text-xs opacity-70 transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+                className="mt-2 flex w-full items-center justify-start gap-1.5 rounded-lg py-1 text-left text-xs opacity-70 transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
               >
                 <span className="min-w-0 truncate">
                   {detailsOpen

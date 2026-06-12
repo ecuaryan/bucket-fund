@@ -15,28 +15,44 @@ import {
   AUTO_ORGANIZE_FREQUENCY_OPTIONS,
   AUTO_ORGANIZE_INTERVAL_START_HINT,
   AUTO_ORGANIZE_INTERVAL_START_LABEL,
+  AUTO_ORGANIZE_INTERVAL_STARTED_LABEL,
+  AUTO_ORGANIZE_INTERVAL_STARTED_HINT,
   AUTO_ORGANIZE_NAME_HINT,
+  AUTO_ORGANIZE_NEXT_RUN_LABEL,
   AUTO_ORGANIZE_NO_BUCKETS_ERROR,
   AUTO_ORGANIZE_ONCE_MONTHLY_DAY_LABEL,
   AUTO_ORGANIZE_ONCE_MONTHLY_LAST_DAY_HINT,
   AUTO_ORGANIZE_TWICE_MONTHLY_ON_LABEL,
   AUTO_ORGANIZE_SAVE_LABEL,
-  AUTO_ORGANIZE_SCHEDULE_SUMMARY_LABEL,
+  AUTO_ORGANIZE_SAVED_TOAST,
+  AUTO_ORGANIZE_SAVE_REQUIRES_AMOUNT_HINT,
+  AUTO_ORGANIZE_START_DATE_TODAY_ERROR,
+  AUTO_ORGANIZE_START_DATE_PAST_ERROR,
+  AUTO_ORGANIZE_START_DATE_TOO_FAR_ERROR,
+  AUTO_ORGANIZE_TIMEZONE_HINT,
+  AUTO_ORGANIZE_TIMEZONE_LABEL,
   AUTO_ORGANIZE_TOTAL_PER_RUN_LABEL,
   type AutoOrganizeFrequencySelection,
 } from '@/lib/brand'
 import {
+  fetchFamilyTimezone,
   saveAutoOrganize,
   type AutoOrganizeInput,
   type AutoOrganizeWithDetails,
 } from '@/lib/autoOrganize'
+import {
+  familyTimezoneSelectOptions,
+  isValidIanaTimezone,
+  resolveFamilyTimezone,
+} from '@/lib/familyTimezones'
 import { formatErrorMessage } from '@/lib/errorMessage'
+import { toast } from '@/lib/toast'
 import {
   AUTO_ORGANIZE_ONCE_MONTHLY_DAY_OPTIONS,
   AUTO_ORGANIZE_TWICE_MONTHLY_PRESETS,
   applyFrequencySelection,
   daysOfMonthFromSchedule,
-  formatEditorSaveScheduleSummary,
+  formatEditorNextRunSummary,
   frequencySelectionFromCadence,
   isIntervalFrequencySelection,
   monthlyScheduleFromDays,
@@ -44,6 +60,11 @@ import {
   twiceMonthlyPresetFromDays,
   type AutoOrganizeCadence,
   type MonthlyPresetId,
+  formatShortIsoDateLabel,
+  localDateIsoInTimeZone,
+  tomorrowIsoInTimeZone,
+  validateIntervalStartDate,
+  maxIntervalStartDateIso,
 } from '@/lib/autoOrganizeCadence'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
@@ -59,6 +80,8 @@ type Props = {
   initial: AutoOrganizeWithDetails | null
   buckets: Bucket[]
   memberId: string
+  /** Household IANA timezone when known (from loaded auto-organize rows). */
+  householdTimezone?: string | null
   onClose: () => void
   onSaved: () => void | Promise<void>
 }
@@ -67,6 +90,7 @@ type BucketDraft = { bucketId: string; amountStr: string }
 
 type EditorSnapshot = {
   name: string
+  familyTimezone: string
   cadence: AutoOrganizeCadence
   monthlyPreset: MonthlyPresetId
   monthlyOnceDay: number
@@ -82,20 +106,20 @@ const amountInputClassName =
 const bucketRowGridClassName =
   'grid grid-cols-[minmax(0,1fr)_9rem] items-center gap-3'
 
-function todayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10)
-}
+const scheduleRowGridClassName =
+  'grid grid-cols-1 gap-3 sm:grid-cols-2'
 
 function cadenceFromInitial(
   initial: AutoOrganizeWithDetails | null,
+  timeZone: string,
 ): AutoOrganizeCadence {
   if (!initial) {
     return {
-      autoOrganizeType: 'monthly',
-      startDate: todayIsoDate(),
+      autoOrganizeType: 'interval',
+      startDate: tomorrowIsoInTimeZone(timeZone),
       intervalCount: 2,
       intervalUnit: 'week',
-      daysOfMonth: [1, 15],
+      daysOfMonth: null,
     }
   }
   return {
@@ -130,12 +154,13 @@ function snapshotFromState(state: EditorSnapshot): string {
 
 function buildSnapshot(
   name: string,
+  familyTimezone: string,
   cadence: AutoOrganizeCadence,
   monthlyPreset: MonthlyPresetId,
   monthlyOnceDay: number,
   bucketDrafts: BucketDraft[],
 ): EditorSnapshot {
-  return { name, cadence, monthlyPreset, monthlyOnceDay, bucketDrafts }
+  return { name, familyTimezone, cadence, monthlyPreset, monthlyOnceDay, bucketDrafts }
 }
 
 export default function AutoOrganizeEditor({
@@ -143,14 +168,22 @@ export default function AutoOrganizeEditor({
   initial,
   buckets,
   memberId,
+  householdTimezone = null,
   onClose,
   onSaved,
 }: Props) {
   const { formatMoney } = useHideAmounts()
+  const [familyTimezone, setFamilyTimezone] = useState('America/New_York')
+  const todayIso = localDateIsoInTimeZone(familyTimezone)
+  const tomorrowIso = tomorrowIsoInTimeZone(familyTimezone)
+  const timezoneOptions = useMemo(
+    () => familyTimezoneSelectOptions(familyTimezone),
+    [familyTimezone],
+  )
   const [baselineSnapshot, setBaselineSnapshot] = useState('')
   const [name, setName] = useState('')
   const [cadence, setCadence] = useState<AutoOrganizeCadence>(() =>
-    cadenceFromInitial(null),
+    cadenceFromInitial(null, 'America/New_York'),
   )
   const [monthlyPreset, setMonthlyPreset] =
     useState<MonthlyPresetId>('first-and-fifteenth')
@@ -167,34 +200,54 @@ export default function AutoOrganizeEditor({
       setDiscardOpen(false)
       return
     }
-    const nextCadence = normalizeMonthlyCadence(cadenceFromInitial(initial))
-    const schedule = monthlyScheduleFromDays(nextCadence.daysOfMonth)
-    const nextPreset =
-      nextCadence.autoOrganizeType === 'monthly' &&
-      nextCadence.daysOfMonth?.length === 2
-        ? twiceMonthlyPresetFromDays(nextCadence.daysOfMonth)
-        : schedule.preset
-    const nextName = initial?.name ?? ''
-    const nextBuckets = bucketDraftsFromBuckets(buckets, initial?.lines)
 
-    setName(nextName)
-    setCadence(nextCadence)
-    setMonthlyPreset(nextPreset)
-    setMonthlyOnceDay(schedule.onceDay)
-    setBucketDrafts(nextBuckets)
-    setError(null)
-    setBaselineSnapshot(
-      snapshotFromState(
-        buildSnapshot(
-          nextName,
-          nextCadence,
-          nextPreset,
-          schedule.onceDay,
-          nextBuckets,
+    let cancelled = false
+
+    void (async () => {
+      const stored =
+        initial?.familyTimezone ??
+        householdTimezone ??
+        (await fetchFamilyTimezone())
+      const nextTimezone = resolveFamilyTimezone(stored)
+      if (cancelled) return
+
+      const nextCadence = normalizeMonthlyCadence(
+        cadenceFromInitial(initial, nextTimezone),
+      )
+      const schedule = monthlyScheduleFromDays(nextCadence.daysOfMonth)
+      const nextPreset =
+        nextCadence.autoOrganizeType === 'monthly' &&
+        nextCadence.daysOfMonth?.length === 2
+          ? twiceMonthlyPresetFromDays(nextCadence.daysOfMonth)
+          : schedule.preset
+      const nextName = initial?.name ?? ''
+      const nextBuckets = bucketDraftsFromBuckets(buckets, initial?.lines)
+
+      setFamilyTimezone(nextTimezone)
+      setName(nextName)
+      setCadence(nextCadence)
+      setMonthlyPreset(nextPreset)
+      setMonthlyOnceDay(schedule.onceDay)
+      setBucketDrafts(nextBuckets)
+      setError(null)
+      setBaselineSnapshot(
+        snapshotFromState(
+          buildSnapshot(
+            nextName,
+            nextTimezone,
+            nextCadence,
+            nextPreset,
+            schedule.onceDay,
+            nextBuckets,
+          ),
         ),
-      ),
-    )
-  }, [open, initial, buckets])
+      )
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [open, initial, buckets, householdTimezone])
 
   const parsedBuckets = useMemo(
     () =>
@@ -216,8 +269,29 @@ export default function AutoOrganizeEditor({
     cadence,
     monthlyPreset,
   )
-  const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
-  const saveScheduleSummary = useMemo(() => {
+  const intervalStartMin = tomorrowIso
+  const intervalStartMax = maxIntervalStartDateIso(familyTimezone)
+  const legacyStartDate = initial?.start_date ?? null
+  const intervalStartLocked = Boolean(
+    initial &&
+      cadence.startDate &&
+      cadence.startDate < todayIso,
+  )
+
+  function intervalStartDateError(candidate: string): string | null {
+    const result = validateIntervalStartDate(candidate, familyTimezone, {
+      legacyStartDate,
+    })
+    if (result.ok) return null
+    if (result.ok === false && result.reason === 'today') {
+      return AUTO_ORGANIZE_START_DATE_TODAY_ERROR
+    }
+    if (result.ok === false && result.reason === 'too_far') {
+      return AUTO_ORGANIZE_START_DATE_TOO_FAR_ERROR
+    }
+    return AUTO_ORGANIZE_START_DATE_PAST_ERROR
+  }
+  const saveNextRunSummary = useMemo(() => {
     if (
       isIntervalFrequencySelection(frequencySelection) &&
       !cadence.startDate
@@ -239,13 +313,13 @@ export default function AutoOrganizeEditor({
             ),
           }
 
-    return formatEditorSaveScheduleSummary(previewCadence, localTimeZone)
+    return formatEditorNextRunSummary(previewCadence, familyTimezone)
   }, [
     frequencySelection,
     cadence,
     monthlyPreset,
     monthlyOnceDay,
-    localTimeZone,
+    familyTimezone,
   ])
 
   function setFrequencySelection(selection: AutoOrganizeFrequencySelection) {
@@ -253,10 +327,39 @@ export default function AutoOrganizeEditor({
       selection,
       cadence,
       monthlyPreset,
-      todayIsoDate(),
+      tomorrowIso,
     )
     setCadence(next.cadence)
     setMonthlyPreset(next.monthlyPreset)
+  }
+
+  function setIntervalStartDate(value: string) {
+    if (!value) {
+      setError(null)
+      setCadence((prev) => ({ ...prev, startDate: null }))
+      return
+    }
+    const message = intervalStartDateError(value)
+    if (message) {
+      setError(message)
+      return
+    }
+    setError(null)
+    setCadence((prev) => ({
+      ...prev,
+      startDate: value,
+    }))
+  }
+
+  function clearIntervalStartDateErrorIfValid() {
+    if (!cadence.startDate || intervalStartDateError(cadence.startDate)) return
+    setError((current) =>
+      current === AUTO_ORGANIZE_START_DATE_TODAY_ERROR ||
+      current === AUTO_ORGANIZE_START_DATE_PAST_ERROR ||
+      current === AUTO_ORGANIZE_START_DATE_TOO_FAR_ERROR
+        ? null
+        : current,
+    )
   }
 
   function setAmountForBucket(bucketId: string, amountStr: string) {
@@ -273,6 +376,7 @@ export default function AutoOrganizeEditor({
     snapshotFromState(
       buildSnapshot(
         name,
+        familyTimezone,
         cadence,
         monthlyPreset,
         monthlyOnceDay,
@@ -300,7 +404,18 @@ export default function AutoOrganizeEditor({
       return
     }
     if (cadence.autoOrganizeType === 'interval' && !cadence.startDate) {
-      setError('Choose a first run date.')
+      setError('Choose a start date.')
+      return
+    }
+    if (cadence.autoOrganizeType === 'interval' && cadence.startDate) {
+      const message = intervalStartDateError(cadence.startDate)
+      if (message) {
+        setError(message)
+        return
+      }
+    }
+    if (!isValidIanaTimezone(familyTimezone)) {
+      setError('Choose a valid timezone.')
       return
     }
 
@@ -321,12 +436,14 @@ export default function AutoOrganizeEditor({
       paused: initial?.paused ?? false,
       cadence: cadenceToSave,
       lines: parsedBuckets,
+      familyTimezone,
     }
 
     setSubmitting(true)
     setError(null)
     try {
       await saveAutoOrganize(input, memberId)
+      toast.success(AUTO_ORGANIZE_SAVED_TOAST)
       onClose()
       await Promise.resolve(onSaved())
     } catch (e) {
@@ -371,85 +488,161 @@ export default function AutoOrganizeEditor({
           </label>
 
           <label className="block">
-            <FieldLabel>Frequency</FieldLabel>
+            <FieldLabel>{AUTO_ORGANIZE_TIMEZONE_LABEL}</FieldLabel>
             <select
-              value={frequencySelection}
-              onChange={(e) =>
-                setFrequencySelection(
-                  e.target.value as AutoOrganizeFrequencySelection,
-                )
-              }
+              value={familyTimezone}
+              onChange={(e) => setFamilyTimezone(e.target.value)}
               className={fieldInputClassName}
             >
-              {AUTO_ORGANIZE_FREQUENCY_OPTIONS.map((option) => (
+              {timezoneOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </select>
+            <p className="mt-1 text-xs text-zinc-500">
+              {AUTO_ORGANIZE_TIMEZONE_HINT}
+            </p>
           </label>
 
           {isIntervalFrequencySelection(frequencySelection) ? (
-            <label className="block">
-              <FieldLabel>{AUTO_ORGANIZE_INTERVAL_START_LABEL}</FieldLabel>
-              <input
-                type="date"
-                min={todayIsoDate()}
-                value={cadence.startDate ?? ''}
-                onChange={(e) =>
-                  setCadence((prev) => ({
-                    ...prev,
-                    startDate: e.target.value,
-                  }))
-                }
-                className={fieldInputClassName}
-              />
-              {!cadence.startDate ? (
+            <div>
+              <div className={scheduleRowGridClassName}>
+                <label className="block min-w-0">
+                  <FieldLabel>Frequency</FieldLabel>
+                  <select
+                    value={frequencySelection}
+                    onChange={(e) =>
+                      setFrequencySelection(
+                        e.target.value as AutoOrganizeFrequencySelection,
+                      )
+                    }
+                    className={fieldInputClassName}
+                  >
+                    {AUTO_ORGANIZE_FREQUENCY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="block min-w-0">
+                  <FieldLabel>
+                    {intervalStartLocked
+                      ? AUTO_ORGANIZE_INTERVAL_STARTED_LABEL
+                      : AUTO_ORGANIZE_INTERVAL_START_LABEL}
+                  </FieldLabel>
+                  {intervalStartLocked && cadence.startDate ? (
+                    <p
+                      className={`${fieldInputClassName} text-zinc-400`}
+                      aria-readonly="true"
+                    >
+                      {formatShortIsoDateLabel(cadence.startDate)}
+                    </p>
+                  ) : (
+                    <input
+                      type="date"
+                      min={intervalStartMin}
+                      max={intervalStartMax}
+                      value={cadence.startDate ?? ''}
+                      onChange={(e) => setIntervalStartDate(e.target.value)}
+                      onBlur={clearIntervalStartDateErrorIfValid}
+                      className={fieldInputClassName}
+                    />
+                  )}
+                </div>
+              </div>
+              {!intervalStartLocked ? (
                 <p className="mt-1 text-xs text-zinc-500">
                   {AUTO_ORGANIZE_INTERVAL_START_HINT}
                 </p>
+              ) : (
+                <p className="mt-1 text-xs text-zinc-500">
+                  {AUTO_ORGANIZE_INTERVAL_STARTED_HINT}
+                </p>
+              )}
+            </div>
+          ) : frequencySelection === 'monthly-once' ? (
+            <div>
+              <div className={scheduleRowGridClassName}>
+                <label className="block min-w-0">
+                  <FieldLabel>Frequency</FieldLabel>
+                  <select
+                    value={frequencySelection}
+                    onChange={(e) =>
+                      setFrequencySelection(
+                        e.target.value as AutoOrganizeFrequencySelection,
+                      )
+                    }
+                    className={fieldInputClassName}
+                  >
+                    {AUTO_ORGANIZE_FREQUENCY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block min-w-0">
+                  <FieldLabel>{AUTO_ORGANIZE_ONCE_MONTHLY_DAY_LABEL}</FieldLabel>
+                  <select
+                    value={monthlyOnceDay}
+                    onChange={(e) =>
+                      setMonthlyOnceDay(Number(e.target.value))
+                    }
+                    className={fieldInputClassName}
+                  >
+                    {AUTO_ORGANIZE_ONCE_MONTHLY_DAY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              {monthlyOnceDay === 0 ? (
+                <p className="mt-1 text-xs text-zinc-500">
+                  {AUTO_ORGANIZE_ONCE_MONTHLY_LAST_DAY_HINT}
+                </p>
               ) : null}
-            </label>
-          ) : frequencySelection === 'monthly-twice' ? (
-            <label className="block">
-              <FieldLabel>{AUTO_ORGANIZE_TWICE_MONTHLY_ON_LABEL}</FieldLabel>
-              <select
-                value={monthlyPreset}
-                onChange={(e) =>
-                  setMonthlyPreset(e.target.value as MonthlyPresetId)
-                }
-                className={fieldInputClassName}
-              >
-                {AUTO_ORGANIZE_TWICE_MONTHLY_PRESETS.map((preset) => (
-                  <option key={preset.id} value={preset.id}>
-                    {preset.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            </div>
           ) : (
-            <div className="space-y-1">
-              <label className="block">
-                <FieldLabel>{AUTO_ORGANIZE_ONCE_MONTHLY_DAY_LABEL}</FieldLabel>
+            <div className={scheduleRowGridClassName}>
+              <label className="block min-w-0">
+                <FieldLabel>Frequency</FieldLabel>
                 <select
-                  value={monthlyOnceDay}
+                  value={frequencySelection}
                   onChange={(e) =>
-                    setMonthlyOnceDay(Number(e.target.value))
+                    setFrequencySelection(
+                      e.target.value as AutoOrganizeFrequencySelection,
+                    )
                   }
                   className={fieldInputClassName}
                 >
-                  {AUTO_ORGANIZE_ONCE_MONTHLY_DAY_OPTIONS.map((option) => (
+                  {AUTO_ORGANIZE_FREQUENCY_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
                   ))}
                 </select>
               </label>
-              {monthlyOnceDay === 0 ? (
-                <p className="text-xs text-zinc-500">
-                  {AUTO_ORGANIZE_ONCE_MONTHLY_LAST_DAY_HINT}
-                </p>
-              ) : null}
+
+              <label className="block min-w-0">
+                <FieldLabel>{AUTO_ORGANIZE_TWICE_MONTHLY_ON_LABEL}</FieldLabel>
+                <select
+                  value={monthlyPreset}
+                  onChange={(e) =>
+                    setMonthlyPreset(e.target.value as MonthlyPresetId)
+                  }
+                  className={fieldInputClassName}
+                >
+                  {AUTO_ORGANIZE_TWICE_MONTHLY_PRESETS.map((preset) => (
+                    <option key={preset.id} value={preset.id}>
+                      {preset.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
           )}
 
@@ -502,19 +695,25 @@ export default function AutoOrganizeEditor({
                 {formatMoney(totalPerRun)}
               </p>
             </div>
-            {saveScheduleSummary ? (
+            {saveNextRunSummary ? (
               <div className="mt-2 border-t border-zinc-800 pt-2">
                 <div className="flex items-start justify-between gap-3">
                   <p className="shrink-0 text-[11px] font-medium uppercase tracking-wide text-zinc-400">
-                    {AUTO_ORGANIZE_SCHEDULE_SUMMARY_LABEL}
+                    {AUTO_ORGANIZE_NEXT_RUN_LABEL}
                   </p>
                   <p className="min-w-0 text-right text-xs leading-snug text-zinc-300">
-                    {saveScheduleSummary}
+                    {saveNextRunSummary}
                   </p>
                 </div>
               </div>
             ) : null}
           </div>
+
+          {parsedBuckets.length === 0 ? (
+            <p className="text-xs text-zinc-500">
+              {AUTO_ORGANIZE_SAVE_REQUIRES_AMOUNT_HINT}
+            </p>
+          ) : null}
 
           {error ? (
             <p
