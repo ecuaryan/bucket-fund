@@ -76,7 +76,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       {item ? (
         <div
-          className="toast-viewport pointer-events-none fixed inset-x-0 z-40 flex justify-center px-4"
+          className="toast-viewport pointer-events-none fixed inset-x-0 z-[60] flex justify-center px-4"
           aria-live={item.type === 'error' ? 'assertive' : 'polite'}
         >
           <div

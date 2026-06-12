@@ -118,9 +118,9 @@ If you're the kind of person who has ever looked at their bank account two days 
   consequential `Sheet` first; skip confirm if Float is already red; automatic
   auto-organize runs skip confirm.
 - **Auto-organize:** feature name **Auto-organize** — subtitle *Organize your money
-  into buckets on the days you choose.* Guardrail: *You choose the days and amounts
-  — the app runs the moves.* Not “scheduled set-aside,” “organize Float,” or
-  “automation.” Header **Auto-organize**; CTA **Add auto-organize**; History
+  into buckets on the days you choose.* Guardrail: *You choose when and how much —
+  money moves into buckets automatically.* Not “scheduled set-aside,” “organize Float,” or
+  “automation.” Header **Auto-organize**; section CTA **Add**; History
   **Scheduled**. Manual dialog keeps **Set aside** (production). Constants:
   `AUTO_ORGANIZE_*`, `HISTORY_SCHEDULED_MOVE_LABEL` in `brand.ts`. Schema:
   `auto_organizes`, `auto_organize_*` (see [AUTO_ORGANIZE.md](./AUTO_ORGANIZE.md)).

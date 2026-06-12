@@ -154,8 +154,6 @@ system-error banner.
 red. **Bucket → anything** still requires enough in the source bucket. **`send_money`**
 unchanged. Manual **Set aside** that crosses Float from ≥ 0 to negative uses a confirm
 sheet; automatic **auto-organize** runs do not. See [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md).
-*Implementation note:* RPC/UI alignment for over-Float Set aside is part of Auto-organize
-PR 1 / 4; not shipped yet.
 
 ---
 
@@ -322,15 +320,22 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
   `member_bucket_order`. Children see only their own buckets.
 - **Deferred:** optional member email, WebAuthn fast path, children-first polish.
 
-### Auto-organize (spec approved — not yet implemented)
+### Auto-organize (shipped — v1)
 
 **Auto-organize** — automatically organize money from shared Float into household
-buckets on calendar days the user chooses (default **3 AM local**). Admin configures
-and pauses; Shared sees auto-organizes read-only; server runs via pg_cron. Schema:
-`auto_organizes` / `auto_organize_*`. Full spec: [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md).
+buckets on calendar days the user chooses (default **3 AM local**). Admin configures,
+pauses, **Run now**, and edits; Shared sees auto-organizes read-only on the Buckets
+tab; server runs due auto-organizes via **pg_cron → `run_due_auto_organizes`**. Schema:
+`auto_organizes` / `auto_organize_*` (migrations `00000000000048`–`50`). Full spec:
+[docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md).
 
-Deferred with that feature: kid **auto-organizes**, scheduled **Send to a kid**
-(`send_money` via auto-organize `send` kind).
+**Run policy (v1):** at most one **scheduled** run per auto-organize per local day;
+**Run now** may execute multiple times the same day; a manual run on a due day blocks
+cron that day. **Paused** blocks both scheduled and manual runs until **Resume**.
+
+Deferred after v1: kid **auto-organizes**, scheduled **Send to a kid**
+(`send_money` via auto-organize `send` kind), bucket-row “+$X in auto-organize” hints,
+editor review step before save, local seed scenario.
 
 ---
 

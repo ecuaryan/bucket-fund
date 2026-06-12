@@ -1,0 +1,692 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Sheet } from '@/components/ui/Sheet'
+import { ScrollFade } from '@/components/ui/ScrollFade'
+import {
+  AUTO_ORGANIZE_ADD_LABEL,
+  AUTO_ORGANIZE_BUCKETS_LABEL,
+  AUTO_ORGANIZE_DELETE_LABEL,
+  AUTO_ORGANIZE_DELETE_SHEET_BODY,
+  AUTO_ORGANIZE_DELETED_TOAST,
+  AUTO_ORGANIZE_EDIT_LABEL,
+  AUTO_ORGANIZE_EMPTY_BODY,
+  AUTO_ORGANIZE_GUARDRAIL,
+  AUTO_ORGANIZE_PAUSE_LABEL,
+  AUTO_ORGANIZE_PAUSED_LABEL,
+  AUTO_ORGANIZE_PAUSED_STATUS,
+  AUTO_ORGANIZE_PAUSED_STATUS_SHARED,
+  AUTO_ORGANIZE_RAN_TOAST,
+  AUTO_ORGANIZE_RESUME_LABEL,
+  AUTO_ORGANIZE_RUN_NOW_LABEL,
+  AUTO_ORGANIZE_RUN_NOW_ALREADY_RAN_WARNING,
+  AUTO_ORGANIZE_RUN_NOW_SUBMITTING_LABEL,
+  AUTO_ORGANIZE_RUN_NOW_AFTER_LABEL,
+  AUTO_ORGANIZE_RUN_NOW_CURRENT_LABEL,
+  AUTO_ORGANIZE_RUN_NOW_MOVE_LABEL,
+  AUTO_ORGANIZE_SECTION_TITLE,
+  AUTO_ORGANIZE_TOTAL_PER_RUN_LABEL,
+  FLOAT_LABEL,
+  autoOrganizeDeleteSheetTitle,
+  autoOrganizeRunNowConfirmBody,
+  autoOrganizeRunNowConfirmTitle,
+  autoOrganizeViewBucketsLabel,
+} from '@/lib/brand'
+import {
+  deleteAutoOrganize,
+  fetchAutoOrganizes,
+  autoOrganizeDisplayName,
+  orderAutoOrganizeLinesByBuckets,
+  resolveAutoOrganizeLineBucketName,
+  runAutoOrganizeNow,
+  setAutoOrganizePaused,
+  type AutoOrganizeWithDetails,
+} from '@/lib/autoOrganize'
+import AutoOrganizeEditor from '@/features/buckets/AutoOrganizeEditor'
+import { useHideAmounts } from '@/lib/HideAmountsProvider'
+import { usePostgresChanges } from '@/hooks/usePostgresChanges'
+import { toast } from '@/lib/toast'
+import { formatErrorMessage } from '@/lib/errorMessage'
+import type { Database } from '@/types/database'
+
+type Bucket = Pick<
+  Database['public']['Tables']['buckets']['Row'],
+  'id' | 'name' | 'owner_member_id' | 'allocated_amount'
+>
+
+type Props = {
+  isAdmin: boolean
+  memberId: string
+  familyId: string
+  accessToken: string | null
+  buckets: Bucket[]
+  float: number
+  onChanged: () => void | Promise<void>
+  /** Bump after parent-side changes (e.g. bucket delete) to reload auto-organize rows. */
+  refreshToken?: number
+}
+
+type AutoOrganizeCardProps = {
+  row: AutoOrganizeWithDetails
+  buckets: Bucket[]
+  bucketNamesById: ReadonlyMap<string, string>
+  formatMoney: (amount: number) => string
+  isAdmin: boolean
+  busyId: string | null
+  onEdit: () => void
+  onRunNow: () => void
+  onPause: () => void
+  onDelete: () => void
+}
+
+const runNowAmountGridClassName =
+  'grid grid-cols-[minmax(0,1fr)_minmax(4rem,1fr)_minmax(4rem,1fr)_minmax(4rem,1fr)] items-baseline gap-x-2'
+
+const runNowAmountHeaderClassName =
+  'text-right text-[10px] font-medium uppercase tracking-wide text-zinc-500'
+
+const runNowAmountCellClassName =
+  'text-right text-xs tabular-nums tracking-tight'
+
+function RunNowAmountHeader() {
+  return (
+    <div className={`${runNowAmountGridClassName} mb-1`} aria-hidden>
+      <span />
+      <span className={runNowAmountHeaderClassName}>
+        {AUTO_ORGANIZE_RUN_NOW_CURRENT_LABEL}
+      </span>
+      <span className={runNowAmountHeaderClassName}>
+        {AUTO_ORGANIZE_RUN_NOW_MOVE_LABEL}
+      </span>
+      <span className={runNowAmountHeaderClassName}>
+        {AUTO_ORGANIZE_RUN_NOW_AFTER_LABEL}
+      </span>
+    </div>
+  )
+}
+
+function RunNowAmountRow({
+  label,
+  before,
+  move,
+  after,
+  formatMoney,
+  moveOut = false,
+  as: Tag = 'li',
+}: {
+  label: string
+  before: number
+  move: number
+  after: number
+  formatMoney: (amount: number) => string
+  moveOut?: boolean
+  as?: 'li' | 'div'
+}) {
+  const moveClassName = moveOut ? 'text-rose-400' : 'text-emerald-400'
+  const movePrefix = moveOut ? '−' : '+'
+
+  return (
+    <Tag className={runNowAmountGridClassName}>
+      <span className="truncate text-sm font-semibold text-zinc-300">{label}</span>
+      <span className={`${runNowAmountCellClassName} text-zinc-500`}>
+        {formatMoney(before)}
+      </span>
+      <span className={`${runNowAmountCellClassName} ${moveClassName}`}>
+        {movePrefix} {formatMoney(move)}
+      </span>
+      <span className={`${runNowAmountCellClassName} text-zinc-400`}>
+        {formatMoney(after)}
+      </span>
+    </Tag>
+  )
+}
+
+function AutoOrganizeCard({
+  row,
+  buckets,
+  bucketNamesById,
+  formatMoney,
+  isAdmin,
+  busyId,
+  onEdit,
+  onRunNow,
+  onPause,
+  onDelete,
+}: AutoOrganizeCardProps) {
+  const [linesOpen, setLinesOpen] = useState(false)
+  const activeLines = useMemo(
+    () => orderAutoOrganizeLinesByBuckets(row.lines, buckets),
+    [row.lines, buckets],
+  )
+  const pausedStatusId = `auto-organize-paused-${row.id}`
+  const bucketsPanelId = `auto-organize-buckets-${row.id}`
+  const displayName = autoOrganizeDisplayName(row)
+  const hasCustomName = Boolean(row.name?.trim())
+
+  return (
+    <article
+      className={
+        row.paused
+          ? 'rounded-2xl bg-amber-500/5 px-4 py-4 ring-1 ring-amber-500/30'
+          : 'rounded-2xl bg-zinc-900/80 px-4 py-4 ring-1 ring-zinc-800'
+      }
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <h3 className="truncate font-semibold text-zinc-100">
+              {displayName}
+            </h3>
+            {row.paused ? (
+              <span className="shrink-0 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-200 ring-1 ring-amber-500/35">
+                {AUTO_ORGANIZE_PAUSED_LABEL}
+              </span>
+            ) : null}
+          </div>
+          {hasCustomName ? (
+            <p className="mt-1 text-xs text-zinc-400">{row.cadenceSummary}</p>
+          ) : null}
+          {row.paused ? (
+            <p
+              id={pausedStatusId}
+              className="mt-1.5 text-xs font-medium text-amber-200/90"
+            >
+              {isAdmin
+                ? AUTO_ORGANIZE_PAUSED_STATUS
+                : AUTO_ORGANIZE_PAUSED_STATUS_SHARED}
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-zinc-400">{row.nextRunLabel}</p>
+          )}
+        </div>
+        <p
+          className={
+            row.paused
+              ? 'shrink-0 text-sm font-semibold tabular-nums text-zinc-400'
+              : 'shrink-0 text-sm font-semibold tabular-nums text-zinc-100'
+          }
+        >
+          {formatMoney(row.totalPerRun)}
+        </p>
+      </div>
+      {activeLines.length > 0 ? (
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => setLinesOpen((open) => !open)}
+            aria-expanded={linesOpen}
+            aria-controls={bucketsPanelId}
+            className="flex w-full items-center justify-between gap-2 rounded-lg py-1 text-left text-xs text-zinc-400 transition hover:text-zinc-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+          >
+            <span className="min-w-0 truncate font-semibold">
+              {linesOpen
+                ? AUTO_ORGANIZE_BUCKETS_LABEL
+                : autoOrganizeViewBucketsLabel(activeLines.length)}
+            </span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+              className={
+                'h-4 w-4 shrink-0 motion-safe:transition-transform motion-safe:duration-200 ' +
+                (linesOpen ? 'rotate-180' : '')
+              }
+            >
+              <path
+                fillRule="evenodd"
+                d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+          <div
+            id={bucketsPanelId}
+            className={
+              'grid motion-safe:transition-[grid-template-rows] motion-safe:duration-200 ' +
+              (linesOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')
+            }
+          >
+            <div className="min-h-0 overflow-hidden">
+              <ul className="space-y-1 border-t border-zinc-800 pt-2 text-xs text-zinc-400">
+                {activeLines.map((line) => (
+                  <li key={line.id} className="flex justify-between gap-3">
+                    <span className="truncate">
+                      {resolveAutoOrganizeLineBucketName(line, bucketNamesById)}
+                    </span>
+                    <span className="shrink-0 tabular-nums text-emerald-300/90">
+                      + {formatMoney(Number(line.amount))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {isAdmin ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={busyId === row.id}
+            onClick={onEdit}
+            className="rounded-lg px-3 py-1.5 text-xs font-semibold text-zinc-200 ring-1 ring-zinc-700 hover:bg-zinc-800"
+          >
+            {AUTO_ORGANIZE_EDIT_LABEL}
+          </button>
+          <button
+            type="button"
+            disabled={busyId === row.id || row.paused}
+            onClick={onRunNow}
+            aria-describedby={row.paused ? pausedStatusId : undefined}
+            className="rounded-lg px-3 py-1.5 text-xs font-semibold text-emerald-200 ring-1 ring-emerald-500/40 hover:bg-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+          >
+            {AUTO_ORGANIZE_RUN_NOW_LABEL}
+          </button>
+          <button
+            type="button"
+            disabled={busyId === row.id}
+            onClick={onPause}
+            className="rounded-lg px-3 py-1.5 text-xs font-semibold text-zinc-200 ring-1 ring-zinc-700 hover:bg-zinc-800"
+          >
+            {row.paused ? AUTO_ORGANIZE_RESUME_LABEL : AUTO_ORGANIZE_PAUSE_LABEL}
+          </button>
+          <button
+            type="button"
+            disabled={busyId === row.id}
+            onClick={onDelete}
+            className="rounded-lg px-3 py-1.5 text-xs font-semibold text-red-300 ring-1 ring-red-500/30 hover:bg-red-500/10"
+          >
+            {AUTO_ORGANIZE_DELETE_LABEL}
+          </button>
+        </div>
+      ) : null}
+    </article>
+  )
+}
+
+export default function AutoOrganizeSection({
+  isAdmin,
+  memberId,
+  familyId,
+  accessToken,
+  buckets,
+  float,
+  onChanged,
+  refreshToken = 0,
+}: Props) {
+  const { formatMoney } = useHideAmounts()
+  const poolBuckets = buckets.filter((b) => b.owner_member_id === null)
+  const bucketNamesById = useMemo(
+    () => new Map(buckets.map((b) => [b.id, b.name])),
+    [buckets],
+  )
+  const bucketBalanceById = useMemo(
+    () => new Map(buckets.map((b) => [b.id, Number(b.allocated_amount)])),
+    [buckets],
+  )
+  const [rows, setRows] = useState<AutoOrganizeWithDetails[] | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [editorOpen, setEditorOpen] = useState(false)
+  const [editing, setEditing] = useState<AutoOrganizeWithDetails | null>(null)
+  const [runConfirm, setRunConfirm] = useState<AutoOrganizeWithDetails | null>(
+    null,
+  )
+  const [deleteConfirm, setDeleteConfirm] =
+    useState<AutoOrganizeWithDetails | null>(null)
+  const [busyId, setBusyId] = useState<string | null>(null)
+
+  function rowDisplayName(row: AutoOrganizeWithDetails): string {
+    return autoOrganizeDisplayName(row)
+  }
+
+  const loadRows = useCallback(async () => {
+    try {
+      setLoadError(null)
+      const data = await fetchAutoOrganizes()
+      setRows(data)
+    } catch (e) {
+      setLoadError(formatErrorMessage(e, 'Could not load auto-organize.'))
+      setRows([])
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadRows()
+  }, [loadRows])
+
+  useEffect(() => {
+    if (refreshToken === 0) return
+    void loadRows()
+  }, [refreshToken, loadRows])
+
+  usePostgresChanges(
+    accessToken,
+    familyId ? `auto-organize:${familyId}` : null,
+    familyId
+      ? [
+          {
+            event: '*' as const,
+            table: 'auto_organizes',
+            filter: `family_id=eq.${familyId}`,
+          },
+          {
+            event: '*' as const,
+            table: 'auto_organize_lines',
+          },
+          {
+            event: '*' as const,
+            table: 'auto_organize_runs',
+            filter: `family_id=eq.${familyId}`,
+          },
+        ]
+      : [],
+    () => {
+      void loadRows()
+    },
+  )
+
+  async function handlePause(id: string, paused: boolean) {
+    setBusyId(id)
+    try {
+      await setAutoOrganizePaused(id, paused)
+      await loadRows()
+    } catch (e) {
+      toast.error(formatErrorMessage(e))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deleteConfirm) return
+    setBusyId(deleteConfirm.id)
+    try {
+      await deleteAutoOrganize(deleteConfirm.id)
+      setDeleteConfirm(null)
+      await loadRows()
+      toast.success(AUTO_ORGANIZE_DELETED_TOAST)
+    } catch (e) {
+      toast.error(formatErrorMessage(e))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function confirmRunNow() {
+    if (!runConfirm) return
+    setBusyId(runConfirm.id)
+    try {
+      await runAutoOrganizeNow(runConfirm.id, memberId)
+      setRunConfirm(null)
+      await loadRows()
+      await Promise.resolve(onChanged())
+      toast.success(AUTO_ORGANIZE_RAN_TOAST)
+    } catch (e) {
+      toast.error(formatErrorMessage(e))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const empty = rows && rows.length === 0
+  const runConfirmLines = useMemo(
+    () =>
+      runConfirm
+        ? orderAutoOrganizeLinesByBuckets(runConfirm.lines, buckets)
+        : [],
+    [runConfirm, buckets],
+  )
+
+  const addButtonClassName =
+    'shrink-0 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50'
+
+  function openAddEditor() {
+    setEditing(null)
+    setEditorOpen(true)
+  }
+
+  return (
+    <section
+      className="space-y-3 border-t border-zinc-800 pt-6"
+      aria-label={AUTO_ORGANIZE_SECTION_TITLE}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-300">
+            {AUTO_ORGANIZE_SECTION_TITLE}
+          </h2>
+          <p className="mt-1 text-xs text-zinc-400">{AUTO_ORGANIZE_GUARDRAIL}</p>
+        </div>
+        {isAdmin && rows && !empty ? (
+          <button
+            type="button"
+            disabled={poolBuckets.length === 0}
+            onClick={openAddEditor}
+            className={addButtonClassName}
+          >
+            {AUTO_ORGANIZE_ADD_LABEL}
+          </button>
+        ) : null}
+      </div>
+
+      {loadError ? (
+        <p className="text-sm text-red-400" role="alert">
+          {loadError}
+        </p>
+      ) : null}
+
+      {empty && isAdmin ? (
+        <div className="rounded-2xl border border-dashed border-zinc-700 px-4 py-5 text-center">
+          <p className="text-sm text-zinc-300">{AUTO_ORGANIZE_EMPTY_BODY}</p>
+          <button
+            type="button"
+            disabled={poolBuckets.length === 0}
+            onClick={openAddEditor}
+            className={`mt-3 inline-flex ${addButtonClassName}`}
+          >
+            {AUTO_ORGANIZE_ADD_LABEL}
+          </button>
+        </div>
+      ) : null}
+
+      {rows?.map((row) => (
+        <AutoOrganizeCard
+          key={row.id}
+          row={row}
+          buckets={buckets}
+          bucketNamesById={bucketNamesById}
+          formatMoney={formatMoney}
+          isAdmin={isAdmin}
+          busyId={busyId}
+          onEdit={() => {
+            setEditing(row)
+            setEditorOpen(true)
+          }}
+          onRunNow={() => setRunConfirm(row)}
+          onPause={() => void handlePause(row.id, !row.paused)}
+          onDelete={() => setDeleteConfirm(row)}
+        />
+      ))}
+
+      <AutoOrganizeEditor
+        open={editorOpen}
+        initial={editing}
+        buckets={poolBuckets}
+        memberId={memberId}
+        onClose={() => setEditorOpen(false)}
+        onSaved={async () => {
+          await loadRows()
+          await Promise.resolve(onChanged())
+        }}
+      />
+
+      <Sheet
+        open={runConfirm !== null}
+        onClose={() => setRunConfirm(null)}
+        fillViewport
+        aria-label={
+          runConfirm
+            ? autoOrganizeRunNowConfirmTitle(rowDisplayName(runConfirm))
+            : 'Confirm run'
+        }
+      >
+        {runConfirm ? (
+          <div className="relative flex max-h-full min-h-0 flex-1 flex-col overflow-hidden">
+            <header className="mb-4 flex shrink-0 items-baseline justify-between">
+              <h2 className="text-lg font-semibold text-zinc-300">
+                {autoOrganizeRunNowConfirmTitle(rowDisplayName(runConfirm))}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setRunConfirm(null)}
+                disabled={busyId === runConfirm.id}
+                className="rounded p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </header>
+
+            <ScrollFade scrollClassName="p-1">
+              <div className="space-y-4">
+                <p className="text-sm text-zinc-300">
+                  {autoOrganizeRunNowConfirmBody(
+                    formatMoney(runConfirm.totalPerRun),
+                  )}
+                </p>
+                {runConfirm.hasRunToday ? (
+                  <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-200 ring-1 ring-amber-500/30">
+                    {AUTO_ORGANIZE_RUN_NOW_ALREADY_RAN_WARNING}
+                  </p>
+                ) : null}
+                <div className="border-t border-zinc-800 pt-4 pb-4">
+                  <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+                    {AUTO_ORGANIZE_BUCKETS_LABEL}
+                  </p>
+                  <div className="mt-2">
+                    <RunNowAmountHeader />
+                    <ul className="space-y-2">
+                    {runConfirmLines.map((line) => {
+                      const amount = Number(line.amount)
+                      const before = bucketBalanceById.get(line.bucket_id) ?? 0
+                      return (
+                        <RunNowAmountRow
+                          key={line.id}
+                          label={resolveAutoOrganizeLineBucketName(
+                            line,
+                            bucketNamesById,
+                          )}
+                          before={before}
+                          move={amount}
+                          after={before + amount}
+                          formatMoney={formatMoney}
+                        />
+                      )
+                    })}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </ScrollFade>
+
+            <div className="shrink-0 space-y-3 border-t border-zinc-800 pt-3">
+              <div className="rounded-xl bg-zinc-950 px-3 py-2 ring-1 ring-inset ring-zinc-700">
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
+                    {AUTO_ORGANIZE_TOTAL_PER_RUN_LABEL}
+                  </p>
+                  <p className="text-xl font-semibold tabular-nums text-zinc-100">
+                    {formatMoney(runConfirm.totalPerRun)}
+                  </p>
+                </div>
+                <div className="mt-2 border-t border-zinc-800 pt-2">
+                  <RunNowAmountHeader />
+                  <RunNowAmountRow
+                    as="div"
+                    label={FLOAT_LABEL}
+                    before={float}
+                    move={runConfirm.totalPerRun}
+                    after={float - runConfirm.totalPerRun}
+                    formatMoney={formatMoney}
+                    moveOut
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRunConfirm(null)}
+                  disabled={busyId === runConfirm.id}
+                  className="rounded-lg px-4 py-2 text-sm font-semibold text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={busyId === runConfirm.id}
+                  onClick={() => void confirmRunNow()}
+                  className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50"
+                >
+                  {busyId === runConfirm.id
+                    ? AUTO_ORGANIZE_RUN_NOW_SUBMITTING_LABEL
+                    : AUTO_ORGANIZE_RUN_NOW_LABEL}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </Sheet>
+
+      <Sheet
+        open={deleteConfirm !== null}
+        onClose={() => setDeleteConfirm(null)}
+        aria-label={
+          deleteConfirm
+            ? autoOrganizeDeleteSheetTitle(rowDisplayName(deleteConfirm))
+            : 'Confirm delete'
+        }
+      >
+        {deleteConfirm ? (
+          <>
+            <header className="mb-4 flex items-baseline justify-between">
+              <h2 className="text-lg font-semibold text-zinc-300">
+                {autoOrganizeDeleteSheetTitle(rowDisplayName(deleteConfirm))}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setDeleteConfirm(null)}
+                disabled={busyId === deleteConfirm.id}
+                className="rounded p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </header>
+            <div className="space-y-4">
+              <p className="text-sm text-zinc-300">
+                {AUTO_ORGANIZE_DELETE_SHEET_BODY}
+              </p>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirm(null)}
+                  disabled={busyId === deleteConfirm.id}
+                  className="rounded-lg px-4 py-2 text-sm font-semibold text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={busyId === deleteConfirm.id}
+                  onClick={() => void confirmDelete()}
+                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50"
+                >
+                  {AUTO_ORGANIZE_DELETE_LABEL}
+                </button>
+              </div>
+            </div>
+          </>
+        ) : null}
+      </Sheet>
+    </section>
+  )
+}

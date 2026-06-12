@@ -114,7 +114,16 @@ html {
   .sheet-panel {
     opacity: 0;
     transform: translateY(-12px);
-    overflow: visible;
+    max-height: min(
+      85dvh,
+      calc(
+        100dvh - 2rem - env(safe-area-inset-top, 0px) -
+          env(safe-area-inset-bottom, 0px)
+      )
+    );
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     transition:
       transform 250ms cubic-bezier(0.16, 1, 0.3, 1),
       opacity 200ms ease;
@@ -132,6 +141,17 @@ html {
   .sheet-panel-open {
     opacity: 1;
     transform: translateY(0);
+  }
+
+  .sheet-panel-fill {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  html.keyboard-open .sheet-panel-fill {
+    overflow: hidden;
   }
 
   @media (min-width: 640px) {

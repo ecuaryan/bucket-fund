@@ -7,7 +7,8 @@ household buckets on calendar days the user chooses.
 (`src/lib/autoOrganize.ts`), and tests use **`auto_organize_*`** — no parallel
 `schedules` layer so product and code stay aligned over time.
 
-**Status:** Approved for implementation (v1).  
+**Status:** **Shipped (v1)** — migrations `00000000000048`–`00000000000050`, Buckets tab UI,
+pg_cron scheduler, History **Scheduled** label.  
 **Related:** [CONTEXT.md](../CONTEXT.md), [docs/BRAND.md](./BRAND.md), `src/lib/brand.ts`.
 
 ---
@@ -38,10 +39,24 @@ different label for one manual move, not the feature name.
 - Admin: create, edit, pause, delete, **Run now** (with confirm sheet).
 - Shared: read-only auto-organize cards on Buckets tab.
 - History: **individual move rows**; automatic runs show **Scheduled** instead of a
-  user name; optional small row indicator.
-- Bucket row hint when bucket is on an active auto-organize (icon or subtitle).
+  user name.
 - Float → bucket rule alignment (all roles) — see [Money rules](#money-rules).
 - Family **IANA timezone**; **`auto_organize_run_hour`** default **3** (local).
+
+### Shipped with caveats
+
+- **Run now** confirm sheet: Current | Move | Will be grid; primary button **Run now**
+  (not amount in button label). Multiple **Run now** per local day allowed; amber warning
+  if already ran today. **Paused** blocks Run now until **Resume**.
+- MoveMoneyDialog: Set aside over Float with confirm sheet when crossing ≥ 0 → negative.
+
+### Deferred (v1.1+)
+
+- Bucket row hint when bucket is on an active auto-organize (icon or subtitle).
+- History row icon for automatic moves.
+- Editor **Review** step before save.
+- Local **`auto-organize`** seed scenario.
+- Optional Run now amber over-Float banner (grid already shows Float going negative).
 
 ### Out (defer; schema may leave hooks)
 
@@ -93,11 +108,17 @@ weekday).
 
 ### B. Monthly (calendar days)
 
-- **Once a month** → one day picker
-- **Twice a month** → two independent day pickers (1 & 15, 2 & 16, 15 & last day, …)
+- **Once a month** → one day picker (**1st–28th** or **Last day of month**)
+- **Twice a month** → fixed presets for typical pay schedules:
+  **1st & 15th**, **2nd & 16th**, **1st & 16th** (pay on the 15th, organize the next
+  day while keeping the 1st), **15th & last day**, **16th & last day**
+- **Every 2 weeks** (interval) → biweekly / every-other-Friday when anchored to a
+  Friday start date
 
-Each day: **1–31** or **Last day of month** (explicit UI option; use sentinel `0`
-in `days_of_month`).
+Once-a-month days **1–28** run every month on that calendar day. **Last day of
+month** uses sentinel `0` in `days_of_month` and runs on the real last day
+(28/29/30/31). Days **29–31** are not offered in the UI — end-of-month schedules
+use **Last day**. Legacy saved values of 29–31 normalize to last day on edit/save.
 
 **Which days:** run on each matching **calendar day** every month. Twice-monthly
 fires **once per matching day** (separate run records on the 1st and 15th).
@@ -110,7 +131,8 @@ people wake up). No time picker in v1 UI; same default for all households until
 we add an optional Admin setting later.
 
 Hourly `pg_cron` checks: local date is a run day **and** `local_hour >= auto_organize_run_hour`
-**and** no run yet for `(auto_organize_id, run_on)`.
+**and** no run yet for `(auto_organize_id, run_on)` (any trigger — a **Run now** that day
+blocks the scheduled pass).
 
 ### Display examples
 
@@ -136,18 +158,19 @@ Unified for **manual Set aside**, **Run now**, and **automatic runs** — one RP
 
 ### Confirm sheet (intentional friction)
 
-When a **manual** Set aside or **Run now** would cross **Float ≥ 0 → Float &lt; 0**:
+When a **manual** Set aside would cross **Float ≥ 0 → Float &lt; 0**:
 
 - Show consequential `Sheet` (copy in `brand.ts`) before submitting.
 - **Skip** confirm if Float is already negative.
-- **Skip** confirm for automatic cron runs (user chose the auto-organize).
+- **Skip** confirm for automatic cron runs and for **Run now** (user chose amounts; confirm
+  sheet shows Current | Move | Will be including Float).
 
 Implementation notes:
 
-- **RPC:** Float → bucket must not raise insufficient Float for **any** role (today
-  only kids are blocked at RPC; adults already pass). Bucket-source checks stay for all roles.
-- **UI:** `MoveMoneyDialog` — do not block Set aside when amount &gt; Float; gate
-  submit with confirm sheet when crossing into red Float.
+- **RPC:** Float → bucket must not raise insufficient Float for **any** role. Bucket-source
+  checks stay for all roles.
+- **UI:** `MoveMoneyDialog` — Set aside uses confirm sheet when crossing into red Float;
+  bucket-source insufficient still blocks inline.
 
 ---
 
@@ -159,9 +182,9 @@ Do not introduce a second product term (`schedules`, `set_aside_*`) in schema or
 | Concept | UI (when shown) | Postgres / RPC / TS |
 | --- | --- | --- |
 | Feature section | **Auto-organize** | — |
-| Section guardrail | *You choose the days and amounts — the app runs the moves.* | `AUTO_ORGANIZE_GUARDRAIL` |
+| Section guardrail | *You choose when and how much — money moves into buckets automatically.* | `AUTO_ORGANIZE_GUARDRAIL` |
 | Empty state | *Organize your money into buckets on the days you choose.* | `AUTO_ORGANIZE_EMPTY_BODY` |
-| Admin add CTA | **Add auto-organize** | `AUTO_ORGANIZE_ADD_LABEL` |
+| Admin add CTA | **Add** | `AUTO_ORGANIZE_ADD_LABEL` |
 | One configured auto-organize | auto-organize (card/editor) | **`auto_organizes`** row |
 | Bucket + amount rows | lines | **`auto_organize_lines`** |
 | One execution (cron or Run now) | run | **`auto_organize_runs`** row |
@@ -187,7 +210,8 @@ Manual one-off Float → bucket stays **`Set aside`** in the move dialog only �
 
 ## Data model
 
-Next migration after `00000000000047_…`.
+Migrations `00000000000048_auto_organize.sql`, `00000000000049_auto_organize_cron.sql`,
+`00000000000050_auto_organize_manual_runs_per_day.sql`.
 
 ```text
 families
@@ -232,7 +256,8 @@ transactions
 
 Indexes / constraints:
 
-- `(auto_organize_id, run_on)` **unique** — idempotent cron (one run per auto-organize per local day).
+- **Scheduled:** partial unique on `(auto_organize_id, run_on)` where `trigger = 'scheduled'` — at most one automatic run per local day.
+- **Manual (Run now):** no daily cap — multiple runs on the same local day are allowed (confirm sheet warns if one already ran today).
 - `(family_id)` on `auto_organizes` and `auto_organize_runs` for RLS.
 
 Optional later: `owner_member_id uuid null` on `auto_organizes` for kid scope.
@@ -261,7 +286,8 @@ Service role / cron only. For each non-paused auto-organize:
 
 - Compute family **local date and hour** from `families.timezone`.
 - If cadence matches **today’s local date**, `local_hour >= auto_organize_run_hour`,
-  and no run for `(auto_organize_id, run_on)` → `run_auto_organize(..., 'scheduled', null)`.
+  and no run yet for `(auto_organize_id, run_on)` (any trigger) →
+  `run_auto_organize(..., 'scheduled', null)`.
 
 ### CRUD
 
@@ -297,7 +323,7 @@ Section **Auto-organize** below Float card. Always show `AUTO_ORGANIZE_GUARDRAIL
 under the header (admin + Shared) so the feature is not confused with auto-rebalance
 when the bank moves.
 
-**Empty state (admin):** `AUTO_ORGANIZE_EMPTY_BODY` + **Add auto-organize** CTA.
+**Empty state (admin):** `AUTO_ORGANIZE_EMPTY_BODY` + **Add** CTA.
 
 ### Plan total (required)
 
@@ -309,8 +335,8 @@ per-bucket split).
 | --- | --- |
 | **Auto-organize editor** | **Running total** updates as lines change; sticky/footer so it stays visible while scrolling lines. Label e.g. **Total per run · $1,240.00** |
 | **Auto-organize card** (admin + Shared) | Same total on every card — not buried in line list |
-| **Run now** confirm sheet | Total again, with full line list |
-| **Review** step (before save) | Total + lines |
+| **Run now** confirm sheet | Total + Current \| Move \| Will be grid per bucket and Float |
+| **Review** step (before save) | *Deferred* — editor saves directly |
 
 Optional context next to total: current **Float** (informational only — runs may
 execute above Float per [Money rules](#money-rules)). Do not hide total behind an
@@ -318,33 +344,37 @@ expand/collapse.
 
 ### Shared (read-only)
 
-Auto-organize cards: name, cadence summary, next run, line summary, **total per run**,
-**Paused** badge, last run status. No Edit / Pause / Run now.
+Auto-organize cards: name, cadence summary, next run (or paused status), collapsible
+bucket breakdown (chevron), **total per run**, **Paused** badge when paused. No Edit /
+Pause / Run now.
 
 ### Admin
 
-Same cards + **Add auto-organize**, **Edit**, **Pause / Resume**, **Run now**.
+Same cards + section **Add** CTA, **Edit**, **Pause / Resume**, **Run now** (disabled
+when paused, with status copy explaining why).
 
 ### Auto-organize editor (Sheet)
 
 1. Name (optional)
-2. Lines: bucket + amount; **running total** always visible ([Plan total](#plan-total-required))
-3. Frequency (branching fields per [Auto-organize model](#auto-organize-model))
-4. Family timezone (first auto-organize: default from browser; editable)
-5. Review → Save (total + lines repeated)
+2. Lines: bucket + amount; **running total** in sticky footer ([Plan total](#plan-total-required))
+3. Frequency: flat list (**Every 2 weeks**, **Every week**, **Once a month**,
+   **Twice a month**, **Every 2 / 3 / 4 / 6 months**) plus branching fields per
+   [Auto-organize model](#auto-organize-model)
+4. Family timezone (first auto-organize: default from browser; stored on `families`)
+5. Save (no separate review step in v1)
 
 ### Run now
 
-Confirm sheet: all lines, **total per run**, current Float (context), red-Float
-warning if applicable, consequential copy. Confirm button includes total (e.g.
-`Run Payday — $1,240.00`) — avoid accidental runs.
+Confirm sheet: bucket lines + **total per run**, Float row in Current | Move | Will be
+grid, consequential intro copy. Primary **Run now** / **Running…**. Amber warning if
+already ran today. Paused auto-organizes cannot Run now until **Resume**.
 
-### Bucket polish
+### Bucket polish (*deferred*)
 
 Active auto-organize lines → subtle icon or “+$X in auto-organize” on bucket row (both roles
 see hints on shared buckets).
 
-When shipping, extend `bucketsFloatInfoPoints` bullet 2 for automatic organization
+When added, extend `bucketsFloatInfoPoints` bullet 2 for automatic organization
 (e.g. buckets change when you move money **or when auto-organize runs on days you
 choose**).
 
@@ -369,10 +399,11 @@ automatic moves. Auto-note on tx optional (auto-organize name).
 
 | Case | Behavior |
 | --- | --- |
-| Bucket deleted | Delete bucket sheet warns if in an auto-organize; editor shows stale line; **block run** until fixed |
+| Bucket deleted | Sheet explains auto-organize block; **Remove and delete** clears lines (and empty auto-organizes) then deletes bucket |
 | Bucket renamed | Auto-organize uses `bucket_id`; UI shows current name |
-| Auto-organize paused | No automatic or manual run until resumed; Shared sees **Paused** |
-| Cron retry | `(auto_organize_id, run_on)` unique prevents double execution |
+| Auto-organize paused | No automatic or manual run until resumed; Shared sees **Paused** badge + status line |
+| Cron / manual same day | Any run for `(auto_organize_id, run_on)` skips cron; multiple **manual** runs same day OK |
+| Scheduled idempotency | Partial unique on `(auto_organize_id, run_on)` where `trigger = 'scheduled'` |
 | Insufficient Float on run | **Allow**; Float goes red (all roles) |
 
 ---
@@ -381,46 +412,19 @@ automatic moves. Auto-note on tx optional (auto-organize name).
 
 | Layer | Coverage |
 | --- | --- |
-| `tests/db/` | `auto_organize.test.ts` (or extend): matching, `run_auto_organize`, `run_due_auto_organizes`, idempotency, RLS |
-| Unit | Next-run date helpers; auto-organize display strings |
-| Seed | `auto-organize` scenario (optional) |
-| Manual | Admin CRUD, pause, run now; Shared read-only; History Scheduled label; confirm sheet |
-
-Also extend `move_money.test.ts`: adult + child Float → bucket with zero/negative Float succeeds;
-bucket-source insufficient still fails.
+| `tests/db/auto_organize.test.ts` | Happy manual run, cron idempotency, RLS read (member/child), member write denial, manual run denied for member/child, scheduled trigger denied for authenticated users, invalid bucket line, multiple manual runs/day, one scheduled run/day, manual run blocks cron same day |
+| `src/lib/autoOrganizeCadence.test.ts` | Cadence matching, next-run labels, editor schedule summaries |
+| `tests/db/move_money.test.ts` | Float → bucket over current Float (admin + child) |
+| Seed | `auto-organize` scenario — *deferred* |
+| Manual | Admin CRUD, pause/resume, Run now confirm; Shared read-only; History **Scheduled** |
 
 ---
 
-## Implementation PR sequence
+## Implementation history
 
-One PR at a time ([CONTRIBUTING.md](../CONTRIBUTING.md)); bump `package.json` patch each PR.
-
-| PR | Scope |
-| --- | --- |
-| **1** | Align `move_money`: allow Float → bucket without insufficient-Float check (**all roles**) + db tests |
-| **2** | Migration: `auto_organizes`, `auto_organize_lines`, `auto_organize_runs`, `auto_organize_run_id`, run RPCs, RLS, db tests |
-| **3** | pg_cron migration + `run_due_auto_organizes` |
-| **4** | MoveMoneyDialog: allow Set aside over Float + red-Float confirm sheet + `brand.ts` |
-| **5** | Admin Auto-organize UI + editor (all frequency types) + pause |
-| **6** | Shared read-only cards + bucket indicators |
-| **7** | Run now + confirm sheet |
-| **8** | History Scheduled subtitle + optional row icon |
-| **9** | CONTEXT.md / BRAND.md / AGENTS.md updates; seed scenario |
-
-PR 1–2 can merge logic if preferred; keep migrations reviewable.
-
----
-
-## Docs to update when shipping
-
-| Doc | Status (design) | At ship |
-| --- | --- | --- |
-| [docs/AUTO_ORGANIZE.md](./AUTO_ORGANIZE.md) | **Current** | Mark **shipped**; fix any drift |
-| [CONTEXT.md](../CONTEXT.md) | Updated | Change section to **shipped**; remove implementation notes |
-| [AGENTS.md](../AGENTS.md) | Updated | — |
-| [docs/BRAND.md](./BRAND.md) | Updated | Add any new `brand.ts` keys to copy map |
-| [README.md](../README.md) | Updated | Optional: pg_cron + free-tier activity note |
-| `src/lib/brand.ts` | Placeholder Auto-organize strings + TODO confirm copy | Full strings in PR 4 / 5 / 7 / 8 |
+Shipped as one vertical slice on branch `feat/auto-organize` (migrations 48–50 + Buckets
+tab UI). Original multi-PR sequence (move_money → schema → cron → UI slices) was
+consolidated for family beta. Deferred items listed under [v1 scope](#v1-scope).
 
 ---
 

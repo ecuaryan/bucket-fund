@@ -414,6 +414,52 @@ export function bucketsDeleteBucketConfirm(name: string): string {
   return `Delete ${name}`
 }
 
+/** Delete blocked: bucket still listed on a scheduled rule. */
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO =
+  'This bucket is still included in a scheduled rule that moves money here.'
+
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_ACTION_HINT =
+  'This will remove the bucket from the following and delete it. Schedules with no buckets left are deleted too.'
+
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_USED_IN_LABEL =
+  'Bucket is included in:'
+
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_CONFIRM_LABEL = 'Remove and delete'
+
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK =
+  'Deleting will still remove this bucket from any schedules it appears on.'
+
+/** @deprecated Use BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO */
+export function bucketsDeleteBucketAutoOrganizeIntro(bucketName: string): string {
+  void bucketName
+  return BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO
+}
+
+/** @deprecated Use BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_CONFIRM_LABEL */
+export function bucketsDeleteBucketRemoveFromAutoOrganizeAndDelete(
+  bucketName: string,
+): string {
+  void bucketName
+  return BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_CONFIRM_LABEL
+}
+
+export function bucketsDeleteBucketAutoOrganizeConfirmAriaLabel(
+  bucketName: string,
+): string {
+  return `Remove ${bucketName} from schedules and delete bucket`
+}
+
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_SUBMITTING_LABEL =
+  'Removing…'
+
+/** @deprecated Use bucketsDeleteBucketAutoOrganizeIntro — kept for error fallback text. */
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_BLOCK =
+  'Could not delete bucket. Try again — delete removes this bucket from any schedules automatically.'
+
+export function bucketsDeleteBucketEmptyIntro(name: string): string {
+  return `${name} is empty.`
+}
+
 /** Screen-reader label for the reorder grip popover (visual uses the grip icon). */
 export const BUCKETS_REORDER_POPOVER_LABEL =
   'Press and hold the reorder grip, then drag'
@@ -491,17 +537,17 @@ export function bucketsFloatStatusGuide(isChild: boolean): readonly FloatStatusG
   ] as const
 }
 
-// --- Auto-organize (UI — feature not yet implemented) ---
+// --- Auto-organize (Buckets tab) ---
 
 /** Buckets tab section header. Schema: `auto_organizes`. */
 export const AUTO_ORGANIZE_SECTION_TITLE = 'Auto-organize'
 
 /** One line under the section header (admin + Shared). */
 export const AUTO_ORGANIZE_GUARDRAIL =
-  'You choose the days and amounts — the app runs the moves.'
+  'You choose when and how much — money moves into buckets automatically.'
 
-/** Admin primary CTA to create an auto-organize. */
-export const AUTO_ORGANIZE_ADD_LABEL = 'Add auto-organize'
+/** Admin CTA in the section header (empty state uses the same label). */
+export const AUTO_ORGANIZE_ADD_LABEL = 'Add'
 
 /** Empty state when no auto-organizes exist (admin). */
 export const AUTO_ORGANIZE_EMPTY_BODY =
@@ -509,6 +555,121 @@ export const AUTO_ORGANIZE_EMPTY_BODY =
 
 /** History subtitle label for moves from an automatic run (not a member name). */
 export const HISTORY_SCHEDULED_MOVE_LABEL = 'Scheduled'
+
+export const AUTO_ORGANIZE_TOTAL_PER_RUN_LABEL = 'Total per run'
+
+export const AUTO_ORGANIZE_SCHEDULE_SUMMARY_LABEL = 'Schedule'
+
+export const AUTO_ORGANIZE_RUN_NOW_LABEL = 'Run now'
+
+/** Confirm sheet primary action (amount is in the summary above). */
+export const AUTO_ORGANIZE_RUN_NOW_SUBMITTING_LABEL = 'Running…'
+
+/** Run-now confirm when this auto-organize already ran today (any trigger). */
+export const AUTO_ORGANIZE_RUN_NOW_ALREADY_RAN_WARNING =
+  'This already ran today. Running again will move the same amounts again.'
+
+export const AUTO_ORGANIZE_RUN_NOW_CURRENT_LABEL = 'Current'
+
+export const AUTO_ORGANIZE_RUN_NOW_MOVE_LABEL = 'Move'
+
+export const AUTO_ORGANIZE_RUN_NOW_AFTER_LABEL = 'Will be'
+
+export function autoOrganizeViewBucketsLabel(count: number): string {
+  if (count === 1) return 'View 1 bucket'
+  return `View ${count} buckets`
+}
+
+export const AUTO_ORGANIZE_PAUSE_LABEL = 'Pause'
+
+export const AUTO_ORGANIZE_PAUSED_LABEL = 'Paused'
+
+/** List card when an auto-organize is paused (admin). */
+export const AUTO_ORGANIZE_PAUSED_STATUS =
+  'Automatic runs and Run now are off until you resume.'
+
+/** List card when paused; shared members cannot resume. */
+export const AUTO_ORGANIZE_PAUSED_STATUS_SHARED = 'Automatic runs are off.'
+
+export const AUTO_ORGANIZE_RESUME_LABEL = 'Resume'
+
+export const AUTO_ORGANIZE_EDIT_LABEL = 'Edit'
+
+export const AUTO_ORGANIZE_DELETE_LABEL = 'Delete'
+
+export function autoOrganizeDeleteSheetTitle(displayName: string): string {
+  return `Delete ${displayName}?`
+}
+
+export const AUTO_ORGANIZE_DELETE_SHEET_BODY =
+  'This stops future auto-organize runs. Past moves stay in History.'
+
+export const AUTO_ORGANIZE_DELETED_TOAST = 'Deleted.'
+
+export const AUTO_ORGANIZE_RAN_TOAST = 'Moves completed.'
+
+export const AUTO_ORGANIZE_SAVE_LABEL = 'Save'
+
+export const AUTO_ORGANIZE_NAME_HINT =
+  'Leave blank to use the schedule (e.g. Every 2 weeks) as the name.'
+
+export const AUTO_ORGANIZE_BUCKETS_LABEL = 'Buckets'
+
+export const AUTO_ORGANIZE_BUCKETS_HINT =
+  'Leave blank for buckets that should not receive money on this run.'
+
+export const AUTO_ORGANIZE_NO_BUCKETS_ERROR =
+  'Enter an amount for at least one bucket.'
+
+export const AUTO_ORGANIZE_FREQUENCY_OPTIONS = [
+  { value: '2-week', label: 'Every 2 weeks' },
+  { value: '1-week', label: 'Every week' },
+  { value: 'monthly-once', label: 'Once a month' },
+  { value: 'monthly-twice', label: 'Twice a month' },
+  { value: '2-month', label: 'Every 2 months' },
+  { value: '3-month', label: 'Every 3 months' },
+  { value: '4-month', label: 'Every 4 months' },
+  { value: '6-month', label: 'Every 6 months' },
+] as const
+
+export type AutoOrganizeFrequencySelection =
+  (typeof AUTO_ORGANIZE_FREQUENCY_OPTIONS)[number]['value']
+
+export const AUTO_ORGANIZE_TWICE_MONTHLY_ON_LABEL = 'On which days?'
+
+export const AUTO_ORGANIZE_INTERVAL_START_LABEL = 'First run on'
+
+export const AUTO_ORGANIZE_INTERVAL_START_HINT =
+  'The date your repeating schedule starts from.'
+
+export const AUTO_ORGANIZE_ONCE_MONTHLY_DAY_LABEL = 'Day of the month'
+
+export const AUTO_ORGANIZE_ONCE_MONTHLY_LAST_DAY_HINT =
+  'Runs on the last calendar day every month — the 28th, 29th, 30th, or 31st, depending on the month.'
+
+export const AUTO_ORGANIZE_DISCARD_TITLE = 'Discard changes?'
+
+export const AUTO_ORGANIZE_DISCARD_BODY =
+  'You have unsaved changes. Discard them and close?'
+
+export const AUTO_ORGANIZE_DISCARD_CONFIRM = 'Discard'
+
+export const AUTO_ORGANIZE_DISCARD_CANCEL = 'Keep editing'
+
+export const AUTO_ORGANIZE_SET_ASIDE_FLOAT_CONFIRM_TITLE =
+  'Set aside more than Float?'
+
+export function autoOrganizeSetAsideFloatConfirmBody(amountLabel: string): string {
+  return `This set-aside of ${amountLabel} is more than your current ${FLOAT_LABEL}. Your ${FLOAT_LABEL} will go negative until your money sources reflect more cash or you move money back.`
+}
+
+export function autoOrganizeRunNowConfirmTitle(name: string): string {
+  return `Run ${name} now?`
+}
+
+export function autoOrganizeRunNowConfirmBody(totalLabel: string): string {
+  return `This will move ${totalLabel} from ${FLOAT_LABEL} into your buckets now.`
+}
 
 export const BUCKETS_LINK_BANK_TITLE = 'Link a bank account'
 

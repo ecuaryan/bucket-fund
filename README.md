@@ -219,6 +219,10 @@ checks are deferred until a possible paid SaaS phase.
 - PWA icons, favicons, apple-touch-icon, offline fallback, service worker registration
 - Background sign-out (60s hidden → local sign-out for all roles; branded gate on hide; family PIN re-auth)
 - Session-scoped auth (kill / cold PWA reopen → sign in again; tab reload keeps session)
+- **Auto-organize:** admin CRUD, pause/resume, Run now (confirm sheet), Shared
+  read-only cards; pg_cron hourly tick + `run_due_auto_organizes`; History
+  **Scheduled** label for automatic runs; Float → bucket over current Float allowed
+  (manual Set aside confirm sheet + auto-organize runs without confirm)
 
 ### Not yet built
 
@@ -236,6 +240,11 @@ checks are deferred until a possible paid SaaS phase.
 - [x] **CI/CD:** after green CI on `main`, `deploy-supabase.yml` runs `db push` + `functions deploy`
       (requires `production` environment secrets — see above).
 - [ ] Optional: GitHub deployment branch rule or notification when **Deploy Supabase** fails on `main`.
+
+**Auto-organize backend:** migrations `48`–`50` enable **pg_cron** on hosted Supabase
+(hourly `run-due-auto-organizes`). Free-tier projects need occasional DB activity so
+cron stays scheduled — normal family use satisfies this; see
+[docs/AUTO_ORGANIZE.md § Scheduler](./docs/AUTO_ORGANIZE.md#scheduler-cost--scale).
 
 Manual fallback if automation fails:
 
