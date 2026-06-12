@@ -560,6 +560,9 @@ export const AUTO_ORGANIZE_TOTAL_PER_RUN_LABEL = 'Total per run'
 
 export const AUTO_ORGANIZE_SCHEDULE_SUMMARY_LABEL = 'Schedule'
 
+/** Editor footer row — cadence is already in the form above. */
+export const AUTO_ORGANIZE_NEXT_RUN_LABEL = 'Next run'
+
 export const AUTO_ORGANIZE_RUN_NOW_LABEL = 'Run now'
 
 /** Confirm sheet primary action (amount is in the summary above). */
@@ -610,6 +613,14 @@ export const AUTO_ORGANIZE_RAN_TOAST = 'Moves completed.'
 
 export const AUTO_ORGANIZE_SAVE_LABEL = 'Save'
 
+export const AUTO_ORGANIZE_SAVED_TOAST = 'Saved.'
+
+export const AUTO_ORGANIZE_SAVE_REQUIRES_AMOUNT_HINT =
+  'Enter an amount for at least one bucket to save.'
+
+export const AUTO_ORGANIZE_ADD_REQUIRES_BUCKETS_HINT =
+  'Create a shared bucket first.'
+
 export const AUTO_ORGANIZE_NAME_HINT =
   'Leave blank to use the schedule (e.g. Every 2 weeks) as the name.'
 
@@ -622,8 +633,8 @@ export const AUTO_ORGANIZE_NO_BUCKETS_ERROR =
   'Enter an amount for at least one bucket.'
 
 export const AUTO_ORGANIZE_FREQUENCY_OPTIONS = [
-  { value: '2-week', label: 'Every 2 weeks' },
   { value: '1-week', label: 'Every week' },
+  { value: '2-week', label: 'Every 2 weeks' },
   { value: 'monthly-once', label: 'Once a month' },
   { value: 'monthly-twice', label: 'Twice a month' },
   { value: '2-month', label: 'Every 2 months' },
@@ -637,10 +648,30 @@ export type AutoOrganizeFrequencySelection =
 
 export const AUTO_ORGANIZE_TWICE_MONTHLY_ON_LABEL = 'On which days?'
 
-export const AUTO_ORGANIZE_INTERVAL_START_LABEL = 'First run on'
+export const AUTO_ORGANIZE_INTERVAL_START_LABEL = 'Starts on'
+
+/** Read-only anchor once the interval start date is in the past. */
+export const AUTO_ORGANIZE_INTERVAL_STARTED_LABEL = 'Started on'
+
+export const AUTO_ORGANIZE_INTERVAL_STARTED_HINT =
+  'The start date is fixed once the schedule has begun.'
 
 export const AUTO_ORGANIZE_INTERVAL_START_HINT =
-  'The date your repeating schedule starts from.'
+  'Pick a date from tomorrow through the next 2 years. To move money today, save first — then use Run now on the card.'
+
+export const AUTO_ORGANIZE_TIMEZONE_LABEL = 'Timezone'
+
+export const AUTO_ORGANIZE_TIMEZONE_HINT =
+  'Scheduled runs happen around 3 AM in this timezone.'
+
+export const AUTO_ORGANIZE_START_DATE_TODAY_ERROR =
+  'Start date can’t be today. Pick a later date, or save and use Run now on the card.'
+
+export const AUTO_ORGANIZE_START_DATE_PAST_ERROR =
+  'Start date can’t be in the past. Pick tomorrow or later.'
+
+export const AUTO_ORGANIZE_START_DATE_TOO_FAR_ERROR =
+  'Start date can’t be more than 2 years away.'
 
 export const AUTO_ORGANIZE_ONCE_MONTHLY_DAY_LABEL = 'Day of the month'
 

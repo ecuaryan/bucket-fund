@@ -3,9 +3,11 @@ import type { Database } from '@/types/database'
 import {
   computeNextRunOn,
   formatCadenceSummary,
+  formatLastRunLabel,
   formatNextRunLabel,
   type AutoOrganizeCadence,
 } from '@/lib/autoOrganizeCadence'
+import { isValidIanaTimezone } from '@/lib/familyTimezones'
 
 type AutoOrganizeRow = Database['public']['Tables']['auto_organizes']['Row']
 type AutoOrganizeLineRow = Database['public']['Tables']['auto_organize_lines']['Row']
@@ -22,6 +24,7 @@ export type AutoOrganizeInput = {
   paused: boolean
   cadence: AutoOrganizeCadence
   lines: AutoOrganizeLineInput[]
+  familyTimezone: string
 }
 
 export type AutoOrganizeWithDetails = AutoOrganizeRow & {
@@ -30,6 +33,7 @@ export type AutoOrganizeWithDetails = AutoOrganizeRow & {
     AutoOrganizeRunRow,
     'id' | 'status' | 'run_on' | 'trigger' | 'created_at'
   > | null
+  lastRunLabel: string | null
   /** Any run (manual or scheduled) on the family's local calendar today. */
   hasRunToday: boolean
   totalPerRun: number
@@ -159,6 +163,16 @@ export async function fetchAutoOrganizes(): Promise<AutoOrganizeWithDetails[]> {
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       )
+    const lastSuccessfulRun =
+      runs
+        .filter((run) => run.status === 'completed')
+        .sort((a, b) => {
+          const byDate = b.run_on.localeCompare(a.run_on)
+          if (byDate !== 0) return byDate
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          )
+        })[0] ?? null
     const cadence: AutoOrganizeCadence = {
       autoOrganizeType: row.auto_organize_type as AutoOrganizeCadence['autoOrganizeType'],
       startDate: row.start_date,
@@ -171,7 +185,8 @@ export async function fetchAutoOrganizes(): Promise<AutoOrganizeWithDetails[]> {
     return {
       ...base,
       lines,
-      lastRun: runs[0] ?? null,
+      lastRun: lastSuccessfulRun,
+      lastRunLabel: formatLastRunLabel(lastSuccessfulRun?.run_on ?? null),
       hasRunToday: autoOrganizeHasRunOnDate(runs, todayIso),
       totalPerRun: lines.reduce((sum, line) => sum + Number(line.amount), 0),
       cadenceSummary: formatCadenceSummary(cadence),
@@ -253,7 +268,10 @@ export async function saveAutoOrganize(
   )
   if (linesError) throw linesError
 
-  await updateFamilyTimezone(defaultBrowserTimezone())
+  if (!isValidIanaTimezone(input.familyTimezone)) {
+    throw new Error('Invalid timezone.')
+  }
+  await updateFamilyTimezone(input.familyTimezone)
   return autoOrganizeId!
 }
 

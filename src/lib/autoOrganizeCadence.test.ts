@@ -6,14 +6,21 @@ import {
   applyFrequencySelection,
   daysOfMonthFromSchedule,
   formatCadenceSummary,
+  formatEditorNextRunSummary,
   formatEditorSaveScheduleSummary,
+  formatLastRunLabel,
   formatLocalDateLabel,
+  formatShortIsoDateLabel,
+  formatNextRunLabel,
   formatRunScheduleForDays,
+  computeNextRunOn,
   frequencySelectionFromCadence,
   monthlyScheduleFromDays,
   normalizeMonthlyCadence,
   normalizeOnceMonthlyDay,
   twiceMonthlyPresetFromDays,
+  validateIntervalStartDate,
+  maxIntervalStartDateIso,
 } from '@/lib/autoOrganizeCadence'
 
 describe('normalizeOnceMonthlyDay', () => {
@@ -127,8 +134,85 @@ describe('formatRunScheduleForDays', () => {
   })
 })
 
+describe('validateIntervalStartDate', () => {
+  const from = new Date('2026-06-11T20:00:00Z')
+  const timeZone = 'America/Los_Angeles'
+
+  it('allows tomorrow and later', () => {
+    expect(
+      validateIntervalStartDate('2026-06-12', timeZone, { from }).ok,
+    ).toBe(true)
+    expect(
+      validateIntervalStartDate('2026-07-01', timeZone, { from }).ok,
+    ).toBe(true)
+  })
+
+  it('rejects today and past dates', () => {
+    expect(validateIntervalStartDate('2026-06-11', timeZone, { from })).toEqual({
+      ok: false,
+      reason: 'today',
+    })
+    expect(validateIntervalStartDate('2026-06-01', timeZone, { from })).toEqual({
+      ok: false,
+      reason: 'past',
+    })
+  })
+
+  it('allows an unchanged legacy start date when editing', () => {
+    expect(
+      validateIntervalStartDate('2026-05-01', timeZone, {
+        from,
+        legacyStartDate: '2026-05-01',
+      }).ok,
+    ).toBe(true)
+    expect(
+      validateIntervalStartDate('2026-05-01', timeZone, {
+        from,
+        legacyStartDate: '2026-06-12',
+      }),
+    ).toEqual({ ok: false, reason: 'past' })
+  })
+
+  it('rejects dates more than two years out', () => {
+    const max = maxIntervalStartDateIso(timeZone, from)
+    expect(validateIntervalStartDate(max, timeZone, { from }).ok).toBe(true)
+    expect(
+      validateIntervalStartDate('2028-06-13', timeZone, { from }),
+    ).toEqual({ ok: false, reason: 'too_far' })
+  })
+})
+
+describe('formatLastRunLabel', () => {
+  it('formats a completed run date', () => {
+    expect(formatLastRunLabel('2026-06-13')).toBe('Last run Jun 13')
+  })
+
+  it('returns null when there is no run', () => {
+    expect(formatLastRunLabel(null)).toBeNull()
+  })
+})
+
+describe('formatEditorNextRunSummary', () => {
+  it('returns the next due date without repeating cadence', () => {
+    const from = new Date('2026-06-11T20:00:00Z')
+    expect(
+      formatEditorNextRunSummary(
+        {
+          autoOrganizeType: 'interval',
+          startDate: '2026-06-12',
+          intervalCount: 2,
+          intervalUnit: 'week',
+          daysOfMonth: null,
+        },
+        'America/Los_Angeles',
+        from,
+      ),
+    ).toBe('Jun 12')
+  })
+})
+
 describe('formatEditorSaveScheduleSummary', () => {
-  it('includes the next run for monthly schedules', () => {
+  it('includes cadence and next run for monthly schedules', () => {
     const summary = formatEditorSaveScheduleSummary(
       {
         autoOrganizeType: 'monthly',
@@ -139,28 +223,38 @@ describe('formatEditorSaveScheduleSummary', () => {
       },
       'UTC',
     )
-    expect(summary).toMatch(/^Twice a month · 1st & 15th · First run /)
+    expect(summary).toMatch(/^Twice a month · 1st & 15th · Next run /)
   })
+})
 
-  it('uses the selected start date for interval schedules', () => {
-    expect(
-      formatEditorSaveScheduleSummary(
-        {
-          autoOrganizeType: 'interval',
-          startDate: '2026-06-12',
-          intervalCount: 2,
-          intervalUnit: 'week',
-          daysOfMonth: null,
-        },
-        'UTC',
-      ),
-    ).toBe('Every 2 weeks · First run Fri, Jun 12, 2026')
+describe('computeNextRunOn', () => {
+  it('returns the start date for a weekly interval (matches editor summary)', () => {
+    const cadence = {
+      autoOrganizeType: 'interval' as const,
+      startDate: '2026-06-12',
+      intervalCount: 1,
+      intervalUnit: 'week' as const,
+      daysOfMonth: null,
+    }
+    const from = new Date('2026-06-11T20:00:00Z')
+    expect(computeNextRunOn(cadence, 'America/Los_Angeles', from)).toBe(
+      '2026-06-12',
+    )
+    expect(formatNextRunLabel(computeNextRunOn(cadence, 'America/Los_Angeles', from))).toBe(
+      'Next run Jun 12',
+    )
   })
 })
 
 describe('formatLocalDateLabel', () => {
   it('formats ISO dates in local calendar terms', () => {
     expect(formatLocalDateLabel('2026-06-12')).toBe('Friday, June 12, 2026')
+  })
+})
+
+describe('formatShortIsoDateLabel', () => {
+  it('formats ISO dates for read-only start display', () => {
+    expect(formatShortIsoDateLabel('2026-06-13')).toBe('Jun 13, 2026')
   })
 })
 

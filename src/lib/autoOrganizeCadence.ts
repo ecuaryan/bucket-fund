@@ -269,43 +269,114 @@ export function formatCadenceSummary(cadence: AutoOrganizeCadence): string {
   return 'Auto-organize'
 }
 
-function lastDayOfMonth(year: number, monthIndex: number): number {
-  return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate()
+/** Local calendar date `YYYY-MM-DD` in the given IANA timezone. */
+export function localDateIsoInTimeZone(
+  timeZone: string,
+  from: Date = new Date(),
+): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(from)
 }
 
-function isDueOn(cadence: AutoOrganizeCadence, localDate: Date): boolean {
-  const y = localDate.getFullYear()
-  const m = localDate.getMonth()
-  const d = localDate.getDate()
+function addCalendarDays(iso: string, days: number): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  const shifted = new Date(Date.UTC(y, m - 1, d + days))
+  return [
+    shifted.getUTCFullYear(),
+    String(shifted.getUTCMonth() + 1).padStart(2, '0'),
+    String(shifted.getUTCDate()).padStart(2, '0'),
+  ].join('-')
+}
+
+function daysBetweenIso(startIso: string, targetIso: string): number {
+  const [sy, sm, sd] = startIso.split('-').map(Number)
+  const [ty, tm, td] = targetIso.split('-').map(Number)
+  return Math.floor(
+    (Date.UTC(ty, tm - 1, td) - Date.UTC(sy, sm - 1, sd)) / 86_400_000,
+  )
+}
+
+function lastDayOfMonthForIso(iso: string): number {
+  const [y, m] = iso.split('-').map(Number)
+  return new Date(Date.UTC(y, m, 0)).getUTCDate()
+}
+
+export function tomorrowIsoInTimeZone(
+  timeZone: string,
+  from: Date = new Date(),
+): string {
+  return addCalendarDays(localDateIsoInTimeZone(timeZone, from), 1)
+}
+
+export type IntervalStartDateValidation =
+  | { ok: true }
+  | { ok: false; reason: 'today' | 'past' | 'too_far' }
+
+/** Latest first-run date: two years after tomorrow in family local calendar. */
+export const INTERVAL_START_MAX_YEARS_AHEAD = 2
+
+export function maxIntervalStartDateIso(
+  timeZone: string,
+  from: Date = new Date(),
+): string {
+  const [y, m, d] = tomorrowIsoInTimeZone(timeZone, from).split('-').map(Number)
+  const max = new Date(Date.UTC(y + INTERVAL_START_MAX_YEARS_AHEAD, m - 1, d))
+  return [
+    max.getUTCFullYear(),
+    String(max.getUTCMonth() + 1).padStart(2, '0'),
+    String(max.getUTCDate()).padStart(2, '0'),
+  ].join('-')
+}
+
+/** First scheduled run: tomorrow through max horizon in family TZ, or unchanged legacy start when editing. */
+export function validateIntervalStartDate(
+  candidate: string,
+  timeZone: string,
+  options?: { from?: Date; legacyStartDate?: string | null },
+): IntervalStartDateValidation {
+  if (options?.legacyStartDate === candidate) return { ok: true }
+
+  const todayIso = localDateIsoInTimeZone(timeZone, options?.from)
+  const tomorrowIso = tomorrowIsoInTimeZone(timeZone, options?.from)
+  const maxIso = maxIntervalStartDateIso(timeZone, options?.from)
+
+  if (candidate >= tomorrowIso && candidate <= maxIso) return { ok: true }
+  if (candidate === todayIso) return { ok: false, reason: 'today' }
+  if (candidate > maxIso) return { ok: false, reason: 'too_far' }
+  return { ok: false, reason: 'past' }
+}
+
+/** Match SQL `auto_organize_is_due_on` using calendar dates only (no clock TZ drift). */
+function isDueOn(cadence: AutoOrganizeCadence, localDateIso: string): boolean {
+  const day = Number(localDateIso.split('-')[2])
 
   if (cadence.autoOrganizeType === 'monthly') {
     const days = cadence.daysOfMonth ?? []
-    const last = lastDayOfMonth(y, m)
-    if (days.includes(0) && d === last) return true
-    return days.includes(d)
+    const last = lastDayOfMonthForIso(localDateIso)
+    if (days.includes(0) && day === last) return true
+    return days.includes(day)
   }
 
   const start = cadence.startDate
   if (!start || !cadence.intervalCount || !cadence.intervalUnit) return false
-  const startDate = new Date(`${start}T12:00:00`)
-  const target = new Date(Date.UTC(y, m, d, 12))
-  if (target < startDate) return false
+  if (localDateIso < start) return false
 
   if (cadence.intervalUnit === 'week') {
-    const diffDays = Math.floor(
-      (target.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000),
+    return (
+      daysBetweenIso(start, localDateIso) % (cadence.intervalCount * 7) === 0
     )
-    return diffDays % (cadence.intervalCount * 7) === 0
   }
 
-  const monthsDiff =
-    (y - startDate.getFullYear()) * 12 + (m - startDate.getMonth())
+  const [ty, tm] = localDateIso.split('-').map(Number)
+  const [sy, sm, sd] = start.split('-').map(Number)
+  const monthsDiff = (ty - sy) * 12 + (tm - sm)
   if (monthsDiff < 0 || monthsDiff % cadence.intervalCount !== 0) return false
-  const anchorDay = Math.min(
-    startDate.getDate(),
-    lastDayOfMonth(y, m),
-  )
-  return d === anchorDay
+  const anchorDay = Math.min(sd, lastDayOfMonthForIso(localDateIso))
+  return day === anchorDay
 }
 
 /** Next local calendar date this auto-organize would run (for cards). */
@@ -313,33 +384,33 @@ export function computeNextRunOn(
   cadence: AutoOrganizeCadence,
   timeZone: string,
   from: Date = new Date(),
+  options?: { notBefore?: string },
 ): string | null {
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  })
-
+  const todayIso = localDateIsoInTimeZone(timeZone, from)
+  const startIso = options?.notBefore ?? todayIso
   for (let offset = 0; offset < 366; offset += 1) {
-    const probe = new Date(from.getTime() + offset * 24 * 60 * 60 * 1000)
-    const parts = formatter.formatToParts(probe)
-    const y = Number(parts.find((p) => p.type === 'year')?.value)
-    const mo = Number(parts.find((p) => p.type === 'month')?.value)
-    const da = Number(parts.find((p) => p.type === 'day')?.value)
-    const local = new Date(y, mo - 1, da, 12)
-    if (isDueOn(cadence, local)) {
-      return `${y}-${String(mo).padStart(2, '0')}-${String(da).padStart(2, '0')}`
-    }
+    const probeIso = addCalendarDays(startIso, offset)
+    if (isDueOn(cadence, probeIso)) return probeIso
   }
   return null
 }
 
+export function formatNextRunDateLabel(isoDate: string): string {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
 export function formatNextRunLabel(nextRunOn: string | null): string {
   if (!nextRunOn) return 'No upcoming run'
-  const [y, m, d] = nextRunOn.split('-').map(Number)
-  const date = new Date(y, m - 1, d)
-  return `Next ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+  return `Next run ${formatNextRunDateLabel(nextRunOn)}`
+}
+
+export function formatLastRunLabel(lastRunOn: string | null): string | null {
+  if (!lastRunOn) return null
+  return `Last run ${formatNextRunDateLabel(lastRunOn)}`
 }
 
 function formatRunScheduleDayPhrase(day: number): string {
@@ -363,45 +434,36 @@ export function formatRunScheduleForDays(days: number[]): string {
   return `Runs on ${phrases.join(', ')}, and ${last} of each month.`
 }
 
-function localTodayIso(from: Date = new Date()): string {
-  return [
-    from.getFullYear(),
-    String(from.getMonth() + 1).padStart(2, '0'),
-    String(from.getDate()).padStart(2, '0'),
-  ].join('-')
+function formatEditorNextRunSuffix(isoDate: string): string {
+  return `Next run ${formatNextRunDateLabel(isoDate)}`
 }
 
-/** Next run ISO for the editor summary (interval prefers future start date). */
-function editorNextRunIso(
+/** Next scheduled run date for the editor footer (cadence is already in the form). */
+export function formatEditorNextRunSummary(
   cadence: AutoOrganizeCadence,
   timeZone: string,
+  from: Date = new Date(),
 ): string | null {
-  if (cadence.autoOrganizeType === 'interval') {
+  if (cadence.autoOrganizeType === 'monthly') {
+    if (!cadence.daysOfMonth?.length) return null
+  } else if (cadence.autoOrganizeType === 'interval') {
     if (!cadence.startDate) return null
-    if (cadence.startDate >= localTodayIso()) return cadence.startDate
-    return computeNextRunOn(cadence, timeZone) ?? cadence.startDate
+  } else {
+    return null
   }
-  return computeNextRunOn(cadence, timeZone)
+
+  const next = computeNextRunOn(cadence, timeZone, from)
+  if (!next) return null
+  return formatNextRunDateLabel(next)
 }
 
-function formatEditorFirstRunSuffix(
-  isoDate: string,
-  variant: 'short' | 'weekday',
-): string {
+export function formatShortIsoDateLabel(isoDate: string): string {
   const [y, m, d] = isoDate.split('-').map(Number)
-  const date = new Date(y, m - 1, d)
-  if (variant === 'short') {
-    return `First run ${date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    })}`
-  }
-  return `First run ${date.toLocaleDateString('en-US', {
-    weekday: 'short',
+  return new Date(y, m - 1, d).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-  })}`
+  })
 }
 
 export function formatLocalDateLabel(isoDate: string): string {
@@ -418,24 +480,21 @@ export function formatLocalDateLabel(isoDate: string): string {
 export function formatEditorSaveScheduleSummary(
   cadence: AutoOrganizeCadence,
   timeZone: string,
+  from: Date = new Date(),
 ): string | null {
   const pattern = formatCadenceSummary(cadence)
 
   if (cadence.autoOrganizeType === 'monthly') {
     if (!cadence.daysOfMonth?.length) return null
-    const next = editorNextRunIso(cadence, timeZone)
-    if (!next) return pattern
-    return `${pattern} · ${formatEditorFirstRunSuffix(next, 'short')}`
-  }
-
-  if (cadence.autoOrganizeType === 'interval') {
+  } else if (cadence.autoOrganizeType === 'interval') {
     if (!cadence.startDate) return null
-    const next = editorNextRunIso(cadence, timeZone)
-    if (!next) return pattern
-    return `${pattern} · ${formatEditorFirstRunSuffix(next, 'weekday')}`
+  } else {
+    return null
   }
 
-  return null
+  const next = computeNextRunOn(cadence, timeZone, from)
+  if (!next) return pattern
+  return `${pattern} · ${formatEditorNextRunSuffix(next)}`
 }
 
 /** @deprecated use formatEditorSaveScheduleSummary */
