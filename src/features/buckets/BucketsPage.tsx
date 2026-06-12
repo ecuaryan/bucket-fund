@@ -18,10 +18,18 @@ import {
   BUCKETS_EMPTY_BODY,
   BUCKETS_EMPTY_TITLE,
   bucketsAddSourceMemberBody,
+  bucketsDeleteBucketAutoOrganizeConfirmAriaLabel,
   bucketsDeleteBucketConfirm,
   bucketsDeleteBucketEffectFloat,
+  bucketsDeleteBucketEmptyIntro,
   bucketsDeleteBucketSheetIntro,
   bucketsDeleteBucketSheetTitle,
+  BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_CONFIRM_LABEL,
+  BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO,
+  BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_SUBMITTING_LABEL,
+  BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_ACTION_HINT,
+  BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK,
+  BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_USED_IN_LABEL,
   BUCKETS_DELETE_BUCKET_EFFECT_HISTORY,
   BUCKETS_DELETE_BUCKET_EFFECT_LABEL,
   BUCKETS_DELETE_BUCKET_WHAT_HAPPENS,
@@ -72,6 +80,11 @@ import {
   reorderBuckets,
   validateBucketNameForList,
 } from '@/lib/buckets'
+import {
+  fetchAutoOrganizesUsingBucket,
+  type AutoOrganizeBucketRef,
+} from '@/lib/autoOrganize'
+import { formatErrorMessage } from '@/lib/errorMessage'
 import type { Database } from '@/types/database'
 import MoveMoneyDialog from '@/features/buckets/MoveMoneyDialog'
 import AutoOrganizeSection from '@/features/buckets/AutoOrganizeSection'
@@ -127,8 +140,14 @@ export default function BucketsPage() {
   const [syncing, setSyncing] = useState(false)
   const [manualSourceOpen, setManualSourceOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Bucket | null>(null)
+  const [deleteAutoOrganizeRefs, setDeleteAutoOrganizeRefs] = useState<
+    AutoOrganizeBucketRef[] | null
+  >(null)
+  const [deleteAutoOrganizeRefsLoadError, setDeleteAutoOrganizeRefsLoadError] =
+    useState<string | null>(null)
   const [deletingBucket, setDeletingBucket] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [autoOrganizeRefreshToken, setAutoOrganizeRefreshToken] = useState(0)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [floatInfoOpen, setFloatInfoOpen] = useState(false)
   const [coachDismissed, setCoachDismissed] = useState(true)
@@ -384,18 +403,68 @@ export default function BucketsPage() {
   }
 
   function requestDeleteBucket(b: Bucket) {
-    if (Number(b.allocated_amount) > 0) {
+    void (async () => {
       setDeleteError(null)
-      setDeleteTarget(b)
-      return
-    }
-    void performDeleteBucket(b, (message) => toast.error(message))
+      setDeleteAutoOrganizeRefs(null)
+      setDeleteAutoOrganizeRefsLoadError(null)
+
+      if (canSeeAutoOrganize && isAdmin) {
+        try {
+          const refs = await fetchAutoOrganizesUsingBucket(b.id)
+          if (refs.length > 0) {
+            setDeleteAutoOrganizeRefs(refs)
+            setDeleteTarget(b)
+            return
+          }
+        } catch (e) {
+          setDeleteAutoOrganizeRefsLoadError(
+            formatErrorMessage(e, 'Could not load schedule details.'),
+          )
+          setDeleteTarget(b)
+          return
+        }
+      }
+
+      if (Number(b.allocated_amount) > 0) {
+        setDeleteTarget(b)
+        return
+      }
+      void performDeleteBucket(b, (message) => toast.error(message))
+    })()
   }
 
   function closeDeleteConfirm() {
     if (deletingBucket) return
     setDeleteTarget(null)
     setDeleteError(null)
+    setDeleteAutoOrganizeRefs(null)
+    setDeleteAutoOrganizeRefsLoadError(null)
+  }
+
+  async function confirmRemoveFromAutoOrganizeAndDelete() {
+    if (!deleteTarget) return
+    const snapshot = buckets
+    if (renamingId === deleteTarget.id) setRenamingId(null)
+    if (moveBucketId === deleteTarget.id) setMoveBucketId(null)
+    setDeletingBucket(true)
+    setDeleteError(null)
+    setBuckets((prev) =>
+      prev ? prev.filter((x) => x.id !== deleteTarget.id) : prev,
+    )
+    setSyncing(true)
+    try {
+      await deleteBucket(deleteTarget.id)
+      setDeleteTarget(null)
+      setDeleteAutoOrganizeRefs(null)
+      await loadData()
+      setAutoOrganizeRefreshToken((token) => token + 1)
+    } catch (e) {
+      setBuckets(snapshot)
+      setDeleteError(formatErrorMessage(e, 'Could not delete bucket.'))
+    } finally {
+      setDeletingBucket(false)
+      setSyncing(false)
+    }
   }
 
   async function confirmDeleteBucket() {
@@ -830,6 +899,7 @@ export default function BucketsPage() {
           buckets={buckets ?? []}
           float={float}
           onChanged={loadData}
+          refreshToken={autoOrganizeRefreshToken}
         />
       ) : null}
         </div>
@@ -883,55 +953,123 @@ export default function BucketsPage() {
           </header>
 
           <div className="space-y-4">
-            <p className="text-sm text-zinc-400">
-              {bucketsDeleteBucketSheetIntro(
-                formatMoney(Number(deleteTarget.allocated_amount)),
-              )}
-            </p>
+            {deleteAutoOrganizeRefsLoadError ? (
+              <>
+                <p
+                  role="alert"
+                  className="break-words rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-200 ring-1 ring-inset ring-amber-500/30"
+                >
+                  {deleteAutoOrganizeRefsLoadError}
+                </p>
+                <p className="text-sm text-zinc-400">
+                  {BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK}
+                </p>
+              </>
+            ) : deleteAutoOrganizeRefs && deleteAutoOrganizeRefs.length > 0 ? (
+              <>
+                <p className="text-sm text-zinc-300">
+                  {BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO}
+                </p>
+                <p className="text-sm text-zinc-400">
+                  {BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_ACTION_HINT}
+                </p>
+                <div className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-200 ring-1 ring-inset ring-amber-500/30">
+                  <p className="text-xs font-medium text-amber-200/80">
+                    {BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_USED_IN_LABEL}
+                  </p>
+                  <ul className="mt-2 space-y-1">
+                    {deleteAutoOrganizeRefs.map((ref) => (
+                      <li key={ref.id}>{ref.name}</li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-zinc-400">
+                  {Number(deleteTarget.allocated_amount) > 0
+                    ? bucketsDeleteBucketSheetIntro(
+                        formatMoney(Number(deleteTarget.allocated_amount)),
+                      )
+                    : bucketsDeleteBucketEmptyIntro(deleteTarget.name)}
+                </p>
 
-            <div>
-              <h3 className="text-sm font-medium text-zinc-300">
-                {BUCKETS_DELETE_BUCKET_WHAT_HAPPENS}
-              </h3>
-              <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-zinc-400">
-                <li>
-                  {bucketsDeleteBucketEffectFloat(
-                    formatMoney(Number(deleteTarget.allocated_amount)),
-                  )}
-                </li>
-                <li>{BUCKETS_DELETE_BUCKET_EFFECT_LABEL}</li>
-                <li>{BUCKETS_DELETE_BUCKET_EFFECT_HISTORY}</li>
-              </ul>
-            </div>
+                <div>
+                  <h3 className="text-sm font-medium text-zinc-300">
+                    {BUCKETS_DELETE_BUCKET_WHAT_HAPPENS}
+                  </h3>
+                  <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-zinc-400">
+                    <li>
+                      {bucketsDeleteBucketEffectFloat(
+                        formatMoney(Number(deleteTarget.allocated_amount)),
+                      )}
+                    </li>
+                    <li>{BUCKETS_DELETE_BUCKET_EFFECT_LABEL}</li>
+                    <li>{BUCKETS_DELETE_BUCKET_EFFECT_HISTORY}</li>
+                  </ul>
+                </div>
+              </>
+            )}
 
             {deleteError ? (
               <p
                 role="alert"
-                className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30"
+                className="break-words rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-inset ring-red-500/30"
               >
                 {deleteError}
               </p>
             ) : null}
 
-            <div className="flex gap-2 pt-1">
+            <div
+              className={
+                (deleteAutoOrganizeRefs && deleteAutoOrganizeRefs.length > 0) ||
+                deleteAutoOrganizeRefsLoadError
+                  ? 'flex flex-col gap-2 pt-1'
+                  : 'flex gap-2 pt-1'
+              }
+            >
               <button
                 type="button"
                 onClick={closeDeleteConfirm}
                 disabled={deletingBucket}
-                className="flex-1 rounded-lg border border-zinc-700 py-2 text-sm text-zinc-400 disabled:opacity-50"
+                className={
+                  (deleteAutoOrganizeRefs && deleteAutoOrganizeRefs.length > 0) ||
+                  deleteAutoOrganizeRefsLoadError
+                    ? 'w-full rounded-lg border border-zinc-700 py-2.5 text-sm text-zinc-400 disabled:opacity-50'
+                    : 'flex-1 rounded-lg border border-zinc-700 py-2 text-sm text-zinc-400 disabled:opacity-50'
+                }
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={() => void confirmDeleteBucket()}
-                disabled={deletingBucket}
-                className="flex-1 rounded-lg bg-red-500 py-2 text-sm font-semibold text-white transition hover:bg-red-400 disabled:opacity-50"
-              >
-                {deletingBucket
-                  ? 'Deleting…'
-                  : bucketsDeleteBucketConfirm(deleteTarget.name)}
-              </button>
+              {(deleteAutoOrganizeRefs && deleteAutoOrganizeRefs.length > 0) ||
+              deleteAutoOrganizeRefsLoadError ? (
+                <button
+                  type="button"
+                  onClick={() => void confirmRemoveFromAutoOrganizeAndDelete()}
+                  disabled={deletingBucket}
+                  aria-label={bucketsDeleteBucketAutoOrganizeConfirmAriaLabel(
+                    deleteTarget.name,
+                  )}
+                  className="w-full rounded-lg bg-red-500 px-3 py-2.5 text-center text-sm font-semibold leading-snug text-white transition hover:bg-red-400 disabled:opacity-50"
+                >
+                  {deletingBucket
+                    ? BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_SUBMITTING_LABEL
+                    : deleteAutoOrganizeRefsLoadError
+                      ? bucketsDeleteBucketConfirm(deleteTarget.name)
+                      : BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_CONFIRM_LABEL}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void confirmDeleteBucket()}
+                  disabled={deletingBucket}
+                  className="flex-1 rounded-lg bg-red-500 py-2 text-sm font-semibold text-white transition hover:bg-red-400 disabled:opacity-50"
+                >
+                  {deletingBucket
+                    ? 'Deleting…'
+                    : bucketsDeleteBucketConfirm(deleteTarget.name)}
+                </button>
+              )}
             </div>
           </div>
         </Sheet>

@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { humaniseBucketWriteError, validateBucketName } from '@/lib/bucketName'
-import { FLOAT_LABEL_LOWER } from '@/lib/brand'
+import { BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_BLOCK, FLOAT_LABEL_LOWER } from '@/lib/brand'
+import { formatErrorMessage } from '@/lib/errorMessage'
 
 export {
   BUCKET_NAME_MAX_LENGTH,
@@ -59,19 +60,17 @@ export async function renameBucket(
 }
 
 /**
- * Delete a bucket. The bucket's `allocated_amount` automatically
- * returns to float because it is computed
- * as `cash_balance - sum(allocated)` and the deleted row drops out
- * of the sum. Any historical `transactions` referencing this bucket
- * keep their rows; the FKs are `on delete set null` so the audit
- * trail is preserved without dangling references.
+ * Delete a bucket atomically via `delete_bucket` (auto-organize cleanup,
+ * then bucket row). The bucket's `allocated_amount` automatically returns
+ * to float because it is computed as `cash_balance - sum(allocated)` and
+ * the deleted row drops out of the sum. Historical `transactions`
+ * referencing this bucket keep their rows; FKs are `on delete set null`.
  */
 export async function deleteBucket(bucketId: string): Promise<void> {
-  const { error } = await supabase
-    .from('buckets')
-    .delete()
-    .eq('id', bucketId)
-  if (error) throw new Error(error.message)
+  const { error } = await supabase.rpc('delete_bucket', {
+    p_bucket_id: bucketId,
+  })
+  if (error) throw new Error(humaniseDeleteBucketError(error))
 }
 
 /** Move a bucket one slot up or down within its family's display order. */
@@ -125,4 +124,15 @@ function humaniseMoveError(msg: string): string {
     return 'Session expired. Please sign in again.'
   }
   return msg
+}
+
+function humaniseDeleteBucketError(error: unknown): string {
+  const msg = formatErrorMessage(error).toLowerCase()
+  if (
+    msg.includes('auto_organize_lines') ||
+    msg.includes('auto_organize_lines_bucket_id_fkey')
+  ) {
+    return BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_BLOCK
+  }
+  return formatErrorMessage(error, 'Could not delete bucket.')
 }

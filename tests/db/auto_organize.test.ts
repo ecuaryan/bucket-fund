@@ -453,4 +453,54 @@ describe('auto_organize', () => {
     expect(second.error).not.toBeNull()
     expect(second.error?.message).toMatch(/already scheduled for this date/i)
   })
+
+  it('uses cadence summary as transaction note when auto-organize has no name', async () => {
+    const family = await createAdminFamily('ao-unnamed-note')
+    const svc = serviceClient()
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 1000,
+    })
+    const groceries = await insertBucket(svc, family.familyId, 'Groceries', null)
+    const { data: ao, error: aoError } = await svc
+      .from('auto_organizes')
+      .insert({
+        family_id: family.familyId,
+        created_by_member_id: family.adminMemberId,
+        name: null,
+        auto_organize_type: 'monthly',
+        days_of_month: [1],
+      })
+      .select('id')
+      .single()
+    if (aoError) throw aoError
+    const { error: linesError } = await svc.from('auto_organize_lines').insert({
+      auto_organize_id: ao.id,
+      bucket_id: groceries,
+      amount: 100,
+      sort_order: 0,
+    })
+    if (linesError) throw linesError
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const { data: runId, error } = await admin.rpc('run_auto_organize', {
+      p_auto_organize_id: ao.id,
+      p_trigger: 'manual',
+      p_triggered_by_member_id: family.adminMemberId,
+      p_run_on: '2026-06-01',
+    })
+    expect(error).toBeNull()
+
+    const { data: tx, error: txError } = await svc
+      .from('transactions')
+      .select('note')
+      .eq('auto_organize_run_id', runId)
+      .limit(1)
+      .single()
+    expect(txError).toBeNull()
+    expect(tx?.note).toBe('Once a month · 1st')
+  })
 })

@@ -33,6 +33,7 @@ import {
 import {
   deleteAutoOrganize,
   fetchAutoOrganizes,
+  autoOrganizeDisplayName,
   orderAutoOrganizeLinesByBuckets,
   resolveAutoOrganizeLineBucketName,
   runAutoOrganizeNow,
@@ -59,6 +60,8 @@ type Props = {
   buckets: Bucket[]
   float: number
   onChanged: () => void | Promise<void>
+  /** Bump after parent-side changes (e.g. bucket delete) to reload auto-organize rows. */
+  refreshToken?: number
 }
 
 type AutoOrganizeCardProps = {
@@ -155,6 +158,8 @@ function AutoOrganizeCard({
   )
   const pausedStatusId = `auto-organize-paused-${row.id}`
   const bucketsPanelId = `auto-organize-buckets-${row.id}`
+  const displayName = autoOrganizeDisplayName(row)
+  const hasCustomName = Boolean(row.name?.trim())
 
   return (
     <article
@@ -168,7 +173,7 @@ function AutoOrganizeCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <h3 className="truncate font-semibold text-zinc-100">
-              {row.name?.trim() || row.cadenceSummary}
+              {displayName}
             </h3>
             {row.paused ? (
               <span className="shrink-0 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-200 ring-1 ring-amber-500/35">
@@ -176,7 +181,9 @@ function AutoOrganizeCard({
               </span>
             ) : null}
           </div>
-          <p className="mt-1 text-xs text-zinc-400">{row.cadenceSummary}</p>
+          {hasCustomName ? (
+            <p className="mt-1 text-xs text-zinc-400">{row.cadenceSummary}</p>
+          ) : null}
           {row.paused ? (
             <p
               id={pausedStatusId}
@@ -304,6 +311,7 @@ export default function AutoOrganizeSection({
   buckets,
   float,
   onChanged,
+  refreshToken = 0,
 }: Props) {
   const { formatMoney } = useHideAmounts()
   const poolBuckets = buckets.filter((b) => b.owner_member_id === null)
@@ -327,7 +335,7 @@ export default function AutoOrganizeSection({
   const [busyId, setBusyId] = useState<string | null>(null)
 
   function rowDisplayName(row: AutoOrganizeWithDetails): string {
-    return row.name?.trim() || row.cadenceSummary
+    return autoOrganizeDisplayName(row)
   }
 
   const loadRows = useCallback(async () => {
@@ -344,6 +352,11 @@ export default function AutoOrganizeSection({
   useEffect(() => {
     void loadRows()
   }, [loadRows])
+
+  useEffect(() => {
+    if (refreshToken === 0) return
+    void loadRows()
+  }, [refreshToken, loadRows])
 
   usePostgresChanges(
     accessToken,

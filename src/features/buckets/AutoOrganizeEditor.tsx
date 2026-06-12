@@ -15,6 +15,7 @@ import {
   AUTO_ORGANIZE_FREQUENCY_OPTIONS,
   AUTO_ORGANIZE_INTERVAL_START_HINT,
   AUTO_ORGANIZE_INTERVAL_START_LABEL,
+  AUTO_ORGANIZE_NAME_HINT,
   AUTO_ORGANIZE_NO_BUCKETS_ERROR,
   AUTO_ORGANIZE_ONCE_MONTHLY_DAY_LABEL,
   AUTO_ORGANIZE_ONCE_MONTHLY_LAST_DAY_HINT,
@@ -366,6 +367,7 @@ export default function AutoOrganizeEditor({
               placeholder="Payday"
               inputClassName={fieldInputClassName}
             />
+            <p className="mt-1 text-xs text-zinc-500">{AUTO_ORGANIZE_NAME_HINT}</p>
           </label>
 
           <label className="block">

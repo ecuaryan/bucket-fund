@@ -729,6 +729,27 @@ export type Database = {
       auth_family_id: { Args: never; Returns: string }
       auth_member_id: { Args: never; Returns: string }
       auth_role: { Args: never; Returns: string }
+      auto_organize_cadence_summary: {
+        Args: {
+          p_auto_organize_type: string
+          p_days_of_month: number[]
+          p_interval_count: number
+          p_interval_unit: string
+          p_start_date: string
+        }
+        Returns: string
+      }
+      auto_organize_display_name: {
+        Args: {
+          p_auto_organize_type: string
+          p_days_of_month: number[]
+          p_interval_count: number
+          p_interval_unit: string
+          p_name: string
+          p_start_date: string
+        }
+        Returns: string
+      }
       auto_organize_is_due_on: {
         Args: {
           p_auto_organize_type: string
@@ -752,12 +773,20 @@ export type Database = {
         Args: { p_bucket_id: string }
         Returns: boolean
       }
+      delete_bucket: {
+        Args: { p_bucket_id: string }
+        Returns: undefined
+      }
       delete_manual_account: {
         Args: { p_account_id: string }
         Returns: undefined
       }
       ensure_member_bucket_orders: { Args: never; Returns: undefined }
       family_linked_child_member_ids: { Args: never; Returns: string[] }
+      format_auto_organize_day_of_month: {
+        Args: { p_day: number }
+        Returns: string
+      }
       generate_join_code: { Args: never; Returns: string }
       get_float_balance: { Args: never; Returns: number }
       get_home_balance_breakdown: { Args: never; Returns: Json }

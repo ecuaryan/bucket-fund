@@ -414,6 +414,52 @@ export function bucketsDeleteBucketConfirm(name: string): string {
   return `Delete ${name}`
 }
 
+/** Delete blocked: bucket still listed on a scheduled rule. */
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO =
+  'This bucket is still included in a scheduled rule that moves money here.'
+
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_ACTION_HINT =
+  'This will remove the bucket from the following and delete it. Schedules with no buckets left are deleted too.'
+
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_USED_IN_LABEL =
+  'Bucket is included in:'
+
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_CONFIRM_LABEL = 'Remove and delete'
+
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK =
+  'Deleting will still remove this bucket from any schedules it appears on.'
+
+/** @deprecated Use BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO */
+export function bucketsDeleteBucketAutoOrganizeIntro(bucketName: string): string {
+  void bucketName
+  return BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO
+}
+
+/** @deprecated Use BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_CONFIRM_LABEL */
+export function bucketsDeleteBucketRemoveFromAutoOrganizeAndDelete(
+  bucketName: string,
+): string {
+  void bucketName
+  return BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_CONFIRM_LABEL
+}
+
+export function bucketsDeleteBucketAutoOrganizeConfirmAriaLabel(
+  bucketName: string,
+): string {
+  return `Remove ${bucketName} from schedules and delete bucket`
+}
+
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_SUBMITTING_LABEL =
+  'Removing…'
+
+/** @deprecated Use bucketsDeleteBucketAutoOrganizeIntro — kept for error fallback text. */
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_BLOCK =
+  'Could not delete bucket. Try again — delete removes this bucket from any schedules automatically.'
+
+export function bucketsDeleteBucketEmptyIntro(name: string): string {
+  return `${name} is empty.`
+}
+
 /** Screen-reader label for the reorder grip popover (visual uses the grip icon). */
 export const BUCKETS_REORDER_POPOVER_LABEL =
   'Press and hold the reorder grip, then drag'
@@ -491,7 +537,7 @@ export function bucketsFloatStatusGuide(isChild: boolean): readonly FloatStatusG
   ] as const
 }
 
-// --- Auto-organize (UI — feature not yet implemented) ---
+// --- Auto-organize (Buckets tab) ---
 
 /** Buckets tab section header. Schema: `auto_organizes`. */
 export const AUTO_ORGANIZE_SECTION_TITLE = 'Auto-organize'
@@ -563,6 +609,9 @@ export const AUTO_ORGANIZE_DELETED_TOAST = 'Deleted.'
 export const AUTO_ORGANIZE_RAN_TOAST = 'Moves completed.'
 
 export const AUTO_ORGANIZE_SAVE_LABEL = 'Save'
+
+export const AUTO_ORGANIZE_NAME_HINT =
+  'Leave blank to use the schedule (e.g. Every 2 weeks) as the name.'
 
 export const AUTO_ORGANIZE_BUCKETS_LABEL = 'Buckets'
 

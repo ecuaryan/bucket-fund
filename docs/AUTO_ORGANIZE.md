@@ -399,7 +399,7 @@ automatic moves. Auto-note on tx optional (auto-organize name).
 
 | Case | Behavior |
 | --- | --- |
-| Bucket deleted | Delete bucket sheet warns if in an auto-organize; editor shows stale line; **block run** until fixed |
+| Bucket deleted | Sheet explains auto-organize block; **Remove and delete** clears lines (and empty auto-organizes) then deletes bucket |
 | Bucket renamed | Auto-organize uses `bucket_id`; UI shows current name |
 | Auto-organize paused | No automatic or manual run until resumed; Shared sees **Paused** badge + status line |
 | Cron / manual same day | Any run for `(auto_organize_id, run_on)` skips cron; multiple **manual** runs same day OK |

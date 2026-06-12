@@ -97,17 +97,20 @@ export async function fetchFamilyTimezone(): Promise<string> {
   const { data, error } = await supabase
     .from('families')
     .select('timezone')
-    .single()
+    .maybeSingle()
   if (error) throw error
-  return data.timezone
+  return data?.timezone ?? 'UTC'
 }
 
 export async function updateFamilyTimezone(timezone: string): Promise<void> {
   const { data: family, error: readError } = await supabase
     .from('families')
     .select('id')
-    .single()
+    .maybeSingle()
   if (readError) throw readError
+  if (!family) {
+    throw new Error('Session expired. Please sign in again.')
+  }
   const { error } = await supabase
     .from('families')
     .update({ timezone })
@@ -129,12 +132,12 @@ export async function fetchAutoOrganizes(): Promise<AutoOrganizeWithDetails[]> {
           auto_organize_runs ( id, status, run_on, trigger, created_at )`,
         )
         .order('created_at', { ascending: true }),
-      supabase.from('families').select('timezone').single(),
+      supabase.from('families').select('timezone').maybeSingle(),
     ])
   if (error) throw error
   if (familyError) throw familyError
 
-  const timeZone = family.timezone
+  const timeZone = family?.timezone ?? 'UTC'
 
   return (rows ?? []).map((row) => {
     const {
@@ -222,8 +225,11 @@ export async function saveAutoOrganize(
     const { data: family, error: familyReadError } = await supabase
       .from('families')
       .select('id')
-      .single()
+      .maybeSingle()
     if (familyReadError) throw familyReadError
+    if (!family) {
+      throw new Error('Session expired. Please sign in again.')
+    }
     const { data, error } = await supabase
       .from('auto_organizes')
       .insert({
@@ -265,6 +271,85 @@ export async function setAutoOrganizePaused(
 export async function deleteAutoOrganize(id: string): Promise<void> {
   const { error } = await supabase.from('auto_organizes').delete().eq('id', id)
   if (error) throw error
+}
+
+/** Auto-organize that references a bucket (blocks delete until line removed). */
+export type AutoOrganizeBucketRef = {
+  id: string
+  name: string
+}
+
+export type AutoOrganizeNameFields = Pick<
+  AutoOrganizeRow,
+  | 'name'
+  | 'auto_organize_type'
+  | 'start_date'
+  | 'interval_count'
+  | 'interval_unit'
+  | 'days_of_month'
+>
+
+/** Card title: custom name, else cadence summary (same as AutoOrganizeSection). */
+export function autoOrganizeDisplayName(row: AutoOrganizeNameFields): string {
+  const trimmed = row.name?.trim()
+  if (trimmed) return trimmed
+  const cadence: AutoOrganizeCadence = {
+    autoOrganizeType:
+      row.auto_organize_type as AutoOrganizeCadence['autoOrganizeType'],
+    startDate: row.start_date,
+    intervalCount: row.interval_count,
+    intervalUnit: row.interval_unit as AutoOrganizeCadence['intervalUnit'],
+    daysOfMonth: row.days_of_month,
+  }
+  return formatCadenceSummary(cadence)
+}
+
+/** When several rules share a label, append (1), (2), … for the delete sheet list. */
+export function disambiguateAutoOrganizeLabels(
+  refs: AutoOrganizeBucketRef[],
+): AutoOrganizeBucketRef[] {
+  const labelCounts = new Map<string, number>()
+  for (const ref of refs) {
+    labelCounts.set(ref.name, (labelCounts.get(ref.name) ?? 0) + 1)
+  }
+  const labelIndex = new Map<string, number>()
+  return refs.map((ref) => {
+    if ((labelCounts.get(ref.name) ?? 0) <= 1) return ref
+    const next = (labelIndex.get(ref.name) ?? 0) + 1
+    labelIndex.set(ref.name, next)
+    return { ...ref, name: `${ref.name} (${next})` }
+  })
+}
+
+export async function fetchAutoOrganizesUsingBucket(
+  bucketId: string,
+): Promise<AutoOrganizeBucketRef[]> {
+  const { data, error } = await supabase
+    .from('auto_organize_lines')
+    .select(
+      `auto_organize_id,
+      auto_organizes (
+        name,
+        auto_organize_type,
+        start_date,
+        interval_count,
+        interval_unit,
+        days_of_month
+      )`,
+    )
+    .eq('bucket_id', bucketId)
+  if (error) throw error
+
+  const byId = new Map<string, AutoOrganizeBucketRef>()
+  for (const row of data ?? []) {
+    const nested = row.auto_organizes as AutoOrganizeNameFields | null
+    if (!nested) continue
+    byId.set(row.auto_organize_id, {
+      id: row.auto_organize_id,
+      name: autoOrganizeDisplayName(nested),
+    })
+  }
+  return disambiguateAutoOrganizeLabels([...byId.values()])
 }
 
 export async function runAutoOrganizeNow(
