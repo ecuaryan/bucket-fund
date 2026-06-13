@@ -408,7 +408,7 @@ export const BUCKETS_DELETE_BUCKET_EFFECT_LABEL =
   'The bucket label is removed—you can’t move money to it anymore.'
 
 export const BUCKETS_DELETE_BUCKET_EFFECT_HISTORY =
-  'Past moves stay in History with this bucket’s name.'
+  'The return to Float and past moves stay in History with this bucket’s name.'
 
 export function bucketsDeleteBucketConfirm(name: string): string {
   return `Delete ${name}`

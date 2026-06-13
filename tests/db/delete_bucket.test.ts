@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   addMember,
   createAdminFamily,
+  getFloatBalance,
   insertBucket,
   serviceClient,
+  TRANSACTIONS_CLIENT,
   userClient,
 } from './fixtures'
 
@@ -112,5 +114,65 @@ describe('delete_bucket', () => {
 
     const { error } = await childClient.rpc('delete_bucket', { p_bucket_id: pool })
     expect(error?.message.toLowerCase()).toContain('not authorized')
+  })
+
+  it('records bucket→Float reclaim in History when deleting a funded bucket', async () => {
+    const family = await createAdminFamily('delete-bucket-reclaim')
+    const svc = serviceClient()
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 500,
+    })
+    const groceries = await insertBucket(svc, family.familyId, 'Groceries', null, 80)
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    expect(await getFloatBalance(admin)).toBe(420)
+
+    const { error } = await admin.rpc('delete_bucket', { p_bucket_id: groceries })
+    expect(error).toBeNull()
+    expect(await getFloatBalance(admin)).toBe(500)
+
+    const { data: tx, error: txError } = await admin
+      .from(TRANSACTIONS_CLIENT)
+      .select(
+        'type, amount, from_bucket_id, to_bucket_id, from_bucket_name, to_bucket_name, note',
+      )
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    expect(txError).toBeNull()
+    expect(tx).toMatchObject({
+      type: 'bucket_move',
+      amount: 80,
+      from_bucket_id: null,
+      to_bucket_id: null,
+      from_bucket_name: 'Groceries',
+      to_bucket_name: null,
+      note: 'Bucket deleted',
+    })
+  })
+
+  it('does not insert a reclaim row when deleting an empty bucket', async () => {
+    const family = await createAdminFamily('delete-bucket-empty-no-tx')
+    const svc = serviceClient()
+    const snacks = await insertBucket(svc, family.familyId, 'Snacks', null, 0)
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const { count: before, error: countError } = await admin
+      .from(TRANSACTIONS_CLIENT)
+      .select('id', { count: 'exact', head: true })
+    expect(countError).toBeNull()
+
+    const { error } = await admin.rpc('delete_bucket', { p_bucket_id: snacks })
+    expect(error).toBeNull()
+
+    const { count: after, error: afterError } = await admin
+      .from(TRANSACTIONS_CLIENT)
+      .select('id', { count: 'exact', head: true })
+    expect(afterError).toBeNull()
+    expect(after).toBe(before)
   })
 })

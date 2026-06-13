@@ -61,10 +61,10 @@ export async function renameBucket(
 
 /**
  * Delete a bucket atomically via `delete_bucket` (auto-organize cleanup,
- * then bucket row). The bucket's `allocated_amount` automatically returns
- * to float because it is computed as `cash_balance - sum(allocated)` and
- * the deleted row drops out of the sum. Historical `transactions`
- * referencing this bucket keep their rows; FKs are `on delete set null`.
+ * optional bucket→Float reclaim via `move_money`, then bucket row).
+ * Funded buckets log a History row before delete; empty buckets do not.
+ * Other historical `transactions` referencing this bucket keep their rows;
+ * FKs are `on delete set null`.
  */
 export async function deleteBucket(bucketId: string): Promise<void> {
   const { error } = await supabase.rpc('delete_bucket', {
