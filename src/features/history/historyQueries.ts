@@ -43,9 +43,40 @@ export type FetchHistoryPageResult =
   | { ok: true; rows: HistoryTxRow[] }
   | { ok: false; error: string }
 
+export type HistoryPageCursor = Pick<HistoryTxRow, 'created_at' | 'id'>
+
+/** True when `row` sorts after `cursor` in history order (created_at desc, id desc). */
+export function isHistoryRowOlderThan(
+  row: HistoryPageCursor,
+  cursor: HistoryPageCursor,
+): boolean {
+  if (row.created_at !== cursor.created_at) {
+    return row.created_at < cursor.created_at
+  }
+  return row.id < cursor.id
+}
+
+function postgrestFilterValue(value: string): string {
+  if (
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      value,
+    )
+  ) {
+    return value
+  }
+  return `"${value.replaceAll('"', '\\"')}"`
+}
+
+/** Keyset filter for the page after `cursor` (same sort as fetchHistoryPage). */
+export function historyPageCursorFilter(cursor: HistoryPageCursor): string {
+  const ts = postgrestFilterValue(cursor.created_at)
+  const id = postgrestFilterValue(cursor.id)
+  return `created_at.lt.${ts},and(created_at.eq.${ts},id.lt.${id})`
+}
+
 export async function fetchHistoryPage(
   activeFilter: HistoryFilter,
-  beforeCreatedAt: string | null,
+  before: HistoryPageCursor | null,
   limit: number,
 ): Promise<FetchHistoryPageResult> {
   try {
@@ -54,8 +85,9 @@ export async function fetchHistoryPage(
         .from(TX_FROM)
         .select(TX_SELECT)
         .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
         .limit(limit)
-      if (beforeCreatedAt) query = query.lt('created_at', beforeCreatedAt)
+      if (before) query = query.or(historyPageCursorFilter(before))
       if (activeFilter.kind === 'send') {
         query = query.eq('type', 'send')
       } else if (activeFilter.kind === 'bucket') {

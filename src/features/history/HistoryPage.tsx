@@ -44,7 +44,11 @@ import {
   SEND_FILTER_VALUE,
   type HistoryFilter,
 } from '@/features/history/historyFilters'
-import { fetchHistoryPage, type HistoryTxRow } from '@/features/history/historyQueries'
+import {
+  fetchHistoryPage,
+  isHistoryRowOlderThan,
+  type HistoryTxRow,
+} from '@/features/history/historyQueries'
 import { withAuthLockRetry } from '@/lib/authLockError'
 import {
   bucketEndpointLabel,
@@ -117,9 +121,10 @@ export default function HistoryPage() {
     setLoadingMore(true)
     setLoadMoreError(null)
 
+    const lastRow = rows[rows.length - 1]
     const result = await fetchHistoryPage(
       activeFilter,
-      rows[rows.length - 1].created_at,
+      { created_at: lastRow.created_at, id: lastRow.id },
       MORE_PAGE_SIZE,
     )
 
@@ -147,9 +152,9 @@ export default function HistoryPage() {
       if (!prev) return result.rows
       if (result.rows.length === 0) return prev
       const headIds = new Set(result.rows.map((r) => r.id))
-      const oldestInHead = result.rows[result.rows.length - 1].created_at
+      const oldestInHead = result.rows[result.rows.length - 1]
       const tail = prev.filter(
-        (r) => !headIds.has(r.id) && r.created_at < oldestInHead,
+        (r) => !headIds.has(r.id) && isHistoryRowOlderThan(r, oldestInHead),
       )
       return [...result.rows, ...tail]
     })
