@@ -1,29 +1,31 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { fetchHistoryPage } from './historyQueries'
+import {
+  fetchHistoryPage,
+  historyPageCursorFilter,
+  isHistoryRowOlderThan,
+} from './historyQueries'
 
 function queryChain() {
   const chain: {
-    lt: ReturnType<typeof vi.fn>
-    eq: ReturnType<typeof vi.fn>
     or: ReturnType<typeof vi.fn>
+    eq: ReturnType<typeof vi.fn>
     then: (
       resolve: (value: { data: unknown[]; error: null }) => void,
     ) => void
   } = {
-    lt: vi.fn(),
-    eq: vi.fn(),
     or: vi.fn(),
+    eq: vi.fn(),
     then: (resolve) => resolve({ data: [], error: null }),
   }
-  chain.lt.mockReturnValue(chain)
-  chain.eq.mockReturnValue(chain)
   chain.or.mockReturnValue(chain)
+  chain.eq.mockReturnValue(chain)
   return chain
 }
 
 const chain = queryChain()
 const mockLimit = vi.fn(() => chain)
-const mockOrder = vi.fn(() => ({ limit: mockLimit }))
+const mockSecondOrder = vi.fn(() => ({ limit: mockLimit }))
+const mockOrder = vi.fn(() => ({ order: mockSecondOrder }))
 const mockSelect = vi.fn(() => ({ order: mockOrder }))
 
 vi.mock('@/lib/supabase', () => ({
@@ -34,20 +36,61 @@ vi.mock('@/lib/supabase', () => ({
   },
 }))
 
+describe('isHistoryRowOlderThan', () => {
+  it('compares created_at first', () => {
+    expect(
+      isHistoryRowOlderThan(
+        { created_at: '2026-06-01T00:00:00Z', id: 'b' },
+        { created_at: '2026-06-02T00:00:00Z', id: 'a' },
+      ),
+    ).toBe(true)
+  })
+
+  it('breaks ties on id when created_at matches', () => {
+    const ts = '2026-06-01T00:00:00Z'
+    expect(
+      isHistoryRowOlderThan(
+        { created_at: ts, id: '00000000-0000-4000-8000-000000000001' },
+        { created_at: ts, id: '00000000-0000-4000-8000-000000000002' },
+      ),
+    ).toBe(true)
+    expect(
+      isHistoryRowOlderThan(
+        { created_at: ts, id: '00000000-0000-4000-8000-000000000002' },
+        { created_at: ts, id: '00000000-0000-4000-8000-000000000001' },
+      ),
+    ).toBe(false)
+  })
+})
+
+describe('historyPageCursorFilter', () => {
+  it('quotes timestamps and keeps uuid ids bare', () => {
+    const cursor = {
+      created_at: '2026-06-01T12:34:56+00:00',
+      id: '00000000-0000-4000-8000-000000000099',
+    }
+    expect(historyPageCursorFilter(cursor)).toBe(
+      'created_at.lt."2026-06-01T12:34:56+00:00",and(created_at.eq."2026-06-01T12:34:56+00:00",id.lt.00000000-0000-4000-8000-000000000099)',
+    )
+  })
+})
+
 describe('fetchHistoryPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    chain.lt.mockReturnValue(chain)
-    chain.eq.mockReturnValue(chain)
     chain.or.mockReturnValue(chain)
+    chain.eq.mockReturnValue(chain)
     mockLimit.mockReturnValue(chain)
-    mockOrder.mockReturnValue({ limit: mockLimit })
+    mockSecondOrder.mockReturnValue({ limit: mockLimit })
+    mockOrder.mockReturnValue({ order: mockSecondOrder })
     mockSelect.mockReturnValue({ order: mockOrder })
   })
 
   it('applies sends filter', async () => {
     await fetchHistoryPage({ kind: 'send' }, null, 10)
     expect(chain.eq).toHaveBeenCalledWith('type', 'send')
+    expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false })
+    expect(mockSecondOrder).toHaveBeenCalledWith('id', { ascending: false })
   })
 
   it('applies bucket filter', async () => {
@@ -57,9 +100,13 @@ describe('fetchHistoryPage', () => {
     )
   })
 
-  it('paginates with created_at cursor', async () => {
-    await fetchHistoryPage({ kind: 'all' }, '2026-06-01T00:00:00Z', 50)
-    expect(chain.lt).toHaveBeenCalledWith('created_at', '2026-06-01T00:00:00Z')
+  it('paginates with created_at and id cursor', async () => {
+    const cursor = {
+      created_at: '2026-06-01T00:00:00Z',
+      id: '00000000-0000-4000-8000-000000000001',
+    }
+    await fetchHistoryPage({ kind: 'all' }, cursor, 50)
+    expect(chain.or).toHaveBeenCalledWith(historyPageCursorFilter(cursor))
     expect(mockLimit).toHaveBeenCalledWith(50)
   })
 })
