@@ -56,6 +56,16 @@ UI labels: **Admin**, **Shared**, **Kid** (`memberRoles.ts`). DB/API values rema
 - On the **shared balance** with Shared-role members (same spending money in Buckets)
 - **Admin screen:** join code, household members, linked accounts, and **admin sign-in** (email display + password reset via email link — admin-only)
 
+**Account owner** (subset of Admin)
+- The person who signed up with email and password (`bootstrap_family` at signup)
+- Marked `is_account_owner = true` on their `family_members` row; shown as **Account owner** in Admin → household members
+- Cannot be removed or demoted; keeps real email sign-in
+- Every household has exactly one account owner
+
+**Co-admin** (`admin`, not account owner)
+- Added by an admin with full admin powers; signs in with PIN only (same as Shared/Kid add flow)
+- Can be removed by another admin; account owner cannot be removed
+
 **Shared** (`member`, e.g. spouse or co-budgeter)
 - Operational access only
 - Moves money between buckets
@@ -297,8 +307,9 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
   an internal `{memberId}@pin.bucketmymoney.internal` address (never shown in UI).
   **Admin PIN login** still uses the admin’s real email — the `pin-login` Edge
   Function issues a session via magic link without rotating the email password.
-- **PIN management:** admin only — set/reset PIN verbally; no self-service PIN
-  change in v1. Resetting **another** member's PIN signs them out on every device.
+- **PIN management:** admin only — set/reset PIN verbally for Shared and Kid; no self-service PIN
+  change for them in v1. Co-admins and the account owner can reset their own PIN from Admin →
+  household members. Resetting **another** member's PIN signs them out on every device.
   Resetting **your own** PIN signs you out on every **other** device (revoked on
   save via `signOut({ scope: 'others' })` on that device); the device where you
   save stays signed in. Other devices drop on the next refresh or activity — JWTs

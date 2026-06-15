@@ -140,7 +140,7 @@ export async function removeMember(memberId: string): Promise<void> {
 
 export async function createMember(input: {
   name: string
-  role: 'member' | 'child'
+  role: 'admin' | 'member' | 'child'
 }): Promise<{ id: string; name: string; role: string }> {
   const token = await requireAdminAccessToken()
   const data = await postFunction<{ member: { id: string; name: string; role: string } }>(

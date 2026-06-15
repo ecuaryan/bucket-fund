@@ -35,7 +35,7 @@ Deno.serve(async (req: Request) => {
   const admin = serviceClient()
   const { data: target, error: fetchError } = await admin
     .from('family_members')
-    .select('id, family_id, role, user_id, name')
+    .select('id, family_id, role, user_id, name, is_account_owner')
     .eq('id', memberId)
     .maybeSingle()
 
@@ -46,10 +46,10 @@ Deno.serve(async (req: Request) => {
   if (!target || target.family_id !== auth.familyId) {
     return jsonResponse({ error: 'Member not found' }, 404)
   }
-  if (target.role === 'admin') {
-    return jsonResponse({ error: 'Cannot remove an admin' }, 400)
+  if (target.is_account_owner) {
+    return jsonResponse({ error: 'Cannot remove the account owner' }, 400)
   }
-  if (target.role !== 'member' && target.role !== 'child') {
+  if (target.role !== 'admin' && target.role !== 'member' && target.role !== 'child') {
     return jsonResponse({ error: 'Invalid member role' }, 400)
   }
 

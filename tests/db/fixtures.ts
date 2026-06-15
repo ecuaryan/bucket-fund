@@ -76,7 +76,7 @@ export async function createAdminFamily(
 
 export async function addMember(
   familyId: string,
-  role: 'member' | 'child',
+  role: 'admin' | 'member' | 'child',
   name: string,
 ): Promise<{ memberId: string; email: string; password: string }> {
   const svc = serviceClient()
