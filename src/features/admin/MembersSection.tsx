@@ -18,6 +18,8 @@ import {
   ADMIN_PIN_SETUP_CTA_TITLE,
   APP_FORM_DATA_ATTR,
   ADMIN_REMOVE_SHARED_EFFECT_LOGIN,
+  ADMIN_REMOVE_ADMIN_EFFECT_ACCESS,
+  ADMIN_REMOVE_ADMIN_EFFECT_LOGIN,
   ADMIN_REMOVE_KID_EFFECT_ACCOUNTS,
   ADMIN_REMOVE_KID_EFFECT_BUCKETS,
   ADMIN_REMOVE_MEMBER_EFFECT_READD,
@@ -34,9 +36,11 @@ import {
 } from '@/lib/brand'
 import { bindDeviceForPinSignIn } from '@/lib/familyDevice'
 import {
+  ROLE_OPTION_ADMIN,
   ROLE_OPTION_KID,
   ROLE_OPTION_SHARED,
   roleLabel,
+  ACCOUNT_OWNER_LABEL,
 } from '@/lib/memberRoles'
 import {
   clearPinLockout,
@@ -54,6 +58,7 @@ type Member = {
   id: string
   name: string
   role: string
+  is_account_owner: boolean
   avatar_url: string | null
   pin_locked: boolean
   pin_set_at: string | null
@@ -76,7 +81,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
   const [members, setMembers] = useState<Member[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [newName, setNewName] = useState('')
-  const [newRole, setNewRole] = useState<'member' | 'child'>('member')
+  const [newRole, setNewRole] = useState<'admin' | 'member' | 'child'>('member')
   const [creating, setCreating] = useState(false)
 
   const [pinTarget, setPinTarget] = useState<Member | null>(null)
@@ -99,7 +104,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
         const { data, error } = await supabase
           .from('family_members')
           .select(
-            'id, name, role, avatar_url, pin_locked, pin_set_at, pin_failed_attempts, created_at, family_id, user_id',
+            'id, name, role, is_account_owner, avatar_url, pin_locked, pin_set_at, pin_failed_attempts, created_at, family_id, user_id',
           )
           .order('created_at', { ascending: true })
         if (error) throw new Error(error.message)
@@ -130,6 +135,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
       id: tempId,
       name,
       role: newRole,
+      is_account_owner: false,
       avatar_url: null,
       pin_locked: false,
       pin_set_at: null,
@@ -235,7 +241,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
   }
 
   function openRemoveConfirm(m: Member) {
-    if (m.role === 'admin') return
+    if (m.is_account_owner) return
     setRemoveError(null)
     setRemoveTarget(m)
   }
@@ -248,7 +254,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
 
   async function confirmRemove() {
     const m = removeTarget
-    if (!m || m.role === 'admin') return
+    if (!m || m.is_account_owner) return
 
     const snapshot = members
     setRemoving(true)
@@ -420,9 +426,12 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
           <FieldLabel spacing="tight">Role</FieldLabel>
           <select
             value={newRole}
-            onChange={(e) => setNewRole(e.target.value as 'member' | 'child')}
+            onChange={(e) =>
+              setNewRole(e.target.value as 'admin' | 'member' | 'child')
+            }
             className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700"
           >
+            <option value="admin">{ROLE_OPTION_ADMIN}</option>
             <option value="member">{ROLE_OPTION_SHARED}</option>
             <option value="child">{ROLE_OPTION_KID}</option>
           </select>
@@ -474,6 +483,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
                     </span>
                   </p>
                   <p className="text-xs text-zinc-500">
+                    {m.is_account_owner ? `${ACCOUNT_OWNER_LABEL} · ` : ''}
                     {m.pin_set_at ? 'PIN set' : 'No PIN'}
                     {m.pin_locked ? ' · locked' : ''}
                     {m.pin_failed_attempts > 0 && !m.pin_locked
@@ -508,7 +518,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
                 >
                   {m.pin_set_at ? 'Reset PIN' : 'Set PIN'}
                 </button>
-                {m.role !== 'admin' && (
+                {!m.is_account_owner && (
                   <button
                     type="button"
                     onClick={() => openRemoveConfirm(m)}
@@ -563,6 +573,11 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
                   <>
                     <li>{ADMIN_REMOVE_KID_EFFECT_BUCKETS}</li>
                     <li>{ADMIN_REMOVE_KID_EFFECT_ACCOUNTS}</li>
+                  </>
+                ) : removeTarget.role === 'admin' ? (
+                  <>
+                    <li>{ADMIN_REMOVE_ADMIN_EFFECT_ACCESS}</li>
+                    <li>{ADMIN_REMOVE_ADMIN_EFFECT_LOGIN}</li>
                   </>
                 ) : (
                   <li>{ADMIN_REMOVE_SHARED_EFFECT_LOGIN}</li>

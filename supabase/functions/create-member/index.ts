@@ -11,7 +11,7 @@ import { memberAuthEmail } from '../_shared/pin.ts'
 
 type Body = {
   name?: string
-  role?: 'member' | 'child'
+  role?: 'admin' | 'member' | 'child'
 }
 
 Deno.serve(async (req: Request) => {
@@ -36,8 +36,8 @@ Deno.serve(async (req: Request) => {
   if (!name) {
     return jsonResponse({ error: 'Name is required' }, 400)
   }
-  if (role !== 'member' && role !== 'child') {
-    return jsonResponse({ error: 'role must be member or child' }, 400)
+  if (role !== 'admin' && role !== 'member' && role !== 'child') {
+    return jsonResponse({ error: 'role must be admin, member, or child' }, 400)
   }
 
   const admin = serviceClient()
@@ -62,6 +62,7 @@ Deno.serve(async (req: Request) => {
       family_id: auth.familyId,
       name,
       role,
+      is_account_owner: false,
     })
     .select('id, name, role, family_id, created_at')
     .single()

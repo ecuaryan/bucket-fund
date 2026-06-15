@@ -49,6 +49,71 @@ describe('family_members: admin remove', () => {
   })
 })
 
+describe('family_members: account owner', () => {
+  it('signup admin is marked as account owner', async () => {
+    const family = await createAdminFamily('account-owner-flag')
+    const svc = serviceClient()
+    const { data } = await svc
+      .from('family_members')
+      .select('is_account_owner, role')
+      .eq('id', family.adminMemberId)
+      .single()
+    expect(data?.is_account_owner).toBe(true)
+    expect(data?.role).toBe('admin')
+  })
+
+  it('admin cannot delete the account owner', async () => {
+    const family = await createAdminFamily('account-owner-protected')
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+
+    const { error } = await admin
+      .from('family_members')
+      .delete()
+      .eq('id', family.adminMemberId)
+
+    expect(error).toBeNull()
+
+    const svc = serviceClient()
+    const { data } = await svc
+      .from('family_members')
+      .select('id')
+      .eq('id', family.adminMemberId)
+    expect(data).toHaveLength(1)
+  })
+
+  it('admin can delete a co-admin', async () => {
+    const family = await createAdminFamily('co-admin-remove')
+    const coAdmin = await addMember(family.familyId, 'admin', 'CoAdmin')
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+
+    const { error } = await admin
+      .from('family_members')
+      .delete()
+      .eq('id', coAdmin.memberId)
+
+    expect(error).toBeNull()
+
+    const svc = serviceClient()
+    const { data } = await svc
+      .from('family_members')
+      .select('id')
+      .eq('id', coAdmin.memberId)
+    expect(data).toEqual([])
+  })
+
+  it('admin cannot demote the account owner', async () => {
+    const family = await createAdminFamily('account-owner-demote')
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+
+    const { error } = await admin
+      .from('family_members')
+      .update({ role: 'member' })
+      .eq('id', family.adminMemberId)
+
+    expect(error).not.toBeNull()
+  })
+})
+
 describe('family_members: admin rename', () => {
   it('admin can update another member’s name', async () => {
     const family = await createAdminFamily('rename-allowed')

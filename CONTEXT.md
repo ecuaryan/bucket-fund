@@ -56,6 +56,16 @@ UI labels: **Admin**, **Shared**, **Kid** (`memberRoles.ts`). DB/API values rema
 - On the **shared balance** with Shared-role members (same spending money in Buckets)
 - **Admin screen:** join code, household members, linked accounts, and **admin sign-in** (email display + password reset via email link — admin-only)
 
+**Account owner** (subset of Admin)
+- The person who signed up with email and password (`bootstrap_family` at signup)
+- Marked `is_account_owner = true` on their `family_members` row; shown as **Account owner** in Admin → household members
+- Cannot be removed or demoted; keeps real email sign-in
+- Every household has exactly one account owner
+
+**Co-admin** (`admin`, not account owner)
+- Added by an admin with full admin powers; signs in with PIN only (same as Shared/Kid add flow)
+- Can be removed by another admin; account owner cannot be removed
+
 **Shared** (`member`, e.g. spouse or co-budgeter)
 - Operational access only
 - Moves money between buckets

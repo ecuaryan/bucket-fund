@@ -158,10 +158,11 @@ export const PIN_HOUSEHOLD_LOAD_ERROR_TITLE = 'Could not load household'
 export const ADMIN_HOUSEHOLD_MEMBERS_TITLE = 'Household members'
 
 export const ADMIN_HOUSEHOLD_MEMBERS_INTRO =
-  'When you add someone, they sign in with a PIN—not your email.'
+  'When you add someone, they sign in with a PIN—not your email. The account owner keeps email sign-in and cannot be removed.'
 
 /** Role and PIN implications when adding household members. */
 export const ADMIN_HOUSEHOLD_MEMBERS_DETAILS = [
+  'Admins can link banks, manage members, and configure auto-organize. Shared and other admins share household buckets and the same float.',
   `People on the shared balance—including you—share all household buckets and the same ${FLOAT_LABEL_LOWER}.`,
   'Fund kids with Send.',
   'Each kid only sees what you Send them and their own buckets—not the shared balance or household bank accounts.',
@@ -357,6 +358,12 @@ export const ADMIN_REMOVE_KID_EFFECT_ACCOUNTS =
   `Any bank accounts assigned to them become household accounts and count toward ${FLOAT_LABEL_LOWER}.`
 
 export const ADMIN_REMOVE_SHARED_EFFECT_LOGIN =
+  'Their PIN and sign-in are deleted.'
+
+export const ADMIN_REMOVE_ADMIN_EFFECT_ACCESS =
+  'They lose admin access—banks, members, and auto-organize settings.'
+
+export const ADMIN_REMOVE_ADMIN_EFFECT_LOGIN =
   'Their PIN and sign-in are deleted.'
 
 export function adminAssignAccountToKidSheetTitle(kidName: string): string {

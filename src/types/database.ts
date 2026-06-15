@@ -339,6 +339,7 @@ export type Database = {
           created_at: string
           family_id: string
           id: string
+          is_account_owner: boolean
           name: string
           pin_failed_attempts: number
           pin_hash: string | null
@@ -352,6 +353,7 @@ export type Database = {
           created_at?: string
           family_id: string
           id?: string
+          is_account_owner?: boolean
           name: string
           pin_failed_attempts?: number
           pin_hash?: string | null
@@ -365,6 +367,7 @@ export type Database = {
           created_at?: string
           family_id?: string
           id?: string
+          is_account_owner?: boolean
           name?: string
           pin_failed_attempts?: number
           pin_hash?: string | null
@@ -739,6 +742,7 @@ export type Database = {
         }
         Returns: string
       }
+      auto_organize_days_key: { Args: { p_days: number[] }; Returns: string }
       auto_organize_display_name: {
         Args: {
           p_auto_organize_type: string
@@ -773,10 +777,7 @@ export type Database = {
         Args: { p_bucket_id: string }
         Returns: boolean
       }
-      delete_bucket: {
-        Args: { p_bucket_id: string }
-        Returns: undefined
-      }
+      delete_bucket: { Args: { p_bucket_id: string }; Returns: undefined }
       delete_manual_account: {
         Args: { p_account_id: string }
         Returns: undefined
