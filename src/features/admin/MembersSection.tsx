@@ -518,7 +518,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
                 >
                   {m.pin_set_at ? 'Reset PIN' : 'Set PIN'}
                 </button>
-                {!m.is_account_owner && (
+                {!m.is_account_owner && m.id !== selfMemberId && (
                   <button
                     type="button"
                     onClick={() => openRemoveConfirm(m)}
