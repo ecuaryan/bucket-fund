@@ -166,7 +166,7 @@ export const ADMIN_HOUSEHOLD_MEMBERS_DETAILS = [
   `People on the shared balance—including you—share all household buckets and the same ${FLOAT_LABEL_LOWER}.`,
   'Fund kids with Send.',
   'Each kid only sees what you Send them and their own buckets—not the shared balance or household bank accounts.',
-  'Tell each person their PIN—they cannot change it themselves.',
+  'Shared and kids cannot change their PIN—you reset it here. Co-admins can reset their own PIN in Admin.',
 ] as const
 
 /** Prompt when the signed-in admin has not set a PIN yet. */
