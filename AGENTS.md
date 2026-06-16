@@ -87,9 +87,9 @@ Entry point for AI coding agents (and humans) working in this repo.
 | Reusable UI primitives          | `src/components/ui/`                  |
 | App shell, nav, layouts         | `src/components/layout/`              |
 | Auth flows (login, PIN, biometric) | `src/features/auth/`               |
-| Buckets list + move flow        | `src/features/buckets/`               |
+| Buckets list + move flow        | `src/features/buckets/` (`HideAmountsPeekControl`, `hideAmountsPeekLogic.ts`) |
 | Auto-organize | `src/features/buckets/` + `src/lib/autoOrganize.ts`, `autoOrganizeCadence.ts`; [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md) |
-| Send money flow                 | `src/features/sends/`                 |
+| Send money flow                 | `src/features/sends/` (uses `HideAmountsPeekControl` when hide amounts is on) |
 | Transaction history             | `src/features/history/`               |
 | Account linking / Teller Connect | `src/features/admin/` (not `accounts/` yet) |
 | Admin / family management       | `src/features/admin/`                 |

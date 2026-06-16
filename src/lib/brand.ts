@@ -313,10 +313,17 @@ export const ADMIN_LOADING_MEMBERS = 'Loading household members…'
 export const HIDE_AMOUNTS_LABEL = 'Hide amounts'
 export const HIDE_AMOUNTS_SHOW_LABEL = 'Show amounts'
 export const HIDE_AMOUNTS_DETAIL =
-  'Mask dollar amounts while someone watches you use the app. Bucket names and flows stay visible.'
+  'Mask dollar amounts while someone watches you use the app. Bucket names and flows stay visible. On Move or Send, press and hold Peek to see balances briefly without turning this off.'
 export const HIDE_AMOUNTS_SECTION_TITLE = 'Hide amounts'
 export const HIDE_AMOUNTS_ON_STATUS = 'Amounts are hidden.'
 export const HIDE_AMOUNTS_OFF_STATUS = 'Amounts are visible.'
+
+export const HIDE_AMOUNTS_PEEK_LABEL = 'Peek'
+export const HIDE_AMOUNTS_PEEK_ARIA_LABEL = 'Peek at balances'
+export const HIDE_AMOUNTS_PEEK_POPOVER_BODY = 'Press and hold to peek at balances'
+/** Screen-reader label for the peek hint popover. */
+export const HIDE_AMOUNTS_PEEK_POPOVER_LABEL =
+  'Press and hold Peek to show balances while amounts are hidden'
 
 export const SETTINGS_PAGE_TITLE = 'Settings'
 
