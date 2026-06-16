@@ -211,6 +211,7 @@ checks are deferred until a possible paid SaaS phase.
 - Bucket CRUD: create, inline rename, reorder, delete (with fund reclaim)
 - Move money flow (`move_money` Postgres fn + MoveMoneyDialog)
 - Send money (`send_money` RPC + Send page; shared balance funds kids; blocked shared↔shared)
+- Hide amounts (Settings toggle, per member) with **Peek** on Move and Send forms
 - Teller Connect: link bank, sync accounts, webhook balance updates, unlink
 - Manual money sources: admin-entered amounts (no bank) for onboarding; coexist with linked banks
 - Transaction history with bucket filter, pagination, tap-to-expand notes

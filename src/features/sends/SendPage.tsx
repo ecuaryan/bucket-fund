@@ -38,6 +38,8 @@ import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
+import { formatMoney as formatMoneyValue } from '@/lib/formatMoney'
+import HideAmountsPeekControl from '@/features/buckets/HideAmountsPeekControl'
 import type { Database } from '@/types/database'
 
 type Member = Pick<
@@ -47,7 +49,11 @@ type Member = Pick<
 type Account = Database['public']['Tables']['accounts']['Row']
 
 export default function SendPage() {
-  const { formatMoney } = useHideAmounts()
+  const { hidden } = useHideAmounts()
+  const [peeking, setPeeking] = useState(false)
+  const amountsHidden = hidden && !peeking
+  const formatMoney = (amount: number) =>
+    formatMoneyValue(amount, amountsHidden)
   const auth = useAuth()
   const member = auth.status === 'signedIn' ? auth.member : null
   const accessToken =
@@ -470,13 +476,29 @@ export default function SendPage() {
               {submitError}
             </p>
           )}
-          <button
-            type="submit"
-            disabled={submitting || overdraft}
-            className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {submitting ? 'Sending…' : 'Send'}
-          </button>
+          {hidden ? (
+            <div className="flex items-center justify-between gap-2">
+              <HideAmountsPeekControl
+                peeking={peeking}
+                onPeekingChange={setPeeking}
+              />
+              <button
+                type="submit"
+                disabled={submitting || overdraft}
+                className="shrink-0 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting ? 'Sending…' : 'Send'}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="submit"
+              disabled={submitting || overdraft}
+              className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitting ? 'Sending…' : 'Send'}
+            </button>
+          )}
         </form>
       ) : !sendEnabled ? (
         <p className="rounded-2xl bg-zinc-900 px-4 py-3 text-sm text-zinc-400 ring-1 ring-zinc-800">

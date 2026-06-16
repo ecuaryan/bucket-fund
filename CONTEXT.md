@@ -331,6 +331,22 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
   `member_bucket_order`. Children see only their own buckets.
 - **Deferred:** optional member email, WebAuthn fast path, children-first polish.
 
+### Hide amounts (Settings)
+
+Per-member preference stored in `localStorage` (`HideAmountsProvider`). Masks
+dollar amounts across the app while bucket names, member names, and money flows
+stay visible — for when someone is watching over your shoulder.
+
+**Peek** (Move money sheet and Send page only): when hide amounts is on, **Peek**
+appears on money-entry forms. Press and hold to temporarily show real balances
+(including available-to-send and validation hints); release to mask again. Tap
+Peek for a short hint. Peek does not change the Settings toggle and is not shown
+on read-only screens (Buckets list, History, Admin) — use **Show amounts** there
+for longer browsing.
+
+Implementation: `HideAmountsPeekControl`, `hideAmountsPeekLogic.ts`; strings in
+`src/lib/brand.ts` (`HIDE_AMOUNTS_*`).
+
 ### Auto-organize (shipped — v1)
 
 **Auto-organize** — automatically organize money from shared Float into household
