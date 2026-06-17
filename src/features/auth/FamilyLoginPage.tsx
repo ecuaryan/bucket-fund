@@ -27,7 +27,10 @@ import {
   PIN_UNBIND_JOIN_CODE_SHEET_INTRO,
   PIN_UNBIND_JOIN_CODE_SHEET_TITLE,
   PIN_UNBIND_JOIN_CODE_WHAT_HAPPENS,
+  PIN_MEMBER_NOT_SET_LABEL,
+  PIN_PICKER_AUTO_UPDATE_NOTE,
   pinNoMembersYet,
+  pinPickerPendingLead,
 } from '@/lib/brand'
 import { formatLoadErrorMessage } from '@/lib/authLockError'
 import { pickHouseholdAdminName } from '@/lib/householdAdmin'
@@ -45,6 +48,16 @@ import {
   type JoinMember,
   type ValidateJoinResult,
 } from '@/lib/memberAuth'
+import {
+  pinPickerItemClass,
+  pinPickerListClass,
+  pinPickerStatusLine,
+  pinPickerTileClass,
+  rosterHasPendingPin,
+  sortJoinMembers,
+} from '@/features/auth/familyLoginMembers'
+import { PinPickerPollIndicator } from '@/features/auth/PinPickerPollIndicator'
+import { usePinRosterPoll } from '@/hooks/usePinRosterPoll'
 import { clearPasswordRecoveryFlow } from '@/lib/passwordRecoveryFlow'
 import { takeOrphanMemberNotice } from '@/lib/pinAuth'
 import type { AuthLocationState } from '@/lib/authNavigation'
@@ -53,6 +66,9 @@ import { isStaleJoinCodeError } from '@/lib/joinCodeError'
 import { setSignInPreference } from '@/lib/signInPreference'
 
 type LocationState = AuthLocationState
+
+/** How often the PIN picker re-fetches the household roster while waiting. */
+const PIN_ROSTER_POLL_MS = 8_000
 
 export default function FamilyLoginPage() {
   const auth = useAuth()
@@ -158,6 +174,22 @@ export default function FamilyLoginPage() {
       cancelled = true
     }
   }, [loadBoundRoster])
+
+  const silentRefreshRoster = useCallback(async () => {
+    const storedCode = getBoundJoinCode()?.trim()
+    if (!storedCode) return
+    try {
+      await refreshRoster(storedCode)
+    } catch {
+      // Background refresh — keep the last good roster on transient errors.
+    }
+  }, [refreshRoster])
+
+  const rosterPollActive = Boolean(
+    roster && !selected && rosterHasPendingPin(roster.members),
+  )
+  const { isRefreshing: rosterPollRefreshing, cycleKey: rosterPollCycleKey } =
+    usePinRosterPoll(rosterPollActive, silentRefreshRoster, PIN_ROSTER_POLL_MS)
 
   const submitPin = useCallback(
     async (pinValue: string) => {
@@ -374,39 +406,80 @@ export default function FamilyLoginPage() {
     )
   }
 
-  const pinMembers = roster.members.filter((m) => m.hasPin)
+  const rosterMembers = sortJoinMembers(roster.members)
+  const pinReadyMembers = rosterMembers.filter((m) => m.hasPin)
+  const pinPendingMembers = rosterMembers.filter((m) => !m.hasPin)
   const householdAdminName = pickHouseholdAdminName(roster.members)
 
   return (
     <AuthShell title={APP_NAME} subtitle="Who's signing in?">
-      {pinMembers.length === 0 ? (
+      {rosterMembers.length === 0 ? (
         <p className="text-sm text-zinc-400">
           {pinNoMembersYet(householdAdminName)}
         </p>
       ) : (
-        <ul className="grid grid-cols-2 gap-3">
-          {pinMembers.map((m) => (
-            <li key={m.id}>
-              <button
-                type="button"
-                disabled={m.pinLocked}
-                onClick={() => selectMember(m)}
-                className="flex w-full flex-col items-center gap-2 rounded-2xl bg-zinc-900 p-4 ring-1 ring-zinc-800 transition hover:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-50"
+        <div className="space-y-4">
+          {pinPendingMembers.length > 0 ? (
+            <div className="flex flex-col items-center gap-2.5 text-center text-sm leading-snug text-zinc-400">
+              <p>
+                {pinPickerPendingLead(
+                  householdAdminName,
+                  pinReadyMembers.length === 0,
+                )}{' '}
+                {PIN_PICKER_AUTO_UPDATE_NOTE}
+              </p>
+              <PinPickerPollIndicator
+                intervalMs={PIN_ROSTER_POLL_MS}
+                refreshing={rosterPollRefreshing}
+                cycleKey={rosterPollCycleKey}
+              />
+            </div>
+          ) : null}
+          <ul className={pinPickerListClass()}>
+            {rosterMembers.map((m, index) => {
+              const statusLine = pinPickerStatusLine(
+                m,
+                rosterMembers,
+                index,
+                PIN_MEMBER_NOT_SET_LABEL,
+              )
+              return (
+              <li
+                key={m.id}
+                className={pinPickerItemClass(rosterMembers.length, index)}
               >
-                <Avatar name={m.name} url={m.avatarUrl} />
-                <span className="text-sm font-medium text-zinc-300">{m.name}</span>
-                {m.pinLocked && (
-                  <span className="text-xs text-amber-300">Locked</span>
-                )}
-              </button>
-            </li>
-          ))}
-        </ul>
+                <button
+                  type="button"
+                  disabled={!m.hasPin || m.pinLocked}
+                  onClick={() => selectMember(m)}
+                  className={pinPickerTileClass(rosterMembers.length, index)}
+                >
+                  <Avatar name={m.name} url={m.avatarUrl} />
+                  <span className="text-sm font-medium text-zinc-300">{m.name}</span>
+                  {statusLine ? (
+                    <span
+                      className={`text-center text-xs leading-snug ${
+                        statusLine.tone === 'pending'
+                          ? 'text-zinc-500'
+                          : statusLine.tone === 'locked'
+                            ? 'text-amber-300'
+                            : 'invisible'
+                      }`}
+                    >
+                      {statusLine.text}
+                    </span>
+                  ) : null}
+                </button>
+              </li>
+              )
+            })}
+          </ul>
+        </div>
       )}
       <button
         type="button"
         onClick={openUnbindConfirm}
-        className="mt-6 w-full text-sm text-zinc-500 hover:text-zinc-400"
+        className="mt-4 w-full text-sm text-zinc-500 hover:text-zinc-400"
       >
         {PIN_UNBIND_JOIN_CODE_LINK}
       </button>

@@ -184,6 +184,8 @@ export async function setMemberPin(
   if (options?.signOutOtherDevices) {
     await signOutOtherAuthSessions()
   }
+
+  notifyHouseholdRosterChanged()
 }
 
 export async function clearPinLockout(memberId: string): Promise<void> {
