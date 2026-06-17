@@ -41,8 +41,16 @@ function onDocumentHidden(): void {
   showSessionGateOverlay()
 }
 
+function shouldKeepGateWithoutAuthToken(): boolean {
+  return isAppBackgroundExpired() || isSessionGateActive()
+}
+
 function onDocumentVisible(): void {
   if (!hasSessionAuthToken()) {
+    if (shouldKeepGateWithoutAuthToken()) {
+      showSessionGateOverlay()
+      return
+    }
     clearBackgroundPrivacyFlags()
     return
   }
@@ -54,7 +62,12 @@ function onDocumentVisible(): void {
 }
 
 function onPageShow(event: PageTransitionEvent): void {
-  if (!hasSessionAuthToken()) return
+  if (!hasSessionAuthToken()) {
+    if (shouldKeepGateWithoutAuthToken()) {
+      showSessionGateOverlay()
+    }
+    return
+  }
   if (event.persisted || isAppBackgroundExpired() || isSessionGateActive()) {
     showSessionGateOverlay()
   }
