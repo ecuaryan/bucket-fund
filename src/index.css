@@ -299,6 +299,19 @@ html {
   }
 }
 
+/* Standalone PWA minimize shield — see src/lib/pwaHideShield.ts */
+.pwa-hide-shield {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background-color: #000000;
+  pointer-events: none;
+}
+
+.pwa-hide-shield[hidden] {
+  display: none !important;
+}
+
 /* Pre-React session gate — mirrors SessionGateShell / LoadingSpinner */
 .session-gate-overlay {
   position: fixed;
