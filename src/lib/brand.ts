@@ -160,13 +160,39 @@ export const ADMIN_HOUSEHOLD_MEMBERS_TITLE = 'Household members'
 export const ADMIN_HOUSEHOLD_MEMBERS_INTRO =
   'When you add someone, they sign in with a PIN—not your email. The account owner keeps email sign-in and cannot be removed.'
 
-/** Role and PIN implications when adding household members. */
-export const ADMIN_HOUSEHOLD_MEMBERS_DETAILS = [
-  'Admins can link banks, manage members, and configure auto-organize. Shared and other admins share household buckets and the same float.',
-  `People on the shared balance—including you—share all household buckets and the same ${FLOAT_LABEL_LOWER}.`,
-  'Fund kids with Send.',
-  'Each kid only sees what you Send them and their own buckets—not the shared balance or household bank accounts.',
-  'Shared and kids cannot change their PIN—you reset it here. Co-admins can reset their own PIN in Admin.',
+export const ADMIN_HOUSEHOLD_ROLES_HELP_TOGGLE = 'About household roles'
+
+/** Shown under the add-member role picker for the selected role. */
+export const ADMIN_ROLE_CONTEXT_ADMIN =
+  'Can link banks, manage members, and configure auto-organize. Shares household buckets and the same float as other admins and shared members.'
+
+export const ADMIN_ROLE_CONTEXT_SHARED = `Shares all household buckets and the same ${FLOAT_LABEL_LOWER}. Fund kids with Send.`
+
+export const ADMIN_ROLE_CONTEXT_KID =
+  'Only sees Send money and their own buckets—not the shared balance or household bank accounts.'
+
+/** Extra line when adding a shared or kid member. */
+export const ADMIN_ROLE_PIN_RESET_NOTE =
+  'Shared and kids cannot change their PIN—you reset it here. Co-admins can reset their own PIN in Admin.'
+
+export type HouseholdMemberRole = 'admin' | 'member' | 'child'
+
+export function adminRoleContext(role: HouseholdMemberRole): string {
+  switch (role) {
+    case 'admin':
+      return ADMIN_ROLE_CONTEXT_ADMIN
+    case 'member':
+      return ADMIN_ROLE_CONTEXT_SHARED
+    case 'child':
+      return ADMIN_ROLE_CONTEXT_KID
+  }
+}
+
+/** Collapsible reference — all roles at once when comparing options. */
+export const ADMIN_HOUSEHOLD_ROLES_HELP = [
+  { role: 'admin' as const, label: 'Admin', context: ADMIN_ROLE_CONTEXT_ADMIN },
+  { role: 'member' as const, label: 'Shared', context: ADMIN_ROLE_CONTEXT_SHARED },
+  { role: 'child' as const, label: 'Kid', context: ADMIN_ROLE_CONTEXT_KID },
 ] as const
 
 /** Prompt when the signed-in admin has not set a PIN yet. */
