@@ -158,22 +158,22 @@ export const PIN_HOUSEHOLD_LOAD_ERROR_TITLE = 'Could not load household'
 export const ADMIN_HOUSEHOLD_MEMBERS_TITLE = 'Household members'
 
 export const ADMIN_HOUSEHOLD_MEMBERS_INTRO =
-  'When you add someone, they sign in with a PIN—not your email. The account owner keeps email sign-in and cannot be removed.'
+  'New members sign in with a PIN. The account owner uses email and cannot be removed.'
 
 export const ADMIN_HOUSEHOLD_ROLES_HELP_TOGGLE = 'About household roles'
 
 /** Shown under the add-member role picker for the selected role. */
 export const ADMIN_ROLE_CONTEXT_ADMIN =
-  'Can link banks, manage members, and configure auto-organize. Shares household buckets and the same float as other admins and shared members.'
+  'Full household control—banks, members, and auto-organize. Shares buckets and float with Shared members.'
 
-export const ADMIN_ROLE_CONTEXT_SHARED = `Shares all household buckets and the same ${FLOAT_LABEL_LOWER}. Fund kids with Send.`
+export const ADMIN_ROLE_CONTEXT_SHARED = `Shares household buckets and ${FLOAT_LABEL_LOWER}. Fund kids with Send.`
 
 export const ADMIN_ROLE_CONTEXT_KID =
-  'Only sees Send money and their own buckets—not the shared balance or household bank accounts.'
+  'Own buckets and Send money only—no shared float or bank accounts.'
 
-/** Extra line when adding a shared or kid member. */
+/** Shown in the expanded roles reference, not under the add form. */
 export const ADMIN_ROLE_PIN_RESET_NOTE =
-  'Shared and kids cannot change their PIN—you reset it here. Co-admins can reset their own PIN in Admin.'
+  'You reset PINs for Shared and Kid members here.'
 
 export type HouseholdMemberRole = 'admin' | 'member' | 'child'
 
@@ -190,8 +190,7 @@ export function adminRoleContext(role: HouseholdMemberRole): string {
 
 /** One hint line under the add-member form for the selected role. */
 export function adminRoleAddHint(role: HouseholdMemberRole): string {
-  if (role === 'admin') return adminRoleContext(role)
-  return `${adminRoleContext(role)} ${ADMIN_ROLE_PIN_RESET_NOTE}`
+  return adminRoleContext(role)
 }
 
 /** Collapsible reference — all roles at once when comparing options. */
