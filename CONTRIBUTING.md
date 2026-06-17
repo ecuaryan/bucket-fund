@@ -22,7 +22,7 @@ after green CI on `main` (see [README § Production Supabase deploy](./README.md
 git checkout -b feat/my-change
 # … edit, commit …
 git push -u origin feat/my-change
-gh pr create
+gh pr create --title "v1.1.21: Short description of the change"
 ```
 
 Merge when all required checks are green.
@@ -43,6 +43,17 @@ number at the bottom of each tab via [`src/lib/appVersion.ts`](./src/lib/appVers
 
 Include the version bump in the same PR as the feature or fix — not a
 follow-up on `main`.
+
+**PR title:** Always lead with the version you are shipping — same semver as
+the bump in `package.json`, prefixed with `v`:
+
+```text
+v1.1.21: Kid balance refresh and admin bank activity
+```
+
+Use this on `gh pr create --title "…"` and when editing the title in GitHub.
+The version in the title must match the PR’s `package.json` bump (not the
+version currently on `main`).
 
 **Once per PR, from `main`.** Bump exactly one patch/minor/major step from the
 version on `main` when you open the PR (or in the final commit before merge).
