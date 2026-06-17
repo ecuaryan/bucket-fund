@@ -9,13 +9,15 @@ import { Sheet } from '@/components/ui/Sheet'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import {
-  ADMIN_HOUSEHOLD_MEMBERS_DETAILS,
   ADMIN_HOUSEHOLD_MEMBERS_INTRO,
   ADMIN_HOUSEHOLD_MEMBERS_TITLE,
+  ADMIN_HOUSEHOLD_ROLES_HELP,
+  ADMIN_HOUSEHOLD_ROLES_HELP_TOGGLE,
   ADMIN_LOADING_MEMBERS,
   ADMIN_PIN_SETUP_CTA_ACTION,
   ADMIN_PIN_SETUP_CTA_BODY,
   ADMIN_PIN_SETUP_CTA_TITLE,
+  ADMIN_ROLE_PIN_RESET_NOTE,
   APP_FORM_DATA_ATTR,
   ADMIN_REMOVE_SHARED_EFFECT_LOGIN,
   ADMIN_REMOVE_ADMIN_EFFECT_ACCESS,
@@ -33,12 +35,10 @@ import {
   adminRemoveMemberSheetTitle,
   adminPinSheetBody,
   adminPinSheetTitle,
+  adminRoleAddHint,
 } from '@/lib/brand'
 import { bindDeviceForPinSignIn } from '@/lib/familyDevice'
 import {
-  ROLE_OPTION_ADMIN,
-  ROLE_OPTION_KID,
-  ROLE_OPTION_SHARED,
   roleLabel,
   ACCOUNT_OWNER_LABEL,
 } from '@/lib/memberRoles'
@@ -96,6 +96,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
   const [removeTarget, setRemoveTarget] = useState<Member | null>(null)
   const [removing, setRemoving] = useState(false)
   const [removeError, setRemoveError] = useState<string | null>(null)
+  const [rolesHelpOpen, setRolesHelpOpen] = useState(false)
 
   const loadMembers = useCallback(async () => {
     setLoadError(null)
@@ -371,11 +372,45 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
         <p className="mt-1 text-xs text-zinc-400">
           {ADMIN_HOUSEHOLD_MEMBERS_INTRO}
         </p>
-        <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-zinc-400">
-          {ADMIN_HOUSEHOLD_MEMBERS_DETAILS.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
+        <button
+          type="button"
+          aria-expanded={rolesHelpOpen}
+          onClick={() => setRolesHelpOpen((open) => !open)}
+          className="mt-2 flex items-center gap-1.5 text-xs text-zinc-500 transition hover:text-zinc-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+        >
+          {ADMIN_HOUSEHOLD_ROLES_HELP_TOGGLE}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            aria-hidden="true"
+            className={
+              'h-3.5 w-3.5 shrink-0 motion-safe:transition-transform motion-safe:duration-200 ' +
+              (rolesHelpOpen ? 'rotate-180' : '')
+            }
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+        {rolesHelpOpen ? (
+          <dl className="mt-2 space-y-2 rounded-xl bg-zinc-950/60 px-3 py-2 ring-1 ring-inset ring-zinc-800/60">
+            {ADMIN_HOUSEHOLD_ROLES_HELP.map(({ role, label, context }) => (
+              <div key={role}>
+                <dt className="text-xs font-semibold text-zinc-300">{label}</dt>
+                <dd className="mt-0.5 text-xs leading-relaxed text-zinc-400">
+                  {context}
+                </dd>
+              </div>
+            ))}
+            <p className="pt-1 text-xs leading-relaxed text-zinc-500">
+              {ADMIN_ROLE_PIN_RESET_NOTE}
+            </p>
+          </dl>
+        ) : null}
       </div>
 
       {loadError && (
@@ -410,39 +445,44 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
 
       <form
         onSubmit={onCreate}
-        className="flex flex-col gap-3 rounded-2xl bg-zinc-900 p-4 ring-1 ring-zinc-800 sm:flex-row sm:items-end"
+        className="space-y-3 rounded-2xl bg-zinc-900 p-4 ring-1 ring-zinc-800"
       >
-        <label className="block flex-1">
-          <FieldLabel spacing="tight">Name</FieldLabel>
-          <ClearableInput
-            wrapperClassName="mt-1 block w-full"
-            value={newName}
-            onValueChange={setNewName}
-            placeholder="Jamie"
-            inputClassName="w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700"
-          />
-        </label>
-        <label className="block sm:w-52">
-          <FieldLabel spacing="tight">Role</FieldLabel>
-          <select
-            value={newRole}
-            onChange={(e) =>
-              setNewRole(e.target.value as 'admin' | 'member' | 'child')
-            }
-            className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700"
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <label className="block min-w-0 flex-1">
+            <FieldLabel spacing="tight">Name</FieldLabel>
+            <ClearableInput
+              wrapperClassName="mt-1 block w-full"
+              value={newName}
+              onValueChange={setNewName}
+              placeholder="Jamie"
+              inputClassName="w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700"
+            />
+          </label>
+          <label className="block sm:w-28">
+            <FieldLabel spacing="tight">Role</FieldLabel>
+            <select
+              value={newRole}
+              onChange={(e) =>
+                setNewRole(e.target.value as 'admin' | 'member' | 'child')
+              }
+              className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700"
+            >
+              <option value="admin">{roleLabel('admin')}</option>
+              <option value="member">{roleLabel('member')}</option>
+              <option value="child">{roleLabel('child')}</option>
+            </select>
+          </label>
+          <button
+            type="submit"
+            disabled={creating || !newName.trim()}
+            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50 sm:shrink-0"
           >
-            <option value="admin">{ROLE_OPTION_ADMIN}</option>
-            <option value="member">{ROLE_OPTION_SHARED}</option>
-            <option value="child">{ROLE_OPTION_KID}</option>
-          </select>
-        </label>
-        <button
-          type="submit"
-          disabled={creating || !newName.trim()}
-          className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
-        >
-          {creating ? 'Adding…' : 'Add'}
-        </button>
+            {creating ? 'Adding…' : 'Add'}
+          </button>
+        </div>
+        <p className="text-xs leading-relaxed text-zinc-500">
+          {adminRoleAddHint(newRole)}
+        </p>
       </form>
 
       {members === null ? (
