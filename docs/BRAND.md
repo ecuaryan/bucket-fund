@@ -135,7 +135,7 @@ Supabase Auth Site URL and Teller allowed origins use the same origin.
 
 **Repo / package:** [`bucket-my-money`](https://github.com/ecuaryan/bucket-my-money) on GitHub; npm package name `bucket-my-money`.
 
-**PWA short name:** `BucketMyMoney` (`APP_SHORT_NAME`).
+**PWA short name:** `Buckets` (`APP_SHORT_NAME`) — home-screen label; matches the Buckets tab and stays short on Android.
 
 **Internal storage keys:** `bucketmymoney_*` and `bucketmymoney:` prefixes
 (legacy `bucketfund_*` keys migrate on first load via `localStorageMigrate.ts`).
