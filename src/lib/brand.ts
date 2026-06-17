@@ -8,8 +8,8 @@
  */
 export const APP_NAME = 'Bucket My Money' as const
 
-/** PWA install sheet / home-screen label (keep short — Android truncates ~8 chars). */
-export const APP_SHORT_NAME = 'Bucket' as const
+/** PWA install sheet / home-screen label (keep short — matches NAV_BUCKETS_LABEL). */
+export const APP_SHORT_NAME = 'Buckets' as const
 
 /** Stable hook for e2e and form tests (`data-bucketmymoney-form`). */
 export const APP_FORM_DATA_ATTR = 'data-bucketmymoney-form' as const
