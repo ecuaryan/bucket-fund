@@ -109,7 +109,9 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
                     className="flex items-start justify-between gap-3 rounded-xl bg-zinc-950/60 px-3 py-2 ring-1 ring-zinc-800/80"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm text-zinc-200">{txn.label}</p>
+                      <p className="break-words text-sm leading-snug text-zinc-200">
+                        {txn.label}
+                      </p>
                       <p className="text-xs text-zinc-500">
                         {formatBankDate(txn.date)}
                         {txn.status === 'pending'
