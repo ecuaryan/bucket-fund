@@ -274,6 +274,21 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
 - Family-wide totals and adult shared-pool math run server-side in SQL (`SECURITY DEFINER` helpers); child clients never receive other members’ balances via RLS
 - Multi-tenant isolation via `family_id` on every table
 
+#### Supabase Advisor (accepted findings)
+Supabase Security Advisor flags generic patterns that are often accidental. This
+app uses several **on purpose** after review and DB tests (`tests/db/`). Do not
+“Autofix” or revoke grants without reading the migration comments and tests.
+
+| Lint | Finding | Status |
+|------|---------|--------|
+| **0010** | Security definer view (`transactions_client`) | **Fixed** in migration 57 — `security_invoker` view + `client_float_balance_*` helpers + column grants on `transactions` |
+| **0029** | Signed-in users can execute `SECURITY DEFINER` RPCs (`move_money`, `send_money`, `auth_*`, etc.) | **Accepted** — intentional client API; money writes only via RPCs; migration 56 revoked `anon` and internal helpers |
+| **0029** | `client_float_balance_*`, `transaction_visible_to_caller` | **Accepted** — needed for History redaction and RLS; visibility checks inside definer bodies |
+| **Auth** | Leaked password protection disabled | **Deferred** — Pro plan; enable in Dashboard when available (account-owner email/password only) |
+
+RPC surface hardening lives in `00000000000056_db_linter_security_hardening.sql`;
+History view hardening in `00000000000057_transactions_client_security_invoker.sql`.
+
 ---
 
 ### Authentication
