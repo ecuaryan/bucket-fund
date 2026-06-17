@@ -108,11 +108,28 @@ describe('float RPC security', () => {
     expect(data?.float_balance_before).toBeNull()
     expect(data?.float_balance_after).toBeNull()
 
-    const denied = await childClient
+    const floatDenied = await childClient
       .from('transactions')
-      .select('id')
+      .select('float_balance_before')
       .limit(1)
-    expect(denied.error).not.toBeNull()
+    expect(floatDenied.error).not.toBeNull()
+
+    const { data: directRow, error: directError } = await childClient
+      .from('transactions')
+      .select('id, type')
+      .eq('type', 'send')
+      .single()
+    expect(directError).toBeNull()
+    expect(directRow?.type).toBe('send')
+
+    const { data: adminTx, error: adminError } = await admin
+      .from(TRANSACTIONS_CLIENT)
+      .select('float_balance_before, float_balance_after, type')
+      .eq('type', 'send')
+      .single()
+    expect(adminError).toBeNull()
+    expect(adminTx?.float_balance_before).not.toBeNull()
+    expect(adminTx?.float_balance_after).not.toBeNull()
   })
 
   it('child cannot see adult pool bucket moves', async () => {
