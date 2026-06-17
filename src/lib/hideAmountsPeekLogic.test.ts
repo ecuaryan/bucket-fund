@@ -5,7 +5,7 @@ import {
   shouldDismissPeekPopoverOnPointerDown,
   shouldShowPeekPopoverAfterPointerUp,
   shouldShowPeekPopoverOnFocus,
-} from '@/features/buckets/hideAmountsPeekLogic'
+} from '@/lib/hideAmountsPeekLogic'
 
 describe('shouldShowPeekPopoverOnFocus', () => {
   it('shows when the control matches :focus-visible', () => {

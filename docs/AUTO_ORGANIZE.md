@@ -344,9 +344,10 @@ expand/collapse.
 
 ### Shared (read-only)
 
-Auto-organize cards: name, cadence summary, next run (or paused status), collapsible
-bucket breakdown (chevron), **total per run**, **Paused** badge when paused. No Edit /
-Pause / Run now.
+Section hidden on the Buckets tab until an admin has created at least one
+auto-organize. When visible: cards show name, cadence summary, next run (or paused
+status), collapsible bucket breakdown (chevron), **total per run**, **Paused** badge
+when paused. No Edit / Pause / Run now.
 
 ### Admin
 

@@ -23,9 +23,7 @@ import {
   type MoveMoneyIntent,
 } from '@/lib/moveMoneyDialogCopy'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
-import { formatMoney as formatMoneyValue } from '@/lib/formatMoney'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
-import HideAmountsPeekControl from '@/features/buckets/HideAmountsPeekControl'
 import type { Database } from '@/types/database'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
@@ -63,11 +61,7 @@ export default function MoveMoneyDialog({
   onClose,
   onMoved,
 }: Props) {
-  const { hidden } = useHideAmounts()
-  const [peeking, setPeeking] = useState(false)
-  const amountsHidden = hidden && !peeking
-  const formatMoney = (amount: number) =>
-    formatMoneyValue(amount, amountsHidden)
+  const { formatMoney } = useHideAmounts()
   const [fromKey, setFromKey] = useState<string>(FLOAT_ENDPOINT_KEY)
   const [toKey, setToKey] = useState<string>(initialBucketId)
   const [amountStr, setAmountStr] = useState('')
@@ -102,7 +96,6 @@ export default function MoveMoneyDialog({
     setNote('')
     setError(null)
     setFloatConfirmOpen(false)
-    setPeeking(false)
     setTimeout(() => amountRef.current?.focus(), 0)
   }, [open, initialBucketId, buckets, float, preferredIntent])
 
@@ -221,7 +214,6 @@ export default function MoveMoneyDialog({
                     setError(null)
                   }}
                   endpoints={endpoints}
-                  formatMoney={formatMoney}
                   embedded
                   hideLabel
                 />
@@ -231,7 +223,6 @@ export default function MoveMoneyDialog({
                   value={toKey}
                   onChange={setToKey}
                   endpoints={endpoints}
-                  formatMoney={formatMoney}
                   embedded
                   hideLabel
                 />
@@ -331,16 +322,7 @@ export default function MoveMoneyDialog({
             </p>
           )}
 
-          <div className="flex items-center justify-between gap-2 pt-1">
-            {hidden ? (
-              <HideAmountsPeekControl
-                peeking={peeking}
-                onPeekingChange={setPeeking}
-              />
-            ) : (
-              <span aria-hidden="true" className="shrink-0" />
-            )}
-            <div className="flex shrink-0 justify-end gap-2">
+          <div className="flex justify-end gap-2 pt-1">
             <button
               type="button"
               onClick={onClose}
@@ -365,7 +347,6 @@ export default function MoveMoneyDialog({
                     )
                   : moveMoneyDialogSubmitLabel(intent, '', undefined)}
             </button>
-            </div>
           </div>
         {floatConfirmOpen ? (
           <div className="space-y-4 border-t border-zinc-800 pt-4">
@@ -404,7 +385,6 @@ function Picker({
   value,
   onChange,
   endpoints,
-  formatMoney,
   embedded = false,
   hideLabel = false,
 }: {
@@ -412,10 +392,10 @@ function Picker({
   value: string
   onChange: (next: string) => void
   endpoints: Endpoint[]
-  formatMoney: (amount: number) => string
   embedded?: boolean
   hideLabel?: boolean
 }) {
+  const { formatMoney } = useHideAmounts()
   return (
     <label className="block min-w-0">
       {!hideLabel && (

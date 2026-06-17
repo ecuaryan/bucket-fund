@@ -3,11 +3,35 @@ import {
   keyboardInsetPx,
   scrollActiveEditableIntoView,
   scrollFocusedIntoView,
+  shouldSyncKeyboardInsetOnVisualViewportScroll,
 } from '@/lib/keyboardViewport'
 
 describe('keyboardInsetPx', () => {
   it('returns 0 when visualViewport is unavailable', () => {
     expect(keyboardInsetPx()).toBe(0)
+  })
+})
+
+describe('shouldSyncKeyboardInsetOnVisualViewportScroll', () => {
+  afterEach(() => {
+    document.body.innerHTML = ''
+    document.documentElement.classList.remove('keyboard-open')
+  })
+
+  it('returns false with no keyboard and no focused field', () => {
+    expect(shouldSyncKeyboardInsetOnVisualViewportScroll()).toBe(false)
+  })
+
+  it('returns true when keyboard-open is set', () => {
+    document.documentElement.classList.add('keyboard-open')
+    expect(shouldSyncKeyboardInsetOnVisualViewportScroll()).toBe(true)
+  })
+
+  it('returns true when a text field is focused', () => {
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    input.focus()
+    expect(shouldSyncKeyboardInsetOnVisualViewportScroll()).toBe(true)
   })
 })
 

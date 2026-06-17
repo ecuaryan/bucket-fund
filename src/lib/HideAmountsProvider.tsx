@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import HideAmountsPeekFab from '@/components/HideAmountsPeekFab'
 import { formatMoney as formatMoneyValue } from '@/lib/formatMoney'
 import {
   HIDE_AMOUNTS_STORAGE_PREFIX,
@@ -16,7 +17,9 @@ import {
 
 type HideAmountsContextValue = {
   hidden: boolean
+  peeking: boolean
   setHidden: (hidden: boolean) => void
+  setPeeking: (peeking: boolean) => void
   formatMoney: (amount: number) => string
 }
 
@@ -30,11 +33,13 @@ type Props = {
 export function HideAmountsProvider({ memberId, children }: Props) {
   /** Session override after toggle; null → read localStorage every render. */
   const [userHidden, setUserHidden] = useState<boolean | null>(null)
+  const [peeking, setPeeking] = useState(false)
   const [prevMemberId, setPrevMemberId] = useState(memberId)
 
   if (memberId !== prevMemberId) {
     setPrevMemberId(memberId)
     setUserHidden(null)
+    setPeeking(false)
   }
 
   const hidden =
@@ -45,9 +50,14 @@ export function HideAmountsProvider({ memberId, children }: Props) {
       if (!memberId) return
       writeHideAmounts(memberId, next)
       setUserHidden(next)
+      if (!next) setPeeking(false)
     },
     [memberId],
   )
+
+  useEffect(() => {
+    if (!hidden) setPeeking(false)
+  }, [hidden])
 
   useEffect(() => {
     if (!memberId) return
@@ -64,15 +74,19 @@ export function HideAmountsProvider({ memberId, children }: Props) {
   const value = useMemo<HideAmountsContextValue>(
     () => ({
       hidden,
+      peeking,
       setHidden,
-      formatMoney: (amount: number) => formatMoneyValue(amount, hidden),
+      setPeeking,
+      formatMoney: (amount: number) =>
+        formatMoneyValue(amount, hidden && !peeking),
     }),
-    [hidden, setHidden],
+    [hidden, peeking, setHidden],
   )
 
   return (
     <HideAmountsContext.Provider value={value}>
       {children}
+      <HideAmountsPeekFab />
     </HideAmountsContext.Provider>
   )
 }

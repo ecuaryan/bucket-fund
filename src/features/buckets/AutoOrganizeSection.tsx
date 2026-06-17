@@ -462,6 +462,12 @@ export default function AutoOrganizeSection({
     setEditorOpen(true)
   }
 
+  // Shared members are read-only — no empty-state CTA, so hide the section entirely
+  // until an admin has created at least one auto-organize.
+  if (!isAdmin && (rows === null || rows.length === 0)) {
+    return null
+  }
+
   return (
     <section
       className="space-y-3 border-t border-zinc-800 pt-6"

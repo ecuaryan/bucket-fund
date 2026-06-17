@@ -43,6 +43,16 @@ function isEditableField(el: Element | null): el is HTMLElement {
 }
 
 /**
+ * iOS rubber-band scroll shifts visualViewport.offsetTop without opening the
+ * keyboard. Only sync `--keyboard-inset` on viewport scroll in that case.
+ */
+export function shouldSyncKeyboardInsetOnVisualViewportScroll(): boolean {
+  if (typeof document === 'undefined') return false
+  if (document.documentElement.classList.contains('keyboard-open')) return true
+  return isEditableField(document.activeElement)
+}
+
+/**
  * Scroll the currently focused text field into view. Called when the visual
  * viewport resizes (the keyboard opening/closing) so a focused field is kept
  * clear of the keyboard and tab bar — including when the keyboard re-opens

@@ -335,17 +335,15 @@ in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
 
 Per-member preference stored in `localStorage` (`HideAmountsProvider`). Masks
 dollar amounts across the app while bucket names, member names, and money flows
-stay visible — for when someone is watching over your shoulder.
+stay visible.
 
-**Peek** (Move money sheet and Send page only): when hide amounts is on, **Peek**
-appears on money-entry forms. Press and hold to temporarily show real balances
-(including available-to-send and validation hints); release to mask again. Tap
-Peek for a short hint. Peek does not change the Settings toggle and is not shown
-on read-only screens (Buckets list, History, Admin) — use **Show amounts** there
-for longer browsing.
+**Peek:** when hide amounts is on, a fixed **Peek** control appears at the
+bottom-right on normal screens. On sheets it moves to the backdrop **below the
+panel** so it does not cover action buttons. Press and hold to temporarily show
+all masked dollar amounts; release to mask again. Tap Peek for a short hint.
 
-Implementation: `HideAmountsPeekControl`, `hideAmountsPeekLogic.ts`; strings in
-`src/lib/brand.ts` (`HIDE_AMOUNTS_*`).
+Implementation: `HideAmountsPeekFab`, `hideAmountsPeekLogic.ts`, peek state in
+`HideAmountsProvider`; strings in `src/lib/brand.ts` (`HIDE_AMOUNTS_*`).
 
 ### Auto-organize (shipped — v1)
 
