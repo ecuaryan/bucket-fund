@@ -21,6 +21,10 @@ export const NAV_LABEL_ROW_PX = 12
 export const NAV_CENTER_MAIN_PB =
   'pb-[calc(10.25rem+max(0.5rem,env(safe-area-inset-bottom,0px))+var(--keyboard-inset,0px))]'
 
+/** Fixed peek FAB: above bottom nav only (not `--keyboard-inset` — it flickers on iOS overscroll). */
+export const PEEK_FAB_FIXED_CLASS =
+  'bottom-[calc(4.75rem+max(0.5rem,env(safe-area-inset-bottom,0px)))]'
+
 export function navIconTransform(isActive: boolean, activeScale = NAV_ICON_ACTIVE_SCALE): string {
   return isActive
     ? `translateY(0) scale(${activeScale})`

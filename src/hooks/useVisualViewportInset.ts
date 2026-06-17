@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import {
   keyboardInsetPx,
   scrollActiveEditableIntoView,
+  shouldSyncKeyboardInsetOnVisualViewportScroll,
 } from '@/lib/keyboardViewport'
 
 /** Exposes `--keyboard-inset` on `:root` while the virtual keyboard is open. */
@@ -27,14 +28,18 @@ export function useVisualViewportInset(): void {
       scrollActiveEditableIntoView()
     }
 
+    function onVisualViewportScroll() {
+      if (shouldSyncKeyboardInsetOnVisualViewportScroll()) update()
+    }
+
     update()
     vv?.addEventListener('resize', onResize)
-    vv?.addEventListener('scroll', update)
+    vv?.addEventListener('scroll', onVisualViewportScroll)
     window.addEventListener('resize', onResize)
 
     return () => {
       vv?.removeEventListener('resize', onResize)
-      vv?.removeEventListener('scroll', update)
+      vv?.removeEventListener('scroll', onVisualViewportScroll)
       window.removeEventListener('resize', onResize)
       document.documentElement.style.removeProperty('--keyboard-inset')
       document.documentElement.classList.remove('keyboard-open')

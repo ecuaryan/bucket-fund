@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import HideAmountsPeekSheetAnchor from '@/components/HideAmountsPeekSheetAnchor'
 
 type Props = {
   open: boolean
@@ -62,7 +63,7 @@ export function Sheet({
       aria-modal="true"
       aria-label={ariaLabel}
       className={
-        'sheet-backdrop fixed inset-0 z-50 flex justify-center px-4 sm:items-center sm:px-0 ' +
+        'sheet-backdrop fixed inset-0 z-50 flex flex-col items-center justify-start px-4 sm:justify-center sm:px-0 ' +
         (shown ? 'sheet-backdrop-open' : '')
       }
       onClick={closeOnBackdropClick ? onClose : undefined}
@@ -81,6 +82,7 @@ export function Sheet({
       >
         {children}
       </div>
+      <HideAmountsPeekSheetAnchor />
     </div>
   )
 }

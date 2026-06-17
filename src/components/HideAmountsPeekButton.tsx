@@ -11,18 +11,14 @@ import {
   HIDE_AMOUNTS_PEEK_POPOVER_BODY,
   HIDE_AMOUNTS_PEEK_POPOVER_LABEL,
 } from '@/lib/brand'
+import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import {
   HIDE_AMOUNTS_PEEK_HOLD_MS,
   shouldDismissPeekPopoverOnBlur,
   shouldDismissPeekPopoverOnPointerDown,
   shouldShowPeekPopoverAfterPointerUp,
   shouldShowPeekPopoverOnFocus,
-} from '@/features/buckets/hideAmountsPeekLogic'
-
-type Props = {
-  peeking: boolean
-  onPeekingChange: (peeking: boolean) => void
-}
+} from '@/lib/hideAmountsPeekLogic'
 
 function PeekEyeIcon({ className = '' }: { className?: string }) {
   return (
@@ -43,10 +39,14 @@ function PeekEyeIcon({ className = '' }: { className?: string }) {
   )
 }
 
-export default function HideAmountsPeekControl({
-  peeking,
-  onPeekingChange,
-}: Props) {
+type Props = {
+  /** Popover opens above the button; use `left` when aligned to the screen edge. */
+  hintAlign?: 'left' | 'right'
+}
+
+/** Press-and-hold control — parent handles fixed vs in-sheet placement. */
+export default function HideAmountsPeekButton({ hintAlign = 'right' }: Props) {
+  const { peeking, setPeeking } = useHideAmounts()
   const [hintOpen, setHintOpen] = useState(false)
   const pointerStart = useRef<{ x: number; y: number } | null>(null)
   const longPressFired = useRef(false)
@@ -72,8 +72,8 @@ export default function HideAmountsPeekControl({
 
   const stopPeeking = useCallback(() => {
     clearHoldTimer()
-    onPeekingChange(false)
-  }, [clearHoldTimer, onPeekingChange])
+    setPeeking(false)
+  }, [clearHoldTimer, setPeeking])
 
   useEffect(() => () => {
     clearTimeout(holdTimer.current)
@@ -93,7 +93,7 @@ export default function HideAmountsPeekControl({
   }, [dismissHint, hintOpen])
 
   function onPointerDown(e: ReactPointerEvent<HTMLButtonElement>) {
-    // Keep the amount field focused so the mobile keyboard stays open while peeking.
+    // Keep focused inputs (e.g. amount fields) from blurring on mobile.
     e.preventDefault()
     pointerStart.current = { x: e.clientX, y: e.clientY }
     longPressFired.current = false
@@ -101,7 +101,7 @@ export default function HideAmountsPeekControl({
     holdTimer.current = setTimeout(() => {
       longPressFired.current = true
       dismissHint()
-      onPeekingChange(true)
+      setPeeking(true)
     }, HIDE_AMOUNTS_PEEK_HOLD_MS)
     e.currentTarget.setPointerCapture(e.pointerId)
   }
@@ -145,8 +145,13 @@ export default function HideAmountsPeekControl({
     })
   }
 
+  const hintPositionClass =
+    hintAlign === 'left'
+      ? 'left-0 bottom-full mb-2'
+      : 'right-0 bottom-full mb-2'
+
   return (
-    <div className="relative shrink-0">
+    <div className="relative">
       <button
         type="button"
         data-hide-amounts-peek=""
@@ -179,8 +184,8 @@ export default function HideAmountsPeekControl({
         onBlur={(e) => onBlur(e.relatedTarget)}
         className={
           peeking
-            ? 'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium text-emerald-300 ring-2 ring-emerald-400/70 transition select-none touch-none'
-            : 'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 focus:outline focus:outline-2 focus:outline-emerald-400 select-none touch-none'
+            ? 'inline-flex items-center gap-1.5 rounded-full bg-zinc-900/95 px-3 py-2 text-sm font-medium text-emerald-300 shadow-lg ring-2 ring-emerald-400/70 backdrop-blur transition select-none touch-none'
+            : 'inline-flex items-center gap-1.5 rounded-full bg-zinc-900/95 px-3 py-2 text-sm font-medium text-zinc-300 shadow-lg ring-1 ring-zinc-700 backdrop-blur transition hover:bg-zinc-800 hover:text-zinc-200 focus:outline focus:outline-2 focus:outline-emerald-400 select-none touch-none'
         }
       >
         <PeekEyeIcon className="h-4 w-4 shrink-0" />
@@ -190,7 +195,10 @@ export default function HideAmountsPeekControl({
         <div
           role="tooltip"
           aria-label={HIDE_AMOUNTS_PEEK_POPOVER_LABEL}
-          className="menu-popover-enter pointer-events-none absolute left-0 bottom-full z-30 mb-1 w-max max-w-[min(16rem,calc(100vw-2rem))] rounded-lg bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-200 shadow-lg ring-1 ring-zinc-700"
+          className={
+            'menu-popover-enter pointer-events-none absolute z-30 w-max max-w-[min(16rem,calc(100vw-2rem))] rounded-lg bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-200 shadow-lg ring-1 ring-zinc-700 ' +
+            hintPositionClass
+          }
         >
           {HIDE_AMOUNTS_PEEK_POPOVER_BODY}
         </div>

@@ -2,8 +2,7 @@ import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import {
   HIDE_AMOUNTS_DETAIL,
   HIDE_AMOUNTS_LABEL,
-  HIDE_AMOUNTS_OFF_STATUS,
-  HIDE_AMOUNTS_ON_STATUS,
+  HIDE_AMOUNTS_PEEK_HINT,
   HIDE_AMOUNTS_SECTION_TITLE,
   HIDE_AMOUNTS_SHOW_LABEL,
 } from '@/lib/brand'
@@ -17,11 +16,14 @@ export default function DemoHideAmountsToggle() {
       aria-label={HIDE_AMOUNTS_SECTION_TITLE}
     >
       <div className="flex items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <h2 className="text-lg font-semibold text-zinc-300">
             {HIDE_AMOUNTS_SECTION_TITLE}
           </h2>
           <p className="mt-1 text-sm text-zinc-400">{HIDE_AMOUNTS_DETAIL}</p>
+          {hidden ? (
+            <p className="mt-2 text-xs text-zinc-500">{HIDE_AMOUNTS_PEEK_HINT}</p>
+          ) : null}
         </div>
         <button
           type="button"
@@ -44,9 +46,6 @@ export default function DemoHideAmountsToggle() {
           </span>
         </button>
       </div>
-      <p className="mt-3 text-xs text-zinc-500">
-        {hidden ? HIDE_AMOUNTS_ON_STATUS : HIDE_AMOUNTS_OFF_STATUS}
-      </p>
     </section>
   )
 }
