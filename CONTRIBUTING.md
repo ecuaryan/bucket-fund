@@ -79,12 +79,16 @@ a **new** branch based on up-to-date `origin/main`, not a stale or merged branch
 
 ### GitHub branch protection (`main`)
 
-**Configured on this repo** (ruleset + classic protection):
+**Use the repository ruleset only** — do not also require the same checks in
+classic branch protection. Duplicating them makes every PR show doubled
+“Expected” checks and adds noise without extra safety.
 
-- **Repository ruleset** [`main`](https://github.com/ecuaryan/bucket-my-money/rules/16950243): PR required, three status checks, no force-push, no branch delete.
-- **Classic branch protection**: same three checks (strict), PR required (0 approvals), **including administrators**.
+**Configured on this repo:**
 
-Required check names (must match [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) job names exactly):
+- **Repository ruleset** [`main`](https://github.com/ecuaryan/bucket-my-money/rules/16950243): PR required, three status checks (strict), no force-push, no branch delete. Applies to everyone (no bypass actors).
+- **Classic branch protection:** should be **off** or must **not** list required status checks. If you still see doubled checks on PRs, remove the three check names under **Settings → Branches → `main` → Edit** (keep the ruleset).
+
+Required check names (must match [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) job `name:` fields exactly):
 
 - `lint, unit test, build`
 - `database RLS tests`
@@ -92,7 +96,7 @@ Required check names (must match [`.github/workflows/ci.yml`](./.github/workflow
 
 **Workflow:** branch → push → open PR → wait for green CI → merge. Do not `git push origin main`.
 
-To change rules: **Settings → Rules → Rulesets** or **Settings → Branches**.
+To change rules: **Settings → Rules → Rulesets** (preferred). Avoid re-adding the same checks under **Settings → Branches**.
 
 ### Vercel (production should wait for CI)
 
@@ -111,13 +115,27 @@ Preview deployments for PRs are optional; use separate Supabase env vars for pre
 
 Every push to `main` and every pull request runs [`.github/workflows/ci.yml`](./.github/workflows/ci.yml):
 
-| Job | What it runs |
-| --- | ------------ |
-| `lint, unit test, build` | ESLint, Vitest unit tests, production build (always full) |
-| `database RLS tests` | Local Supabase + `tests/db/*.test.ts` when the diff can affect Postgres (RLS, RPCs, `src/lib`, migrations, etc.). Pure UI/docs changes skip the heavy steps but the job still reports so required checks pass. |
-| `e2e smoke tests` | Local Supabase + Playwright (`tests/e2e/`) when the diff is not docs-only. Docs-only changes skip the heavy steps but the job still reports. |
+| Job | What it runs | Typical PR time |
+| --- | ------------ | --------------- |
+| `lint, unit test, build` | ESLint, Vitest unit tests, production build — **always full** | ~1 min |
+| `database RLS tests` | Local Supabase + `tests/db/*.test.ts` when the diff can affect Postgres (RLS, RPCs, `src/lib`, migrations, etc.) | ~2 min when running; seconds when skipped |
+| `e2e smoke tests` | Local Supabase + Playwright (`tests/e2e/`) when the diff is not docs-only | ~2 min when running; seconds when skipped |
 
-A lightweight `detect changed scope` job classifies the git diff ([`scripts/ciChangedScope.mjs`](./scripts/ciChangedScope.mjs)); when uncertain, both expensive jobs run (fail-safe). Required check **names** are unchanged.
+**Regression coverage (what each layer catches):**
+
+| Layer | Catches |
+| ----- | ------- |
+| Lint + unit + build | TypeScript/React bugs, broken imports, bad copy in tests, PWA build failures |
+| Database RLS tests | Tenant isolation, child lockdown, `move_money` / `send_money` invariants, policy regressions |
+| E2E smoke | Auth routing, login → Buckets, bucket rename/delete UX against real local Supabase |
+
+**Speed without cutting corners:**
+
+- A lightweight `detect changed scope` job classifies the git diff ([`scripts/ciChangedScope.mjs`](./scripts/ciChangedScope.mjs)). When uncertain, both expensive jobs run (fail-safe). Skipped jobs still **report success** so required checks pass.
+- **Playwright:** browsers live in Actions cache; `install --with-deps` runs only on cache miss (not every job).
+- **Supabase in CI:** `supabase start --exclude …` omits Studio, Storage, Inbucket, Edge runtime, and logging sidecars — enough for db tests and smoke e2e (Postgres, Auth, REST, Realtime). Docker image caching is intentionally **not** used; Supabase upstream found it slower than fresh pulls.
+
+**Typical wall-clock:** docs-only PR ~1 min; UI-only PR ~3 min; schema/RPC PR ~3 min (db + e2e run in parallel).
 
 ## Local commands
 

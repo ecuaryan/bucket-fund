@@ -37,6 +37,18 @@ body {
   body {
     overscroll-behavior-y: none;
   }
+
+  /*
+   * Android’s home / task-switcher animation snapshots the live layer tree.
+   * backdrop-filter on fixed shell chrome often composites as white in that
+   * thumbnail. Use opaque zinc-900 in the installed PWA only — browser tabs
+   * keep blur for normal dev/preview.
+   */
+  .app-shell-chrome {
+    background-color: #18181b !important; /* zinc-900 */
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
 }
 
 /*

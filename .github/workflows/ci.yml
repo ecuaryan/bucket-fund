@@ -1,14 +1,25 @@
 name: CI
 
+# Fast when safe, thorough when needed:
+# - `detect changed scope` skips heavy db/e2e work for docs-only or UI-only diffs.
+# - Playwright browsers are cached; full install --with-deps only on cache miss.
+# - Local Supabase starts a minimal service set (see SUPABASE_CI_EXCLUDE).
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  # Smoke/db tests need Postgres, Auth, REST, and Realtime — not Studio, Storage, etc.
+  SUPABASE_CI_EXCLUDE: studio,storage-api,imgproxy,inbucket,edge-runtime,logflare,vector
 
 jobs:
   changes:
@@ -104,7 +115,7 @@ jobs:
 
       - name: Start Supabase
         if: needs.changes.outputs.run_db != 'false'
-        run: supabase start
+        run: supabase start --exclude "${{ env.SUPABASE_CI_EXCLUDE }}"
 
       - name: Database RLS tests
         if: needs.changes.outputs.run_db != 'false'
@@ -148,14 +159,16 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-chromium-${{ runner.os }}-
 
       - name: Install Playwright browser
-        if: needs.changes.outputs.run_e2e != 'false'
+        if: needs.changes.outputs.run_e2e != 'false' && steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install chromium --with-deps
 
       - name: Start Supabase
         if: needs.changes.outputs.run_e2e != 'false'
-        run: supabase start
+        run: supabase start --exclude "${{ env.SUPABASE_CI_EXCLUDE }}"
 
       - name: E2E smoke tests
         if: needs.changes.outputs.run_e2e != 'false'
