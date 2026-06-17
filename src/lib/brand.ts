@@ -169,7 +169,7 @@ export const ADMIN_ROLE_CONTEXT_ADMIN =
 export const ADMIN_ROLE_CONTEXT_SHARED = `Shares household buckets and ${FLOAT_LABEL_LOWER}. Fund kids with Send.`
 
 export const ADMIN_ROLE_CONTEXT_KID =
-  'Own buckets and Send money only—no shared float or bank accounts.'
+  'Own buckets—not shared float. Fund with Send, or assign a bank account in Money sources.'
 
 /** Shown in the expanded roles reference, not under the add form. */
 export const ADMIN_ROLE_PIN_RESET_NOTE =
