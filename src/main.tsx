@@ -8,12 +8,10 @@ import { AuthProvider } from '@/lib/auth'
 import { ToastProvider } from '@/components/ui/ToastProvider'
 import { migrateLegacyStorageKeys } from '@/lib/localStorageMigrate'
 import { registerBackgroundPrivacyShield } from '@/lib/backgroundPrivacyShield'
-import { registerPwaHideShield } from '@/lib/pwaHideShield'
 import { registerPwaUpdateChecks } from '@/lib/pwaUpdate'
 import './index.css'
 
 migrateLegacyStorageKeys()
-registerPwaHideShield()
 registerBackgroundPrivacyShield()
 registerSW({
   immediate: true,

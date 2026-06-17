@@ -4,8 +4,8 @@
  * Force dark theme app-wide. We also set `color-scheme: dark` so the
  * browser themes scrollbars, autofill, and form widgets accordingly,
  * and put a dark color on <html>/<body> so any area outside the React
- * root (e.g. iOS safe-area bounce, overscroll) matches. `#root` is black
- * too so Android’s app-close snapshot does not pick up a default white layer.
+ * root (e.g. iOS safe-area bounce, overscroll) matches. `#root` uses the same
+ * black fill so the React tree has no default white gap at the edges.
  *
  * Background is pure black and cards step up to zinc-900 — high-contrast
  * Strike-style look. Neutral zinc (no blue cast) rather than slate.
@@ -36,18 +36,6 @@ body {
   html,
   body {
     overscroll-behavior-y: none;
-  }
-
-  /*
-   * Android’s home / task-switcher animation snapshots the live layer tree.
-   * backdrop-filter on fixed shell chrome often composites as white in that
-   * thumbnail. Use opaque zinc-900 in the installed PWA only — browser tabs
-   * keep blur for normal dev/preview.
-   */
-  .app-shell-chrome {
-    background-color: #18181b !important; /* zinc-900 */
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
   }
 }
 
@@ -297,19 +285,6 @@ html {
   .session-gate-spinner {
     animation: none !important;
   }
-}
-
-/* Standalone PWA minimize shield — see src/lib/pwaHideShield.ts */
-.pwa-hide-shield {
-  position: fixed;
-  inset: 0;
-  z-index: 9998;
-  background-color: #000000;
-  pointer-events: none;
-}
-
-.pwa-hide-shield[hidden] {
-  display: none !important;
 }
 
 /* Pre-React session gate — mirrors SessionGateShell / LoadingSpinner */
