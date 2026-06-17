@@ -87,15 +87,7 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
       </button>
       {expanded ? (
         <div className="mt-2 space-y-2">
-          <p className="flex flex-wrap items-baseline gap-x-1.5 text-xs text-zinc-500">
-            <span className="text-[11px] uppercase tracking-wide">
-              {ADMIN_BANK_ACTIVITY_SECTION_LABEL}
-            </span>
-            <span className="text-zinc-600" aria-hidden>
-              ·
-            </span>
-            <span>{ADMIN_BANK_ACTIVITY_SECTION_HINT}</span>
-          </p>
+          <p className="text-xs text-zinc-500">{ADMIN_BANK_ACTIVITY_SCOPE}</p>
           {loading ? (
             <p className="text-xs text-zinc-400">{ADMIN_BANK_ACTIVITY_LOADING}</p>
           ) : error ? (
