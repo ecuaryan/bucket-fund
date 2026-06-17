@@ -27,6 +27,7 @@ import {
   buildAccountIdentityKeyFromRow,
 } from '../_shared/accountIdentity.ts'
 import { listAccountsWithBalances } from '../_shared/teller.ts'
+import { publishableKey, secretKey } from '../_shared/keys.ts'
 
 type EnrollRequest = {
   accessToken: string
@@ -123,10 +124,8 @@ Deno.serve(async (req: Request) => {
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
 
-  const callerClient = createClient(supabaseUrl, anonKey, {
+  const callerClient = createClient(supabaseUrl, publishableKey(), {
     global: { headers: { Authorization: authHeader } },
   })
 
@@ -167,7 +166,7 @@ Deno.serve(async (req: Request) => {
     )
   }
 
-  const admin = createClient(supabaseUrl, serviceRoleKey)
+  const admin = createClient(supabaseUrl, secretKey())
 
   const { data: enrollment, error: enrollmentError } = await admin
     .from('teller_enrollments')

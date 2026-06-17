@@ -299,6 +299,29 @@ Teller certs before trusting real bank credentials (see below).
       npx supabase secrets set --env-file ./supabase/functions/.env
       ```
 
+### Publishable and secret API keys (hosted)
+
+Supabase is replacing legacy JWT-based `anon` / `service_role` keys with
+**publishable** (`sb_publishable_…`) and **secret** (`sb_secret_…`) keys.
+Legacy keys still work during the transition; the app prefers the new names when
+set ([Supabase migration guide](https://supabase.com/docs/guides/getting-started/migrating-to-new-api-keys)).
+
+**When you're ready (no rush before late 2026):**
+
+1. Supabase Dashboard → **Settings → API Keys** → create publishable + secret
+   keys if you don't have them yet (legacy keys keep working).
+2. **Vercel** → project env → set `VITE_SUPABASE_PUBLISHABLE_KEY` to the
+   publishable key. You can remove `VITE_SUPABASE_ANON_KEY` after smoke-testing.
+3. **Edge Functions** — hosted projects auto-inject `SUPABASE_PUBLISHABLE_KEYS`
+   and `SUPABASE_SECRET_KEYS` (JSON maps). Our functions read those first and
+   fall back to `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY`. Redeploy
+   functions after merging key-support code (`Deploy Supabase` on merge).
+4. Smoke-test: sign-in, Buckets, Teller enroll, PIN login.
+5. Only then disable legacy keys in the dashboard (reversible if something breaks).
+
+Local Docker still uses legacy anon/service keys from `supabase status`; no change
+needed for `npm run db:start` / `source scripts/env-local.sh`.
+
 ### Production database
 
 Before the first non-builder family signs up:

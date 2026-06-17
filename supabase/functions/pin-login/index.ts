@@ -4,6 +4,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { handleCors, jsonResponse } from '../_shared/http.ts'
 import { serviceClient } from '../_shared/supabase.ts'
+import { publishableKey } from '../_shared/keys.ts'
 import {
   isPinOnlyAuthEmail,
   isValidPin,
@@ -107,8 +108,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
-  const anon = createClient(supabaseUrl, anonKey)
+  const anon = createClient(supabaseUrl, publishableKey())
 
   let sessionData: Awaited<ReturnType<typeof anon.auth.signInWithPassword>>
 

@@ -650,6 +650,7 @@ Use this to kick off the build:
 
 ```
 VITE_SUPABASE_URL=
+VITE_SUPABASE_PUBLISHABLE_KEY=
 VITE_SUPABASE_ANON_KEY=
 VITE_TELLER_APPLICATION_ID=
 TELLER_SIGNING_SECRET=        # Edge Function only, never exposed to client

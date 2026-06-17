@@ -10,6 +10,7 @@
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { publishableKey, secretKey } from '../_shared/keys.ts'
 import { isCashAccountType } from '../_shared/cashAccountTypes.ts'
 import { shouldSkipRefresh } from '../_shared/refreshThrottle.ts'
 import { getBalance } from '../_shared/teller.ts'
@@ -52,10 +53,8 @@ Deno.serve(async (req: Request) => {
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
 
-  const callerClient = createClient(supabaseUrl, anonKey, {
+  const callerClient = createClient(supabaseUrl, publishableKey(), {
     global: { headers: { Authorization: authHeader } },
   })
 
@@ -89,7 +88,7 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Invalid JSON body' }, 400)
   }
 
-  const admin = createClient(supabaseUrl, serviceRoleKey)
+  const admin = createClient(supabaseUrl, secretKey())
   const familyId = member.family_id
 
   let enrollmentQuery = admin

@@ -5,6 +5,7 @@ export function localSupabaseViteEnv(): Record<string, string> {
   const { url, anonKey } = requireDbEnv()
   return {
     VITE_SUPABASE_URL: url,
+    VITE_SUPABASE_PUBLISHABLE_KEY: anonKey,
     VITE_SUPABASE_ANON_KEY: anonKey,
   }
 }

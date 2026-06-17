@@ -1,15 +1,14 @@
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
+import { publishableKey, secretKey } from './keys.ts'
 
 export function serviceClient(): SupabaseClient {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  return createClient(supabaseUrl, serviceRoleKey)
+  return createClient(supabaseUrl, secretKey())
 }
 
 export function callerClient(authHeader: string): SupabaseClient {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
-  return createClient(supabaseUrl, anonKey, {
+  return createClient(supabaseUrl, publishableKey(), {
     global: { headers: { Authorization: authHeader } },
   })
 }

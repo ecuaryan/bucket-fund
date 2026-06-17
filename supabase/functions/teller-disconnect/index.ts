@@ -26,6 +26,7 @@
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { publishableKey, secretKey } from '../_shared/keys.ts'
 
 type DisconnectRequest = {
   enrollmentId: string
@@ -64,10 +65,8 @@ Deno.serve(async (req: Request) => {
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
 
-  const callerClient = createClient(supabaseUrl, anonKey, {
+  const callerClient = createClient(supabaseUrl, publishableKey(), {
     global: { headers: { Authorization: authHeader } },
   })
 
@@ -103,7 +102,7 @@ Deno.serve(async (req: Request) => {
   }
 
   // --- Look up enrollment (family-scoped) ----------------------------
-  const admin = createClient(supabaseUrl, serviceRoleKey)
+  const admin = createClient(supabaseUrl, secretKey())
 
   const { data: enrollment, error: enrollmentError } = await admin
     .from('teller_enrollments')

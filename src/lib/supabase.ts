@@ -3,26 +3,31 @@ import {
   prepareAuthStorageOnStartup,
   supabaseAuthStorage,
 } from '@/lib/authPersistence'
+import { resolveSupabasePublishableKey } from '@/lib/supabaseKeys'
 import type { Database } from '@/types/database'
 
 export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabasePublishableKey = resolveSupabasePublishableKey(import.meta.env)
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!supabaseUrl) {
   throw new Error(
-    'Missing Supabase environment variables. Copy .env.example to .env.local and fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
+    'Missing VITE_SUPABASE_URL. Copy .env.example to .env.local and fill in your Supabase project URL.',
   )
 }
 
 prepareAuthStorageOnStartup()
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: supabaseAuthStorage,
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    // Recover from orphaned cross-tab locks instead of hanging sign-in.
-    lockAcquireTimeout: 5000,
+export const supabase = createClient<Database>(
+  supabaseUrl,
+  supabasePublishableKey,
+  {
+    auth: {
+      storage: supabaseAuthStorage,
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      // Recover from orphaned cross-tab locks instead of hanging sign-in.
+      lockAcquireTimeout: 5000,
+    },
   },
-})
+)
