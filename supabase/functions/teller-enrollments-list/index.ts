@@ -5,6 +5,7 @@
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { publishableKey, secretKey } from '../_shared/keys.ts'
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -34,10 +35,8 @@ Deno.serve(async (req: Request) => {
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
 
-  const callerClient = createClient(supabaseUrl, anonKey, {
+  const callerClient = createClient(supabaseUrl, publishableKey(), {
     global: { headers: { Authorization: authHeader } },
   })
 
@@ -61,7 +60,7 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Only admins can view enrollments' }, 403)
   }
 
-  const admin = createClient(supabaseUrl, serviceRoleKey)
+  const admin = createClient(supabaseUrl, secretKey())
   const { data: enrollments, error: listError } = await admin
     .from('teller_enrollments')
     .select('id, enrollment_id, institution_name, status, last_synced_at')

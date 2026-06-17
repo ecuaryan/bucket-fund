@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VITE_SUPABASE_URL: https://placeholder.supabase.co
-      VITE_SUPABASE_ANON_KEY: placeholder-anon-key
+      VITE_SUPABASE_PUBLISHABLE_KEY: placeholder-publishable-key
 
     steps:
       - uses: actions/checkout@v4

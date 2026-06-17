@@ -21,6 +21,7 @@
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { secretKey } from '../_shared/keys.ts'
 import { getBalance, verifyWebhookSignature } from '../_shared/teller.ts'
 
 type TellerWebhookPayload = {
@@ -64,8 +65,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const admin = createClient(supabaseUrl, serviceRoleKey)
+  const admin = createClient(supabaseUrl, secretKey())
 
   const enrollmentId =
     (event.payload?.enrollment_id as string | undefined) ?? null

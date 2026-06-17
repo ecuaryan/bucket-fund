@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { SESSION_EXPIRED_MESSAGE } from '@/lib/brand'
 import { getFreshAccessToken, refreshAccessToken } from '@/lib/sessionToken'
+import { resolveSupabasePublishableKey } from '@/lib/supabaseKeys'
 
 const TELLER_CONNECT_SRC = 'https://cdn.teller.io/connect/connect.js'
 
@@ -108,9 +109,9 @@ async function authFetch(
   init?: RequestInit,
 ): Promise<Response> {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-  if (!supabaseUrl || !anonKey) {
-    throw new Error('Missing Supabase environment variables')
+  const publishableKey = resolveSupabasePublishableKey(import.meta.env)
+  if (!supabaseUrl) {
+    throw new Error('Missing VITE_SUPABASE_URL')
   }
 
   const accessToken = await getFreshAccessToken()
@@ -120,7 +121,7 @@ async function authFetch(
     fetch(`${supabaseUrl}/functions/v1/${path}`, {
       ...init,
       headers: {
-        apikey: anonKey,
+        apikey: publishableKey,
         Authorization: `Bearer ${token}`,
         ...(init?.headers ?? {}),
       },

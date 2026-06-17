@@ -1,9 +1,10 @@
+import { resolveSupabasePublishableKey } from '@/lib/supabaseKeys'
 import { notifyHouseholdRosterChanged } from '@/lib/householdRosterRefresh'
 import { getFreshAccessToken, refreshAccessToken } from '@/lib/sessionToken'
 import { supabase, supabaseUrl } from '@/lib/supabase'
 import { withTimeout } from '@/lib/timeout'
 
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const publishableKey = resolveSupabasePublishableKey(import.meta.env)
 
 const PIN_LOGIN_TIMEOUT_MS = 25_000
 
@@ -54,7 +55,7 @@ async function postFunction<T>(
 ): Promise<T> {
   const headers: Record<string, string> = {
     'content-type': 'application/json',
-    apikey: anonKey,
+    apikey: publishableKey,
   }
   if (accessToken) {
     headers.Authorization = `Bearer ${accessToken}`

@@ -52,6 +52,7 @@ if (!apiUrl || !anon) {
 
 const lines = [
   `export VITE_SUPABASE_URL=${apiUrl}`,
+  `export VITE_SUPABASE_PUBLISHABLE_KEY=${anon}`,
   `export VITE_SUPABASE_ANON_KEY=${anon}`,
   `export SUPABASE_URL=${apiUrl}`,
   `export SUPABASE_ANON_KEY=${anon}`,
