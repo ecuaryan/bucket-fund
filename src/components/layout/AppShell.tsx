@@ -12,7 +12,7 @@ import {
 import { useAuth } from '@/lib/auth'
 import { useScrollToTopOnPathname } from '@/hooks/useScrollToTopOnPathname'
 import { useSendRecipients } from '@/hooks/useSendRecipients'
-import { NAV_CENTER_MAIN_PB } from '@/components/layout/navLayout'
+import { NAV_CENTER_MAIN_PB, APP_CHROME_Z_INDEX } from '@/components/layout/navLayout'
 import { buildNavTabs } from '@/components/layout/navTabs'
 
 export default function AppShell() {
@@ -44,7 +44,10 @@ export default function AppShell() {
 
   return (
     <div className="flex min-h-svh flex-col bg-black text-zinc-300">
-      <header className="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-900/80 backdrop-blur">
+      <header
+        className="sticky top-0 border-b border-zinc-800 bg-zinc-900/80 backdrop-blur"
+        style={{ zIndex: APP_CHROME_Z_INDEX }}
+      >
         <div className="mx-auto flex max-w-md items-center justify-between px-4 py-3">
           <NavLink
             to="/"
@@ -80,7 +83,7 @@ export default function AppShell() {
 
       <main
         className={
-          'mx-auto w-full max-w-md flex-1 px-4 pt-6 ' + NAV_CENTER_MAIN_PB
+          'relative z-0 mx-auto w-full max-w-md flex-1 px-4 pt-6 ' + NAV_CENTER_MAIN_PB
         }
       >
         <Outlet />

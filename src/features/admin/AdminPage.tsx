@@ -48,6 +48,7 @@ import {
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
 import RefreshIcon from '@/components/ui/RefreshIcon'
 import AccountAssignmentSelect from '@/features/admin/AccountAssignmentSelect'
+import BankAccountActivity from '@/features/admin/BankAccountActivity'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import AdminAccountSection from '@/features/admin/AdminAccountSection'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
@@ -394,17 +395,15 @@ export default function AdminPage() {
       <BusyOverlay
         busy={
           manualDialog === null &&
+          !teller.linking &&
           (unlinkingKey !== null ||
             reconnectingKey !== null ||
             refreshingKey !== null ||
-            teller.linking ||
             accountsSyncing)
         }
         label={
-          teller.linking
-            ? reconnectingKey
-              ? 'Reconnecting…'
-              : 'Linking…'
+          reconnectingKey
+            ? 'Reconnecting…'
             : refreshingKey
               ? 'Refreshing balances…'
               : 'Updating accounts…'
@@ -612,8 +611,19 @@ export default function AdminPage() {
                   {group.accounts.map((a) => (
                     <li
                       key={a.id}
-                      className="flex items-center justify-between gap-3 px-4 py-2.5"
+                      className={
+                        group.isManual
+                          ? undefined
+                          : 'flex flex-col px-4 py-3'
+                      }
                     >
+                      <div
+                        className={
+                          group.isManual
+                            ? 'flex items-center justify-between gap-3 px-4 py-2.5'
+                            : 'flex items-center justify-between gap-3'
+                        }
+                      >
                       <div className="min-w-0">
                         <p className="truncate text-sm text-zinc-300">
                           {a.account_name ?? 'Account'}
@@ -684,6 +694,10 @@ export default function AdminPage() {
                           {formatMoney(Number(a.current_balance))}
                         </p>
                       </div>
+                      </div>
+                      {!group.isManual ? (
+                        <BankAccountActivity accountId={a.id} panelOpen={expanded} />
+                      ) : null}
                     </li>
                   ))}
                 </ul>

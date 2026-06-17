@@ -395,6 +395,9 @@ verify_jwt = true
 [functions.teller-enrollments-list]
 verify_jwt = true
 
+[functions.teller-transactions-list]
+verify_jwt = true
+
 [functions.teller-disconnect]
 verify_jwt = true
 

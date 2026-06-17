@@ -1,5 +1,8 @@
 /** Bottom nav layout tokens (sliding bubble chrome). */
 
+/** z-index for sticky header + fixed bottom nav — above in-page {@link BusyOverlay}. */
+export const APP_CHROME_Z_INDEX = 30
+
 export const NAV_BUBBLE_SIZE_PX = 48
 
 /** Half the bubble diameter — circle center sits on the bar top border. */

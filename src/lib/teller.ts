@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { SESSION_EXPIRED_MESSAGE } from '@/lib/brand'
 import { getFreshAccessToken, refreshAccessToken } from '@/lib/sessionToken'
 import { resolveSupabasePublishableKey } from '@/lib/supabaseKeys'
+import { parseTellerEnvironment } from '@/lib/tellerEnvironment'
 
 const TELLER_CONNECT_SRC = 'https://cdn.teller.io/connect/connect.js'
 
@@ -222,12 +223,9 @@ export function useTellerConnect() {
         return
       }
       const applicationId = import.meta.env.VITE_TELLER_APPLICATION_ID
-      const environment =
-        (import.meta.env.VITE_TELLER_ENVIRONMENT as
-          | 'sandbox'
-          | 'development'
-          | 'production'
-          | undefined) ?? 'production'
+      const environment = parseTellerEnvironment(
+        import.meta.env.VITE_TELLER_ENVIRONMENT,
+      )
       if (!applicationId) {
         setError('Missing VITE_TELLER_APPLICATION_ID')
         return
@@ -288,9 +286,29 @@ export type RefreshBalancesResult = {
   errors: string[]
 }
 
+export type BankTransactionRow = {
+  id: string
+  date: string
+  amount: number
+  description: string
+  label: string
+  status: 'posted' | 'pending'
+  type: string
+  category: string | null
+}
+
+export type FetchBankTransactionsResult = {
+  ok: true
+  startDate: string
+  endDate: string
+  limit: number
+  transactions: BankTransactionRow[]
+}
+
 /**
- * Re-pull balances from the bank for the caller's family (adults only).
- * Optional enrollmentIds scopes to one institution's enrollments.
+ * Re-pull balances from the bank for the caller's family. Any signed-in
+ * family member may call this; server-side throttling applies. Optional
+ * enrollmentIds scopes to one institution's enrollments.
  */
 export async function refreshBalances(
   enrollmentIds?: string[],
@@ -321,6 +339,39 @@ export async function refreshBalances(
   }
 
   return body as RefreshBalancesResult
+}
+
+/**
+ * Recent bank transactions for a linked account (admin only). Fetches the
+ * last seven days from Teller, capped at 25 rows — not stored locally.
+ */
+export async function fetchBankTransactions(
+  accountId: string,
+): Promise<FetchBankTransactionsResult> {
+  const res = await authFetch('teller-transactions-list', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ accountId }),
+  })
+
+  const body = (await res.json().catch(() => ({}))) as Partial<
+    FetchBankTransactionsResult
+  > & { error?: string; details?: string }
+
+  if (!res.ok) {
+    const detail = body.details ? `: ${body.details}` : ''
+    const msg = body.error
+      ? `${body.error}${detail}`
+      : `Failed to load bank activity: ${res.status}`
+    if (res.status === 503) {
+      throw new Error(
+        `${msg}. For local dev, run \`npm run functions:serve\` in a second terminal (needs \`supabase/functions/.env\`).`,
+      )
+    }
+    throw new Error(msg)
+  }
+
+  return body as FetchBankTransactionsResult
 }
 
 /**

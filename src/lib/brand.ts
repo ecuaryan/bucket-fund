@@ -258,6 +258,15 @@ export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_SUFFIX =
 export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
   'Balances count toward the money you can organize into buckets.'
 
+export const ADMIN_BANK_ACTIVITY_TOGGLE_SHOW = 'Show recent activity'
+export const ADMIN_BANK_ACTIVITY_TOGGLE_HIDE = 'Hide recent activity'
+export const ADMIN_BANK_ACTIVITY_SECTION_LABEL = 'Last 7 days'
+export const ADMIN_BANK_ACTIVITY_RETRY = 'Try again'
+export const ADMIN_BANK_ACTIVITY_LOADING = 'Loading bank activity…'
+export const ADMIN_BANK_ACTIVITY_EMPTY =
+  'No bank activity in the last 7 days.'
+export const ADMIN_BANK_ACTIVITY_PENDING = 'Pending'
+
 /** Accessible label for expand/collapse on a money-source group header. */
 export function adminMoneySourceGroupExpandLabel(
   expanded: boolean,

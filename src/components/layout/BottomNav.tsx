@@ -2,6 +2,7 @@ import { forwardRef } from 'react'
 import NavTabIcon, { type NavTabId } from '@/components/layout/NavTabIcon'
 import { activeNavTabIndex } from '@/components/layout/navBubbleIndicator'
 import {
+  APP_CHROME_Z_INDEX,
   NAV_BAR_BODY_PX,
   NAV_BUCKET_ACTIVE_SCALE,
   NAV_BUBBLE_RADIUS_PX,
@@ -32,9 +33,10 @@ export default function BottomNav({ tabs }: BottomNavProps) {
   return (
     <nav
       className={
-        'fixed inset-x-0 bottom-0 z-20 overflow-visible border-t border-zinc-800 bg-zinc-900/95 backdrop-blur ' +
+        'fixed inset-x-0 bottom-0 overflow-visible border-t border-zinc-800 bg-zinc-900/95 backdrop-blur ' +
         SAFE_BOTTOM
       }
+      style={{ zIndex: APP_CHROME_Z_INDEX }}
     >
       <ul
         ref={listRef}
