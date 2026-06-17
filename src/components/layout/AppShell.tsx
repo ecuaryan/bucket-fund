@@ -44,7 +44,7 @@ export default function AppShell() {
 
   return (
     <div className="flex min-h-svh flex-col bg-black text-zinc-300">
-      <header className="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-900/80 backdrop-blur">
+      <header className="app-shell-chrome sticky top-0 z-10 border-b border-zinc-800 bg-zinc-900/80 backdrop-blur">
         <div className="mx-auto flex max-w-md items-center justify-between px-4 py-3">
           <NavLink
             to="/"
