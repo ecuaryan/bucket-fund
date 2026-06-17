@@ -260,7 +260,7 @@ export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
 
 export const ADMIN_BANK_ACTIVITY_TOGGLE_SHOW = 'Show recent activity'
 export const ADMIN_BANK_ACTIVITY_TOGGLE_HIDE = 'Hide recent activity'
-export const ADMIN_BANK_ACTIVITY_SECTION_LABEL = 'Last 7 days'
+export const ADMIN_BANK_ACTIVITY_SCOPE = 'Last 7 days · up to 25 transactions'
 export const ADMIN_BANK_ACTIVITY_RETRY = 'Try again'
 export const ADMIN_BANK_ACTIVITY_LOADING = 'Loading bank activity…'
 export const ADMIN_BANK_ACTIVITY_EMPTY =

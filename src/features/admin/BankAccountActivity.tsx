@@ -5,7 +5,7 @@ import {
   ADMIN_BANK_ACTIVITY_LOADING,
   ADMIN_BANK_ACTIVITY_PENDING,
   ADMIN_BANK_ACTIVITY_RETRY,
-  ADMIN_BANK_ACTIVITY_SECTION_LABEL,
+  ADMIN_BANK_ACTIVITY_SCOPE,
   ADMIN_BANK_ACTIVITY_TOGGLE_HIDE,
   ADMIN_BANK_ACTIVITY_TOGGLE_SHOW,
 } from '@/lib/brand'
@@ -86,9 +86,7 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
       </button>
       {expanded ? (
         <div className="mt-2 space-y-2">
-          <p className="text-[11px] uppercase tracking-wide text-zinc-500">
-            {ADMIN_BANK_ACTIVITY_SECTION_LABEL}
-          </p>
+          <p className="text-xs text-zinc-500">{ADMIN_BANK_ACTIVITY_SCOPE}</p>
           {loading ? (
             <p className="text-xs text-zinc-400">{ADMIN_BANK_ACTIVITY_LOADING}</p>
           ) : error ? (
