@@ -4,7 +4,8 @@
  * Force dark theme app-wide. We also set `color-scheme: dark` so the
  * browser themes scrollbars, autofill, and form widgets accordingly,
  * and put a dark color on <html>/<body> so any area outside the React
- * root (e.g. iOS safe-area bounce, overscroll) matches.
+ * root (e.g. iOS safe-area bounce, overscroll) matches. `#root` is black
+ * too so Android’s app-close snapshot does not pick up a default white layer.
  *
  * Background is pure black and cards step up to zinc-900 — high-contrast
  * Strike-style look. Neutral zinc (no blue cast) rather than slate.
@@ -19,6 +20,11 @@ body {
   color: #d4d4d8; /* zinc-300 — soft white, less laser-bright for long sessions */
   /* App-like PWA: no pinch/double-tap zoom (viewport also sets maximum-scale=1). */
   touch-action: manipulation;
+}
+
+#root {
+  min-height: 100%;
+  background-color: #000000;
 }
 
 /*
