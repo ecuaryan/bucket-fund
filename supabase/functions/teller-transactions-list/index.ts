@@ -8,8 +8,8 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { publishableKey, secretKey } from '../_shared/keys.ts'
 import { listTransactions } from '../_shared/teller.ts'
 
-const BANK_TRANSACTIONS_DAYS = 7
-const BANK_TRANSACTIONS_LIMIT = 25
+const BANK_TRANSACTIONS_DAYS = 14
+const BANK_TRANSACTIONS_LIMIT = 50
 
 type TransactionsRequest = {
   accountId?: string

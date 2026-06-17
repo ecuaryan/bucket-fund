@@ -260,11 +260,11 @@ export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
 
 export const ADMIN_BANK_ACTIVITY_TOGGLE_SHOW = 'Show recent activity'
 export const ADMIN_BANK_ACTIVITY_TOGGLE_HIDE = 'Hide recent activity'
-export const ADMIN_BANK_ACTIVITY_SCOPE = 'Last 7 days · up to 25 transactions'
+export const ADMIN_BANK_ACTIVITY_SCOPE = 'Last 2 weeks · up to 50 transactions'
 export const ADMIN_BANK_ACTIVITY_RETRY = 'Try again'
 export const ADMIN_BANK_ACTIVITY_LOADING = 'Loading bank activity…'
 export const ADMIN_BANK_ACTIVITY_EMPTY =
-  'No bank activity in the last 7 days.'
+  'No bank activity in the last 2 weeks.'
 export const ADMIN_BANK_ACTIVITY_PENDING = 'Pending'
 
 /** Accessible label for expand/collapse on a money-source group header. */
