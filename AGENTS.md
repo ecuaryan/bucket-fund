@@ -25,7 +25,8 @@ Entry point for AI coding agents (and humans) working in this repo.
 
 ## Operating principles for this codebase
 
-- **Bump `package.json` version in every PR** (patch by default). See
+- **Bump `package.json` version once per PR** (one step from current `main`; do
+  not bump again while iterating on the same branch before merge). See
   [CONTRIBUTING.md § Bump version](./CONTRIBUTING.md#bump-packagejson-version-on-every-pr).
 - **Realtime:** prefer narrow filters and route-scoped channels; app-shell watches
   (e.g. member removal) are fine — channels share one websocket per session. See
