@@ -44,6 +44,13 @@ number at the bottom of each tab via [`src/lib/appVersion.ts`](./src/lib/appVers
 Include the version bump in the same PR as the feature or fix — not a
 follow-up on `main`.
 
+**Once per PR, from `main`.** Bump exactly one patch/minor/major step from the
+version on `main` when you open the PR (or in the final commit before merge).
+While iterating on the same branch before the PR lands, do **not** bump again
+after each local milestone — that skips numbers (e.g. `1.1.4` → `1.1.6` with
+no `1.1.5` release). After a PR merges, pull `main` and bump from the new
+version for the next PR.
+
 ### One PR at a time — always branch from current `main`
 
 We ship **one open PR at a time**. After a PR merges, reset your local tree
