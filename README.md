@@ -107,7 +107,7 @@ another email to switch — no reset needed.
 
 **PWA install screenshots (Chrome Richer Install UI):** seed `pwa-screenshots`, sign in locally, then
 `npm run pwa:screenshots` to refresh PNGs under `public/screenshots/` (green Buckets, rebalance Buckets,
-Send, History — committed to the repo). Bucket
+History, Send — committed to the repo). Bucket
 names and amounts live in [`scripts/seed/pwaScreenshots.ts`](./scripts/seed/pwaScreenshots.ts).
 
 CI does **not** run seeds — database tests still create their own fixtures.

@@ -50,14 +50,6 @@ test('capture PWA install screenshots', async ({ page }) => {
 
   await page.screenshot({ path: join(outputDir, 'buckets.png') })
 
-  await page.locator('nav').getByLabel('Send').click()
-  await expect(page).toHaveURL('/send')
-  await waitForNavSettled(page, 'Send')
-  await page.getByRole('heading', { name: 'Send' }).waitFor()
-  await page.getByText('You can send').waitFor()
-  await page.locator('form').getByRole('button', { name: 'Send', exact: true }).waitFor()
-  await page.screenshot({ path: join(outputDir, 'send.png') })
-
   await page.locator('nav').getByLabel('History').click()
   await expect(page).toHaveURL('/history')
   await waitForNavSettled(page, 'History')
@@ -65,6 +57,14 @@ test('capture PWA install screenshots', async ({ page }) => {
   await page.getByText(/\d+ transactions/).waitFor()
   await page.getByRole('main').getByText(/Bucket move/).first().waitFor()
   await page.screenshot({ path: join(outputDir, 'history.png') })
+
+  await page.locator('nav').getByLabel('Send').click()
+  await expect(page).toHaveURL('/send')
+  await waitForNavSettled(page, 'Send')
+  await page.getByRole('heading', { name: 'Send' }).waitFor()
+  await page.getByText('You can send').waitFor()
+  await page.locator('form').getByRole('button', { name: 'Send', exact: true }).waitFor()
+  await page.screenshot({ path: join(outputDir, 'send.png') })
 
   await applyPwaScreenshotRebalance(adminEmail)
   await page.goto('/')
