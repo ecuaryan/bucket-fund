@@ -103,7 +103,7 @@ export const PIN_JOIN_PAGE_SUBTITLE =
 export const ADMIN_JOIN_CODE_TITLE = 'Join code'
 
 export const ADMIN_JOIN_CODE_INTRO =
-  'Each phone or tablet enters this once, then signs in with an avatar and PIN.'
+  'Each phone or tablet enters this once, then signs in with an avatar and PIN. Set each person’s PIN before sharing the code.'
 
 export const ADMIN_JOIN_CODE_QR_ALT =
   'QR code to link a device with your household join code'
@@ -926,8 +926,23 @@ export const INPUT_CLEAR_ARIA_LABEL = 'Clear'
 
 // --- PIN sign-in ---
 
+export const PIN_MEMBER_NOT_SET_LABEL = 'PIN not set yet'
+
+export const PIN_PICKER_AUTO_UPDATE_NOTE = 'This page updates automatically.'
+
+export function pinPickerPendingLead(
+  adminName: string | null | undefined,
+  everyoneWaiting: boolean,
+): string {
+  const admin = householdAdminLabel(adminName)
+  if (everyoneWaiting) {
+    return `Waiting for ${admin} to set your PIN.`
+  }
+  return `Waiting for ${admin} to set remaining PINs.`
+}
+
 export function pinNoMembersYet(adminName: string | null | undefined): string {
-  return `No one has a PIN yet. Ask ${householdAdminLabel(adminName)} to add people and set PINs.`
+  return `No household members yet. Ask ${householdAdminLabel(adminName)} to add you and set your PIN.`
 }
 
 // --- Admin (non-admin viewers) ---

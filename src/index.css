@@ -349,3 +349,16 @@ html {
     transform: rotate(360deg);
   }
 }
+
+@keyframes pin-picker-poll {
+  from {
+    stroke-dashoffset: var(--poll-c, 38);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.pin-picker-poll-ring {
+  animation: pin-picker-poll var(--poll-ms, 8s) linear forwards;
+}
