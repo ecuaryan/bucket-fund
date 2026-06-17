@@ -103,6 +103,12 @@ another email to switch — no reset needed.
 | `many-buckets` | `many-buckets@bmm.dev` | 15 pool buckets — scroll and reorder |
 | `history` | `history@bmm.dev` | ~40 moves and sends — History volume |
 | `shared-only` | `shared-only@bmm.dev` | Shared member (PIN **0000**), no kid |
+| `pwa-screenshots` | `pwa-screenshots@bmm.dev` | Emoji buckets, green Float — PWA install screenshot source |
+
+**PWA install screenshots (Chrome Richer Install UI):** seed `pwa-screenshots`, sign in locally, then
+`npm run pwa:screenshots` to refresh PNGs under `public/screenshots/` (green Buckets, rebalance Buckets,
+History, Send — committed to the repo). Bucket
+names and amounts live in [`scripts/seed/pwaScreenshots.ts`](./scripts/seed/pwaScreenshots.ts).
 
 CI does **not** run seeds — database tests still create their own fixtures.
 

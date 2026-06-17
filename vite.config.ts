@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { APP_NAME, APP_SHORT_NAME, PWA_DESCRIPTION } from './src/lib/brand'
+import { PWA_MANIFEST_SCREENSHOTS } from './scripts/seed/pwaScreenshots'
 
 const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string }
 
@@ -41,6 +42,7 @@ export default defineConfig({
         'favicon-32.png',
         'apple-touch-icon.png',
         'offline.html',
+        'screenshots/*.png',
       ],
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webp,woff2}'],
@@ -87,6 +89,7 @@ export default defineConfig({
             purpose: 'maskable',
           },
         ],
+        screenshots: [...PWA_MANIFEST_SCREENSHOTS],
       },
       devOptions: {
         enabled: false,

@@ -42,6 +42,7 @@ export async function userClient(email: string, password: string): Promise<Db> {
 export async function createSeedAdmin(
   familyName: string,
   adminEmail: string,
+  options?: { displayName?: string },
 ): Promise<SeedAdmin> {
   const svc = serviceClient()
   const { data: userData, error: userError } = await svc.auth.admin.createUser({
@@ -51,7 +52,7 @@ export async function createSeedAdmin(
     user_metadata: {
       bootstrap_family: 'true',
       family_name: familyName,
-      display_name: 'Seed Admin',
+      display_name: options?.displayName ?? 'Seed Admin',
     },
   })
   if (userError) throw userError

@@ -829,7 +829,7 @@ export function bucketsMemberNoBucketsHint(
 // --- Send ---
 
 export const SEND_SHARED_BALANCE_INTRO =
-  `Fund a kid’s ${FLOAT_LABEL_LOWER} from the shared balance in Buckets.`
+  'Send money to other people in your household.'
 
 export const SEND_SHARED_BALANCE_NO_ACCOUNTS_BODY =
   'Send uses cash from the household balance in Buckets. Link a bank account in Admin first so we know how much you can send.'

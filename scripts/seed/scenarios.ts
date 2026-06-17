@@ -1,5 +1,12 @@
 import { seedAdminEmail, SEED_PIN } from './constants'
 import {
+  PWA_SCREENSHOT_ADMIN_DISPLAY_NAME,
+  PWA_SCREENSHOT_BUCKETS,
+  PWA_SCREENSHOT_MANUAL_SOURCE,
+  PWA_SCREENSHOT_SCENARIO_ID,
+  PWA_SCREENSHOT_SEND_AMOUNT,
+} from './pwaScreenshots'
+import {
   addManualSource,
   addSeedMember,
   assignAccountOwner,
@@ -26,6 +33,7 @@ export const SCENARIO_IDS = [
   'many-buckets',
   'history',
   'shared-only',
+  PWA_SCREENSHOT_SCENARIO_ID,
 ] as const
 
 export type ScenarioId = (typeof SCENARIO_IDS)[number]
@@ -89,6 +97,11 @@ export function listScenarios(): { id: SeedTarget; description: string }[] {
       id: 'shared-only',
       description: 'Admin + shared member (PIN 0000), no kid — member sign-in and Send rules',
     },
+    {
+      id: PWA_SCREENSHOT_SCENARIO_ID,
+      description:
+        'Emoji buckets, green Float — sign in and run npm run pwa:screenshots for install UI PNGs',
+    },
   ]
 }
 
@@ -122,6 +135,8 @@ export async function seedScenario(id: ScenarioId): Promise<SeedResult> {
       return seedHistory(id)
     case 'shared-only':
       return seedSharedOnly(id)
+    case PWA_SCREENSHOT_SCENARIO_ID:
+      return seedPwaScreenshots(id)
     default: {
       const _exhaustive: never = id
       throw new Error(`Unknown scenario: ${_exhaustive}`)
@@ -408,6 +423,53 @@ async function seedSharedOnly(id: ScenarioId): Promise<SeedResult> {
     notes: [
       'No kids — Send recipient list is empty for admin and Alex (shared balance → kids only).',
       'Use /login/family → Alex → PIN 0000 to test shared-member Home and Buckets.',
+    ],
+  }
+}
+
+async function seedPwaScreenshots(id: ScenarioId): Promise<SeedResult> {
+  const admin = await createSeedAdmin(
+    'Seed · PWA screenshots',
+    seedAdminEmail(id),
+    { displayName: PWA_SCREENSHOT_ADMIN_DISPLAY_NAME },
+  )
+  const sam = await addSeedMember(admin.familyId, 'child', 'Sam', id)
+
+  const adminClient = await userClient(admin.adminEmail, admin.adminPassword)
+  await addManualSource(
+    adminClient,
+    PWA_SCREENSHOT_MANUAL_SOURCE.label,
+    PWA_SCREENSHOT_MANUAL_SOURCE.amount,
+  )
+
+  const svc = serviceClient()
+  for (const bucket of PWA_SCREENSHOT_BUCKETS) {
+    const bucketId = await insertBucket(svc, admin.familyId, bucket.name, null)
+    await moveMoney(adminClient, {
+      fromBucketId: null,
+      toBucketId: bucketId,
+      amount: bucket.amount,
+      note: `Set aside for ${bucket.name}`,
+    })
+  }
+
+  await sendMoney(adminClient, {
+    toMemberId: sam.memberId,
+    amount: PWA_SCREENSHOT_SEND_AMOUNT,
+    note: 'Allowance',
+  })
+
+  const joinCode = await getJoinCode(admin.familyId)
+  return {
+    scenario: id,
+    familyName: 'Seed · PWA screenshots',
+    admin,
+    joinCode,
+    members: [sam],
+    notes: [
+      'Buckets tab shows emoji labels and green Float — onboarding coach is complete.',
+      'Send and History tabs have sample activity for install screenshots.',
+      `Sign in at /login as ${admin.adminEmail}, then run npm run pwa:screenshots.`,
     ],
   }
 }
