@@ -11,6 +11,8 @@
 
 // @ts-nocheck — targets the Deno runtime, not the Vite TS build.
 
+import { parseTellerEnvironment } from './tellerEnvironment.ts'
+
 const TELLER_BASE = 'https://api.teller.io'
 
 type TellerEnv = {
@@ -24,9 +26,7 @@ function readTellerEnv(): TellerEnv {
   const applicationId = Deno.env.get('TELLER_APPLICATION_ID') ?? ''
   const certificate = Deno.env.get('TELLER_CERTIFICATE') ?? ''
   const privateKey = Deno.env.get('TELLER_PRIVATE_KEY') ?? ''
-  const environment =
-    (Deno.env.get('TELLER_ENVIRONMENT') as TellerEnv['environment']) ??
-    'production'
+  const environment = parseTellerEnvironment(Deno.env.get('TELLER_ENVIRONMENT'))
 
   if (!applicationId || !certificate || !privateKey) {
     throw new Error(
@@ -64,10 +64,17 @@ function getMtlsClient(): Deno.HttpClient {
 async function tellerFetch<T>(
   accessToken: string,
   path: string,
+  query?: Record<string, string | number>,
 ): Promise<T> {
   const client = getMtlsClient()
   const auth = btoa(`${accessToken}:`)
-  const res = await fetch(`${TELLER_BASE}${path}`, {
+  const url = new URL(`${TELLER_BASE}${path}`)
+  if (query) {
+    for (const [key, value] of Object.entries(query)) {
+      url.searchParams.set(key, String(value))
+    }
+  }
+  const res = await fetch(url.toString(), {
     client,
     headers: {
       Authorization: `Basic ${auth}`,
@@ -109,6 +116,25 @@ export type TellerBalance = {
   links: { self: string; account: string }
 }
 
+export type TellerTransaction = {
+  id: string
+  account_id: string
+  amount: string
+  date: string
+  description: string
+  status: 'posted' | 'pending'
+  type: string
+  running_balance: string | null
+  details?: {
+    processing_status?: string
+    category?: string | null
+    counterparty?: {
+      name?: string | null
+      type?: string | null
+    }
+  }
+}
+
 // ---------------------------------------------------------------------
 // API
 // ---------------------------------------------------------------------
@@ -140,6 +166,28 @@ export async function listAccountsWithBalances(
     })),
   )
   return enriched
+}
+
+export type ListTransactionsParams = {
+  startDate: string
+  endDate: string
+  count: number
+}
+
+export async function listTransactions(
+  accessToken: string,
+  accountId: string,
+  params: ListTransactionsParams,
+): Promise<TellerTransaction[]> {
+  return await tellerFetch<TellerTransaction[]>(
+    accessToken,
+    `/accounts/${accountId}/transactions`,
+    {
+      start_date: params.startDate,
+      end_date: params.endDate,
+      count: params.count,
+    },
+  )
 }
 
 // Webhook signatures: Teller signs every webhook with HMAC-SHA256

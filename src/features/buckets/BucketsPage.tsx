@@ -575,6 +575,11 @@ export default function BucketsPage() {
   // Family-wide bank sync time. Comes from the breakdown RPC so every role —
   // including children, who can't read the accounts table — sees the same value.
   const bankSyncedLabel = formatRelativeTime(balanceBreakdown.bankLastSyncedAt)
+  const hasLinkedBanks =
+    balanceBreakdown.bankLastSyncedAt != null || balanceBreakdown.bankCash > 0
+  const canRefreshBalances =
+    (isAdult && hasMoneySources && bankAccountsCount > 0) ||
+    (isChild && hasLinkedBanks)
 
   const floatHint =
     showAddSourceCard || showCoach
@@ -607,14 +612,14 @@ export default function BucketsPage() {
   }
 
   const freshnessFooter =
-    bankSyncedLabel || (isAdult && hasMoneySources) ? (
+    bankSyncedLabel || (isAdult && hasMoneySources) || canRefreshBalances ? (
       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
         {bankSyncedLabel ? (
           <p className="text-[11px] opacity-50">
             Balances refreshed {bankSyncedLabel}
           </p>
         ) : null}
-        {isAdult && hasMoneySources && bankAccountsCount > 0 ? (
+        {canRefreshBalances ? (
           <RefreshIconButton
             busy={syncing}
             disabled={syncing}

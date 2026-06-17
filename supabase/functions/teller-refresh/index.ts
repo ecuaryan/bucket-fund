@@ -1,8 +1,9 @@
 // =====================================================================
 // teller-refresh Edge Function
 //
-// On-demand balance re-pull from Teller for the caller's family. Adults
-// only (admin/member). Optional enrollmentIds scopes to one institution.
+// On-demand balance re-pull from Teller for the caller's family. Any
+// family member (admin/member/child). Optional enrollmentIds scopes to
+// one institution.
 // Throttled server-side so rapid taps don't hammer Teller.
 // =====================================================================
 
@@ -74,8 +75,12 @@ Deno.serve(async (req: Request) => {
   if (!member) {
     return jsonResponse({ error: 'No family membership found' }, 403)
   }
-  if (member.role !== 'admin' && member.role !== 'member') {
-    return jsonResponse({ error: 'Only adults can refresh balances' }, 403)
+  if (
+    member.role !== 'admin' &&
+    member.role !== 'member' &&
+    member.role !== 'child'
+  ) {
+    return jsonResponse({ error: 'Not authorized to refresh balances' }, 403)
   }
 
   let body: RefreshRequest = {}
