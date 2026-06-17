@@ -9,6 +9,9 @@ on:
     types: [completed]
     branches: [main]
 
+permissions:
+  contents: read
+
 concurrency:
   group: deploy-supabase-production
   cancel-in-progress: false
