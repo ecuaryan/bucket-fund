@@ -148,9 +148,11 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-chromium-${{ runner.os }}-
 
       - name: Install Playwright browser
-        if: needs.changes.outputs.run_e2e != 'false'
+        if: needs.changes.outputs.run_e2e != 'false' && steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install chromium --with-deps
 
       - name: Start Supabase
