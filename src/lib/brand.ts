@@ -188,6 +188,12 @@ export function adminRoleContext(role: HouseholdMemberRole): string {
   }
 }
 
+/** One hint line under the add-member form for the selected role. */
+export function adminRoleAddHint(role: HouseholdMemberRole): string {
+  if (role === 'admin') return adminRoleContext(role)
+  return `${adminRoleContext(role)} ${ADMIN_ROLE_PIN_RESET_NOTE}`
+}
+
 /** Collapsible reference — all roles at once when comparing options. */
 export const ADMIN_HOUSEHOLD_ROLES_HELP = [
   { role: 'admin' as const, label: 'Admin', context: ADMIN_ROLE_CONTEXT_ADMIN },

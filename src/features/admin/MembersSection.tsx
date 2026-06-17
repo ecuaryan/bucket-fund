@@ -35,13 +35,10 @@ import {
   adminRemoveMemberSheetTitle,
   adminPinSheetBody,
   adminPinSheetTitle,
-  adminRoleContext,
+  adminRoleAddHint,
 } from '@/lib/brand'
 import { bindDeviceForPinSignIn } from '@/lib/familyDevice'
 import {
-  ROLE_OPTION_ADMIN,
-  ROLE_OPTION_KID,
-  ROLE_OPTION_SHARED,
   roleLabel,
   ACCOUNT_OWNER_LABEL,
 } from '@/lib/memberRoles'
@@ -448,47 +445,44 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
 
       <form
         onSubmit={onCreate}
-        className="flex flex-col gap-3 rounded-2xl bg-zinc-900 p-4 ring-1 ring-zinc-800 sm:flex-row sm:items-end"
+        className="space-y-3 rounded-2xl bg-zinc-900 p-4 ring-1 ring-zinc-800"
       >
-        <label className="block flex-1">
-          <FieldLabel spacing="tight">Name</FieldLabel>
-          <ClearableInput
-            wrapperClassName="mt-1 block w-full"
-            value={newName}
-            onValueChange={setNewName}
-            placeholder="Jamie"
-            inputClassName="w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700"
-          />
-        </label>
-        <label className="block sm:w-52">
-          <FieldLabel spacing="tight">Role</FieldLabel>
-          <select
-            value={newRole}
-            onChange={(e) =>
-              setNewRole(e.target.value as 'admin' | 'member' | 'child')
-            }
-            className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700"
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <label className="block min-w-0 flex-1">
+            <FieldLabel spacing="tight">Name</FieldLabel>
+            <ClearableInput
+              wrapperClassName="mt-1 block w-full"
+              value={newName}
+              onValueChange={setNewName}
+              placeholder="Jamie"
+              inputClassName="w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700"
+            />
+          </label>
+          <label className="block sm:w-28">
+            <FieldLabel spacing="tight">Role</FieldLabel>
+            <select
+              value={newRole}
+              onChange={(e) =>
+                setNewRole(e.target.value as 'admin' | 'member' | 'child')
+              }
+              className="mt-1 block w-full rounded-lg border-0 bg-zinc-950 px-3 py-2 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700"
+            >
+              <option value="admin">{roleLabel('admin')}</option>
+              <option value="member">{roleLabel('member')}</option>
+              <option value="child">{roleLabel('child')}</option>
+            </select>
+          </label>
+          <button
+            type="submit"
+            disabled={creating || !newName.trim()}
+            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50 sm:shrink-0"
           >
-            <option value="admin">{ROLE_OPTION_ADMIN}</option>
-            <option value="member">{ROLE_OPTION_SHARED}</option>
-            <option value="child">{ROLE_OPTION_KID}</option>
-          </select>
-          <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">
-            {adminRoleContext(newRole)}
-          </p>
-          {newRole !== 'admin' ? (
-            <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-              {ADMIN_ROLE_PIN_RESET_NOTE}
-            </p>
-          ) : null}
-        </label>
-        <button
-          type="submit"
-          disabled={creating || !newName.trim()}
-          className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
-        >
-          {creating ? 'Adding…' : 'Add'}
-        </button>
+            {creating ? 'Adding…' : 'Add'}
+          </button>
+        </div>
+        <p className="text-xs leading-relaxed text-zinc-500">
+          {adminRoleAddHint(newRole)}
+        </p>
       </form>
 
       {members === null ? (
