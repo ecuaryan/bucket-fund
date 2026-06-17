@@ -23,9 +23,18 @@ git checkout -b feat/my-change
 # … edit, commit …
 git push -u origin feat/my-change
 gh pr create --title "v1.1.21: Short description of the change"
+gh pr merge --auto --squash --delete-branch
 ```
 
-Merge when all required checks are green.
+**Auto-merge:** After opening a PR, enable auto-merge so GitHub squash-merges
+when required checks pass — no need to watch CI manually:
+
+```bash
+gh pr merge --auto --squash --delete-branch
+```
+
+(Omit `--auto` only if you need to hold the PR open for review.) The repo
+already allows auto-merge under **Settings → General → Allow auto-merge**.
 
 ### Bump `package.json` version on every PR
 
