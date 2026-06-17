@@ -343,7 +343,7 @@ export async function refreshBalances(
 
 /**
  * Recent bank transactions for a linked account (admin only). Fetches the
- * last seven days from Teller, capped at 25 rows — not stored locally.
+ * last two weeks from Teller, capped at 50 rows — not stored locally.
  */
 export async function fetchBankTransactions(
   accountId: string,
