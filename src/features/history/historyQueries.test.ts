@@ -3,7 +3,9 @@ import {
   fetchHistoryPage,
   historyPageCursorFilter,
   isHistoryRowOlderThan,
+  mergeHistoryHead,
 } from './historyQueries'
+import type { HistoryTxRow } from './historyQueries'
 
 function queryChain() {
   const chain: {
@@ -72,6 +74,27 @@ describe('historyPageCursorFilter', () => {
     expect(historyPageCursorFilter(cursor)).toBe(
       'created_at.lt."2026-06-01T12:34:56+00:00",and(created_at.eq."2026-06-01T12:34:56+00:00",id.lt.00000000-0000-4000-8000-000000000099)',
     )
+  })
+})
+
+describe('mergeHistoryHead', () => {
+  const row = (id: string, created_at: string): HistoryTxRow =>
+    ({ id, created_at }) as HistoryTxRow
+
+  it('prepends new head rows and reports newly arrived ids', () => {
+    const prev = [row('b', '2026-06-02T00:00:00Z'), row('a', '2026-06-01T00:00:00Z')]
+    const head = [row('c', '2026-06-03T00:00:00Z'), row('b', '2026-06-02T00:00:00Z')]
+    const { merged, newlyArrivedIds } = mergeHistoryHead(prev, head)
+    expect(merged.map((r) => r.id)).toEqual(['c', 'b', 'a'])
+    expect(newlyArrivedIds).toEqual(['c'])
+  })
+
+  it('keeps paginated tail when head is unchanged', () => {
+    const prev = [row('b', '2026-06-02T00:00:00Z'), row('a', '2026-06-01T00:00:00Z')]
+    const head = [row('b', '2026-06-02T00:00:00Z')]
+    const { merged, newlyArrivedIds } = mergeHistoryHead(prev, head)
+    expect(merged.map((r) => r.id)).toEqual(['b', 'a'])
+    expect(newlyArrivedIds).toEqual([])
   })
 })
 

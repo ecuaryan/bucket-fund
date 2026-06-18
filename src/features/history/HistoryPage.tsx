@@ -46,10 +46,14 @@ import {
 } from '@/features/history/historyFilters'
 import {
   fetchHistoryPage,
-  isHistoryRowOlderThan,
+  mergeHistoryHead,
   type HistoryTxRow,
 } from '@/features/history/historyQueries'
 import { withAuthLockRetry } from '@/lib/authLockError'
+import {
+  isAppBackgroundExpired,
+  isSessionGateActive,
+} from '@/lib/backgroundSignOut'
 import {
   bucketEndpointLabel,
   historyBucketMoveSubtitle,
@@ -73,6 +77,8 @@ type Bucket = Pick<
 // digging through history.
 const INITIAL_PAGE_SIZE = 10
 const MORE_PAGE_SIZE = 50
+const REALTIME_REFRESH_DEBOUNCE_MS = 300
+const ARRIVED_ROW_ANIMATION_MS = 250
 
 const dayFormatter = new Intl.DateTimeFormat('en-US', {
   weekday: 'short',
@@ -101,9 +107,19 @@ export default function HistoryPage() {
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [arrivedRowIds, setArrivedRowIds] = useState<Set<string>>(
+    () => new Set(),
+  )
 
   // Bump when family or filter changes so stale async work cannot mutate state.
   const listGeneration = useRef(0)
+  const rowsRef = useRef<TxRow[] | null>(null)
+  const realtimeRefreshTimer = useRef<
+    ReturnType<typeof setTimeout> | undefined
+  >(undefined)
+  const arrivedClearTimer = useRef<
+    ReturnType<typeof setTimeout> | undefined
+  >(undefined)
 
   const member = auth.status === 'signedIn' ? auth.member : null
   const accessToken =
@@ -111,6 +127,15 @@ export default function HistoryPage() {
   const familyId = member?.family_id ?? null
   const { sendReady, showSendNav } = useSendRecipients()
   const showSendFilter = sendReady && showSendNav
+
+  const markArrivedRows = useCallback((ids: string[]) => {
+    if (ids.length === 0) return
+    setArrivedRowIds((prev) => new Set([...prev, ...ids]))
+    clearTimeout(arrivedClearTimer.current)
+    arrivedClearTimer.current = setTimeout(() => {
+      setArrivedRowIds(new Set())
+    }, ARRIVED_ROW_ANIMATION_MS)
+  }, [])
 
   const loadMore = useCallback(async () => {
     if (loadingMore || rows === null || rows.length === 0) return
@@ -148,17 +173,22 @@ export default function HistoryPage() {
     if (generation !== listGeneration.current) return
     if (!result.ok) return
 
+    let newlyArrived: string[] = []
     setRows((prev) => {
       if (!prev) return result.rows
-      if (result.rows.length === 0) return prev
-      const headIds = new Set(result.rows.map((r) => r.id))
-      const oldestInHead = result.rows[result.rows.length - 1]
-      const tail = prev.filter(
-        (r) => !headIds.has(r.id) && isHistoryRowOlderThan(r, oldestInHead),
-      )
-      return [...result.rows, ...tail]
+      const merged = mergeHistoryHead(prev, result.rows)
+      newlyArrived = merged.newlyArrivedIds
+      return merged.merged
     })
-  }, [filterKey])
+    if (newlyArrived.length > 0) markArrivedRows(newlyArrived)
+  }, [filterKey, markArrivedRows])
+
+  const debouncedRefreshHead = useCallback(() => {
+    clearTimeout(realtimeRefreshTimer.current)
+    realtimeRefreshTimer.current = setTimeout(() => {
+      void refreshHead()
+    }, REALTIME_REFRESH_DEBOUNCE_MS)
+  }, [refreshHead])
 
   const loadBuckets = useCallback(async () => {
     try {
@@ -203,6 +233,32 @@ export default function HistoryPage() {
   }, [loadInitialHistory])
 
   useEffect(() => {
+    rowsRef.current = rows
+  }, [rows])
+
+  useEffect(
+    () => () => {
+      clearTimeout(realtimeRefreshTimer.current)
+      clearTimeout(arrivedClearTimer.current)
+    },
+    [],
+  )
+
+  useEffect(() => {
+    function onVisibilityChange() {
+      if (document.visibilityState !== 'visible') return
+      if (isAppBackgroundExpired() || isSessionGateActive()) return
+      if (rowsRef.current === null) return
+      void refreshHead()
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [refreshHead])
+
+  useEffect(() => {
     if (!familyId) return
     void loadBuckets()
   }, [familyId, loadBuckets])
@@ -224,7 +280,7 @@ export default function HistoryPage() {
           },
         ]
       : [],
-    refreshHead,
+    debouncedRefreshHead,
   )
 
   const grouped = useMemo(() => groupByDay(rows ?? []), [rows])
@@ -320,7 +376,10 @@ export default function HistoryPage() {
                 {group.rows.map((row) => (
                   <li
                     key={row.id}
-                    className="rounded-2xl bg-zinc-900 px-3 py-3 ring-1 ring-zinc-800"
+                    className={
+                      'rounded-2xl bg-zinc-900 px-3 py-3 ring-1 ring-zinc-800' +
+                      (arrivedRowIds.has(row.id) ? ' fade-in-enter' : '')
+                    }
                   >
                     <TxItem
                       row={row}
