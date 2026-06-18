@@ -3,6 +3,8 @@ import { useAuth } from '@/lib/auth'
 import { subscribeHouseholdRosterRefresh } from '@/lib/householdRosterRefresh'
 import {
   filterSendRecipients,
+  isLinkedChild,
+  shouldShowSendNav,
   type SendRecipientMember,
 } from '@/lib/sendRecipients'
 import { fetchLinkedChildMemberIds } from '@/lib/sends'
@@ -79,7 +81,16 @@ export function useSendRecipients() {
   }, [members, member, linkedChildIds])
 
   const sendReady = members !== null
-  const showSendNav = sendReady && recipients.length > 0
+  const callerIsLinkedChild =
+    member != null && isLinkedChild(member.id, member.role, linkedChildIds)
+  const showSendNav =
+    sendReady &&
+    shouldShowSendNav({
+      callerRole: member?.role ?? '',
+      callerIsLinkedChild,
+      recipientCount: recipients.length,
+      linkedChildCount: linkedChildIds.size,
+    })
 
   return {
     recipients,

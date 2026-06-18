@@ -32,3 +32,18 @@ export function filterSendRecipients(
   }
   return others.filter((m) => !linkedChildIds.has(m.id))
 }
+
+/** Nav + route: show Send when there are recipients, or a static explainer (linked kid / adults with only linked kids). */
+export function shouldShowSendNav(args: {
+  callerRole: string
+  callerIsLinkedChild: boolean
+  recipientCount: number
+  linkedChildCount: number
+}): boolean {
+  if (args.recipientCount > 0) return true
+  if (args.callerIsLinkedChild) return true
+  return (
+    (args.callerRole === 'admin' || args.callerRole === 'member') &&
+    args.linkedChildCount > 0
+  )
+}

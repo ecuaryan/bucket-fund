@@ -18,6 +18,8 @@ The primary use case is: **open app → move money from one bucket to another �
 
 ### Product philosophy
 
+**Organize first.** The core job is **bucket budgeting**: label cash, see **Float**, move money between buckets in a few taps. That invariant (`total cash = buckets + Float` across the household) must stay rock solid. **Household features** (roles, linked kid accounts, Send to kids without a linked account) support multi-person use but are secondary — they must not add ledger layers that compete with bank truth or complicate the Buckets tab.
+
 **Intentional friction, minimal automation.** When you overspend, you should come in and consciously face the trade-off — moving money from a bucket back into your **Float** — rather than having the app auto-fix or auto-rebalance. The at-a-glance view surfaces reality so you decide; balance refresh is user-initiated, not background polling. This is a clarity tool, not a transaction tracker: one small move when you spend keeps your Float honest.
 
 ### Product stage

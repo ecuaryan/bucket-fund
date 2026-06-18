@@ -427,7 +427,7 @@ export const ADMIN_ASSIGN_ACCOUNT_TO_KID_EFFECTS = [
   'Send is turned off for this kid—you can’t fund them here, and they can’t Send in the app.',
   'Their balance follows this linked account (debit card spending updates automatically).',
   'Moving money in or out happens at the bank—transfers and deposits, not Send.',
-  'To switch back to virtual allowance, assign the account to Household.',
+  'To let this kid use Send again, assign the account back to Household.',
 ] as const
 
 export function adminAssignAccountToKidConfirm(kidName: string): string {
@@ -883,7 +883,15 @@ export const SEND_LINKED_KID_BODY =
   'Spending comes from your debit card. When you need to move money in or out, use your bank app or ask your household admin to transfer at the bank—not Send here.'
 
 export const SEND_LINKED_KIDS_EXCLUDED_HINT =
-  'Kids with a linked bank account are not listed—their money moves at the bank, not through Send.'
+  'Kids with a linked account aren’t listed—transfer or deposit at your bank to give them money.'
+
+export const SEND_ADULT_LINKED_KIDS_ONLY_TITLE = 'Your kids have linked accounts'
+
+export const SEND_ADULT_LINKED_KIDS_ONLY_BODY =
+  'Every kid in your household has their own linked bank account—their balance comes from the bank, not Send. To give them money, transfer or deposit at your bank.'
+
+export const SEND_ADULT_LINKED_KIDS_ONLY_SEND_FOR =
+  'Send is for kids who don’t have a linked account—you can track their money here instead.'
 
 export const SEND_DB_NOT_READY_BODY =
   'Send is temporarily unavailable while the server finishes updating. Try again in a few minutes, then refresh.'

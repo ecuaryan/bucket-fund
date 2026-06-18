@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { filterSendRecipients, isLinkedChild } from '@/lib/sendRecipients'
+import {
+  filterSendRecipients,
+  isLinkedChild,
+  shouldShowSendNav,
+} from '@/lib/sendRecipients'
 
 const roster = [
   { id: 'a', name: 'Admin', role: 'admin' },
@@ -48,5 +52,51 @@ describe('filterSendRecipients', () => {
 
   it('solo admin has no recipients', () => {
     expect(filterSendRecipients([roster[0]], 'a', 'admin')).toEqual([])
+  })
+})
+
+describe('shouldShowSendNav', () => {
+  it('shows when there are virtual recipients', () => {
+    expect(
+      shouldShowSendNav({
+        callerRole: 'admin',
+        callerIsLinkedChild: false,
+        recipientCount: 1,
+        linkedChildCount: 1,
+      }),
+    ).toBe(true)
+  })
+
+  it('shows for linked kids (static explainer page)', () => {
+    expect(
+      shouldShowSendNav({
+        callerRole: 'child',
+        callerIsLinkedChild: true,
+        recipientCount: 0,
+        linkedChildCount: 1,
+      }),
+    ).toBe(true)
+  })
+
+  it('shows for adults when every kid is linked', () => {
+    expect(
+      shouldShowSendNav({
+        callerRole: 'admin',
+        callerIsLinkedChild: false,
+        recipientCount: 0,
+        linkedChildCount: 1,
+      }),
+    ).toBe(true)
+  })
+
+  it('hides for solo admin with no children', () => {
+    expect(
+      shouldShowSendNav({
+        callerRole: 'admin',
+        callerIsLinkedChild: false,
+        recipientCount: 0,
+        linkedChildCount: 0,
+      }),
+    ).toBe(false)
   })
 })
