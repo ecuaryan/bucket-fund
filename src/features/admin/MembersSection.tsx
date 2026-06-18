@@ -447,7 +447,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
         onSubmit={onCreate}
         className="space-y-3 rounded-2xl bg-zinc-900 p-4 ring-1 ring-zinc-800"
       >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
           <label className="block min-w-0 flex-1">
             <FieldLabel spacing="tight">Name</FieldLabel>
             <ClearableInput
@@ -472,17 +472,17 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
               <option value="child">{roleLabel('child')}</option>
             </select>
           </label>
+          <p className="order-3 text-xs leading-relaxed text-zinc-500 sm:order-4 sm:basis-full">
+            {adminRoleAddHint(newRole)}
+          </p>
           <button
             type="submit"
             disabled={creating || !newName.trim()}
-            className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50 sm:shrink-0"
+            className="order-4 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black disabled:opacity-50 sm:order-3 sm:shrink-0"
           >
             {creating ? 'Adding…' : 'Add'}
           </button>
         </div>
-        <p className="text-xs leading-relaxed text-zinc-500">
-          {adminRoleAddHint(newRole)}
-        </p>
       </form>
 
       {members === null ? (
