@@ -425,7 +425,8 @@ export default function FamilyLoginPage() {
                 {pinPickerPendingLead(
                   householdAdminName,
                   pinReadyMembers.length === 0,
-                )}{' '}
+                )}
+                <br />
                 {PIN_PICKER_AUTO_UPDATE_NOTE}
               </p>
               <PinPickerPollIndicator
