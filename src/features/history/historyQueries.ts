@@ -67,6 +67,26 @@ function postgrestFilterValue(value: string): string {
   return `"${value.replaceAll('"', '\\"')}"`
 }
 
+/** Merge a fresh head page into an existing list; preserve older paginated tail. */
+export function mergeHistoryHead(
+  prev: HistoryTxRow[],
+  headRows: HistoryTxRow[],
+): { merged: HistoryTxRow[]; newlyArrivedIds: string[] } {
+  if (headRows.length === 0) {
+    return { merged: prev, newlyArrivedIds: [] }
+  }
+  const headIds = new Set(headRows.map((r) => r.id))
+  const oldestInHead = headRows[headRows.length - 1]
+  const prevIdSet = new Set(prev.map((r) => r.id))
+  const newlyArrivedIds = headRows
+    .filter((r) => !prevIdSet.has(r.id))
+    .map((r) => r.id)
+  const tail = prev.filter(
+    (r) => !headIds.has(r.id) && isHistoryRowOlderThan(r, oldestInHead),
+  )
+  return { merged: [...headRows, ...tail], newlyArrivedIds }
+}
+
 /** Keyset filter for the page after `cursor` (same sort as fetchHistoryPage). */
 export function historyPageCursorFilter(cursor: HistoryPageCursor): string {
   const ts = postgrestFilterValue(cursor.created_at)
