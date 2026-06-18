@@ -1,5 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import HideAmountsPeekSheetAnchor from '@/components/HideAmountsPeekSheetAnchor'
+import { SHEET_Z_INDEX } from '@/components/layout/navLayout'
 
 type Props = {
   open: boolean
@@ -57,15 +59,18 @@ export function Sheet({
 
   if (!present) return null
 
-  return (
+  // Portal so fixed positioning stacks above app chrome (see APP_CHROME_Z_INDEX).
+  // Sheets rendered inside <main> would otherwise sit under the sticky header.
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel}
       className={
-        'sheet-backdrop fixed inset-0 z-50 flex flex-col items-center justify-start px-4 sm:justify-center sm:px-0 ' +
+        'sheet-backdrop fixed inset-0 flex flex-col items-center justify-start px-4 sm:justify-center sm:px-0 ' +
         (shown ? 'sheet-backdrop-open' : '')
       }
+      style={{ zIndex: SHEET_Z_INDEX }}
       onClick={closeOnBackdropClick ? onClose : undefined}
     >
       <div
@@ -83,6 +88,7 @@ export function Sheet({
         {children}
       </div>
       <HideAmountsPeekSheetAnchor />
-    </div>
+    </div>,
+    document.body,
   )
 }
