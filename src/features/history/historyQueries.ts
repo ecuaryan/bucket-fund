@@ -87,6 +87,31 @@ export function mergeHistoryHead(
   return { merged: [...headRows, ...tail], newlyArrivedIds }
 }
 
+export type HistoryDisplayRow = HistoryTxRow & { justArrived?: true }
+
+/** Drop the ephemeral animation flag before persisting row state. */
+export function stripJustArrived(row: HistoryDisplayRow): HistoryTxRow {
+  if (!row.justArrived) return row
+  const rest = { ...row }
+  delete rest.justArrived
+  return rest
+}
+
+/** Apply a Realtime head refresh; tag brand-new rows for entrance animation. */
+export function applyHistoryHeadRefresh(
+  prev: HistoryTxRow[],
+  headRows: HistoryTxRow[],
+): { rows: HistoryDisplayRow[]; newlyArrivedIds: string[] } {
+  const { merged, newlyArrivedIds } = mergeHistoryHead(prev, headRows)
+  const arrived = new Set(newlyArrivedIds)
+  return {
+    rows: merged.map((row) =>
+      arrived.has(row.id) ? { ...row, justArrived: true } : row,
+    ),
+    newlyArrivedIds,
+  }
+}
+
 /** Keyset filter for the page after `cursor` (same sort as fetchHistoryPage). */
 export function historyPageCursorFilter(cursor: HistoryPageCursor): string {
   const ts = postgrestFilterValue(cursor.created_at)

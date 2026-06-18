@@ -4,6 +4,8 @@ import {
   historyPageCursorFilter,
   isHistoryRowOlderThan,
   mergeHistoryHead,
+  applyHistoryHeadRefresh,
+  stripJustArrived,
 } from './historyQueries'
 import type { HistoryTxRow } from './historyQueries'
 
@@ -95,6 +97,33 @@ describe('mergeHistoryHead', () => {
     const { merged, newlyArrivedIds } = mergeHistoryHead(prev, head)
     expect(merged.map((r) => r.id)).toEqual(['b', 'a'])
     expect(newlyArrivedIds).toEqual([])
+  })
+})
+
+describe('applyHistoryHeadRefresh', () => {
+  const row = (id: string, created_at: string): HistoryTxRow =>
+    ({ id, created_at }) as HistoryTxRow
+
+  it('tags only brand-new head rows for animation', () => {
+    const prev = [row('b', '2026-06-02T00:00:00Z')]
+    const head = [row('c', '2026-06-03T00:00:00Z'), row('b', '2026-06-02T00:00:00Z')]
+    const { rows, newlyArrivedIds } = applyHistoryHeadRefresh(prev, head)
+    expect(newlyArrivedIds).toEqual(['c'])
+    expect(rows[0].justArrived).toBe(true)
+    expect(rows[1].justArrived).toBeUndefined()
+  })
+})
+
+describe('stripJustArrived', () => {
+  const row = (id: string, created_at: string): HistoryTxRow =>
+    ({ id, created_at }) as HistoryTxRow
+
+  it('removes justArrived without changing other fields', () => {
+    const tagged = { ...row('c', '2026-06-03T00:00:00Z'), justArrived: true as const }
+    expect(stripJustArrived(tagged)).toEqual(row('c', '2026-06-03T00:00:00Z'))
+    expect(stripJustArrived(row('a', '2026-06-01T00:00:00Z'))).toEqual(
+      row('a', '2026-06-01T00:00:00Z'),
+    )
   })
 })
 

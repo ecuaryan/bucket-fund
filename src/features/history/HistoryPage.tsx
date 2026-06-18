@@ -1,11 +1,14 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type FormEvent,
+  type ReactNode,
 } from 'react'
+import { flushSync } from 'react-dom'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
@@ -46,9 +49,12 @@ import {
 } from '@/features/history/historyFilters'
 import {
   fetchHistoryPage,
-  mergeHistoryHead,
-  type HistoryTxRow,
+  applyHistoryHeadRefresh,
+  stripJustArrived,
+  type HistoryDisplayRow,
 } from '@/features/history/historyQueries'
+import { HISTORY_ROW_ARRIVED_CLEAR_MS } from '@/features/history/historyRowExpand'
+import { useHistoryRowExpandAnimation } from '@/features/history/useHistoryRowExpandAnimation'
 import { withAuthLockRetry } from '@/lib/authLockError'
 import {
   isAppBackgroundExpired,
@@ -63,7 +69,7 @@ import {
 import { HistoryEntityTransfer } from '@/features/history/HistoryEntityTransfer'
 import { historyBalanceSides } from '@/lib/historyBalanceSides'
 
-type TxRow = HistoryTxRow
+type TxRow = HistoryDisplayRow
 
 type Bucket = Pick<
   Database['public']['Tables']['buckets']['Row'],
@@ -78,7 +84,6 @@ type Bucket = Pick<
 const INITIAL_PAGE_SIZE = 10
 const MORE_PAGE_SIZE = 50
 const REALTIME_REFRESH_DEBOUNCE_MS = 300
-const ARRIVED_ROW_ANIMATION_MS = 250
 
 const dayFormatter = new Intl.DateTimeFormat('en-US', {
   weekday: 'short',
@@ -107,9 +112,6 @@ export default function HistoryPage() {
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [arrivedRowIds, setArrivedRowIds] = useState<Set<string>>(
-    () => new Set(),
-  )
 
   // Bump when family or filter changes so stale async work cannot mutate state.
   const listGeneration = useRef(0)
@@ -128,13 +130,13 @@ export default function HistoryPage() {
   const { sendReady, showSendNav } = useSendRecipients()
   const showSendFilter = sendReady && showSendNav
 
-  const markArrivedRows = useCallback((ids: string[]) => {
-    if (ids.length === 0) return
-    setArrivedRowIds((prev) => new Set([...prev, ...ids]))
+  const scheduleClearJustArrived = useCallback(() => {
     clearTimeout(arrivedClearTimer.current)
     arrivedClearTimer.current = setTimeout(() => {
-      setArrivedRowIds(new Set())
-    }, ARRIVED_ROW_ANIMATION_MS)
+      setRows(
+        (current) => current?.map((row) => stripJustArrived(row)) ?? null,
+      )
+    }, HISTORY_ROW_ARRIVED_CLEAR_MS)
   }, [])
 
   const loadMore = useCallback(async () => {
@@ -173,15 +175,17 @@ export default function HistoryPage() {
     if (generation !== listGeneration.current) return
     if (!result.ok) return
 
-    let newlyArrived: string[] = []
-    setRows((prev) => {
-      if (!prev) return result.rows
-      const merged = mergeHistoryHead(prev, result.rows)
-      newlyArrived = merged.newlyArrivedIds
-      return merged.merged
+    let hasNewRows = false
+    flushSync(() => {
+      setRows((prev) => {
+        if (!prev) return result.rows
+        const applied = applyHistoryHeadRefresh(prev, result.rows)
+        hasNewRows = applied.newlyArrivedIds.length > 0
+        return applied.rows
+      })
     })
-    if (newlyArrived.length > 0) markArrivedRows(newlyArrived)
-  }, [filterKey, markArrivedRows])
+    if (hasNewRows) scheduleClearJustArrived()
+  }, [filterKey, scheduleClearJustArrived])
 
   const debouncedRefreshHead = useCallback(() => {
     clearTimeout(realtimeRefreshTimer.current)
@@ -232,7 +236,7 @@ export default function HistoryPage() {
     void loadInitialHistory()
   }, [loadInitialHistory])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     rowsRef.current = rows
   }, [rows])
 
@@ -374,20 +378,14 @@ export default function HistoryPage() {
               </h2>
               <ul className="flex flex-col gap-2">
                 {group.rows.map((row) => (
-                  <li
-                    key={row.id}
-                    className={
-                      'rounded-2xl bg-zinc-900 px-3 py-3 ring-1 ring-zinc-800' +
-                      (arrivedRowIds.has(row.id) ? ' fade-in-enter' : '')
-                    }
-                  >
+                  <HistoryRowShell key={row.id} justArrived={row.justArrived === true}>
                     <TxItem
                       row={row}
                       currentMemberId={member.id}
                       viewerRole={member.role}
                       onNoteUpdated={handleNoteUpdated}
                     />
-                  </li>
+                  </HistoryRowShell>
                 ))}
               </ul>
             </section>
@@ -417,6 +415,27 @@ export default function HistoryPage() {
         </div>
       )}
     </div>
+  )
+}
+
+function HistoryRowShell({
+  justArrived,
+  children,
+}: {
+  justArrived: boolean
+  children: ReactNode
+}) {
+  const shellRef = useRef<HTMLLIElement>(null)
+  useHistoryRowExpandAnimation(shellRef, justArrived)
+
+  return (
+    <li ref={shellRef}>
+      <div className="min-h-0 overflow-hidden">
+        <div className="rounded-2xl bg-zinc-900 px-3 py-3 ring-1 ring-zinc-800">
+          {children}
+        </div>
+      </div>
+    </li>
   )
 }
 
