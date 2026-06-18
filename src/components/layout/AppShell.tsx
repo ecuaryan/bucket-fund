@@ -82,9 +82,7 @@ export default function AppShell() {
       </header>
 
       <main
-        className={
-          'relative z-0 mx-auto w-full max-w-md flex-1 px-4 pt-6 ' + NAV_CENTER_MAIN_PB
-        }
+        className={'mx-auto w-full max-w-md flex-1 px-4 pt-6 ' + NAV_CENTER_MAIN_PB}
       >
         <Outlet />
       </main>

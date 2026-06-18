@@ -1,7 +1,18 @@
 /** Bottom nav layout tokens (sliding bubble chrome). */
 
-/** z-index for sticky header + fixed bottom nav — above in-page {@link BusyOverlay}. */
+/**
+ * App shell z-index scale (low → high):
+ * - In-page {@link BusyOverlay}: z-1 / z-2 inside page content
+ * - {@link APP_CHROME_Z_INDEX}: sticky header + fixed bottom nav
+ * - {@link SHEET_Z_INDEX}: modal sheets (portaled to `document.body`)
+ * - Toasts: z-60 in {@link ToastProvider}
+ */
+
+/** Sticky header + fixed bottom nav — above in-page {@link BusyOverlay}. */
 export const APP_CHROME_Z_INDEX = 30
+
+/** Full-screen sheet backdrop — above app chrome, below toasts. */
+export const SHEET_Z_INDEX = 40
 
 export const NAV_BUBBLE_SIZE_PX = 48
 

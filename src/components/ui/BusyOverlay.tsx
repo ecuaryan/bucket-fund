@@ -15,7 +15,8 @@ type Props = {
  * (e.g. Buckets tab with many buckets) instead of centering in the full scroll height.
  *
  * z-index stays below app chrome (APP_CHROME_Z_INDEX in navLayout) so the sticky
- * status pill never covers the shell header on scroll.
+ * status pill never covers the shell header on scroll. Sheets portal to
+ * `document.body` (SHEET_Z_INDEX) so they are not trapped by page stacking.
  *
  * Do not set `busy` while a Sheet dialog is open on the same surface — it flashes
  * behind the modal; close the sheet first or exclude open dialogs from `busy`.
