@@ -682,8 +682,15 @@ export const AUTO_ORGANIZE_SAVEOFF_DESTINATION_HINT =
 export const AUTO_ORGANIZE_RUN_NOW_NOTHING_TO_MOVE =
   'Nothing to move right now.'
 
-export const AUTO_ORGANIZE_SWEEP_THEN_FILL_NOTE =
+export const AUTO_ORGANIZE_SWEEP_THEN_FILL_TOPUP_NOTE =
   'This bucket is also in a save-off rule. Excess is swept before top-ups on the same day.'
+
+export const AUTO_ORGANIZE_SWEEP_THEN_FILL_SAVEOFF_NOTE =
+  'This bucket is also in a top-up or auto-organize rule. Save-offs run before refills on the same day.'
+
+/** @deprecated use AUTO_ORGANIZE_SWEEP_THEN_FILL_TOPUP_NOTE or AUTO_ORGANIZE_SWEEP_THEN_FILL_SAVEOFF_NOTE */
+export const AUTO_ORGANIZE_SWEEP_THEN_FILL_NOTE =
+  AUTO_ORGANIZE_SWEEP_THEN_FILL_TOPUP_NOTE
 
 export function autoOrganizeSaveOffKeepRuleShort(
   amount: number,

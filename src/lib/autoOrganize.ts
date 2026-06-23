@@ -525,8 +525,8 @@ export function defaultBrowserTimezone(): string {
   }
 }
 
-/** Buckets that are save-off sources and also top-up/organize destinations elsewhere. */
-export function bucketsWithSweepThenFillNote(
+/** Save-off source buckets that are also top-up/organize destinations elsewhere. */
+export function bucketsAlsoInFillRulesElsewhere(
   rows: ReadonlyArray<AutoOrganizeWithDetails>,
   sourceBucketIds: ReadonlySet<string>,
 ): Set<string> {
@@ -543,4 +543,31 @@ export function bucketsWithSweepThenFillNote(
     if (fillTargets.has(id)) overlap.add(id)
   }
   return overlap
+}
+
+/** Top-up/organize buckets that are also save-off sources elsewhere. */
+export function bucketsAlsoInSaveOffSourcesElsewhere(
+  rows: ReadonlyArray<AutoOrganizeWithDetails>,
+  targetBucketIds: ReadonlySet<string>,
+): Set<string> {
+  const saveOffSources = new Set<string>()
+  for (const row of rows) {
+    if (row.auto_organize_kind !== 'save_off') continue
+    for (const line of row.lines) {
+      saveOffSources.add(line.bucket_id)
+    }
+  }
+  const overlap = new Set<string>()
+  for (const id of targetBucketIds) {
+    if (saveOffSources.has(id)) overlap.add(id)
+  }
+  return overlap
+}
+
+/** @deprecated use bucketsAlsoInFillRulesElsewhere or bucketsAlsoInSaveOffSourcesElsewhere */
+export function bucketsWithSweepThenFillNote(
+  rows: ReadonlyArray<AutoOrganizeWithDetails>,
+  sourceBucketIds: ReadonlySet<string>,
+): Set<string> {
+  return bucketsAlsoInFillRulesElsewhere(rows, sourceBucketIds)
 }

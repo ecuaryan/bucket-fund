@@ -3,6 +3,8 @@ import {
   activeAutoOrganizeLines,
   autoOrganizeDisplayName,
   autoOrganizeLineMoveAtRun,
+  bucketsAlsoInFillRulesElsewhere,
+  bucketsAlsoInSaveOffSourcesElsewhere,
   computeLineMoveAmount,
   computeTotalPerRun,
   disambiguateAutoOrganizeLabels,
@@ -214,6 +216,49 @@ describe('save_off run preview consistency', () => {
         0,
       ),
     ).toBe(total)
+  })
+})
+
+describe('sweep-then-fill editor notes', () => {
+  const topUpRow = {
+    id: 'top-up-1',
+    auto_organize_kind: 'top_up' as const,
+    lines: [{ bucket_id: 'groceries', amount: 400 }],
+  }
+  const saveOffRow = {
+    id: 'save-off-1',
+    auto_organize_kind: 'save_off' as const,
+    lines: [{ bucket_id: 'groceries', amount: 200 }],
+  }
+
+  it('flags save-off sources that are also fill targets elsewhere', () => {
+    expect(
+      bucketsAlsoInFillRulesElsewhere(
+        [topUpRow, saveOffRow] as never[],
+        new Set(['groceries']),
+      ).has('groceries'),
+    ).toBe(true)
+    expect(
+      bucketsAlsoInFillRulesElsewhere(
+        [saveOffRow] as never[],
+        new Set(['groceries']),
+      ).has('groceries'),
+    ).toBe(false)
+  })
+
+  it('flags top-up targets that are also save-off sources elsewhere', () => {
+    expect(
+      bucketsAlsoInSaveOffSourcesElsewhere(
+        [topUpRow, saveOffRow] as never[],
+        new Set(['groceries']),
+      ).has('groceries'),
+    ).toBe(true)
+    expect(
+      bucketsAlsoInSaveOffSourcesElsewhere(
+        [topUpRow] as never[],
+        new Set(['groceries']),
+      ).has('groceries'),
+    ).toBe(false)
   })
 })
 

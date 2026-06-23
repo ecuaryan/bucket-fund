@@ -38,7 +38,8 @@ import {
   AUTO_ORGANIZE_START_DATE_TODAY_ERROR,
   AUTO_ORGANIZE_START_DATE_PAST_ERROR,
   AUTO_ORGANIZE_START_DATE_TOO_FAR_ERROR,
-  AUTO_ORGANIZE_SWEEP_THEN_FILL_NOTE,
+  AUTO_ORGANIZE_SWEEP_THEN_FILL_SAVEOFF_NOTE,
+  AUTO_ORGANIZE_SWEEP_THEN_FILL_TOPUP_NOTE,
   AUTO_ORGANIZE_TIMEZONE_HINT,
   AUTO_ORGANIZE_TIMEZONE_HINT_MANUAL,
   AUTO_ORGANIZE_TIMEZONE_LABEL,
@@ -53,7 +54,8 @@ import {
   type AutoOrganizeFrequencySelection,
 } from '@/lib/brand'
 import {
-  bucketsWithSweepThenFillNote,
+  bucketsAlsoInFillRulesElsewhere,
+  bucketsAlsoInSaveOffSourcesElsewhere,
   computeTotalPerRun,
   fetchFamilyTimezone,
   saveAutoOrganize,
@@ -101,7 +103,7 @@ type Props = {
   kind: AutoOrganizeKind
   initial: AutoOrganizeWithDetails | null
   buckets: Bucket[]
-  /** For save-off sweep-then-fill note when editing. */
+  /** For sweep-then-fill overlap notes when editing. */
   allAutoOrganizes?: AutoOrganizeWithDetails[]
   memberId: string
   /** Household IANA timezone when known (from loaded auto-organize rows). */
@@ -385,10 +387,22 @@ export default function AutoOrganizeEditor({
   )
 
   const sweepThenFillBuckets = useMemo(() => {
-    if (effectiveKind !== 'save_off') return new Set<string>()
-    const sourceIds = new Set(parsedBuckets.map((r) => r.bucketId))
-    return bucketsWithSweepThenFillNote(allAutoOrganizes, sourceIds)
+    const bucketIds = new Set(parsedBuckets.map((r) => r.bucketId))
+    if (effectiveKind === 'save_off') {
+      return bucketsAlsoInFillRulesElsewhere(allAutoOrganizes, bucketIds)
+    }
+    if (effectiveKind === 'top_up' || effectiveKind === 'organize') {
+      return bucketsAlsoInSaveOffSourcesElsewhere(allAutoOrganizes, bucketIds)
+    }
+    return new Set<string>()
   }, [effectiveKind, parsedBuckets, allAutoOrganizes])
+
+  const sweepThenFillNote =
+    effectiveKind === 'save_off'
+      ? AUTO_ORGANIZE_SWEEP_THEN_FILL_SAVEOFF_NOTE
+      : effectiveKind === 'top_up' || effectiveKind === 'organize'
+        ? AUTO_ORGANIZE_SWEEP_THEN_FILL_TOPUP_NOTE
+        : null
 
   const title = initial
     ? AUTO_ORGANIZE_EDIT_LABEL
@@ -893,9 +907,9 @@ export default function AutoOrganizeEditor({
                         {AUTO_ORGANIZE_SAVEOFF_KEEP_ZERO_ROW_HINT}
                       </p>
                     ) : null}
-                    {showSweepNote ? (
+                    {showSweepNote && sweepThenFillNote ? (
                       <p className="mt-1 text-xs text-amber-200/80">
-                        {AUTO_ORGANIZE_SWEEP_THEN_FILL_NOTE}
+                        {sweepThenFillNote}
                       </p>
                     ) : null}
                   </div>
