@@ -13,6 +13,7 @@ import {
   AUTO_ORGANIZE_ESTIMATED_TOTAL_LABEL,
   AUTO_ORGANIZE_GUARDRAIL,
   AUTO_ORGANIZE_LOAD_ERROR_TITLE,
+  AUTO_ORGANIZE_LOADING_ARIA_LABEL,
   AUTO_ORGANIZE_NOTHING_TO_MOVE_NOW_LABEL,
   AUTO_ORGANIZE_NO_BUCKETS_ERROR,
   AUTO_ORGANIZE_PAUSE_LABEL,
@@ -161,6 +162,35 @@ function RunNowAmountRow({
   )
 }
 
+function AutoOrganizeLoadingCards() {
+  return (
+    <div
+      className="space-y-3"
+      aria-busy="true"
+      aria-label={AUTO_ORGANIZE_LOADING_ARIA_LABEL}
+    >
+      {[0, 1].map((key) => (
+        <div
+          key={key}
+          className="animate-pulse rounded-2xl bg-zinc-900/80 px-4 py-4 ring-1 ring-zinc-800"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="h-4 w-36 rounded bg-zinc-800" />
+              <div className="h-3 w-52 max-w-full rounded bg-zinc-800" />
+              <div className="h-3 w-28 rounded bg-zinc-800" />
+            </div>
+            <div className="shrink-0 space-y-1.5 text-right">
+              <div className="ml-auto h-2.5 w-16 rounded bg-zinc-800" />
+              <div className="ml-auto h-5 w-20 rounded bg-zinc-800" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function AutoOrganizeCard({
   row,
   buckets,
@@ -186,6 +216,10 @@ function AutoOrganizeCard({
   )
   const isManual = row.auto_organize_type === 'manual'
   const kindSubtitle = autoOrganizeKindSubtitle(kind, isManual)
+  const lastRunContext = useMemo(() => {
+    if (!row.lastRun) return null
+    return autoOrganizeRunNowLastRunContext(row.lastRun, row.familyTimezone)
+  }, [row.lastRun, row.familyTimezone])
   const saveOffDestLabel = autoOrganizeSaveOffDestinationLabel(
     row.destination_bucket_id
       ? resolveAutoOrganizeLineBucketName(
@@ -246,37 +280,60 @@ function AutoOrganizeCard({
                 {autoOrganizePausedStatus(!isAdmin)}
               </p>
               <p className="mt-1 text-xs text-zinc-500">{row.nextRunLabel}</p>
-              {row.lastRunLabel ? (
-                <p className="mt-0.5 text-xs text-zinc-500">{row.lastRunLabel}</p>
+              {lastRunContext ? (
+                <p
+                  className={
+                    lastRunContext.emphasize
+                      ? 'mt-0.5 text-xs font-medium text-amber-200/90'
+                      : 'mt-0.5 text-xs text-zinc-500'
+                  }
+                >
+                  {lastRunContext.message}
+                </p>
               ) : null}
             </>
           ) : (
             <>
               <p className="mt-1 text-xs text-zinc-400">{row.nextRunLabel}</p>
-              {row.lastRunLabel ? (
-                <p className="mt-0.5 text-xs text-zinc-500">{row.lastRunLabel}</p>
+              {lastRunContext ? (
+                <p
+                  className={
+                    lastRunContext.emphasize
+                      ? 'mt-0.5 text-xs font-medium text-amber-200/90'
+                      : 'mt-0.5 text-xs text-zinc-500'
+                  }
+                >
+                  {lastRunContext.message}
+                </p>
               ) : null}
             </>
           )}
         </div>
-        <p
-          className={
-            showPausedUi
-              ? 'shrink-0 text-sm font-semibold tabular-nums text-zinc-400'
-              : liveTotal.isEstimate && liveTotal.total === 0
-                ? 'shrink-0 text-xs text-zinc-500'
-                : 'shrink-0 text-sm font-semibold tabular-nums text-zinc-100'
-          }
-        >
-          {liveTotal.isEstimate && liveTotal.total === 0 ? (
-            AUTO_ORGANIZE_NOTHING_TO_MOVE_NOW_LABEL
-          ) : (
-            <>
-              {liveTotal.isEstimate ? '~' : ''}
-              {formatMoney(liveTotal.total)}
-            </>
-          )}
-        </p>
+        <div className="shrink-0 text-right">
+          {liveTotal.isEstimate && liveTotal.total > 0 ? (
+            <p className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+              {AUTO_ORGANIZE_ESTIMATED_TOTAL_LABEL}
+            </p>
+          ) : null}
+          <p
+            className={
+              showPausedUi
+                ? 'text-sm font-semibold tabular-nums text-zinc-400'
+                : liveTotal.isEstimate && liveTotal.total === 0
+                  ? 'text-xs text-zinc-500'
+                  : 'text-sm font-semibold tabular-nums text-zinc-100'
+            }
+          >
+            {liveTotal.isEstimate && liveTotal.total === 0 ? (
+              AUTO_ORGANIZE_NOTHING_TO_MOVE_NOW_LABEL
+            ) : (
+              <>
+                {liveTotal.isEstimate ? '~' : ''}
+                {formatMoney(liveTotal.total)}
+              </>
+            )}
+          </p>
+        </div>
       </div>
       {displayLines.length > 0 ? (
         <div className="mt-3">
@@ -759,6 +816,8 @@ export default function AutoOrganizeSection({
           </button>
         </div>
       ) : null}
+
+      {rows === null && !loadError ? <AutoOrganizeLoadingCards /> : null}
 
       {rows?.map((row) => (
         <AutoOrganizeCard

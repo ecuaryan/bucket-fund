@@ -618,6 +618,8 @@ export const AUTO_ORGANIZE_SECTION_TITLE = 'Auto-organize'
 
 export const AUTO_ORGANIZE_LOAD_ERROR_TITLE = 'Could not load auto-organize'
 
+export const AUTO_ORGANIZE_LOADING_ARIA_LABEL = 'Loading auto-organize'
+
 /** One line under the section header (admin + Shared). */
 export const AUTO_ORGANIZE_GUARDRAIL =
   'You choose when and how much — on a schedule or when you tap Run now.'
