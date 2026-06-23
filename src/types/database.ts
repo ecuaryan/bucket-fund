@@ -200,10 +200,12 @@ export type Database = {
       }
       auto_organizes: {
         Row: {
+          auto_organize_kind: string
           auto_organize_type: string
           created_at: string
           created_by_member_id: string | null
           days_of_month: number[] | null
+          destination_bucket_id: string | null
           family_id: string
           id: string
           interval_count: number | null
@@ -214,10 +216,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_organize_kind?: string
           auto_organize_type: string
           created_at?: string
           created_by_member_id?: string | null
           days_of_month?: number[] | null
+          destination_bucket_id?: string | null
           family_id: string
           id?: string
           interval_count?: number | null
@@ -228,10 +232,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_organize_kind?: string
           auto_organize_type?: string
           created_at?: string
           created_by_member_id?: string | null
           days_of_month?: number[] | null
+          destination_bucket_id?: string | null
           family_id?: string
           id?: string
           interval_count?: number | null
@@ -247,6 +253,13 @@ export type Database = {
             columns: ["created_by_member_id"]
             isOneToOne: false
             referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auto_organizes_destination_bucket_id_fkey"
+            columns: ["destination_bucket_id"]
+            isOneToOne: false
+            referencedRelation: "buckets"
             referencedColumns: ["id"]
           },
           {
@@ -725,6 +738,19 @@ export type Database = {
         }
         Returns: string
       }
+      _auto_organize_sweep_line: {
+        Args: {
+          p_amount: number
+          p_auto_organize_run_id: string
+          p_family_id: string
+          p_float_member_id: string
+          p_from_bucket_id: string
+          p_from_member_id: string
+          p_note: string
+          p_to_bucket_id: string
+        }
+        Returns: string
+      }
       add_manual_account: {
         Args: { p_amount: number; p_label: string }
         Returns: string
@@ -776,6 +802,14 @@ export type Database = {
       bucket_visible_to_adults: {
         Args: { p_bucket_id: string }
         Returns: boolean
+      }
+      client_float_balance_after: {
+        Args: { p_transaction_id: string }
+        Returns: number
+      }
+      client_float_balance_before: {
+        Args: { p_transaction_id: string }
+        Returns: number
       }
       delete_bucket: { Args: { p_bucket_id: string }; Returns: undefined }
       delete_manual_account: {

@@ -1,13 +1,16 @@
 import { supabase } from '@/lib/supabase'
+import type { AutoOrganizeKind } from '@/lib/brand'
 import type { Database } from '@/types/database'
 import {
   computeNextRunOn,
   formatCadenceSummary,
   formatLastRunLabel,
-  formatNextRunLabel,
+  formatNextRunLabelForCadence,
   type AutoOrganizeCadence,
 } from '@/lib/autoOrganizeCadence'
 import { isValidIanaTimezone } from '@/lib/familyTimezones'
+
+export type { AutoOrganizeKind }
 
 type AutoOrganizeRow = Database['public']['Tables']['auto_organizes']['Row']
 type AutoOrganizeLineRow = Database['public']['Tables']['auto_organize_lines']['Row']
@@ -20,15 +23,23 @@ export type AutoOrganizeLineInput = {
 
 export type AutoOrganizeInput = {
   id?: string
+  kind: AutoOrganizeKind
   name: string | null
   paused: boolean
   cadence: AutoOrganizeCadence
   lines: AutoOrganizeLineInput[]
+  /** save_off only: null = sweep to Float */
+  destinationBucketId: string | null
   familyTimezone: string
 }
 
+export type AutoOrganizeLineWithDetails = AutoOrganizeLineRow & {
+  bucket_name: string | null
+  bucket_allocated_amount: number | null
+}
+
 export type AutoOrganizeWithDetails = AutoOrganizeRow & {
-  lines: (AutoOrganizeLineRow & { bucket_name: string | null })[]
+  lines: AutoOrganizeLineWithDetails[]
   lastRun: Pick<
     AutoOrganizeRunRow,
     'id' | 'status' | 'run_on' | 'trigger' | 'created_at'
@@ -37,9 +48,89 @@ export type AutoOrganizeWithDetails = AutoOrganizeRow & {
   /** Any run (manual or scheduled) on the family's local calendar today. */
   hasRunToday: boolean
   totalPerRun: number
+  /** True when totalPerRun is computed from current balances (top_up / save_off). */
+  totalIsEstimate: boolean
   cadenceSummary: string
   nextRunLabel: string
   familyTimezone: string
+  destination_bucket_name: string | null
+}
+
+/** Per-line move amount at run time (matches server logic). */
+export function computeLineMoveAmount(
+  kind: AutoOrganizeKind,
+  lineAmount: number,
+  bucketBalance: number,
+): number {
+  switch (kind) {
+    case 'top_up':
+      return Math.max(0, lineAmount - bucketBalance)
+    case 'save_off':
+      return Math.max(0, bucketBalance - lineAmount)
+    default:
+      return lineAmount
+  }
+}
+
+type AutoOrganizeLineBalanceFields = {
+  bucket_id: string
+  amount: number | string
+  bucket_allocated_amount?: number | null
+}
+
+/** Move amount for one line if the rule ran now (matches server). */
+export function autoOrganizeLineMoveAtRun(
+  kind: AutoOrganizeKind,
+  line: AutoOrganizeLineBalanceFields,
+  balanceById?: ReadonlyMap<string, number>,
+): number {
+  const amount = Number(line.amount)
+  if (!Number.isFinite(amount) || amount < 0) return 0
+  if (kind === 'organize') return amount > 0 ? amount : 0
+  if (kind === 'top_up' && amount <= 0) return 0
+  const balance = resolveAutoOrganizeLineBalance(line, balanceById)
+  return computeLineMoveAmount(kind, amount, balance)
+}
+
+export function resolveAutoOrganizeLineBalance(
+  line: { bucket_id: string; bucket_allocated_amount?: number | null },
+  balanceById?: ReadonlyMap<string, number>,
+): number {
+  if (balanceById?.has(line.bucket_id)) {
+    return balanceById.get(line.bucket_id) ?? 0
+  }
+  return Number(line.bucket_allocated_amount ?? 0)
+}
+
+export function computeTotalPerRun(
+  kind: AutoOrganizeKind,
+  lines: ReadonlyArray<{
+    bucket_id?: string
+    amount: number | string
+    bucket_allocated_amount?: number | null
+  }>,
+  balanceById?: ReadonlyMap<string, number>,
+): { total: number; isEstimate: boolean } {
+  const isEstimate = kind === 'top_up' || kind === 'save_off'
+  let total = 0
+  for (const line of lines) {
+    if (!line.bucket_id) {
+      const amount = Number(line.amount)
+      if (!Number.isFinite(amount) || amount <= 0) continue
+      if (kind === 'organize') total += amount
+      continue
+    }
+    total += autoOrganizeLineMoveAtRun(
+      kind,
+      {
+        bucket_id: line.bucket_id,
+        amount: line.amount,
+        bucket_allocated_amount: line.bucket_allocated_amount,
+      },
+      balanceById,
+    )
+  }
+  return { total, isEstimate }
 }
 
 /** Local calendar date `YYYY-MM-DD` in the given IANA timezone. */
@@ -64,8 +155,12 @@ export function autoOrganizeHasRunOnDate(
 
 export function activeAutoOrganizeLines(
   lines: AutoOrganizeWithDetails['lines'],
+  kind: AutoOrganizeKind = 'organize',
+  balanceById?: ReadonlyMap<string, number>,
 ): AutoOrganizeWithDetails['lines'] {
-  return lines.filter((line) => Number(line.amount) > 0)
+  return lines.filter(
+    (line) => autoOrganizeLineMoveAtRun(kind, line, balanceById) > 0,
+  )
 }
 
 /** Match Buckets tab order (family-pool buckets only). */
@@ -80,13 +175,11 @@ export function orderAutoOrganizeLinesByBuckets<
       .filter((bucket) => bucket.owner_member_id === null)
       .map((bucket, index) => [bucket.id, index]),
   )
-  return [...lines]
-    .filter((line) => Number(line.amount) > 0)
-    .sort(
-      (a, b) =>
-        (order.get(a.bucket_id) ?? Number.MAX_SAFE_INTEGER) -
-        (order.get(b.bucket_id) ?? Number.MAX_SAFE_INTEGER),
-    )
+  return [...lines].sort(
+    (a, b) =>
+      (order.get(a.bucket_id) ?? Number.MAX_SAFE_INTEGER) -
+      (order.get(b.bucket_id) ?? Number.MAX_SAFE_INTEGER),
+  )
 }
 
 /** Prefer live bucket names from the Buckets tab over stale fetch joins. */
@@ -131,9 +224,10 @@ export async function fetchAutoOrganizes(): Promise<AutoOrganizeWithDetails[]> {
           `*,
           auto_organize_lines (
             *,
-            buckets ( name )
+            buckets ( name, allocated_amount )
           ),
-          auto_organize_runs ( id, status, run_on, trigger, created_at )`,
+          auto_organize_runs ( id, status, run_on, trigger, created_at ),
+          destination_bucket:buckets!auto_organizes_destination_bucket_id_fkey ( name )`,
         )
         .order('created_at', { ascending: true }),
       supabase.from('families').select('timezone').maybeSingle(),
@@ -147,16 +241,25 @@ export async function fetchAutoOrganizes(): Promise<AutoOrganizeWithDetails[]> {
     const {
       auto_organize_lines: nestedLines,
       auto_organize_runs: nestedRuns,
+      destination_bucket: destBucket,
       ...base
     } = row
+    const kind = (base.auto_organize_kind ?? 'organize') as AutoOrganizeKind
     const lines = (nestedLines ?? [])
       .slice()
       .sort((a, b) => a.sort_order - b.sort_order)
-      .map((line) => ({
-        ...line,
-        bucket_name:
-          (line as { buckets?: { name: string } | null }).buckets?.name ?? null,
-      }))
+      .map((line) => {
+        const bucket = (line as { buckets?: { name: string; allocated_amount: number | string } | null })
+          .buckets
+        return {
+          ...line,
+          bucket_name: bucket?.name ?? null,
+          bucket_allocated_amount:
+            bucket?.allocated_amount != null
+              ? Number(bucket.allocated_amount)
+              : null,
+        }
+      })
     const runs = (nestedRuns ?? [])
       .slice()
       .sort(
@@ -182,16 +285,21 @@ export async function fetchAutoOrganizes(): Promise<AutoOrganizeWithDetails[]> {
     }
     const nextRunOn = computeNextRunOn(cadence, timeZone)
     const todayIso = localTodayIso(timeZone)
+    const { total, isEstimate } = computeTotalPerRun(kind, lines)
+    const destNested = destBucket as { name: string } | null
     return {
       ...base,
+      auto_organize_kind: kind,
       lines,
       lastRun: lastSuccessfulRun,
       lastRunLabel: formatLastRunLabel(lastSuccessfulRun?.run_on ?? null),
       hasRunToday: autoOrganizeHasRunOnDate(runs, todayIso),
-      totalPerRun: lines.reduce((sum, line) => sum + Number(line.amount), 0),
+      totalPerRun: total,
+      totalIsEstimate: isEstimate,
       cadenceSummary: formatCadenceSummary(cadence),
-      nextRunLabel: formatNextRunLabel(nextRunOn),
+      nextRunLabel: formatNextRunLabelForCadence(cadence, nextRunOn),
       familyTimezone: timeZone,
+      destination_bucket_name: destNested?.name ?? null,
     }
   })
 }
@@ -203,6 +311,9 @@ export async function saveAutoOrganize(
   const payload = {
     name: input.name?.trim() || null,
     paused: input.paused,
+    auto_organize_kind: input.kind,
+    destination_bucket_id:
+      input.kind === 'save_off' ? input.destinationBucketId : null,
     auto_organize_type: input.cadence.autoOrganizeType,
     start_date:
       input.cadence.autoOrganizeType === 'interval'
@@ -342,29 +453,51 @@ export function disambiguateAutoOrganizeLabels(
 export async function fetchAutoOrganizesUsingBucket(
   bucketId: string,
 ): Promise<AutoOrganizeBucketRef[]> {
-  const { data, error } = await supabase
-    .from('auto_organize_lines')
-    .select(
-      `auto_organize_id,
-      auto_organizes (
-        name,
-        auto_organize_type,
-        start_date,
-        interval_count,
-        interval_unit,
-        days_of_month
-      )`,
-    )
-    .eq('bucket_id', bucketId)
-  if (error) throw error
+  const [{ data: lineRefs, error: lineError }, { data: destRefs, error: destError }] =
+    await Promise.all([
+      supabase
+        .from('auto_organize_lines')
+        .select(
+          `auto_organize_id,
+          auto_organizes (
+            name,
+            auto_organize_type,
+            start_date,
+            interval_count,
+            interval_unit,
+            days_of_month
+          )`,
+        )
+        .eq('bucket_id', bucketId),
+      supabase
+        .from('auto_organizes')
+        .select(
+          `id,
+          name,
+          auto_organize_type,
+          start_date,
+          interval_count,
+          interval_unit,
+          days_of_month`,
+        )
+        .eq('destination_bucket_id', bucketId),
+    ])
+  if (lineError) throw lineError
+  if (destError) throw destError
 
   const byId = new Map<string, AutoOrganizeBucketRef>()
-  for (const row of data ?? []) {
+  for (const row of lineRefs ?? []) {
     const nested = row.auto_organizes as AutoOrganizeNameFields | null
     if (!nested) continue
     byId.set(row.auto_organize_id, {
       id: row.auto_organize_id,
       name: autoOrganizeDisplayName(nested),
+    })
+  }
+  for (const row of destRefs ?? []) {
+    byId.set(row.id, {
+      id: row.id,
+      name: autoOrganizeDisplayName(row),
     })
   }
   return disambiguateAutoOrganizeLabels([...byId.values()])
@@ -388,4 +521,24 @@ export function defaultBrowserTimezone(): string {
   } catch {
     return 'UTC'
   }
+}
+
+/** Buckets that are save-off sources and also top-up/organize destinations elsewhere. */
+export function bucketsWithSweepThenFillNote(
+  rows: ReadonlyArray<AutoOrganizeWithDetails>,
+  sourceBucketIds: ReadonlySet<string>,
+): Set<string> {
+  const fillTargets = new Set<string>()
+  for (const row of rows) {
+    if (row.auto_organize_kind === 'organize' || row.auto_organize_kind === 'top_up') {
+      for (const line of row.lines) {
+        if (Number(line.amount) > 0) fillTargets.add(line.bucket_id)
+      }
+    }
+  }
+  const overlap = new Set<string>()
+  for (const id of sourceBucketIds) {
+    if (fillTargets.has(id)) overlap.add(id)
+  }
+  return overlap
 }

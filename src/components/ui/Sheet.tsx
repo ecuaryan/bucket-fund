@@ -1,7 +1,11 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import HideAmountsPeekSheetAnchor from '@/components/HideAmountsPeekSheetAnchor'
 import { SHEET_Z_INDEX } from '@/components/layout/navLayout'
+import {
+  acquireSheetScrollLock,
+  releaseSheetScrollLock,
+} from '@/lib/sheetScrollLock'
 
 type Props = {
   open: boolean
@@ -31,6 +35,8 @@ export function Sheet({
 }: Props) {
   const [present, setPresent] = useState(open)
   const [shown, setShown] = useState(false)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   useEffect(() => {
     if (open) {
@@ -45,17 +51,16 @@ export function Sheet({
 
   useEffect(() => {
     if (!present) return
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    acquireSheetScrollLock()
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current()
     }
     window.addEventListener('keydown', onKey)
     return () => {
-      document.body.style.overflow = prevOverflow
+      releaseSheetScrollLock()
       window.removeEventListener('keydown', onKey)
     }
-  }, [present, onClose])
+  }, [present])
 
   if (!present) return null
 

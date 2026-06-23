@@ -16,7 +16,9 @@ async function insertAutoOrganize(
     familyId: string
     createdByMemberId: string
     name?: string
-    autoOrganizeType: 'interval' | 'monthly'
+    autoOrganizeKind?: 'organize' | 'top_up' | 'save_off'
+    destinationBucketId?: string | null
+    autoOrganizeType: 'interval' | 'monthly' | 'manual'
     startDate?: string
     intervalCount?: number
     intervalUnit?: 'week' | 'month'
@@ -30,6 +32,8 @@ async function insertAutoOrganize(
       family_id: args.familyId,
       name: args.name ?? 'Payday',
       created_by_member_id: args.createdByMemberId,
+      auto_organize_kind: args.autoOrganizeKind ?? 'organize',
+      destination_bucket_id: args.destinationBucketId ?? null,
       auto_organize_type: args.autoOrganizeType,
       start_date: args.startDate ?? null,
       interval_count: args.intervalCount ?? null,
@@ -502,5 +506,238 @@ describe('auto_organize', () => {
       .single()
     expect(txError).toBeNull()
     expect(tx?.note).toBe('Once a month · 1st')
+  })
+
+  it('top_up fills to target and skips buckets already at target', async () => {
+    const family = await createAdminFamily('ao-top-up')
+    const svc = serviceClient()
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 1000,
+    })
+    const groceries = await insertBucket(svc, family.familyId, 'Groceries', null)
+    const gas = await insertBucket(svc, family.familyId, 'Gas', null)
+    await svc
+      .from('buckets')
+      .update({ allocated_amount: 150 })
+      .eq('id', groceries)
+
+    const aoId = await insertAutoOrganize(svc, {
+      familyId: family.familyId,
+      createdByMemberId: family.adminMemberId,
+      autoOrganizeKind: 'top_up',
+      autoOrganizeType: 'monthly',
+      daysOfMonth: [1],
+      lines: [
+        { bucketId: groceries, amount: 400, sortOrder: 0 },
+        { bucketId: gas, amount: 100, sortOrder: 1 },
+      ],
+    })
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const { data: runId, error } = await admin.rpc('run_auto_organize', {
+      p_auto_organize_id: aoId,
+      p_trigger: 'manual',
+      p_triggered_by_member_id: family.adminMemberId,
+      p_run_on: '2026-06-01',
+    })
+    expect(error).toBeNull()
+    expect(runId).toBeTruthy()
+
+    expect(await getBucketAllocation(svc, groceries)).toBe(400)
+    expect(await getBucketAllocation(svc, gas)).toBe(100)
+    expect(await getFloatBalance(admin)).toBe(500)
+
+    const { data: txs } = await svc
+      .from('transactions')
+      .select('amount')
+      .eq('auto_organize_run_id', runId)
+    expect(txs).toHaveLength(2)
+  })
+
+  it('save_off sweeps excess to a pool bucket', async () => {
+    const family = await createAdminFamily('ao-save-off-bucket')
+    const svc = serviceClient()
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 1000,
+    })
+    const groceries = await insertBucket(svc, family.familyId, 'Groceries', null)
+    const savings = await insertBucket(svc, family.familyId, 'Savings', null)
+    await svc
+      .from('buckets')
+      .update({ allocated_amount: 350 })
+      .eq('id', groceries)
+
+    const aoId = await insertAutoOrganize(svc, {
+      familyId: family.familyId,
+      createdByMemberId: family.adminMemberId,
+      autoOrganizeKind: 'save_off',
+      destinationBucketId: savings,
+      autoOrganizeType: 'monthly',
+      daysOfMonth: [1],
+      lines: [{ bucketId: groceries, amount: 200, sortOrder: 0 }],
+    })
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const { error } = await admin.rpc('run_auto_organize', {
+      p_auto_organize_id: aoId,
+      p_trigger: 'manual',
+      p_triggered_by_member_id: family.adminMemberId,
+      p_run_on: '2026-06-01',
+    })
+    expect(error).toBeNull()
+
+    expect(await getBucketAllocation(svc, groceries)).toBe(200)
+    expect(await getBucketAllocation(svc, savings)).toBe(150)
+    expect(await getFloatBalance(admin)).toBe(650)
+  })
+
+  it('save_off sweeps excess back to Float when destination is null', async () => {
+    const family = await createAdminFamily('ao-save-off-float')
+    const svc = serviceClient()
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 1000,
+    })
+    const groceries = await insertBucket(svc, family.familyId, 'Groceries', null)
+    await svc
+      .from('buckets')
+      .update({ allocated_amount: 250 })
+      .eq('id', groceries)
+
+    const aoId = await insertAutoOrganize(svc, {
+      familyId: family.familyId,
+      createdByMemberId: family.adminMemberId,
+      autoOrganizeKind: 'save_off',
+      destinationBucketId: null,
+      autoOrganizeType: 'monthly',
+      daysOfMonth: [1],
+      lines: [{ bucketId: groceries, amount: 100, sortOrder: 0 }],
+    })
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const { error } = await admin.rpc('run_auto_organize', {
+      p_auto_organize_id: aoId,
+      p_trigger: 'manual',
+      p_triggered_by_member_id: family.adminMemberId,
+      p_run_on: '2026-06-01',
+    })
+    expect(error).toBeNull()
+
+    expect(await getBucketAllocation(svc, groceries)).toBe(100)
+    expect(await getFloatBalance(admin)).toBe(900)
+  })
+
+  it('run_due_auto_organizes runs save_off before top_up on the same day', async () => {
+    const family = await createAdminFamily('ao-order-sweep-fill')
+    const svc = serviceClient()
+    await svc
+      .from('families')
+      .update({ timezone: 'UTC', auto_organize_run_hour: 0 })
+      .eq('id', family.familyId)
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 2000,
+    })
+    const groceries = await insertBucket(svc, family.familyId, 'Groceries', null)
+    const savings = await insertBucket(svc, family.familyId, 'Savings', null)
+    await svc
+      .from('buckets')
+      .update({ allocated_amount: 300 })
+      .eq('id', groceries)
+
+    const saveOffId = await insertAutoOrganize(svc, {
+      familyId: family.familyId,
+      createdByMemberId: family.adminMemberId,
+      autoOrganizeKind: 'save_off',
+      destinationBucketId: savings,
+      autoOrganizeType: 'monthly',
+      daysOfMonth: [28],
+      lines: [{ bucketId: groceries, amount: 0, sortOrder: 0 }],
+    })
+    const topUpId = await insertAutoOrganize(svc, {
+      familyId: family.familyId,
+      createdByMemberId: family.adminMemberId,
+      autoOrganizeKind: 'top_up',
+      autoOrganizeType: 'monthly',
+      daysOfMonth: [28],
+      lines: [{ bucketId: groceries, amount: 400, sortOrder: 0 }],
+    })
+
+    const asOf = '2026-06-28T04:00:00.000Z'
+    const { error } = await svc.rpc('run_due_auto_organizes', {
+      p_as_of: asOf,
+    })
+    expect(error).toBeNull()
+
+    expect(await getBucketAllocation(svc, groceries)).toBe(400)
+    expect(await getBucketAllocation(svc, savings)).toBe(300)
+    void saveOffId
+    void topUpId
+  })
+
+  it('manual-only rules are skipped by cron and use Manual only as transaction note', async () => {
+    const family = await createAdminFamily('ao-manual-only')
+    const svc = serviceClient()
+    await svc
+      .from('families')
+      .update({ timezone: 'UTC', auto_organize_run_hour: 0 })
+      .eq('id', family.familyId)
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 500,
+    })
+    const bucketId = await insertBucket(svc, family.familyId, 'Rent', null)
+    const aoId = await insertAutoOrganize(svc, {
+      familyId: family.familyId,
+      createdByMemberId: family.adminMemberId,
+      name: '',
+      autoOrganizeType: 'manual',
+      lines: [{ bucketId, amount: 200, sortOrder: 0 }],
+    })
+
+    const asOf = '2026-06-11T04:00:00.000Z'
+    const { data: cronCount, error: cronError } = await svc.rpc(
+      'run_due_auto_organizes',
+      { p_as_of: asOf },
+    )
+    expect(cronError).toBeNull()
+    expect(cronCount).toBe(0)
+    expect(await getBucketAllocation(svc, bucketId)).toBe(0)
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const { data: runId, error: runError } = await admin.rpc('run_auto_organize', {
+      p_auto_organize_id: aoId,
+      p_trigger: 'manual',
+      p_triggered_by_member_id: family.adminMemberId,
+      p_run_on: '2026-06-11',
+    })
+    expect(runError).toBeNull()
+    expect(runId).toBeTruthy()
+    expect(await getBucketAllocation(svc, bucketId)).toBe(200)
+
+    const { data: txs, error: txError } = await svc
+      .from('transactions')
+      .select('note')
+      .eq('auto_organize_run_id', runId)
+    expect(txError).toBeNull()
+    expect(txs).toHaveLength(1)
+    expect(txs![0].note).toBe('Manual only')
   })
 })

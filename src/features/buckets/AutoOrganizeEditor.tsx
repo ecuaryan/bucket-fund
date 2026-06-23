@@ -4,37 +4,57 @@ import { FieldLabel } from '@/components/ui/FieldLabel'
 import { ClearableInput } from '@/components/ui/ClearableInput'
 import { ScrollFade } from '@/components/ui/ScrollFade'
 import {
-  AUTO_ORGANIZE_ADD_LABEL,
   AUTO_ORGANIZE_BUCKETS_HINT,
-  AUTO_ORGANIZE_BUCKETS_LABEL,
   AUTO_ORGANIZE_DISCARD_BODY,
   AUTO_ORGANIZE_DISCARD_CANCEL,
   AUTO_ORGANIZE_DISCARD_CONFIRM,
   AUTO_ORGANIZE_DISCARD_TITLE,
   AUTO_ORGANIZE_EDIT_LABEL,
+  AUTO_ORGANIZE_ESTIMATED_TOTAL_LABEL,
+  AUTO_ORGANIZE_FREQUENCY_LABEL,
   AUTO_ORGANIZE_FREQUENCY_OPTIONS,
   AUTO_ORGANIZE_INTERVAL_START_HINT,
   AUTO_ORGANIZE_INTERVAL_START_LABEL,
   AUTO_ORGANIZE_INTERVAL_STARTED_LABEL,
   AUTO_ORGANIZE_INTERVAL_STARTED_HINT,
+  AUTO_ORGANIZE_MANUAL_EDITOR_HINT,
   AUTO_ORGANIZE_NAME_HINT,
   AUTO_ORGANIZE_NEXT_RUN_LABEL,
   AUTO_ORGANIZE_NO_BUCKETS_ERROR,
+  AUTO_ORGANIZE_NOTHING_TO_MOVE_NOW_LABEL,
   AUTO_ORGANIZE_ONCE_MONTHLY_DAY_LABEL,
   AUTO_ORGANIZE_ONCE_MONTHLY_LAST_DAY_HINT,
   AUTO_ORGANIZE_TWICE_MONTHLY_ON_LABEL,
   AUTO_ORGANIZE_SAVE_LABEL,
   AUTO_ORGANIZE_SAVED_TOAST,
   AUTO_ORGANIZE_SAVE_REQUIRES_AMOUNT_HINT,
+  AUTO_ORGANIZE_SAVEOFF_BUCKETS_HINT,
+  AUTO_ORGANIZE_SAVEOFF_DESTINATION_HINT,
+  AUTO_ORGANIZE_SAVEOFF_DESTINATION_LABEL,
+  AUTO_ORGANIZE_SAVEOFF_DEST_FLOAT_LABEL,
+  AUTO_ORGANIZE_SAVEOFF_EXPLAINER_HINT,
+  AUTO_ORGANIZE_SAVEOFF_KEEP_LABEL,
+  AUTO_ORGANIZE_SAVEOFF_KEEP_ZERO_ROW_HINT,
   AUTO_ORGANIZE_START_DATE_TODAY_ERROR,
   AUTO_ORGANIZE_START_DATE_PAST_ERROR,
   AUTO_ORGANIZE_START_DATE_TOO_FAR_ERROR,
+  AUTO_ORGANIZE_SWEEP_THEN_FILL_NOTE,
   AUTO_ORGANIZE_TIMEZONE_HINT,
+  AUTO_ORGANIZE_TIMEZONE_HINT_MANUAL,
   AUTO_ORGANIZE_TIMEZONE_LABEL,
+  AUTO_ORGANIZE_TOPUP_DIFFERENCE_HINT,
+  AUTO_ORGANIZE_TOPUP_FILL_TO_LABEL,
   AUTO_ORGANIZE_TOTAL_PER_RUN_LABEL,
+  autoOrganizeBucketsSectionLabel,
+  autoOrganizeKindLabel,
+  autoOrganizeKindSubtitle,
+  autoOrganizeNamePlaceholder,
+  type AutoOrganizeKind,
   type AutoOrganizeFrequencySelection,
 } from '@/lib/brand'
 import {
+  bucketsWithSweepThenFillNote,
+  computeTotalPerRun,
   fetchFamilyTimezone,
   saveAutoOrganize,
   type AutoOrganizeInput,
@@ -55,6 +75,7 @@ import {
   formatEditorNextRunSummary,
   frequencySelectionFromCadence,
   isIntervalFrequencySelection,
+  isManualFrequencySelection,
   monthlyScheduleFromDays,
   normalizeMonthlyCadence,
   twiceMonthlyPresetFromDays,
@@ -72,13 +93,16 @@ import type { Database } from '@/types/database'
 
 type Bucket = Pick<
   Database['public']['Tables']['buckets']['Row'],
-  'id' | 'name'
+  'id' | 'name' | 'allocated_amount'
 >
 
 type Props = {
   open: boolean
+  kind: AutoOrganizeKind
   initial: AutoOrganizeWithDetails | null
   buckets: Bucket[]
+  /** For save-off sweep-then-fill note when editing. */
+  allAutoOrganizes?: AutoOrganizeWithDetails[]
   memberId: string
   /** Household IANA timezone when known (from loaded auto-organize rows). */
   householdTimezone?: string | null
@@ -89,12 +113,14 @@ type Props = {
 type BucketDraft = { bucketId: string; amountStr: string }
 
 type EditorSnapshot = {
+  kind: AutoOrganizeKind
   name: string
   familyTimezone: string
   cadence: AutoOrganizeCadence
   monthlyPreset: MonthlyPresetId
   monthlyOnceDay: number
   bucketDrafts: BucketDraft[]
+  destinationBucketId: string | null
 }
 
 const fieldInputClassName =
@@ -109,18 +135,45 @@ const bucketRowGridClassName =
 const scheduleRowGridClassName =
   'grid grid-cols-1 gap-3 sm:grid-cols-2'
 
+function defaultCadenceForKind(
+  kind: AutoOrganizeKind,
+  timeZone: string,
+): AutoOrganizeCadence {
+  switch (kind) {
+    case 'top_up':
+      return {
+        autoOrganizeType: 'monthly',
+        startDate: null,
+        intervalCount: null,
+        intervalUnit: null,
+        daysOfMonth: [1],
+      }
+    case 'save_off':
+      return {
+        autoOrganizeType: 'monthly',
+        startDate: null,
+        intervalCount: null,
+        intervalUnit: null,
+        daysOfMonth: [0],
+      }
+    default:
+      return {
+        autoOrganizeType: 'interval',
+        startDate: tomorrowIsoInTimeZone(timeZone),
+        intervalCount: 2,
+        intervalUnit: 'week',
+        daysOfMonth: null,
+      }
+  }
+}
+
 function cadenceFromInitial(
   initial: AutoOrganizeWithDetails | null,
+  kind: AutoOrganizeKind,
   timeZone: string,
 ): AutoOrganizeCadence {
   if (!initial) {
-    return {
-      autoOrganizeType: 'interval',
-      startDate: tomorrowIsoInTimeZone(timeZone),
-      intervalCount: 2,
-      intervalUnit: 'week',
-      daysOfMonth: null,
-    }
+    return defaultCadenceForKind(kind, timeZone)
   }
   return {
     autoOrganizeType: initial.auto_organize_type as AutoOrganizeCadence['autoOrganizeType'],
@@ -153,27 +206,41 @@ function snapshotFromState(state: EditorSnapshot): string {
 }
 
 function buildSnapshot(
+  kind: AutoOrganizeKind,
   name: string,
   familyTimezone: string,
   cadence: AutoOrganizeCadence,
   monthlyPreset: MonthlyPresetId,
   monthlyOnceDay: number,
   bucketDrafts: BucketDraft[],
+  destinationBucketId: string | null,
 ): EditorSnapshot {
-  return { name, familyTimezone, cadence, monthlyPreset, monthlyOnceDay, bucketDrafts }
+  return {
+    kind,
+    name,
+    familyTimezone,
+    cadence,
+    monthlyPreset,
+    monthlyOnceDay,
+    bucketDrafts,
+    destinationBucketId,
+  }
 }
 
 export default function AutoOrganizeEditor({
   open,
+  kind,
   initial,
   buckets,
+  allAutoOrganizes = [],
   memberId,
   householdTimezone = null,
   onClose,
   onSaved,
 }: Props) {
   const { formatMoney } = useHideAmounts()
-  const [familyTimezone, setFamilyTimezone] = useState('America/New_York')
+  const browserTimezone = resolveFamilyTimezone(null)
+  const [familyTimezone, setFamilyTimezone] = useState(browserTimezone)
   const todayIso = localDateIsoInTimeZone(familyTimezone)
   const tomorrowIso = tomorrowIsoInTimeZone(familyTimezone)
   const timezoneOptions = useMemo(
@@ -183,13 +250,16 @@ export default function AutoOrganizeEditor({
   const [baselineSnapshot, setBaselineSnapshot] = useState('')
   const [name, setName] = useState('')
   const [cadence, setCadence] = useState<AutoOrganizeCadence>(() =>
-    cadenceFromInitial(null, 'America/New_York'),
+    defaultCadenceForKind(kind, browserTimezone),
   )
   const [monthlyPreset, setMonthlyPreset] =
     useState<MonthlyPresetId>('first-and-fifteenth')
   const [monthlyOnceDay, setMonthlyOnceDay] = useState(1)
   const [bucketDrafts, setBucketDrafts] = useState<BucketDraft[]>(() =>
     bucketDraftsFromBuckets(buckets, undefined),
+  )
+  const [destinationBucketId, setDestinationBucketId] = useState<string | null>(
+    null,
   )
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -208,11 +278,17 @@ export default function AutoOrganizeEditor({
         initial?.familyTimezone ??
         householdTimezone ??
         (await fetchFamilyTimezone())
-      const nextTimezone = resolveFamilyTimezone(stored)
+      const hasHouseholdSchedule =
+        allAutoOrganizes.length > 0 || initial != null
+      const nextTimezone = resolveFamilyTimezone(stored, {
+        treatUtcAsUnset: !hasHouseholdSchedule,
+      })
       if (cancelled) return
 
+      const effectiveKindForInit: AutoOrganizeKind =
+        (initial?.auto_organize_kind as AutoOrganizeKind | undefined) ?? kind
       const nextCadence = normalizeMonthlyCadence(
-        cadenceFromInitial(initial, nextTimezone),
+        cadenceFromInitial(initial, effectiveKindForInit, nextTimezone),
       )
       const schedule = monthlyScheduleFromDays(nextCadence.daysOfMonth)
       const nextPreset =
@@ -222,6 +298,9 @@ export default function AutoOrganizeEditor({
           : schedule.preset
       const nextName = initial?.name ?? ''
       const nextBuckets = bucketDraftsFromBuckets(buckets, initial?.lines)
+      const nextDest =
+        initial?.destination_bucket_id ??
+        (kind === 'save_off' ? null : null)
 
       setFamilyTimezone(nextTimezone)
       setName(nextName)
@@ -229,16 +308,19 @@ export default function AutoOrganizeEditor({
       setMonthlyPreset(nextPreset)
       setMonthlyOnceDay(schedule.onceDay)
       setBucketDrafts(nextBuckets)
+      setDestinationBucketId(nextDest)
       setError(null)
       setBaselineSnapshot(
         snapshotFromState(
           buildSnapshot(
+            kind,
             nextName,
             nextTimezone,
             nextCadence,
             nextPreset,
             schedule.onceDay,
             nextBuckets,
+            nextDest,
           ),
         ),
       )
@@ -247,28 +329,89 @@ export default function AutoOrganizeEditor({
     return () => {
       cancelled = true
     }
-  }, [open, initial, buckets, householdTimezone])
+  }, [open, initial, buckets, householdTimezone, kind, allAutoOrganizes.length])
 
-  const parsedBuckets = useMemo(
+  const effectiveKind: AutoOrganizeKind =
+    (initial?.auto_organize_kind as AutoOrganizeKind | undefined) ?? kind
+
+  const sourceBuckets = useMemo(() => {
+    if (effectiveKind !== 'save_off') return buckets
+    if (!destinationBucketId) return buckets
+    return buckets.filter((b) => b.id !== destinationBucketId)
+  }, [buckets, destinationBucketId, effectiveKind])
+
+  const parsedBuckets = useMemo(() => {
+    const drafts =
+      effectiveKind === 'save_off'
+        ? bucketDrafts.filter(
+            (row) =>
+              !destinationBucketId || row.bucketId !== destinationBucketId,
+          )
+        : bucketDrafts
+
+    return drafts
+      .map((row) => ({
+        bucketId: row.bucketId,
+        amount: parseFloat(row.amountStr),
+        amountStr: row.amountStr,
+      }))
+      .filter((row) => {
+        if (!row.bucketId) return false
+        if (effectiveKind === 'save_off') {
+          return row.amountStr.trim() !== '' && Number.isFinite(row.amount) && row.amount >= 0
+        }
+        return Number.isFinite(row.amount) && row.amount > 0
+      })
+  }, [bucketDrafts, destinationBucketId, effectiveKind])
+
+  const linesForTotal = useMemo(
     () =>
-      bucketDrafts
-        .map((row) => ({
-          bucketId: row.bucketId,
-          amount: parseFloat(row.amountStr),
-        }))
-        .filter(
-          (row) =>
-            row.bucketId && Number.isFinite(row.amount) && row.amount > 0,
-        ),
-    [bucketDrafts],
+      parsedBuckets.map((row) => {
+        const bucket = buckets.find((b) => b.id === row.bucketId)
+        return {
+          bucket_id: row.bucketId,
+          amount: row.amount,
+          bucket_allocated_amount: bucket
+            ? Number(bucket.allocated_amount)
+            : 0,
+        }
+      }),
+    [parsedBuckets, buckets],
   )
 
-  const totalPerRun = parsedBuckets.reduce((sum, row) => sum + row.amount, 0)
-  const title = initial ? AUTO_ORGANIZE_EDIT_LABEL : AUTO_ORGANIZE_ADD_LABEL
+  const { total: totalPerRun, isEstimate: totalIsEstimate } = useMemo(
+    () => computeTotalPerRun(effectiveKind, linesForTotal),
+    [effectiveKind, linesForTotal],
+  )
+
+  const sweepThenFillBuckets = useMemo(() => {
+    if (effectiveKind !== 'save_off') return new Set<string>()
+    const sourceIds = new Set(parsedBuckets.map((r) => r.bucketId))
+    return bucketsWithSweepThenFillNote(allAutoOrganizes, sourceIds)
+  }, [effectiveKind, parsedBuckets, allAutoOrganizes])
+
+  const title = initial
+    ? AUTO_ORGANIZE_EDIT_LABEL
+    : autoOrganizeKindLabel(effectiveKind)
+  const totalLabel = totalIsEstimate
+    ? AUTO_ORGANIZE_ESTIMATED_TOTAL_LABEL
+    : AUTO_ORGANIZE_TOTAL_PER_RUN_LABEL
+  const bucketsSectionLabel = autoOrganizeBucketsSectionLabel(effectiveKind)
+  const bucketsHint =
+    effectiveKind === 'save_off'
+      ? AUTO_ORGANIZE_SAVEOFF_BUCKETS_HINT
+      : AUTO_ORGANIZE_BUCKETS_HINT
+  const amountColumnLabel =
+    effectiveKind === 'top_up'
+      ? AUTO_ORGANIZE_TOPUP_FILL_TO_LABEL
+      : effectiveKind === 'save_off'
+        ? AUTO_ORGANIZE_SAVEOFF_KEEP_LABEL
+        : null
   const frequencySelection = frequencySelectionFromCadence(
     cadence,
     monthlyPreset,
   )
+  const isManual = isManualFrequencySelection(frequencySelection)
   const intervalStartMin = tomorrowIso
   const intervalStartMax = maxIntervalStartDateIso(familyTimezone)
   const legacyStartDate = initial?.start_date ?? null
@@ -292,6 +435,8 @@ export default function AutoOrganizeEditor({
     return AUTO_ORGANIZE_START_DATE_PAST_ERROR
   }
   const saveNextRunSummary = useMemo(() => {
+    if (isManual) return null
+
     if (
       isIntervalFrequencySelection(frequencySelection) &&
       !cadence.startDate
@@ -315,6 +460,7 @@ export default function AutoOrganizeEditor({
 
     return formatEditorNextRunSummary(previewCadence, familyTimezone)
   }, [
+    isManual,
     frequencySelection,
     cadence,
     monthlyPreset,
@@ -375,12 +521,14 @@ export default function AutoOrganizeEditor({
   const isDirty =
     snapshotFromState(
       buildSnapshot(
+        effectiveKind,
         name,
         familyTimezone,
         cadence,
         monthlyPreset,
         monthlyOnceDay,
         bucketDrafts,
+        destinationBucketId,
       ),
     ) !== baselineSnapshot
 
@@ -432,10 +580,13 @@ export default function AutoOrganizeEditor({
 
     const input: AutoOrganizeInput = {
       id: initial?.id,
+      kind: effectiveKind,
       name: name.trim() || null,
       paused: initial?.paused ?? false,
       cadence: cadenceToSave,
-      lines: parsedBuckets,
+      lines: parsedBuckets.map(({ bucketId, amount }) => ({ bucketId, amount })),
+      destinationBucketId:
+        effectiveKind === 'save_off' ? destinationBucketId : null,
       familyTimezone,
     }
 
@@ -462,7 +613,14 @@ export default function AutoOrganizeEditor({
     >
       <div className="relative flex max-h-full min-h-0 flex-1 flex-col overflow-hidden">
         <header className="mb-4 flex shrink-0 items-baseline justify-between">
-          <h2 className="text-lg font-semibold text-zinc-300">{title}</h2>
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold text-zinc-300">{title}</h2>
+            <p className="mt-0.5 text-xs text-zinc-500">
+              {initial
+                ? autoOrganizeKindLabel(effectiveKind)
+                : autoOrganizeKindSubtitle(effectiveKind, isManual)}
+            </p>
+          </div>
           <button
             type="button"
             onClick={requestClose}
@@ -481,7 +639,7 @@ export default function AutoOrganizeEditor({
             <ClearableInput
               value={name}
               onValueChange={setName}
-              placeholder="Payday"
+              placeholder={autoOrganizeNamePlaceholder(effectiveKind)}
               inputClassName={fieldInputClassName}
             />
             <p className="mt-1 text-xs text-zinc-500">{AUTO_ORGANIZE_NAME_HINT}</p>
@@ -501,15 +659,41 @@ export default function AutoOrganizeEditor({
               ))}
             </select>
             <p className="mt-1 text-xs text-zinc-500">
-              {AUTO_ORGANIZE_TIMEZONE_HINT}
+              {isManual
+                ? AUTO_ORGANIZE_TIMEZONE_HINT_MANUAL
+                : AUTO_ORGANIZE_TIMEZONE_HINT}
             </p>
           </label>
 
-          {isIntervalFrequencySelection(frequencySelection) ? (
+          {isManual ? (
+            <div>
+              <label className="block min-w-0">
+                <FieldLabel>{AUTO_ORGANIZE_FREQUENCY_LABEL}</FieldLabel>
+                <select
+                  value={frequencySelection}
+                  onChange={(e) =>
+                    setFrequencySelection(
+                      e.target.value as AutoOrganizeFrequencySelection,
+                    )
+                  }
+                  className={fieldInputClassName}
+                >
+                  {AUTO_ORGANIZE_FREQUENCY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <p className="mt-1 text-xs text-zinc-500">
+                {AUTO_ORGANIZE_MANUAL_EDITOR_HINT}
+              </p>
+            </div>
+          ) : isIntervalFrequencySelection(frequencySelection) ? (
             <div>
               <div className={scheduleRowGridClassName}>
                 <label className="block min-w-0">
-                  <FieldLabel>Frequency</FieldLabel>
+                  <FieldLabel>{AUTO_ORGANIZE_FREQUENCY_LABEL}</FieldLabel>
                   <select
                     value={frequencySelection}
                     onChange={(e) =>
@@ -566,7 +750,7 @@ export default function AutoOrganizeEditor({
             <div>
               <div className={scheduleRowGridClassName}>
                 <label className="block min-w-0">
-                  <FieldLabel>Frequency</FieldLabel>
+                  <FieldLabel>{AUTO_ORGANIZE_FREQUENCY_LABEL}</FieldLabel>
                   <select
                     value={frequencySelection}
                     onChange={(e) =>
@@ -609,7 +793,7 @@ export default function AutoOrganizeEditor({
           ) : (
             <div className={scheduleRowGridClassName}>
               <label className="block min-w-0">
-                <FieldLabel>Frequency</FieldLabel>
+                <FieldLabel>{AUTO_ORGANIZE_FREQUENCY_LABEL}</FieldLabel>
                 <select
                   value={frequencySelection}
                   onChange={(e) =>
@@ -646,42 +830,102 @@ export default function AutoOrganizeEditor({
             </div>
           )}
 
+
           <div className="border-t border-zinc-800 pt-4 pb-4">
-            <FieldLabel>{AUTO_ORGANIZE_BUCKETS_LABEL}</FieldLabel>
-            <p className="mt-1 text-xs text-zinc-500">
-              {AUTO_ORGANIZE_BUCKETS_HINT}
-            </p>
+            <FieldLabel>{bucketsSectionLabel}</FieldLabel>
+            <p className="mt-1 text-xs text-zinc-500">{bucketsHint}</p>
+            {effectiveKind === 'top_up' ? (
+              <p className="mt-1 text-xs text-zinc-500">
+                {AUTO_ORGANIZE_TOPUP_DIFFERENCE_HINT}
+              </p>
+            ) : null}
+            {effectiveKind === 'save_off' ? (
+              <p className="mt-1 text-xs text-zinc-500">
+                {AUTO_ORGANIZE_SAVEOFF_EXPLAINER_HINT}
+              </p>
+            ) : null}
             <div className="mt-2 space-y-2">
-              {buckets.map((bucket) => {
+              {sourceBuckets.map((bucket) => {
                 const amountStr =
                   bucketDrafts.find((row) => row.bucketId === bucket.id)
                     ?.amountStr ?? ''
+                const showSweepNote = sweepThenFillBuckets.has(bucket.id)
+                const saveOffKeepAmount = parseFloat(amountStr)
+                const showSaveOffSweepAllHint =
+                  effectiveKind === 'save_off' &&
+                  amountStr.trim() !== '' &&
+                  Number.isFinite(saveOffKeepAmount) &&
+                  saveOffKeepAmount === 0
                 return (
-                  <div key={bucket.id} className={bucketRowGridClassName}>
-                    <span className="truncate text-sm text-zinc-300">
-                      {bucket.name}
-                    </span>
-                    <ClearableInput
-                      wrapperClassName="min-w-0"
-                      inputMode="decimal"
-                      value={amountStr}
-                      onValueChange={(value) =>
-                        setAmountForBucket(bucket.id, value)
-                      }
-                      onFocus={(e) => scrollFocusedIntoView(e.currentTarget)}
-                      placeholder="0.00"
-                      leading={
-                        <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-500">
-                          $
-                        </span>
-                      }
-                      inputClassName={amountInputClassName}
-                    />
+                  <div key={bucket.id}>
+                    <div className={bucketRowGridClassName}>
+                      <span className="truncate text-sm text-zinc-300">
+                        {bucket.name}
+                      </span>
+                      <div className="min-w-0">
+                        {amountColumnLabel ? (
+                          <span className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+                            {amountColumnLabel}
+                          </span>
+                        ) : null}
+                        <ClearableInput
+                          wrapperClassName="min-w-0"
+                          inputMode="decimal"
+                          value={amountStr}
+                          onValueChange={(value) =>
+                            setAmountForBucket(bucket.id, value)
+                          }
+                          onFocus={(e) => scrollFocusedIntoView(e.currentTarget)}
+                          placeholder={
+                            effectiveKind === 'save_off' ? '' : '0.00'
+                          }
+                          leading={
+                            <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-zinc-500">
+                              $
+                            </span>
+                          }
+                          inputClassName={amountInputClassName}
+                        />
+                      </div>
+                    </div>
+                    {showSaveOffSweepAllHint ? (
+                      <p className="mt-1 text-xs text-zinc-500">
+                        {AUTO_ORGANIZE_SAVEOFF_KEEP_ZERO_ROW_HINT}
+                      </p>
+                    ) : null}
+                    {showSweepNote ? (
+                      <p className="mt-1 text-xs text-amber-200/80">
+                        {AUTO_ORGANIZE_SWEEP_THEN_FILL_NOTE}
+                      </p>
+                    ) : null}
                   </div>
                 )
               })}
             </div>
           </div>
+
+          {effectiveKind === 'save_off' ? (
+            <label className="block">
+              <FieldLabel>{AUTO_ORGANIZE_SAVEOFF_DESTINATION_LABEL}</FieldLabel>
+              <select
+                value={destinationBucketId ?? ''}
+                onChange={(e) =>
+                  setDestinationBucketId(e.target.value || null)
+                }
+                className={fieldInputClassName}
+              >
+                <option value="">{AUTO_ORGANIZE_SAVEOFF_DEST_FLOAT_LABEL}</option>
+                {buckets.map((bucket) => (
+                  <option key={bucket.id} value={bucket.id}>
+                    {bucket.name}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-zinc-500">
+                {AUTO_ORGANIZE_SAVEOFF_DESTINATION_HINT}
+              </p>
+            </label>
+          ) : null}
           </div>
         </ScrollFade>
 
@@ -689,10 +933,19 @@ export default function AutoOrganizeEditor({
           <div className="rounded-xl bg-zinc-950 px-3 py-2 ring-1 ring-inset ring-zinc-700">
             <div className="flex items-baseline justify-between gap-3">
               <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
-                {AUTO_ORGANIZE_TOTAL_PER_RUN_LABEL}
+                {totalLabel}
               </p>
               <p className="text-xl font-semibold tabular-nums text-zinc-100">
-                {formatMoney(totalPerRun)}
+                {totalIsEstimate && totalPerRun === 0 ? (
+                  <span className="text-sm font-normal text-zinc-500">
+                    {AUTO_ORGANIZE_NOTHING_TO_MOVE_NOW_LABEL}
+                  </span>
+                ) : (
+                  <>
+                    {totalIsEstimate ? '~' : ''}
+                    {formatMoney(totalPerRun)}
+                  </>
+                )}
               </p>
             </div>
             {saveNextRunSummary ? (

@@ -12,9 +12,11 @@ import {
   formatLocalDateLabel,
   formatShortIsoDateLabel,
   formatNextRunLabel,
+  formatNextRunLabelForCadence,
   formatRunScheduleForDays,
   computeNextRunOn,
   frequencySelectionFromCadence,
+  isManualFrequencySelection,
   monthlyScheduleFromDays,
   normalizeMonthlyCadence,
   normalizeOnceMonthlyDay,
@@ -240,9 +242,39 @@ describe('computeNextRunOn', () => {
     expect(computeNextRunOn(cadence, 'America/Los_Angeles', from)).toBe(
       '2026-06-12',
     )
-    expect(formatNextRunLabel(computeNextRunOn(cadence, 'America/Los_Angeles', from))).toBe(
+    expect(formatNextRunLabelForCadence(cadence, computeNextRunOn(cadence, 'America/Los_Angeles', from))).toBe(
       'Next run Jun 12',
     )
+  })
+
+  it('returns Runs when you choose for manual cadence', () => {
+    expect(
+      formatNextRunLabelForCadence(
+        {
+          autoOrganizeType: 'manual',
+          startDate: null,
+          intervalCount: null,
+          intervalUnit: null,
+          daysOfMonth: null,
+        },
+        null,
+      ),
+    ).toBe('Runs when you choose')
+  })
+
+  it('returns null next run for manual cadence', () => {
+    expect(
+      computeNextRunOn(
+        {
+          autoOrganizeType: 'manual',
+          startDate: null,
+          intervalCount: null,
+          intervalUnit: null,
+          daysOfMonth: null,
+        },
+        'America/Los_Angeles',
+      ),
+    ).toBeNull()
   })
 })
 
@@ -259,6 +291,18 @@ describe('formatShortIsoDateLabel', () => {
 })
 
 describe('formatCadenceSummary', () => {
+  it('returns Manual only for manual cadence', () => {
+    expect(
+      formatCadenceSummary({
+        autoOrganizeType: 'manual',
+        startDate: null,
+        intervalCount: null,
+        intervalUnit: null,
+        daysOfMonth: null,
+      }),
+    ).toBe('Manual only')
+  })
+
   it('describes twice-monthly presets by label', () => {
     expect(
       formatCadenceSummary({
@@ -285,6 +329,21 @@ describe('formatCadenceSummary', () => {
 })
 
 describe('frequencySelectionFromCadence', () => {
+  it('maps manual cadence to manual-only', () => {
+    expect(
+      frequencySelectionFromCadence(
+        {
+          autoOrganizeType: 'manual',
+          startDate: null,
+          intervalCount: null,
+          intervalUnit: null,
+          daysOfMonth: null,
+        },
+        'first-and-fifteenth',
+      ),
+    ).toBe('manual-only')
+  })
+
   it('maps interval and monthly cadences to flat frequency options', () => {
     expect(
       frequencySelectionFromCadence(
@@ -315,6 +374,34 @@ describe('frequencySelectionFromCadence', () => {
 })
 
 describe('applyFrequencySelection', () => {
+  it('clears schedule fields for manual-only', () => {
+    const base = {
+      autoOrganizeType: 'interval' as const,
+      startDate: '2026-06-11',
+      intervalCount: 2,
+      intervalUnit: 'week' as const,
+      daysOfMonth: null,
+    }
+
+    expect(
+      applyFrequencySelection(
+        'manual-only',
+        base,
+        'first-and-fifteenth',
+        '2026-06-11',
+      ),
+    ).toEqual({
+      cadence: {
+        autoOrganizeType: 'manual',
+        startDate: null,
+        intervalCount: null,
+        intervalUnit: null,
+        daysOfMonth: null,
+      },
+      monthlyPreset: 'first-and-fifteenth',
+    })
+  })
+
   it('sets interval cadence from every 2 weeks', () => {
     const base = {
       autoOrganizeType: 'monthly' as const,
@@ -341,5 +428,13 @@ describe('applyFrequencySelection', () => {
       },
       monthlyPreset: 'first-and-fifteenth',
     })
+  })
+})
+
+describe('isManualFrequencySelection', () => {
+  it('identifies manual-only selection', () => {
+    expect(isManualFrequencySelection('manual-only')).toBe(true)
+    expect(isManualFrequencySelection('2-week')).toBe(false)
+    expect(isManualFrequencySelection('monthly-once')).toBe(false)
   })
 })
