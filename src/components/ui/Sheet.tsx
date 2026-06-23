@@ -36,7 +36,10 @@ export function Sheet({
   const [present, setPresent] = useState(open)
   const [shown, setShown] = useState(false)
   const onCloseRef = useRef(onClose)
-  onCloseRef.current = onClose
+
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     if (open) {

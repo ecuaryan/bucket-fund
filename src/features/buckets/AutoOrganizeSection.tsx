@@ -200,11 +200,12 @@ function AutoOrganizeCard({
   const displayName = autoOrganizeDisplayName(row)
   const hasCustomName = Boolean(row.name?.trim())
   const isManual = row.auto_organize_type === 'manual'
+  const showPausedUi = row.paused && !isManual
 
   return (
     <article
       className={
-        row.paused
+        showPausedUi
           ? 'rounded-2xl bg-amber-500/5 px-4 py-4 ring-1 ring-amber-500/30'
           : 'rounded-2xl bg-zinc-900/80 px-4 py-4 ring-1 ring-zinc-800'
       }
@@ -215,7 +216,7 @@ function AutoOrganizeCard({
             <h3 className="truncate font-semibold text-zinc-100">
               {displayName}
             </h3>
-            {row.paused ? (
+            {showPausedUi ? (
               <span className="shrink-0 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-200 ring-1 ring-amber-500/35">
                 {AUTO_ORGANIZE_PAUSED_LABEL}
               </span>
@@ -235,13 +236,13 @@ function AutoOrganizeCard({
           {hasCustomName ? (
             <p className="mt-1 text-xs text-zinc-400">{row.cadenceSummary}</p>
           ) : null}
-          {row.paused ? (
+          {showPausedUi ? (
             <>
               <p
                 id={pausedStatusId}
                 className="mt-1.5 text-xs font-medium text-amber-200/90"
               >
-                {autoOrganizePausedStatus(isManual, !isAdmin)}
+                {autoOrganizePausedStatus(!isAdmin)}
               </p>
               <p className="mt-1 text-xs text-zinc-500">{row.nextRunLabel}</p>
               {row.lastRunLabel ? (
@@ -259,7 +260,7 @@ function AutoOrganizeCard({
         </div>
         <p
           className={
-            row.paused
+            showPausedUi
               ? 'shrink-0 text-sm font-semibold tabular-nums text-zinc-400'
               : liveTotal.isEstimate && liveTotal.total === 0
                 ? 'shrink-0 text-xs text-zinc-500'
@@ -402,11 +403,11 @@ function AutoOrganizeCard({
           </button>
           <button
             type="button"
-            disabled={busyId === row.id || row.paused || liveTotal.total <= 0}
+            disabled={busyId === row.id || showPausedUi || liveTotal.total <= 0}
             onClick={onRunNow}
-            aria-describedby={row.paused ? pausedStatusId : undefined}
+            aria-describedby={showPausedUi ? pausedStatusId : undefined}
             title={
-              liveTotal.total <= 0 && !row.paused
+              liveTotal.total <= 0 && !showPausedUi
                 ? liveTotal.isEstimate
                   ? AUTO_ORGANIZE_RUN_NOW_NOTHING_TO_MOVE
                   : AUTO_ORGANIZE_NO_BUCKETS_ERROR
@@ -416,14 +417,16 @@ function AutoOrganizeCard({
           >
             {AUTO_ORGANIZE_RUN_NOW_LABEL}
           </button>
-          <button
-            type="button"
-            disabled={busyId === row.id}
-            onClick={onPause}
-            className="rounded-lg px-3 py-1.5 text-xs font-semibold text-zinc-200 ring-1 ring-zinc-700 hover:bg-zinc-800"
-          >
-            {row.paused ? AUTO_ORGANIZE_RESUME_LABEL : AUTO_ORGANIZE_PAUSE_LABEL}
-          </button>
+          {!isManual ? (
+            <button
+              type="button"
+              disabled={busyId === row.id}
+              onClick={onPause}
+              className="rounded-lg px-3 py-1.5 text-xs font-semibold text-zinc-200 ring-1 ring-zinc-700 hover:bg-zinc-800"
+            >
+              {row.paused ? AUTO_ORGANIZE_RESUME_LABEL : AUTO_ORGANIZE_PAUSE_LABEL}
+            </button>
+          ) : null}
           <button
             type="button"
             disabled={busyId === row.id}

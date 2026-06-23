@@ -156,6 +156,7 @@ fires **once per matching day** (separate run records on the 1st and 15th).
 - No `start_date`, interval, or monthly day fields; excluded from cron (`auto_organize_is_due_on` → false)
 - Card shows **Runs when you choose** instead of a next-run date
 - Default display name / transaction note when unnamed: **Manual only**
+- **No Pause / Resume** in the UI — not running it is enough; saving clears any stale `paused` flag
 
 ### Run hour
 
@@ -391,7 +392,7 @@ when paused. No Edit / Pause / Run now.
 
 ### Admin
 
-Same cards + section **Add** CTA, **Edit**, **Pause / Resume**, **Run now** (disabled
+Same cards + section **Add** CTA, **Edit**, **Pause / Resume** (scheduled rules only), **Run now** (disabled
 when paused, with status copy explaining why).
 
 ### Auto-organize editor (Sheet)

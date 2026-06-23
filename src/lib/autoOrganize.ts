@@ -310,7 +310,8 @@ export async function saveAutoOrganize(
 ): Promise<string> {
   const payload = {
     name: input.name?.trim() || null,
-    paused: input.paused,
+    paused:
+      input.cadence.autoOrganizeType === 'manual' ? false : input.paused,
     auto_organize_kind: input.kind,
     destination_bucket_id:
       input.kind === 'save_off' ? input.destinationBucketId : null,

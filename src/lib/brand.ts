@@ -793,28 +793,11 @@ export const AUTO_ORGANIZE_PAUSED_LABEL = 'Paused'
 export const AUTO_ORGANIZE_PAUSED_STATUS =
   'Automatic runs and Run now are off until you resume.'
 
-/** List card when a manual-only rule is paused (admin). */
-export const AUTO_ORGANIZE_PAUSED_STATUS_MANUAL =
-  'Run now is off until you resume.'
-
 /** List card when paused; shared members cannot resume. */
 export const AUTO_ORGANIZE_PAUSED_STATUS_SHARED = 'Automatic runs are off.'
 
-/** List card when a manual-only rule is paused; shared members. */
-export const AUTO_ORGANIZE_PAUSED_STATUS_MANUAL_SHARED = 'Runs are off.'
-
-export function autoOrganizePausedStatus(
-  manual: boolean,
-  shared: boolean,
-): string {
-  if (shared) {
-    return manual
-      ? AUTO_ORGANIZE_PAUSED_STATUS_MANUAL_SHARED
-      : AUTO_ORGANIZE_PAUSED_STATUS_SHARED
-  }
-  return manual
-    ? AUTO_ORGANIZE_PAUSED_STATUS_MANUAL
-    : AUTO_ORGANIZE_PAUSED_STATUS
+export function autoOrganizePausedStatus(shared: boolean): string {
+  return shared ? AUTO_ORGANIZE_PAUSED_STATUS_SHARED : AUTO_ORGANIZE_PAUSED_STATUS
 }
 
 export const AUTO_ORGANIZE_RESUME_LABEL = 'Resume'
