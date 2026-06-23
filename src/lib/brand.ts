@@ -656,7 +656,11 @@ export const AUTO_ORGANIZE_ESTIMATED_TOTAL_LABEL = 'If it ran now'
 
 export const AUTO_ORGANIZE_NOTHING_TO_MOVE_NOW_LABEL = 'Nothing to move now'
 
-export const AUTO_ORGANIZE_TOPUP_AT_TARGET_LABEL = 'At target'
+/** Top-up fill met, or save-off balance at/below keep amount. */
+export const AUTO_ORGANIZE_AT_TARGET_LABEL = 'At target'
+
+/** @deprecated use AUTO_ORGANIZE_AT_TARGET_LABEL */
+export const AUTO_ORGANIZE_TOPUP_AT_TARGET_LABEL = AUTO_ORGANIZE_AT_TARGET_LABEL
 
 export const AUTO_ORGANIZE_TOPUP_DIFFERENCE_HINT =
   "Adds only what's needed to reach your target."
@@ -708,6 +712,14 @@ export function autoOrganizeKindLabel(kind: AutoOrganizeKind): string {
     default:
       return AUTO_ORGANIZE_KIND_ORGANIZE_LABEL
   }
+}
+
+/** History transaction note for an auto-organize run (kind + rule name). */
+export function autoOrganizeHistoryNote(
+  kind: AutoOrganizeKind,
+  displayName: string,
+): string {
+  return `${autoOrganizeKindLabel(kind)} · ${displayName}`
 }
 
 export function autoOrganizeKindSubtitle(
@@ -771,8 +783,14 @@ export const AUTO_ORGANIZE_RUN_NOW_LABEL = 'Run now'
 export const AUTO_ORGANIZE_RUN_NOW_SUBMITTING_LABEL = 'Running…'
 
 /** Run-now confirm when this auto-organize already ran today (any trigger). */
+/** @deprecated use autoOrganizeRunNowLastRunContext */
 export const AUTO_ORGANIZE_RUN_NOW_ALREADY_RAN_WARNING =
   'This already ran today. Running again will move the same amounts again.'
+
+export const AUTO_ORGANIZE_RUN_NOW_LAST_RUN_TODAY_PREFIX = 'Last run today at'
+
+export const AUTO_ORGANIZE_RUN_NOW_LAST_RUN_AGAIN_HINT =
+  'Running again starts another pass.'
 
 export const AUTO_ORGANIZE_RUN_NOW_CURRENT_LABEL = 'Current'
 

@@ -19,14 +19,15 @@ import {
   AUTO_ORGANIZE_RAN_TOAST,
   AUTO_ORGANIZE_RESUME_LABEL,
   AUTO_ORGANIZE_RUN_NOW_LABEL,
-  AUTO_ORGANIZE_RUN_NOW_ALREADY_RAN_WARNING,
   AUTO_ORGANIZE_RUN_NOW_NOTHING_TO_MOVE,
   AUTO_ORGANIZE_RUN_NOW_SUBMITTING_LABEL,
   AUTO_ORGANIZE_RUN_NOW_AFTER_LABEL,
   AUTO_ORGANIZE_RUN_NOW_CURRENT_LABEL,
   AUTO_ORGANIZE_RUN_NOW_MOVE_LABEL,
+  AUTO_ORGANIZE_AT_TARGET_LABEL,
+  AUTO_ORGANIZE_SAVEOFF_KEEP_LABEL,
+  AUTO_ORGANIZE_SAVEOFF_SWEEP_ALL_LABEL,
   AUTO_ORGANIZE_SECTION_TITLE,
-  AUTO_ORGANIZE_TOPUP_AT_TARGET_LABEL,
   AUTO_ORGANIZE_TOPUP_FILL_TO_LABEL,
   AUTO_ORGANIZE_TOTAL_PER_RUN_LABEL,
   FLOAT_LABEL,
@@ -36,12 +37,12 @@ import {
   autoOrganizeRunNowConfirmBodyForKind,
   autoOrganizeRunNowConfirmTitle,
   autoOrganizeSaveOffDestinationLabel,
-  autoOrganizeSaveOffKeepRuleShort,
   autoOrganizeSaveOffMovesNowLabel,
   autoOrganizeViewBucketsLabel,
   type AutoOrganizeKind,
 } from '@/lib/brand'
 import {
+  autoOrganizeLineMoveAtRun,
   activeAutoOrganizeLines,
   computeLineMoveAmount,
   computeTotalPerRun,
@@ -54,6 +55,7 @@ import {
   setAutoOrganizePaused,
   type AutoOrganizeWithDetails,
 } from '@/lib/autoOrganize'
+import { autoOrganizeRunNowLastRunContext } from '@/lib/autoOrganizeCadence'
 import AutoOrganizeEditor from '@/features/buckets/AutoOrganizeEditor'
 import AutoOrganizeKindChooser from '@/features/buckets/AutoOrganizeKindChooser'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
@@ -174,14 +176,9 @@ function AutoOrganizeCard({
     () => computeTotalPerRun(kind, row.lines, bucketBalanceById),
     [kind, row.lines, bucketBalanceById],
   )
-  const activeLines = useMemo(
-    () =>
-      activeAutoOrganizeLines(
-        orderAutoOrganizeLinesByBuckets(row.lines, buckets),
-        kind,
-        bucketBalanceById,
-      ),
-    [row.lines, kind, buckets, bucketBalanceById],
+  const displayLines = useMemo(
+    () => orderAutoOrganizeLinesByBuckets(row.lines, buckets),
+    [row.lines, buckets],
   )
   const kindSubtitle = autoOrganizeKindSubtitle(kind)
   const saveOffDestLabel = autoOrganizeSaveOffDestinationLabel(
@@ -277,7 +274,7 @@ function AutoOrganizeCard({
           )}
         </p>
       </div>
-      {activeLines.length > 0 ? (
+      {displayLines.length > 0 ? (
         <div className="mt-3">
           <button
             type="button"
@@ -289,7 +286,7 @@ function AutoOrganizeCard({
             <span className="min-w-0 truncate font-semibold">
               {linesOpen
                 ? AUTO_ORGANIZE_BUCKETS_LABEL
-                : autoOrganizeViewBucketsLabel(activeLines.length)}
+                : autoOrganizeViewBucketsLabel(displayLines.length)}
             </span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -316,19 +313,17 @@ function AutoOrganizeCard({
             }
           >
             <div className="min-h-0 overflow-hidden">
-              <ul
-                className={
-                  kind === 'save_off'
-                    ? 'divide-y divide-zinc-800 border-t border-zinc-800 pt-1'
-                    : 'space-y-1 border-t border-zinc-800 pt-2 text-xs text-zinc-400'
-                }
-              >
-                {activeLines.map((line) => {
+              <ul className="space-y-1 border-t border-zinc-800 pt-2 text-xs text-zinc-400">
+                {displayLines.map((line) => {
                   const configured = Number(line.amount)
                   const balance =
                     bucketBalanceById.get(line.bucket_id) ??
                     Number(line.bucket_allocated_amount ?? 0)
-                  const move = computeLineMoveAmount(kind, configured, balance)
+                  const move = autoOrganizeLineMoveAtRun(
+                    kind,
+                    line,
+                    bucketBalanceById,
+                  )
                   if (kind === 'top_up') {
                     return (
                       <li key={line.id} className="flex justify-between gap-3">
@@ -340,7 +335,7 @@ function AutoOrganizeCard({
                           {formatMoney(configured)}
                           {move === 0 ? (
                             <span className="ml-1 text-zinc-500">
-                              · {AUTO_ORGANIZE_TOPUP_AT_TARGET_LABEL}
+                              · {AUTO_ORGANIZE_AT_TARGET_LABEL}
                             </span>
                           ) : null}
                         </span>
@@ -348,30 +343,34 @@ function AutoOrganizeCard({
                     )
                   }
                   if (kind === 'save_off') {
+                    const keepLabel =
+                      configured === 0
+                        ? AUTO_ORGANIZE_SAVEOFF_SWEEP_ALL_LABEL
+                        : `${AUTO_ORGANIZE_SAVEOFF_KEEP_LABEL} ${formatMoney(configured)}`
                     return (
-                      <li
-                        key={line.id}
-                        className="flex items-center justify-between gap-3 py-2.5 first:pt-2"
-                      >
-                        <div className="min-w-0 leading-snug">
-                          <p className="truncate text-sm font-medium text-zinc-300">
-                            {resolveAutoOrganizeLineBucketName(
-                              line,
-                              bucketNamesById,
-                            )}
-                          </p>
-                          <p className="mt-0.5 truncate text-[11px] text-zinc-500">
-                            {autoOrganizeSaveOffKeepRuleShort(
-                              configured,
-                              formatMoney,
-                            )}
-                          </p>
-                        </div>
-                        {move > 0 ? (
-                          <span className="shrink-0 text-right text-xs font-medium tabular-nums text-rose-300/90">
-                            {autoOrganizeSaveOffMovesNowLabel(move, formatMoney)}
-                          </span>
-                        ) : null}
+                      <li key={line.id} className="flex justify-between gap-3">
+                        <span className="truncate">
+                          {resolveAutoOrganizeLineBucketName(
+                            line,
+                            bucketNamesById,
+                          )}
+                        </span>
+                        <span className="shrink-0 text-right tabular-nums text-zinc-400">
+                          {keepLabel}
+                          {move === 0 ? (
+                            <span className="ml-1 text-zinc-500">
+                              · {AUTO_ORGANIZE_AT_TARGET_LABEL}
+                            </span>
+                          ) : (
+                            <span className="ml-1 font-medium text-rose-300/90">
+                              ·{' '}
+                              {autoOrganizeSaveOffMovesNowLabel(
+                                move,
+                                formatMoney,
+                              )}
+                            </span>
+                          )}
+                        </span>
                       </li>
                     )
                   }
@@ -672,6 +671,14 @@ export default function AutoOrganizeSection({
     float,
   ])
 
+  const runConfirmLastRunContext = useMemo(() => {
+    if (!runConfirm?.lastRun) return null
+    return autoOrganizeRunNowLastRunContext(
+      runConfirm.lastRun,
+      runConfirm.familyTimezone,
+    )
+  }, [runConfirm])
+
   const addButtonClassName =
     'shrink-0 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50'
 
@@ -823,9 +830,15 @@ export default function AutoOrganizeSection({
                     formatMoney(runConfirmComputed.totalMove),
                   )}
                 </p>
-                {runConfirm.hasRunToday ? (
-                  <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-200 ring-1 ring-amber-500/30">
-                    {AUTO_ORGANIZE_RUN_NOW_ALREADY_RAN_WARNING}
+                {runConfirmLastRunContext ? (
+                  <p
+                    className={
+                      runConfirmLastRunContext.emphasize
+                        ? 'rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-200 ring-1 ring-amber-500/30'
+                        : 'rounded-lg bg-zinc-900/80 px-3 py-2 text-sm text-zinc-400 ring-1 ring-zinc-800'
+                    }
+                  >
+                    {runConfirmLastRunContext.message}
                   </p>
                 ) : null}
                 <div className="border-t border-zinc-800 pt-4 pb-4">

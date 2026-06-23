@@ -153,6 +153,7 @@ export function autoOrganizeHasRunOnDate(
   return runs.some((run) => run.run_on === runOn)
 }
 
+/** Lines that would move on Run now (execution preview). Card breakdown uses all configured lines. */
 export function activeAutoOrganizeLines(
   lines: AutoOrganizeWithDetails['lines'],
   kind: AutoOrganizeKind = 'organize',
@@ -229,7 +230,7 @@ export async function fetchAutoOrganizes(): Promise<AutoOrganizeWithDetails[]> {
           auto_organize_runs ( id, status, run_on, trigger, created_at ),
           destination_bucket:buckets!auto_organizes_destination_bucket_id_fkey ( name )`,
         )
-        .order('created_at', { ascending: true }),
+        .order('created_at', { ascending: false }),
       supabase.from('families').select('timezone').maybeSingle(),
     ])
   if (error) throw error

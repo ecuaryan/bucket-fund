@@ -77,6 +77,29 @@ describe('activeAutoOrganizeLines', () => {
       activeAutoOrganizeLines(lines, 'save_off').map((line) => line.bucket_id),
     ).toEqual(['groceries', 'fun'])
   })
+
+  it('omits top_up lines already at target from run-now preview only', () => {
+    const lines = [
+      {
+        id: '1',
+        bucket_id: 'groceries',
+        amount: '10',
+        bucket_allocated_amount: 10,
+        bucket_name: 'Groceries',
+      },
+      {
+        id: '2',
+        bucket_id: 'fun',
+        amount: '20',
+        bucket_allocated_amount: 5,
+        bucket_name: 'Fun',
+      },
+    ]
+
+    expect(activeAutoOrganizeLines(lines, 'top_up').map((l) => l.bucket_id)).toEqual(
+      ['fun'],
+    )
+  })
 })
 
 describe('computeTotalPerRun', () => {

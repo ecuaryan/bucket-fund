@@ -9,6 +9,8 @@ import {
   formatEditorNextRunSummary,
   formatEditorSaveScheduleSummary,
   formatLastRunLabel,
+  formatRunTimeInTimeZone,
+  autoOrganizeRunNowLastRunContext,
   formatLocalDateLabel,
   formatShortIsoDateLabel,
   formatNextRunLabelForCadence,
@@ -190,6 +192,42 @@ describe('formatLastRunLabel', () => {
 
   it('returns null when there is no run', () => {
     expect(formatLastRunLabel(null)).toBeNull()
+  })
+})
+
+describe('formatRunTimeInTimeZone', () => {
+  it('formats run time in the family timezone', () => {
+    expect(
+      formatRunTimeInTimeZone('2026-06-20T19:45:00Z', 'America/Los_Angeles'),
+    ).toBe('12:45 PM')
+  })
+})
+
+describe('autoOrganizeRunNowLastRunContext', () => {
+  const lastRun = {
+    run_on: '2026-06-20',
+    created_at: '2026-06-20T19:45:00Z',
+  }
+
+  it('emphasizes when the last run was today', () => {
+    const from = new Date('2026-06-20T22:00:00Z')
+    expect(
+      autoOrganizeRunNowLastRunContext(lastRun, 'America/Los_Angeles', from),
+    ).toEqual({
+      message:
+        'Last run today at 12:45 PM. Running again starts another pass.',
+      emphasize: true,
+    })
+  })
+
+  it('uses neutral copy for an older last run', () => {
+    const from = new Date('2026-06-21T22:00:00Z')
+    expect(
+      autoOrganizeRunNowLastRunContext(lastRun, 'America/Los_Angeles', from),
+    ).toEqual({
+      message: 'Last run Jun 20 at 12:45 PM',
+      emphasize: false,
+    })
   })
 })
 

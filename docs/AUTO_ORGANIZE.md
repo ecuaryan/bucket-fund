@@ -51,8 +51,8 @@ different label for one manual move, not the feature name.
 ### Shipped with caveats
 
 - **Run now** confirm sheet: Current | Move | Will be grid; primary button **Run now**
-  (not amount in button label). Multiple **Run now** per local day allowed; amber warning
-  if already ran today. **Paused** blocks Run now until **Resume**.
+  (not amount in button label). Multiple **Run now** per local day allowed; last-run context
+  (amber when last run was today, neutral date/time otherwise). **Paused** blocks Run now until **Resume**.
 - MoveMoneyDialog: Set aside over Float with confirm sheet when crossing ≥ 0 → negative.
 
 ### Deferred (v1.1+)
@@ -408,8 +408,9 @@ when paused, with status copy explaining why).
 ### Run now
 
 Confirm sheet: bucket lines + **total per run**, Float row in Current | Move | Will be
-grid, consequential intro copy. Primary **Run now** / **Running…**. Amber warning if
-already ran today. Paused auto-organizes cannot Run now until **Resume**.
+grid, consequential intro copy. Primary **Run now** / **Running…**. Last-run banner when
+the rule has run before (amber + time when today; neutral date/time for older runs). Paused
+auto-organizes cannot Run now until **Resume**.
 
 ### Bucket polish (*deferred*)
 
@@ -432,8 +433,9 @@ choose**).
 | Run now | `Bucket move · by {name} · {time}` |
 | Ordinary manual | unchanged |
 
-Use `auto_organize_run_id` + run `trigger` to choose label. Optional row icon for
-automatic moves. Auto-note on tx optional (auto-organize name).
+Use `auto_organize_run_id` + run `trigger` to choose label. Transaction **note** shows
+**{kind} · {rule name}** (e.g. `Auto top-up · Month-start refill`) for auto-organize runs.
+Manual bucket moves without a stored note show **Set aside** / **Use from bucket** / **Move money**.
 
 ---
 

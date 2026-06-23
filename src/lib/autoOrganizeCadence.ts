@@ -5,6 +5,8 @@ import {
   AUTO_ORGANIZE_MANUAL_NEXT_RUN_LABEL,
   AUTO_ORGANIZE_NEXT_RUN_LABEL,
   AUTO_ORGANIZE_NO_UPCOMING_RUN_LABEL,
+  AUTO_ORGANIZE_RUN_NOW_LAST_RUN_AGAIN_HINT,
+  AUTO_ORGANIZE_RUN_NOW_LAST_RUN_TODAY_PREFIX,
 } from '@/lib/brand'
 
 export type AutoOrganizeType = 'interval' | 'monthly' | 'manual'
@@ -461,6 +463,45 @@ export function formatNextRunLabel(nextRunOn: string | null): string {
 export function formatLastRunLabel(lastRunOn: string | null): string | null {
   if (!lastRunOn) return null
   return `Last run ${formatNextRunDateLabel(lastRunOn)}`
+}
+
+export type AutoOrganizeLastRunFields = {
+  run_on: string
+  created_at: string
+}
+
+export function formatRunTimeInTimeZone(
+  isoTimestamp: string,
+  timeZone: string,
+): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(isoTimestamp))
+}
+
+/** Run-now confirm: last-run context (amber when the last run was today). */
+export function autoOrganizeRunNowLastRunContext(
+  lastRun: AutoOrganizeLastRunFields,
+  timeZone: string,
+  from: Date = new Date(),
+): { message: string; emphasize: boolean } {
+  const todayIso = localDateIsoInTimeZone(timeZone, from)
+  const timeLabel = formatRunTimeInTimeZone(lastRun.created_at, timeZone)
+  const emphasize = lastRun.run_on === todayIso
+
+  if (emphasize) {
+    return {
+      message: `${AUTO_ORGANIZE_RUN_NOW_LAST_RUN_TODAY_PREFIX} ${timeLabel}. ${AUTO_ORGANIZE_RUN_NOW_LAST_RUN_AGAIN_HINT}`,
+      emphasize: true,
+    }
+  }
+
+  return {
+    message: `Last run ${formatNextRunDateLabel(lastRun.run_on)} at ${timeLabel}`,
+    emphasize: false,
+  }
 }
 
 function formatRunScheduleDayPhrase(day: number): string {
