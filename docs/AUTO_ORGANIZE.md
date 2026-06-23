@@ -298,7 +298,7 @@ transactions
 Indexes / constraints:
 
 - **Scheduled:** partial unique on `(auto_organize_id, run_on)` where `trigger = 'scheduled'` — at most one automatic run per local day.
-- **Manual (Run now):** no daily cap — multiple runs on the same local day are allowed (confirm sheet warns if one already ran today).
+- **Manual (Run now):** no daily cap — multiple runs on the same local day are allowed (confirm sheet shows last-run context when the rule has run before).
 - `(family_id)` on `auto_organizes` and `auto_organize_runs` for RLS.
 
 Optional later: `owner_member_id uuid null` on `auto_organizes` for kid scope.
@@ -311,7 +311,7 @@ Optional later: `owner_member_id uuid null` on `auto_organizes` for kid scope.
 
 `SECURITY DEFINER`. Callable by service role (scheduled) and admin (manual only).
 
-1. Lock row; reject if **paused** (including manual — must unpause first).
+1. Lock row; reject if **paused** (scheduled rules only — manual-only is never paused in UI and ignores stale `paused` on run).
 2. Validate lines: buckets exist, family-pool scope, same `family_id`.
 3. If any line invalid → record failed run or reject without partial moves.
 4. Insert `auto_organize_runs` row.
@@ -445,7 +445,7 @@ Manual bucket moves without a stored note show **Set aside** / **Use from bucket
 | --- | --- |
 | Bucket deleted | Sheet explains auto-organize block; **Remove and delete** clears lines (and empty auto-organizes) then deletes bucket |
 | Bucket renamed | Auto-organize uses `bucket_id`; UI shows current name |
-| Auto-organize paused | No automatic or manual run until resumed; Shared sees **Paused** badge + status line |
+| Auto-organize paused | Scheduled rules: no automatic or manual run until resumed; Shared sees **Paused** badge + status line. Manual-only: pause hidden; not applicable. |
 | Cron / manual same day | Any run for `(auto_organize_id, run_on)` skips cron; multiple **manual** runs same day OK |
 | Scheduled idempotency | Partial unique on `(auto_organize_id, run_on)` where `trigger = 'scheduled'` |
 | Insufficient Float on run | **Allow**; Float goes red (all roles) |
@@ -456,8 +456,10 @@ Manual bucket moves without a stored note show **Set aside** / **Use from bucket
 
 | Layer | Coverage |
 | --- | --- |
-| `tests/db/auto_organize.test.ts` | Happy manual run, cron idempotency, RLS read (member/child), member write denial, manual run denied for member/child, scheduled trigger denied for authenticated users, invalid bucket line, multiple manual runs/day, one scheduled run/day, manual run blocks cron same day, **top_up fill-to-target**, **save_off to bucket and Float**, **same-day sweep-before-fill order** |
-| `src/lib/autoOrganizeCadence.test.ts` | Cadence matching, next-run labels, editor schedule summaries |
+| `tests/db/auto_organize.test.ts` | Happy manual run, cron idempotency, RLS read (member/child), member write denial, manual run denied for member/child, scheduled trigger denied for authenticated users, invalid bucket line, multiple manual runs/day, one scheduled run/day, manual run blocks cron same day, **top_up fill-to-target** (+ history note), **save_off to bucket and Float** (+ history note), **same-day sweep-before-fill order**, manual-only cron skip, zero-move run when all lines at target |
+| `src/lib/autoOrganize.test.ts` | Per-line move math, totals, active lines, save-off preview consistency |
+| `src/lib/autoOrganizeCadence.test.ts` | Cadence matching, next-run labels, editor schedule summaries, run-now last-run context |
+| `src/lib/historyTransactionNote.test.ts` | History note enrichment and manual-move defaults |
 | `tests/db/move_money.test.ts` | Float → bucket over current Float (admin + child) |
 | Seed | `auto-organize` scenario — *deferred* |
 | Manual | Admin CRUD, pause/resume, Run now confirm; Shared read-only; History **Scheduled** |

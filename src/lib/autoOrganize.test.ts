@@ -8,6 +8,13 @@ import {
   disambiguateAutoOrganizeLabels,
   orderAutoOrganizeLinesByBuckets,
 } from '@/lib/autoOrganize'
+import {
+  AUTO_ORGANIZE_ORGANIZE_SUBTITLE,
+  AUTO_ORGANIZE_ORGANIZE_SUBTITLE_MANUAL,
+  AUTO_ORGANIZE_SAVEOFF_SUBTITLE,
+  AUTO_ORGANIZE_SAVEOFF_SUBTITLE_MANUAL,
+  autoOrganizeKindSubtitle,
+} from '@/lib/brand'
 
 describe('computeLineMoveAmount', () => {
   it('organize uses fixed amount', () => {
@@ -262,5 +269,53 @@ describe('disambiguateAutoOrganizeLabels', () => {
       { id: 'a', name: 'Every 2 weeks (1)' },
       { id: 'b', name: 'Every 2 weeks (2)' },
     ])
+  })
+})
+
+describe('autoOrganizeKindSubtitle', () => {
+  it('uses manual copy for organize and save-off when not scheduled', () => {
+    expect(autoOrganizeKindSubtitle('organize', true)).toBe(
+      AUTO_ORGANIZE_ORGANIZE_SUBTITLE_MANUAL,
+    )
+    expect(autoOrganizeKindSubtitle('save_off', true)).toBe(
+      AUTO_ORGANIZE_SAVEOFF_SUBTITLE_MANUAL,
+    )
+  })
+
+  it('uses scheduled copy when manual flag is false', () => {
+    expect(autoOrganizeKindSubtitle('organize', false)).toBe(
+      AUTO_ORGANIZE_ORGANIZE_SUBTITLE,
+    )
+    expect(autoOrganizeKindSubtitle('save_off', false)).toBe(
+      AUTO_ORGANIZE_SAVEOFF_SUBTITLE,
+    )
+  })
+})
+
+describe('computeTotalPerRun consistency', () => {
+  it('matches the sum of per-line move amounts for top_up', () => {
+    const lines = [
+      {
+        bucket_id: 'b1',
+        amount: 400,
+        bucket_allocated_amount: 150,
+      },
+      {
+        bucket_id: 'b2',
+        amount: 100,
+        bucket_allocated_amount: 100,
+      },
+    ]
+    const balanceById = new Map([
+      ['b1', 150],
+      ['b2', 100],
+    ])
+    const { total } = computeTotalPerRun('top_up', lines, balanceById)
+    const lineSum = lines.reduce(
+      (sum, line) => sum + autoOrganizeLineMoveAtRun('top_up', line, balanceById),
+      0,
+    )
+    expect(total).toBe(lineSum)
+    expect(total).toBe(250)
   })
 })

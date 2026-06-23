@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Sheet } from '@/components/ui/Sheet'
 import { ScrollFade } from '@/components/ui/ScrollFade'
+import { LoadErrorPanel } from '@/components/ui/LoadErrorPanel'
 import {
   AUTO_ORGANIZE_ADD_LABEL,
   AUTO_ORGANIZE_ADD_REQUIRES_BUCKETS_HINT,
@@ -11,6 +12,7 @@ import {
   AUTO_ORGANIZE_EDIT_LABEL,
   AUTO_ORGANIZE_EMPTY_BODY,
   AUTO_ORGANIZE_GUARDRAIL,
+  AUTO_ORGANIZE_LOAD_ERROR_TITLE,
   AUTO_ORGANIZE_NOTHING_TO_MOVE_NOW_LABEL,
   AUTO_ORGANIZE_NO_BUCKETS_ERROR,
   AUTO_ORGANIZE_PAUSE_LABEL,
@@ -180,7 +182,8 @@ function AutoOrganizeCard({
     () => orderAutoOrganizeLinesByBuckets(row.lines, buckets),
     [row.lines, buckets],
   )
-  const kindSubtitle = autoOrganizeKindSubtitle(kind)
+  const isManual = row.auto_organize_type === 'manual'
+  const kindSubtitle = autoOrganizeKindSubtitle(kind, isManual)
   const saveOffDestLabel = autoOrganizeSaveOffDestinationLabel(
     row.destination_bucket_id
       ? resolveAutoOrganizeLineBucketName(
@@ -196,7 +199,6 @@ function AutoOrganizeCard({
   const bucketsPanelId = `auto-organize-buckets-${row.id}`
   const displayName = autoOrganizeDisplayName(row)
   const hasCustomName = Boolean(row.name?.trim())
-  const isManual = row.auto_organize_type === 'manual'
   const showPausedUi = row.paused && !isManual
 
   return (
@@ -316,9 +318,6 @@ function AutoOrganizeCard({
               <ul className="space-y-1 border-t border-zinc-800 pt-2 text-xs text-zinc-400">
                 {displayLines.map((line) => {
                   const configured = Number(line.amount)
-                  const balance =
-                    bucketBalanceById.get(line.bucket_id) ??
-                    Number(line.bucket_allocated_amount ?? 0)
                   const move = autoOrganizeLineMoveAtRun(
                     kind,
                     line,
@@ -484,7 +483,6 @@ export default function AutoOrganizeSection({
       setRows(data)
     } catch (e) {
       setLoadError(formatErrorMessage(e, 'Could not load auto-organize.'))
-      setRows([])
     }
   }, [])
 
@@ -729,12 +727,14 @@ export default function AutoOrganizeSection({
       </div>
 
       {loadError ? (
-        <p className="text-sm text-red-400" role="alert">
-          {loadError}
-        </p>
+        <LoadErrorPanel
+          title={AUTO_ORGANIZE_LOAD_ERROR_TITLE}
+          message={loadError}
+          onRetry={() => void loadRows()}
+        />
       ) : null}
 
-      {empty && isAdmin ? (
+      {empty && isAdmin && !loadError ? (
         <div className="rounded-2xl border border-dashed border-zinc-700 px-4 py-5 text-center">
           <p className="text-sm text-zinc-300">{AUTO_ORGANIZE_EMPTY_BODY}</p>
           {poolBuckets.length === 0 ? (
@@ -917,7 +917,10 @@ export default function AutoOrganizeSection({
                 </button>
                 <button
                   type="button"
-                  disabled={busyId === runConfirm.id}
+                  disabled={
+                    busyId === runConfirm.id ||
+                    runConfirmComputed.totalMove === 0
+                  }
                   onClick={() => void confirmRunNow()}
                   className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black hover:bg-emerald-400 disabled:opacity-50"
                 >

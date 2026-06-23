@@ -595,6 +595,8 @@ export function bucketsFloatStatusGuide(isChild: boolean): readonly FloatStatusG
 /** Buckets tab section header. Schema: `auto_organizes`. */
 export const AUTO_ORGANIZE_SECTION_TITLE = 'Auto-organize'
 
+export const AUTO_ORGANIZE_LOAD_ERROR_TITLE = 'Could not load auto-organize'
+
 /** One line under the section header (admin + Shared). */
 export const AUTO_ORGANIZE_GUARDRAIL =
   'You choose when and how much — on a schedule or when you tap Run now.'
