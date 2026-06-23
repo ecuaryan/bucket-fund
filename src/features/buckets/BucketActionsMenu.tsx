@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { APP_POPOVER_Z_INDEX } from '@/components/layout/navLayout'
 import { FLOAT_LABEL_LOWER } from '@/lib/brand'
 
 type Props = {
@@ -89,7 +90,11 @@ export default function BucketActionsMenu({
       {open && (
         <div
           role="menu"
-          className="menu-popover-enter absolute right-0 top-full z-30 mt-1 w-44 overflow-hidden rounded-lg bg-zinc-900 py-1 text-sm shadow-xl ring-1 ring-zinc-700"
+          style={{ zIndex: APP_POPOVER_Z_INDEX }}
+          className={
+            'menu-popover-enter absolute right-0 w-44 overflow-hidden rounded-lg bg-zinc-900 py-1 text-sm shadow-xl ring-1 ring-zinc-700 ' +
+            (isLast ? 'bottom-full mb-1' : 'top-full mt-1')
+          }
         >
           <MenuItem onClick={fire(onViewHistory)}>View history</MenuItem>
           {canManageStructure && (

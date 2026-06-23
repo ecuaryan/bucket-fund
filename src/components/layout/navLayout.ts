@@ -11,6 +11,9 @@
 /** Sticky header + fixed bottom nav — above in-page {@link BusyOverlay}. */
 export const APP_CHROME_Z_INDEX = 30
 
+/** In-page menus/popovers — above app chrome, below sheets. */
+export const APP_POPOVER_Z_INDEX = 35
+
 /** Full-screen sheet backdrop — above app chrome, below toasts. */
 export const SHEET_Z_INDEX = 40
 

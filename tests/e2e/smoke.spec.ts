@@ -28,7 +28,7 @@ test.describe('smoke', () => {
     await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 
     await expect(page).toHaveURL('/')
-    await expect(page.getByRole('heading', { name: 'Buckets' })).toBeVisible()
+    await expect(page.getByRole('tab', { name: 'Buckets' })).toBeVisible()
     await expect(page.getByRole('region', { name: 'Getting started' })).toBeVisible()
     await expect(
       page.getByRole('button', { name: 'Add a money source' }),
