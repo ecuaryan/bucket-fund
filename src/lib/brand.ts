@@ -791,9 +791,6 @@ export const AUTO_ORGANIZE_RUN_NOW_ALREADY_RAN_WARNING =
 
 export const AUTO_ORGANIZE_RUN_NOW_LAST_RUN_TODAY_PREFIX = 'Last run today at'
 
-export const AUTO_ORGANIZE_RUN_NOW_LAST_RUN_AGAIN_HINT =
-  'Running again starts another pass.'
-
 export const AUTO_ORGANIZE_RUN_NOW_CURRENT_LABEL = 'Current'
 
 export const AUTO_ORGANIZE_RUN_NOW_MOVE_LABEL = 'Move'

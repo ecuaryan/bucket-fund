@@ -214,8 +214,7 @@ describe('autoOrganizeRunNowLastRunContext', () => {
     expect(
       autoOrganizeRunNowLastRunContext(lastRun, 'America/Los_Angeles', from),
     ).toEqual({
-      message:
-        'Last run today at 12:45 PM. Running again starts another pass.',
+      message: 'Last run today at 12:45 PM.',
       emphasize: true,
     })
   })

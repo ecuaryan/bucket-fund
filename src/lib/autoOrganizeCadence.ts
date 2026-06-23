@@ -5,7 +5,6 @@ import {
   AUTO_ORGANIZE_MANUAL_NEXT_RUN_LABEL,
   AUTO_ORGANIZE_NEXT_RUN_LABEL,
   AUTO_ORGANIZE_NO_UPCOMING_RUN_LABEL,
-  AUTO_ORGANIZE_RUN_NOW_LAST_RUN_AGAIN_HINT,
   AUTO_ORGANIZE_RUN_NOW_LAST_RUN_TODAY_PREFIX,
 } from '@/lib/brand'
 
@@ -493,7 +492,7 @@ export function autoOrganizeRunNowLastRunContext(
 
   if (emphasize) {
     return {
-      message: `${AUTO_ORGANIZE_RUN_NOW_LAST_RUN_TODAY_PREFIX} ${timeLabel}. ${AUTO_ORGANIZE_RUN_NOW_LAST_RUN_AGAIN_HINT}`,
+      message: `${AUTO_ORGANIZE_RUN_NOW_LAST_RUN_TODAY_PREFIX} ${timeLabel}.`,
       emphasize: true,
     }
   }
