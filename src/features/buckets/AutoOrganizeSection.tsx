@@ -84,6 +84,8 @@ type Props = {
   onChanged: () => void | Promise<void>
   /** Bump after parent-side changes (e.g. bucket delete) to reload auto-organize rows. */
   refreshToken?: number
+  /** When true, rendered inside Buckets page tab panel (no section divider / title). */
+  embedded?: boolean
 }
 
 type AutoOrganizeCardProps = {
@@ -512,6 +514,7 @@ export default function AutoOrganizeSection({
   float,
   onChanged,
   refreshToken = 0,
+  embedded = false,
 }: Props) {
   const { formatMoney } = useHideAmounts()
   const poolBuckets = buckets.filter((b) => b.owner_member_id === null)
@@ -604,6 +607,7 @@ export default function AutoOrganizeSection({
       await deleteAutoOrganize(deleteConfirm.id)
       setDeleteConfirm(null)
       await loadRows()
+      await Promise.resolve(onChanged())
       toast.success(AUTO_ORGANIZE_DELETED_TOAST)
     } catch (e) {
       toast.error(formatErrorMessage(e))
@@ -763,13 +767,27 @@ export default function AutoOrganizeSection({
 
   return (
     <section
-      className="space-y-3 border-t border-zinc-800 pt-6"
+      className={
+        embedded
+          ? 'space-y-3'
+          : 'space-y-3 border-t border-zinc-800 pt-6'
+      }
       aria-label={AUTO_ORGANIZE_SECTION_TITLE}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold">{AUTO_ORGANIZE_SECTION_TITLE}</h2>
-          <p className="mt-1 text-xs text-zinc-400">{AUTO_ORGANIZE_GUARDRAIL}</p>
+          <h2
+            className={
+              embedded
+                ? 'sr-only'
+                : 'text-lg font-semibold'
+            }
+          >
+            {AUTO_ORGANIZE_SECTION_TITLE}
+          </h2>
+          <p className={embedded ? 'text-xs text-zinc-400' : 'mt-1 text-xs text-zinc-400'}>
+            {AUTO_ORGANIZE_GUARDRAIL}
+          </p>
         </div>
         {isAdmin && rows && !empty ? (
           <div className="flex shrink-0 flex-col items-end gap-1">

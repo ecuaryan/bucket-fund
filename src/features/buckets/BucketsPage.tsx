@@ -7,7 +7,7 @@ import {
   useState,
   type FormEvent,
 } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import {
@@ -64,6 +64,7 @@ import { readBucketsPageCache, writeBucketsPageCache } from '@/lib/bucketsPageCa
 import { formatRelativeTime } from '@/lib/relativeTime'
 import { formatLoadErrorMessage } from '@/lib/authLockError'
 import { LoadErrorPanel } from '@/components/ui/LoadErrorPanel'
+import { SegmentedTabs } from '@/components/ui/SegmentedTabs'
 import { loadBucketsPage } from '@/lib/bucketsPageLoad'
 import {
   renameBucketInList,
@@ -82,6 +83,7 @@ import {
 } from '@/lib/buckets'
 import {
   fetchAutoOrganizesUsingBucket,
+  fetchAutoOrganizes,
   type AutoOrganizeBucketRef,
 } from '@/lib/autoOrganize'
 import { formatErrorMessage } from '@/lib/errorMessage'
@@ -113,6 +115,17 @@ import {
   writeOnboardingCoachDismissed,
 } from '@/lib/onboardingCoachStorage'
 import type { MoveMoneyIntent } from '@/lib/moveMoneyDialogCopy'
+import {
+  BUCKETS_PAGE_TAB_OPTIONS,
+  applyBucketsPageTabToSearchParams,
+  resolveBucketsPageTab,
+  parseBucketsPageTab,
+  shouldShowAutoOrganizeTab,
+  isAutoOrganizeTabAvailabilityPending,
+  type BucketsPageTab,
+} from '@/lib/bucketsPageTabs'
+import { BUCKETS_PAGE_TABS_ARIA_LABEL } from '@/lib/brand'
+import { scrollWindowToTop } from '@/hooks/useScrollToTopOnPathname'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -121,6 +134,7 @@ export default function BucketsPage() {
   const { formatMoney } = useHideAmounts()
   const auth = useAuth()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [buckets, setBuckets] = useState<Bucket[] | null>(null)
   const [accounts, setAccounts] = useState<Account[] | null>(null)
   const [balanceBreakdown, setBalanceBreakdown] =
@@ -148,6 +162,12 @@ export default function BucketsPage() {
   const [deletingBucket, setDeletingBucket] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [autoOrganizeRefreshToken, setAutoOrganizeRefreshToken] = useState(0)
+  const [autoOrganizeTabAvailable, setAutoOrganizeTabAvailable] = useState<
+    boolean | null
+  >(null)
+  const [autoOrganizePanelMounted, setAutoOrganizePanelMounted] = useState(
+    () => searchParams.get('tab') === 'auto-organize',
+  )
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [floatInfoOpen, setFloatInfoOpen] = useState(false)
   const [coachDismissed, setCoachDismissed] = useState(true)
@@ -174,6 +194,16 @@ export default function BucketsPage() {
   const isAdmin = member?.role === 'admin'
   const isChild = member?.role === 'child'
   const canSeeAutoOrganize = !isChild
+  const showAutoOrganizeTab = shouldShowAutoOrganizeTab(
+    canSeeAutoOrganize,
+    isAdmin,
+    autoOrganizeTabAvailable,
+  )
+  const showBucketsPageTabs = showAutoOrganizeTab
+  const activeTab = resolveBucketsPageTab(
+    searchParams.get('tab'),
+    showAutoOrganizeTab,
+  )
   const canCreateBuckets = isAdmin || isChild
   const canManageStructure = isAdmin || isChild
 
@@ -223,12 +253,30 @@ export default function BucketsPage() {
   const realtimeReloadTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   )
+
+  const refreshAutoOrganizeTabAvailability = useCallback(async () => {
+    if (!canSeeAutoOrganize || !familyId) {
+      setAutoOrganizeTabAvailable(null)
+      return
+    }
+    if (isAdmin) return
+    try {
+      const rows = await fetchAutoOrganizes()
+      setAutoOrganizeTabAvailable(rows.length > 0)
+    } catch {
+      setAutoOrganizeTabAvailable(false)
+    }
+  }, [canSeeAutoOrganize, familyId, isAdmin])
+
   const debouncedLoadData = useCallback(() => {
     clearTimeout(realtimeReloadTimer.current)
     realtimeReloadTimer.current = setTimeout(() => {
       void loadData()
+      if (canSeeAutoOrganize && !isAdmin) {
+        void refreshAutoOrganizeTabAvailability()
+      }
     }, 300)
-  }, [loadData])
+  }, [loadData, canSeeAutoOrganize, isAdmin, refreshAutoOrganizeTabAvailability])
 
   useEffect(() => {
     loadGeneration.current += 1
@@ -289,8 +337,15 @@ export default function BucketsPage() {
         filter: `member_id=eq.${memberId}`,
       })
     }
+    if (canSeeAutoOrganize && !isAdmin && familyId) {
+      specs.push({
+        event: '*' as const,
+        table: 'auto_organizes',
+        filter: `family_id=eq.${familyId}`,
+      })
+    }
     return specs
-  }, [familyId, memberId])
+  }, [familyId, memberId, canSeeAutoOrganize, isAdmin])
 
   const deleteAutoOrganizeRefsAllManual = useMemo(
     () =>
@@ -305,6 +360,60 @@ export default function BucketsPage() {
     familyId ? `home:${familyId}` : null,
     realtimeSpecs,
     debouncedLoadData,
+  )
+
+  useEffect(() => {
+    if (!canSeeAutoOrganize || !familyId) {
+      setAutoOrganizeTabAvailable(null)
+      return
+    }
+    if (isAdmin) {
+      setAutoOrganizeTabAvailable(true)
+      return
+    }
+    void refreshAutoOrganizeTabAvailability()
+  }, [
+    canSeeAutoOrganize,
+    familyId,
+    isAdmin,
+    autoOrganizeRefreshToken,
+    refreshAutoOrganizeTabAvailability,
+  ])
+
+  useEffect(() => {
+    if (!isAdmin && autoOrganizeTabAvailable === null) return
+    if (
+      parseBucketsPageTab(searchParams.get('tab')) === 'auto-organize' &&
+      !showAutoOrganizeTab
+    ) {
+      setSearchParams(
+        (prev) => applyBucketsPageTabToSearchParams(prev, 'buckets'),
+        { replace: true },
+      )
+    }
+  }, [
+    autoOrganizeTabAvailable,
+    isAdmin,
+    searchParams,
+    setSearchParams,
+    showAutoOrganizeTab,
+  ])
+
+  useEffect(() => {
+    if (activeTab === 'auto-organize') {
+      setAutoOrganizePanelMounted(true)
+    }
+  }, [activeTab])
+
+  const onBucketsPageTabChange = useCallback(
+    (tab: BucketsPageTab) => {
+      setSearchParams(
+        (prev) => applyBucketsPageTabToSearchParams(prev, tab),
+        { replace: true },
+      )
+      scrollWindowToTop()
+    },
+    [setSearchParams],
   )
 
   function startRename(id: string, currentName: string) {
@@ -530,12 +639,18 @@ export default function BucketsPage() {
 
   const authLoading =
     auth.status === 'signedIn' && auth.memberLoading
+  const tabAvailabilityPending = isAutoOrganizeTabAvailabilityPending(
+    canSeeAutoOrganize,
+    isAdmin,
+    autoOrganizeTabAvailable,
+  )
   if (
     authLoading ||
     !familyId ||
     buckets === null ||
     accounts === null ||
-    balanceBreakdown === null
+    balanceBreakdown === null ||
+    tabAvailabilityPending
   ) {
     return <BucketsPageSkeleton />
   }
@@ -816,12 +931,41 @@ export default function BucketsPage() {
         </section>
       )}
 
+      {showBucketsPageTabs ? (
+        <SegmentedTabs
+          value={activeTab}
+          options={BUCKETS_PAGE_TAB_OPTIONS}
+          onChange={onBucketsPageTabChange}
+          ariaLabel={BUCKETS_PAGE_TABS_ARIA_LABEL}
+        />
+      ) : null}
+
+      <div
+        role={showBucketsPageTabs ? 'tabpanel' : undefined}
+        id={showBucketsPageTabs ? 'segmented-panel-buckets' : undefined}
+        aria-labelledby={
+          showBucketsPageTabs ? 'segmented-tab-buckets' : undefined
+        }
+        hidden={showBucketsPageTabs ? activeTab !== 'buckets' : undefined}
+      >
       <ReorderHintProvider
         reorderable={buckets.length >= 2 && renamingId === null}
       >
       <section aria-label="Buckets">
-        <header className="mb-3 flex items-baseline justify-between gap-3">
-          <h2 className="text-lg font-semibold">Buckets</h2>
+        <header
+          className={
+            showBucketsPageTabs
+              ? 'mb-3 flex justify-end'
+              : 'mb-3 flex items-baseline justify-between gap-3'
+          }
+        >
+          <h2
+            className={
+              showBucketsPageTabs ? 'sr-only' : 'text-lg font-semibold'
+            }
+          >
+            Buckets
+          </h2>
           <span className="text-right text-xs text-zinc-400">
             {formatBucketsHeaderSubtitle(
               buckets.length,
@@ -902,18 +1046,36 @@ export default function BucketsPage() {
         )}
       </section>
       </ReorderHintProvider>
+      </div>
 
-      {canSeeAutoOrganize && familyId && memberId ? (
-        <AutoOrganizeSection
-          isAdmin={isAdmin}
-          memberId={memberId}
-          familyId={familyId}
-          accessToken={accessToken}
-          buckets={buckets ?? []}
-          float={float}
-          onChanged={loadData}
-          refreshToken={autoOrganizeRefreshToken}
-        />
+      {showAutoOrganizeTab &&
+      autoOrganizePanelMounted &&
+      canSeeAutoOrganize &&
+      familyId &&
+      memberId ? (
+        <div
+          role="tabpanel"
+          id="segmented-panel-auto-organize"
+          aria-labelledby="segmented-tab-auto-organize"
+          hidden={activeTab !== 'auto-organize'}
+        >
+          <AutoOrganizeSection
+            embedded
+            isAdmin={isAdmin}
+            memberId={memberId}
+            familyId={familyId}
+            accessToken={accessToken}
+            buckets={buckets ?? []}
+            float={float}
+            onChanged={() => {
+              void loadData()
+              if (!isAdmin) {
+                void refreshAutoOrganizeTabAvailability()
+              }
+            }}
+            refreshToken={autoOrganizeRefreshToken}
+          />
+        </div>
       ) : null}
         </div>
       </BusyOverlay>

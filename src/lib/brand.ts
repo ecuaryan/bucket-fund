@@ -616,6 +616,8 @@ export function bucketsFloatStatusGuide(isChild: boolean): readonly FloatStatusG
 /** Buckets tab section header. Schema: `auto_organizes`. */
 export const AUTO_ORGANIZE_SECTION_TITLE = 'Auto-organize'
 
+export const BUCKETS_PAGE_TABS_ARIA_LABEL = 'Buckets page sections'
+
 export const AUTO_ORGANIZE_LOAD_ERROR_TITLE = 'Could not load auto-organize'
 
 export const AUTO_ORGANIZE_LOADING_ARIA_LABEL = 'Loading auto-organize'
