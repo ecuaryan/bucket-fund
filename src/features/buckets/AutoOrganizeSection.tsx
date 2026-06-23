@@ -5,12 +5,12 @@ import { LoadErrorPanel } from '@/components/ui/LoadErrorPanel'
 import {
   AUTO_ORGANIZE_ADD_LABEL,
   AUTO_ORGANIZE_ADD_REQUIRES_BUCKETS_HINT,
-  AUTO_ORGANIZE_BUCKETS_LABEL,
   AUTO_ORGANIZE_DELETE_LABEL,
-  AUTO_ORGANIZE_DELETE_SHEET_BODY,
+  autoOrganizeDeleteSheetBody,
   AUTO_ORGANIZE_DELETED_TOAST,
   AUTO_ORGANIZE_EDIT_LABEL,
   AUTO_ORGANIZE_EMPTY_BODY,
+  AUTO_ORGANIZE_ESTIMATED_TOTAL_LABEL,
   AUTO_ORGANIZE_GUARDRAIL,
   AUTO_ORGANIZE_LOAD_ERROR_TITLE,
   AUTO_ORGANIZE_NOTHING_TO_MOVE_NOW_LABEL,
@@ -34,13 +34,15 @@ import {
   AUTO_ORGANIZE_TOTAL_PER_RUN_LABEL,
   FLOAT_LABEL,
   autoOrganizeDeleteSheetTitle,
+  autoOrganizeBucketsSectionLabel,
   autoOrganizeKindLabel,
   autoOrganizeKindSubtitle,
   autoOrganizeRunNowConfirmBodyForKind,
   autoOrganizeRunNowConfirmTitle,
   autoOrganizeSaveOffDestinationLabel,
   autoOrganizeSaveOffMovesNowLabel,
-  autoOrganizeViewBucketsLabel,
+  autoOrganizeTopUpAddsNowLabel,
+  autoOrganizeViewLinesLabel,
   type AutoOrganizeKind,
 } from '@/lib/brand'
 import {
@@ -287,8 +289,8 @@ function AutoOrganizeCard({
           >
             <span className="min-w-0 truncate font-semibold">
               {linesOpen
-                ? AUTO_ORGANIZE_BUCKETS_LABEL
-                : autoOrganizeViewBucketsLabel(displayLines.length)}
+                ? autoOrganizeBucketsSectionLabel(kind)
+                : autoOrganizeViewLinesLabel(kind, displayLines.length)}
             </span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -336,7 +338,12 @@ function AutoOrganizeCard({
                             <span className="ml-1 text-zinc-500">
                               · {AUTO_ORGANIZE_AT_TARGET_LABEL}
                             </span>
-                          ) : null}
+                          ) : (
+                            <span className="ml-1 font-medium text-emerald-300/90">
+                              ·{' '}
+                              {autoOrganizeTopUpAddsNowLabel(move, formatMoney)}
+                            </span>
+                          )}
                         </span>
                       </li>
                     )
@@ -843,7 +850,7 @@ export default function AutoOrganizeSection({
                 ) : null}
                 <div className="border-t border-zinc-800 pt-4 pb-4">
                   <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">
-                    {AUTO_ORGANIZE_BUCKETS_LABEL}
+                    {autoOrganizeBucketsSectionLabel(runConfirmKind)}
                   </p>
                   <div className="mt-2">
                     <RunNowAmountHeader />
@@ -879,7 +886,9 @@ export default function AutoOrganizeSection({
               <div className="rounded-xl bg-zinc-950 px-3 py-2 ring-1 ring-inset ring-zinc-700">
                 <div className="flex items-baseline justify-between gap-3">
                   <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
-                    {AUTO_ORGANIZE_TOTAL_PER_RUN_LABEL}
+                    {runConfirmKind === 'organize'
+                      ? AUTO_ORGANIZE_TOTAL_PER_RUN_LABEL
+                      : AUTO_ORGANIZE_ESTIMATED_TOTAL_LABEL}
                   </p>
                   <p className="text-xl font-semibold tabular-nums text-zinc-100">
                     {runConfirmComputed.totalMove === 0 ? (
@@ -961,7 +970,9 @@ export default function AutoOrganizeSection({
             </header>
             <div className="space-y-4">
               <p className="text-sm text-zinc-300">
-                {AUTO_ORGANIZE_DELETE_SHEET_BODY}
+                {autoOrganizeDeleteSheetBody(
+                  deleteConfirm.auto_organize_type === 'manual',
+                )}
               </p>
               <div className="flex justify-end gap-2">
                 <button

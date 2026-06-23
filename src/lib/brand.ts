@@ -471,8 +471,14 @@ export function bucketsDeleteBucketConfirm(name: string): string {
 export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO =
   'This bucket is still included in a scheduled rule that moves money here.'
 
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO_MANUAL =
+  'This bucket is still included in a manual-only rule that moves money here.'
+
 export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_ACTION_HINT =
   'This will remove the bucket from the following and delete it. Schedules with no buckets left are deleted too.'
+
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_ACTION_HINT_MANUAL =
+  'This will remove the bucket from the following rules and delete it. Rules with no buckets left are deleted too.'
 
 export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_USED_IN_LABEL =
   'Bucket is included in:'
@@ -482,10 +488,25 @@ export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_CONFIRM_LABEL = 'Remove and del
 export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK =
   'Deleting will still remove this bucket from any schedules it appears on.'
 
-/** @deprecated Use BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO */
-export function bucketsDeleteBucketAutoOrganizeIntro(bucketName: string): string {
-  void bucketName
-  return BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK_MANUAL =
+  'Deleting will still remove this bucket from any auto-organize rules it appears on.'
+
+export function bucketsDeleteBucketAutoOrganizeIntro(allManualOnly: boolean): string {
+  return allManualOnly
+    ? BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO_MANUAL
+    : BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO
+}
+
+export function bucketsDeleteBucketAutoOrganizeActionHint(allManualOnly: boolean): string {
+  return allManualOnly
+    ? BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_ACTION_HINT_MANUAL
+    : BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_ACTION_HINT
+}
+
+export function bucketsDeleteBucketAutoOrganizeLoadFallback(allManualOnly: boolean): string {
+  return allManualOnly
+    ? BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK_MANUAL
+    : BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK
 }
 
 /** @deprecated Use BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_CONFIRM_LABEL */
@@ -617,13 +638,13 @@ export const AUTO_ORGANIZE_KIND_TOPUP_LABEL = 'Auto top-up'
 export const AUTO_ORGANIZE_KIND_SAVEOFF_LABEL = 'Auto save-off'
 
 export const AUTO_ORGANIZE_KIND_ORGANIZE_DESC =
-  'Set aside into buckets on a schedule — think rent, groceries, or whatever you fund.'
+  'Set aside into buckets on a schedule or when you run it — think rent, groceries, or whatever you fund.'
 
 export const AUTO_ORGANIZE_KIND_TOPUP_DESC =
-  'Top up buckets to your targets on a schedule — think month start or payday.'
+  'Top up buckets to your targets on a schedule or when you run it — think month start or payday.'
 
 export const AUTO_ORGANIZE_KIND_SAVEOFF_DESC =
-  "Move what's left wherever you want on a schedule — think month end or after payday."
+  "Move what's left wherever you want on a schedule or when you run it — think month end or after payday."
 
 export const AUTO_ORGANIZE_KIND_CHOOSER_TITLE = 'What would you like to add?'
 
@@ -635,6 +656,9 @@ export const AUTO_ORGANIZE_ORGANIZE_SUBTITLE_MANUAL =
 
 export const AUTO_ORGANIZE_TOPUP_SUBTITLE =
   'Brings each bucket back to your target amount.'
+
+export const AUTO_ORGANIZE_TOPUP_SUBTITLE_MANUAL =
+  'Brings each bucket back to your target when you run it.'
 
 export const AUTO_ORGANIZE_SAVEOFF_SUBTITLE =
   'Leaves what you choose in each bucket and moves the rest on a schedule.'
@@ -679,8 +703,7 @@ export const AUTO_ORGANIZE_SAVEOFF_KEEP_ZERO_ROW_HINT =
 export const AUTO_ORGANIZE_SAVEOFF_DESTINATION_HINT =
   'Your Float or another bucket — wherever the extra should go.'
 
-export const AUTO_ORGANIZE_RUN_NOW_NOTHING_TO_MOVE =
-  'Nothing to move right now.'
+export const AUTO_ORGANIZE_RUN_NOW_NOTHING_TO_MOVE = AUTO_ORGANIZE_NOTHING_TO_MOVE_NOW_LABEL
 
 export const AUTO_ORGANIZE_SWEEP_THEN_FILL_TOPUP_NOTE =
   'This bucket is also in a save-off rule. Excess is swept before top-ups on the same day.'
@@ -705,6 +728,13 @@ export function autoOrganizeSaveOffMovesNowLabel(
   formatMoney: (value: number) => string,
 ): string {
   return `Moves ${formatMoney(move)}`
+}
+
+export function autoOrganizeTopUpAddsNowLabel(
+  move: number,
+  formatMoney: (value: number) => string,
+): string {
+  return `Adds ${formatMoney(move)}`
 }
 
 export function autoOrganizeBucketsSectionLabel(kind: AutoOrganizeKind): string {
@@ -738,7 +768,7 @@ export function autoOrganizeKindSubtitle(
   if (manual) {
     switch (kind) {
       case 'top_up':
-        return AUTO_ORGANIZE_TOPUP_SUBTITLE
+        return AUTO_ORGANIZE_TOPUP_SUBTITLE_MANUAL
       case 'save_off':
         return AUTO_ORGANIZE_SAVEOFF_SUBTITLE_MANUAL
       default:
@@ -809,6 +839,16 @@ export function autoOrganizeViewBucketsLabel(count: number): string {
   return `View ${count} buckets`
 }
 
+export function autoOrganizeViewLinesLabel(
+  kind: AutoOrganizeKind,
+  count: number,
+): string {
+  if (kind === 'save_off') {
+    return count === 1 ? 'View 1 source bucket' : `View ${count} source buckets`
+  }
+  return autoOrganizeViewBucketsLabel(count)
+}
+
 export const AUTO_ORGANIZE_PAUSE_LABEL = 'Pause'
 
 export const AUTO_ORGANIZE_PAUSED_LABEL = 'Paused'
@@ -836,6 +876,15 @@ export function autoOrganizeDeleteSheetTitle(displayName: string): string {
 
 export const AUTO_ORGANIZE_DELETE_SHEET_BODY =
   'This stops future auto-organize runs. Past moves stay in History.'
+
+export const AUTO_ORGANIZE_DELETE_SHEET_BODY_MANUAL =
+  'This removes the rule. Past moves stay in History.'
+
+export function autoOrganizeDeleteSheetBody(isManual: boolean): string {
+  return isManual
+    ? AUTO_ORGANIZE_DELETE_SHEET_BODY_MANUAL
+    : AUTO_ORGANIZE_DELETE_SHEET_BODY
+}
 
 export const AUTO_ORGANIZE_DELETED_TOAST = 'Deleted.'
 

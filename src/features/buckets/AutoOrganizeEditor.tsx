@@ -38,8 +38,6 @@ import {
   AUTO_ORGANIZE_START_DATE_TODAY_ERROR,
   AUTO_ORGANIZE_START_DATE_PAST_ERROR,
   AUTO_ORGANIZE_START_DATE_TOO_FAR_ERROR,
-  AUTO_ORGANIZE_SWEEP_THEN_FILL_SAVEOFF_NOTE,
-  AUTO_ORGANIZE_SWEEP_THEN_FILL_TOPUP_NOTE,
   AUTO_ORGANIZE_TIMEZONE_HINT,
   AUTO_ORGANIZE_TIMEZONE_HINT_MANUAL,
   AUTO_ORGANIZE_TIMEZONE_LABEL,
@@ -54,8 +52,7 @@ import {
   type AutoOrganizeFrequencySelection,
 } from '@/lib/brand'
 import {
-  bucketsAlsoInFillRulesElsewhere,
-  bucketsAlsoInSaveOffSourcesElsewhere,
+  sweepThenFillNotesByBucket,
   computeTotalPerRun,
   fetchFamilyTimezone,
   saveAutoOrganize,
@@ -386,23 +383,28 @@ export default function AutoOrganizeEditor({
     [effectiveKind, linesForTotal],
   )
 
-  const sweepThenFillBuckets = useMemo(() => {
-    const bucketIds = new Set(parsedBuckets.map((r) => r.bucketId))
-    if (effectiveKind === 'save_off') {
-      return bucketsAlsoInFillRulesElsewhere(allAutoOrganizes, bucketIds)
-    }
-    if (effectiveKind === 'top_up' || effectiveKind === 'organize') {
-      return bucketsAlsoInSaveOffSourcesElsewhere(allAutoOrganizes, bucketIds)
-    }
-    return new Set<string>()
-  }, [effectiveKind, parsedBuckets, allAutoOrganizes])
+  const frequencySelection = frequencySelectionFromCadence(
+    cadence,
+    monthlyPreset,
+  )
+  const isManual = isManualFrequencySelection(frequencySelection)
 
-  const sweepThenFillNote =
-    effectiveKind === 'save_off'
-      ? AUTO_ORGANIZE_SWEEP_THEN_FILL_SAVEOFF_NOTE
-      : effectiveKind === 'top_up' || effectiveKind === 'organize'
-        ? AUTO_ORGANIZE_SWEEP_THEN_FILL_TOPUP_NOTE
-        : null
+  const sweepThenFillNotes = useMemo(() => {
+    const bucketIds = new Set(parsedBuckets.map((r) => r.bucketId))
+    return sweepThenFillNotesByBucket(
+      allAutoOrganizes,
+      bucketIds,
+      effectiveKind,
+      isManual,
+      initial?.id ?? null,
+    )
+  }, [
+    parsedBuckets,
+    allAutoOrganizes,
+    effectiveKind,
+    isManual,
+    initial?.id,
+  ])
 
   const title = initial
     ? AUTO_ORGANIZE_EDIT_LABEL
@@ -421,11 +423,6 @@ export default function AutoOrganizeEditor({
       : effectiveKind === 'save_off'
         ? AUTO_ORGANIZE_SAVEOFF_KEEP_LABEL
         : null
-  const frequencySelection = frequencySelectionFromCadence(
-    cadence,
-    monthlyPreset,
-  )
-  const isManual = isManualFrequencySelection(frequencySelection)
   const intervalStartMin = tomorrowIso
   const intervalStartMax = maxIntervalStartDateIso(familyTimezone)
   const legacyStartDate = initial?.start_date ?? null
@@ -630,9 +627,7 @@ export default function AutoOrganizeEditor({
           <div className="min-w-0">
             <h2 className="text-lg font-semibold text-zinc-300">{title}</h2>
             <p className="mt-0.5 text-xs text-zinc-500">
-              {initial
-                ? autoOrganizeKindLabel(effectiveKind)
-                : autoOrganizeKindSubtitle(effectiveKind, isManual)}
+              {autoOrganizeKindSubtitle(effectiveKind, isManual)}
             </p>
           </div>
           <button
@@ -863,7 +858,7 @@ export default function AutoOrganizeEditor({
                 const amountStr =
                   bucketDrafts.find((row) => row.bucketId === bucket.id)
                     ?.amountStr ?? ''
-                const showSweepNote = sweepThenFillBuckets.has(bucket.id)
+                const sweepThenFillNote = sweepThenFillNotes.get(bucket.id)
                 const saveOffKeepAmount = parseFloat(amountStr)
                 const showSaveOffSweepAllHint =
                   effectiveKind === 'save_off' &&
@@ -907,7 +902,7 @@ export default function AutoOrganizeEditor({
                         {AUTO_ORGANIZE_SAVEOFF_KEEP_ZERO_ROW_HINT}
                       </p>
                     ) : null}
-                    {showSweepNote && sweepThenFillNote ? (
+                    {sweepThenFillNote ? (
                       <p className="mt-1 text-xs text-amber-200/80">
                         {sweepThenFillNote}
                       </p>

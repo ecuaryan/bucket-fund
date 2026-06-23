@@ -5,6 +5,7 @@ import {
   autoOrganizeLineMoveAtRun,
   bucketsAlsoInFillRulesElsewhere,
   bucketsAlsoInSaveOffSourcesElsewhere,
+  sweepThenFillNotesByBucket,
   computeLineMoveAmount,
   computeTotalPerRun,
   disambiguateAutoOrganizeLabels,
@@ -15,6 +16,8 @@ import {
   AUTO_ORGANIZE_ORGANIZE_SUBTITLE_MANUAL,
   AUTO_ORGANIZE_SAVEOFF_SUBTITLE,
   AUTO_ORGANIZE_SAVEOFF_SUBTITLE_MANUAL,
+  AUTO_ORGANIZE_TOPUP_SUBTITLE,
+  AUTO_ORGANIZE_TOPUP_SUBTITLE_MANUAL,
   autoOrganizeKindSubtitle,
 } from '@/lib/brand'
 
@@ -222,13 +225,21 @@ describe('save_off run preview consistency', () => {
 describe('sweep-then-fill editor notes', () => {
   const topUpRow = {
     id: 'top-up-1',
+    auto_organize_type: 'monthly',
     auto_organize_kind: 'top_up' as const,
     lines: [{ bucket_id: 'groceries', amount: 400 }],
   }
   const saveOffRow = {
     id: 'save-off-1',
+    auto_organize_type: 'monthly',
     auto_organize_kind: 'save_off' as const,
     lines: [{ bucket_id: 'groceries', amount: 200 }],
+  }
+  const manualTopUpRow = {
+    id: 'top-up-manual',
+    auto_organize_type: 'manual',
+    auto_organize_kind: 'top_up' as const,
+    lines: [{ bucket_id: 'groceries', amount: 400 }],
   }
 
   it('flags save-off sources that are also fill targets elsewhere', () => {
@@ -259,6 +270,28 @@ describe('sweep-then-fill editor notes', () => {
         new Set(['groceries']),
       ).has('groceries'),
     ).toBe(false)
+  })
+
+  it('shows scheduled sweep-then-fill note when overlap involves a schedule', () => {
+    const notes = sweepThenFillNotesByBucket(
+      [topUpRow, saveOffRow] as never[],
+      new Set(['groceries']),
+      'save_off',
+      false,
+      'save-off-1',
+    )
+    expect(notes.get('groceries')).toContain('top-up or auto-organize')
+  })
+
+  it('hides sweep-then-fill note when overlap is manual-only', () => {
+    const notes = sweepThenFillNotesByBucket(
+      [manualTopUpRow, saveOffRow] as never[],
+      new Set(['groceries']),
+      'save_off',
+      true,
+      'save-off-1',
+    )
+    expect(notes.has('groceries')).toBe(false)
   })
 })
 
@@ -325,6 +358,9 @@ describe('autoOrganizeKindSubtitle', () => {
     expect(autoOrganizeKindSubtitle('save_off', true)).toBe(
       AUTO_ORGANIZE_SAVEOFF_SUBTITLE_MANUAL,
     )
+    expect(autoOrganizeKindSubtitle('top_up', true)).toBe(
+      AUTO_ORGANIZE_TOPUP_SUBTITLE_MANUAL,
+    )
   })
 
   it('uses scheduled copy when manual flag is false', () => {
@@ -333,6 +369,9 @@ describe('autoOrganizeKindSubtitle', () => {
     )
     expect(autoOrganizeKindSubtitle('save_off', false)).toBe(
       AUTO_ORGANIZE_SAVEOFF_SUBTITLE,
+    )
+    expect(autoOrganizeKindSubtitle('top_up', false)).toBe(
+      AUTO_ORGANIZE_TOPUP_SUBTITLE,
     )
   })
 })

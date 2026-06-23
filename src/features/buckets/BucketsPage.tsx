@@ -25,11 +25,11 @@ import {
   bucketsDeleteBucketSheetIntro,
   bucketsDeleteBucketSheetTitle,
   BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_CONFIRM_LABEL,
-  BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO,
   BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_SUBMITTING_LABEL,
-  BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_ACTION_HINT,
-  BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK,
   BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_USED_IN_LABEL,
+  bucketsDeleteBucketAutoOrganizeActionHint,
+  bucketsDeleteBucketAutoOrganizeIntro,
+  bucketsDeleteBucketAutoOrganizeLoadFallback,
   BUCKETS_DELETE_BUCKET_EFFECT_HISTORY,
   BUCKETS_DELETE_BUCKET_EFFECT_LABEL,
   BUCKETS_DELETE_BUCKET_WHAT_HAPPENS,
@@ -291,6 +291,14 @@ export default function BucketsPage() {
     }
     return specs
   }, [familyId, memberId])
+
+  const deleteAutoOrganizeRefsAllManual = useMemo(
+    () =>
+      deleteAutoOrganizeRefs != null &&
+      deleteAutoOrganizeRefs.length > 0 &&
+      deleteAutoOrganizeRefs.every((ref) => ref.autoOrganizeType === 'manual'),
+    [deleteAutoOrganizeRefs],
+  )
 
   usePostgresChanges(
     accessToken,
@@ -967,16 +975,22 @@ export default function BucketsPage() {
                   {deleteAutoOrganizeRefsLoadError}
                 </p>
                 <p className="text-sm text-zinc-400">
-                  {BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK}
+                  {bucketsDeleteBucketAutoOrganizeLoadFallback(
+                    deleteAutoOrganizeRefsAllManual,
+                  )}
                 </p>
               </>
             ) : deleteAutoOrganizeRefs && deleteAutoOrganizeRefs.length > 0 ? (
               <>
                 <p className="text-sm text-zinc-300">
-                  {BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO}
+                  {bucketsDeleteBucketAutoOrganizeIntro(
+                    deleteAutoOrganizeRefsAllManual,
+                  )}
                 </p>
                 <p className="text-sm text-zinc-400">
-                  {BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_ACTION_HINT}
+                  {bucketsDeleteBucketAutoOrganizeActionHint(
+                    deleteAutoOrganizeRefsAllManual,
+                  )}
                 </p>
                 <div className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-200 ring-1 ring-inset ring-amber-500/30">
                   <p className="text-xs font-medium text-amber-200/80">

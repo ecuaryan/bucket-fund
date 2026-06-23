@@ -1,5 +1,9 @@
 import { supabase } from '@/lib/supabase'
-import type { AutoOrganizeKind } from '@/lib/brand'
+import {
+  type AutoOrganizeKind,
+  AUTO_ORGANIZE_SWEEP_THEN_FILL_SAVEOFF_NOTE,
+  AUTO_ORGANIZE_SWEEP_THEN_FILL_TOPUP_NOTE,
+} from '@/lib/brand'
 import type { Database } from '@/types/database'
 import {
   computeNextRunOn,
@@ -408,6 +412,7 @@ export async function deleteAutoOrganize(id: string): Promise<void> {
 export type AutoOrganizeBucketRef = {
   id: string
   name: string
+  autoOrganizeType: AutoOrganizeRow['auto_organize_type']
 }
 
 export type AutoOrganizeNameFields = Pick<
@@ -494,12 +499,14 @@ export async function fetchAutoOrganizesUsingBucket(
     byId.set(row.auto_organize_id, {
       id: row.auto_organize_id,
       name: autoOrganizeDisplayName(nested),
+      autoOrganizeType: nested.auto_organize_type,
     })
   }
   for (const row of destRefs ?? []) {
     byId.set(row.id, {
       id: row.id,
       name: autoOrganizeDisplayName(row),
+      autoOrganizeType: row.auto_organize_type,
     })
   }
   return disambiguateAutoOrganizeLabels([...byId.values()])
@@ -570,4 +577,70 @@ export function bucketsWithSweepThenFillNote(
   sourceBucketIds: ReadonlySet<string>,
 ): Set<string> {
   return bucketsAlsoInFillRulesElsewhere(rows, sourceBucketIds)
+}
+
+function bucketInFillRule(row: AutoOrganizeWithDetails, bucketId: string): boolean {
+  if (row.auto_organize_kind !== 'organize' && row.auto_organize_kind !== 'top_up') {
+    return false
+  }
+  return row.lines.some(
+    (line) => line.bucket_id === bucketId && Number(line.amount) > 0,
+  )
+}
+
+function bucketInSaveOffRule(row: AutoOrganizeWithDetails, bucketId: string): boolean {
+  if (row.auto_organize_kind !== 'save_off') return false
+  return row.lines.some((line) => line.bucket_id === bucketId)
+}
+
+/** Scheduled sweep-then-fill overlap notes per bucket (hidden when overlap is manual-only). */
+export function sweepThenFillNotesByBucket(
+  rows: ReadonlyArray<AutoOrganizeWithDetails>,
+  bucketIds: ReadonlySet<string>,
+  editingKind: AutoOrganizeKind,
+  currentIsManual: boolean,
+  currentRuleId: string | null,
+): Map<string, string> {
+  const notes = new Map<string, string>()
+  for (const bucketId of bucketIds) {
+    const note = sweepThenFillNoteForBucket(
+      rows,
+      bucketId,
+      editingKind,
+      currentIsManual,
+      currentRuleId,
+    )
+    if (note) notes.set(bucketId, note)
+  }
+  return notes
+}
+
+function sweepThenFillNoteForBucket(
+  rows: ReadonlyArray<AutoOrganizeWithDetails>,
+  bucketId: string,
+  editingKind: AutoOrganizeKind,
+  currentIsManual: boolean,
+  currentRuleId: string | null,
+): string | null {
+  if (editingKind === 'save_off') {
+    const overlapping = rows.filter(
+      (row) => row.id !== currentRuleId && bucketInFillRule(row, bucketId),
+    )
+    if (overlapping.length === 0) return null
+    const scheduled =
+      !currentIsManual || overlapping.some((row) => row.auto_organize_type !== 'manual')
+    if (!scheduled) return null
+    return AUTO_ORGANIZE_SWEEP_THEN_FILL_SAVEOFF_NOTE
+  }
+  if (editingKind === 'top_up' || editingKind === 'organize') {
+    const overlapping = rows.filter(
+      (row) => row.id !== currentRuleId && bucketInSaveOffRule(row, bucketId),
+    )
+    if (overlapping.length === 0) return null
+    const scheduled =
+      !currentIsManual || overlapping.some((row) => row.auto_organize_type !== 'manual')
+    if (!scheduled) return null
+    return AUTO_ORGANIZE_SWEEP_THEN_FILL_TOPUP_NOTE
+  }
+  return null
 }
