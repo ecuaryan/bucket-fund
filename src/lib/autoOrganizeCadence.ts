@@ -1,18 +1,35 @@
 import type { AutoOrganizeFrequencySelection } from '@/lib/brand'
-import { AUTO_ORGANIZE_FREQUENCY_OPTIONS } from '@/lib/brand'
+import {
+  AUTO_ORGANIZE_FREQUENCY_OPTIONS,
+  AUTO_ORGANIZE_MANUAL_CADENCE_SUMMARY,
+  AUTO_ORGANIZE_MANUAL_NEXT_RUN_LABEL,
+  AUTO_ORGANIZE_NEXT_RUN_LABEL,
+  AUTO_ORGANIZE_NO_UPCOMING_RUN_LABEL,
+  AUTO_ORGANIZE_RUN_NOW_LAST_RUN_TODAY_PREFIX,
+} from '@/lib/brand'
 
-export type AutoOrganizeType = 'interval' | 'monthly'
+export type AutoOrganizeType = 'interval' | 'monthly' | 'manual'
+
+export function isManualFrequencySelection(
+  selection: AutoOrganizeFrequencySelection,
+): boolean {
+  return selection === 'manual-only'
+}
 
 export function isIntervalFrequencySelection(
   selection: AutoOrganizeFrequencySelection,
 ): boolean {
-  return !selection.startsWith('monthly-')
+  return !selection.startsWith('monthly-') && selection !== 'manual-only'
 }
 
 export function frequencySelectionFromCadence(
   cadence: AutoOrganizeCadence,
   monthlyPreset: MonthlyPresetId,
 ): AutoOrganizeFrequencySelection {
+  if (cadence.autoOrganizeType === 'manual') {
+    return 'manual-only'
+  }
+
   if (cadence.autoOrganizeType === 'monthly') {
     return monthlyPreset === 'once' ? 'monthly-once' : 'monthly-twice'
   }
@@ -35,6 +52,20 @@ export function applyFrequencySelection(
   monthlyPreset: MonthlyPresetId,
   todayIso: string,
 ): { cadence: AutoOrganizeCadence; monthlyPreset: MonthlyPresetId } {
+  if (selection === 'manual-only') {
+    return {
+      cadence: {
+        ...prev,
+        autoOrganizeType: 'manual',
+        startDate: null,
+        intervalCount: null,
+        intervalUnit: null,
+        daysOfMonth: null,
+      },
+      monthlyPreset,
+    }
+  }
+
   if (selection === 'monthly-once') {
     return {
       cadence: { ...prev, autoOrganizeType: 'monthly' },
@@ -235,6 +266,10 @@ export function normalizeMonthlyCadence(
 }
 
 export function formatCadenceSummary(cadence: AutoOrganizeCadence): string {
+  if (cadence.autoOrganizeType === 'manual') {
+    return AUTO_ORGANIZE_MANUAL_CADENCE_SUMMARY
+  }
+
   if (cadence.autoOrganizeType === 'monthly') {
     const { preset, onceDay } = monthlyScheduleFromDays(cadence.daysOfMonth)
     if (preset === 'once') {
@@ -352,6 +387,8 @@ export function validateIntervalStartDate(
 
 /** Match SQL `auto_organize_is_due_on` using calendar dates only (no clock TZ drift). */
 function isDueOn(cadence: AutoOrganizeCadence, localDateIso: string): boolean {
+  if (cadence.autoOrganizeType === 'manual') return false
+
   const day = Number(localDateIso.split('-')[2])
 
   if (cadence.autoOrganizeType === 'monthly') {
@@ -386,6 +423,8 @@ export function computeNextRunOn(
   from: Date = new Date(),
   options?: { notBefore?: string },
 ): string | null {
+  if (cadence.autoOrganizeType === 'manual') return null
+
   const todayIso = localDateIsoInTimeZone(timeZone, from)
   const startIso = options?.notBefore ?? todayIso
   for (let offset = 0; offset < 366; offset += 1) {
@@ -403,14 +442,65 @@ export function formatNextRunDateLabel(isoDate: string): string {
   })
 }
 
+export function formatNextRunLabelForCadence(
+  cadence: AutoOrganizeCadence,
+  nextRunOn: string | null,
+): string {
+  if (cadence.autoOrganizeType === 'manual') {
+    return AUTO_ORGANIZE_MANUAL_NEXT_RUN_LABEL
+  }
+  if (!nextRunOn) return AUTO_ORGANIZE_NO_UPCOMING_RUN_LABEL
+  return `${AUTO_ORGANIZE_NEXT_RUN_LABEL} ${formatNextRunDateLabel(nextRunOn)}`
+}
+
+/** @deprecated use formatNextRunLabelForCadence */
 export function formatNextRunLabel(nextRunOn: string | null): string {
-  if (!nextRunOn) return 'No upcoming run'
-  return `Next run ${formatNextRunDateLabel(nextRunOn)}`
+  if (!nextRunOn) return AUTO_ORGANIZE_NO_UPCOMING_RUN_LABEL
+  return `${AUTO_ORGANIZE_NEXT_RUN_LABEL} ${formatNextRunDateLabel(nextRunOn)}`
 }
 
 export function formatLastRunLabel(lastRunOn: string | null): string | null {
   if (!lastRunOn) return null
   return `Last run ${formatNextRunDateLabel(lastRunOn)}`
+}
+
+export type AutoOrganizeLastRunFields = {
+  run_on: string
+  created_at: string
+}
+
+export function formatRunTimeInTimeZone(
+  isoTimestamp: string,
+  timeZone: string,
+): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(isoTimestamp))
+}
+
+/** Run-now confirm: last-run context (amber when the last run was today). */
+export function autoOrganizeRunNowLastRunContext(
+  lastRun: AutoOrganizeLastRunFields,
+  timeZone: string,
+  from: Date = new Date(),
+): { message: string; emphasize: boolean } {
+  const todayIso = localDateIsoInTimeZone(timeZone, from)
+  const timeLabel = formatRunTimeInTimeZone(lastRun.created_at, timeZone)
+  const emphasize = lastRun.run_on === todayIso
+
+  if (emphasize) {
+    return {
+      message: `${AUTO_ORGANIZE_RUN_NOW_LAST_RUN_TODAY_PREFIX} ${timeLabel}.`,
+      emphasize: true,
+    }
+  }
+
+  return {
+    message: `Last run ${formatNextRunDateLabel(lastRun.run_on)} at ${timeLabel}`,
+    emphasize: false,
+  }
 }
 
 function formatRunScheduleDayPhrase(day: number): string {
@@ -435,7 +525,7 @@ export function formatRunScheduleForDays(days: number[]): string {
 }
 
 function formatEditorNextRunSuffix(isoDate: string): string {
-  return `Next run ${formatNextRunDateLabel(isoDate)}`
+  return `${AUTO_ORGANIZE_NEXT_RUN_LABEL} ${formatNextRunDateLabel(isoDate)}`
 }
 
 /** Next scheduled run date for the editor footer (cadence is already in the form). */
@@ -448,6 +538,8 @@ export function formatEditorNextRunSummary(
     if (!cadence.daysOfMonth?.length) return null
   } else if (cadence.autoOrganizeType === 'interval') {
     if (!cadence.startDate) return null
+  } else if (cadence.autoOrganizeType === 'manual') {
+    return null
   } else {
     return null
   }
@@ -488,6 +580,8 @@ export function formatEditorSaveScheduleSummary(
     if (!cadence.daysOfMonth?.length) return null
   } else if (cadence.autoOrganizeType === 'interval') {
     if (!cadence.startDate) return null
+  } else if (cadence.autoOrganizeType === 'manual') {
+    return null
   } else {
     return null
   }

@@ -9,6 +9,8 @@ household buckets on calendar days the user chooses.
 
 **Status:** **Shipped (v1)** — migrations `00000000000048`–`00000000000050`, Buckets tab UI,
 pg_cron scheduler, History **Scheduled** label.  
+**Auto top-up / save-off:** **Shipped** — migration `00000000000058`, three `auto_organize_kind`
+values, kind chooser on Add.  
 **Related:** [CONTEXT.md](../CONTEXT.md), [docs/BRAND.md](./BRAND.md), `src/lib/brand.ts`.
 
 ---
@@ -42,12 +44,15 @@ different label for one manual move, not the feature name.
   user name.
 - Float → bucket rule alignment (all roles) — see [Money rules](#money-rules).
 - Family **IANA timezone**; **`auto_organize_run_hour`** default **3** (local).
+- **Auto top-up** (`top_up`): fill family-pool buckets to a target from Float each run.
+- **Auto save-off** (`save_off`): sweep each source bucket's excess above a keep amount into
+  another pool bucket or back to Float.
 
 ### Shipped with caveats
 
 - **Run now** confirm sheet: Current | Move | Will be grid; primary button **Run now**
-  (not amount in button label). Multiple **Run now** per local day allowed; amber warning
-  if already ran today. **Paused** blocks Run now until **Resume**.
+  (not amount in button label). Multiple **Run now** per local day allowed; last-run context
+  (amber when last run was today, neutral date/time otherwise). **Paused** blocks Run now until **Resume**.
 - MoveMoneyDialog: Set aside over Float with confirm sheet when crossing ≥ 0 → negative.
 
 ### Deferred (v1.1+)
@@ -67,9 +72,31 @@ different label for one manual move, not the feature name.
 - End-by-date — runs until paused or deleted (“when I cancel”).
 - “Configured by [name]” on cards (neutral copy is fine).
 
-Future: `owner_member_id` on `auto_organizes` (null = household), `auto_organize_kind`
-(`organize` | `send`) — **`send`** = scheduled Send to a kid via `send_money`. v1 rows
-are **`organize`** only (Float → buckets).
+Future: `owner_member_id` on `auto_organizes` (null = household), scheduled **Send to a kid**
+(`send_money` via a future kind). v1+ rows use **`auto_organize_kind`**: `organize` | `top_up` |
+`save_off`.
+
+---
+
+## Kinds (`auto_organize_kind`)
+
+| Kind | UI label | Line `amount` means | Money direction |
+| --- | --- | --- | --- |
+| `organize` | Auto-organize | Fixed add per run | Float → bucket |
+| `top_up` | Auto top-up | Fill-to target | Float → bucket (`max(0, target − balance)`) |
+| `save_off` | Auto save-off | Keep amount | bucket → pool bucket or Float (`max(0, balance − keep)`) |
+
+- **save_off destination:** `auto_organizes.destination_bucket_id` — a pool bucket, or **null**
+  to sweep back to Float.
+- **Computed runs:** top_up/save_off skip lines with zero move; still record an
+  `auto_organize_runs` row so the day is not re-run.
+- **Card totals:** organize shows exact **Total per run**; top_up/save_off show **Estimated this
+  run** (~) from current balances.
+- **Same-day order:** cron runs **save_off before organize/top_up** (then `created_at, id`) so
+  sweeps clear leftovers before refills.
+
+Kind is chosen on **Add** (chooser sheet) and **locked after create** — Edit changes amounts and
+schedule only.
 
 ---
 
@@ -122,6 +149,14 @@ use **Last day**. Legacy saved values of 29–31 normalize to last day on edit/s
 
 **Which days:** run on each matching **calendar day** every month. Twice-monthly
 fires **once per matching day** (separate run records on the 1st and 15th).
+
+### C. Manual only
+
+- **Manual only** — save bucket lines and amounts without a schedule; runs **only** via **Run now**
+- No `start_date`, interval, or monthly day fields; excluded from cron (`auto_organize_is_due_on` → false)
+- Card shows **Runs when you choose** instead of a next-run date
+- Default display name / transaction note when unnamed: **Manual only**
+- **No Pause / Resume** in the UI — not running it is enough; saving clears any stale `paused` flag
 
 ### Run hour
 
@@ -182,8 +217,11 @@ Do not introduce a second product term (`schedules`, `set_aside_*`) in schema or
 | Concept | UI (when shown) | Postgres / RPC / TS |
 | --- | --- | --- |
 | Feature section | **Auto-organize** | — |
-| Section guardrail | *You choose when and how much — money moves into buckets automatically.* | `AUTO_ORGANIZE_GUARDRAIL` |
-| Empty state | *Organize your money into buckets on the days you choose.* | `AUTO_ORGANIZE_EMPTY_BODY` |
+| Section guardrail | *You choose when and how much — on a schedule or when you tap Run now.* | `AUTO_ORGANIZE_GUARDRAIL` |
+| Empty state | *Set up moves, top-ups, or save-offs — on a schedule or when you choose.* | `AUTO_ORGANIZE_EMPTY_BODY` |
+| Manual-only frequency | **Manual only** | `auto_organize_type = 'manual'` |
+| Manual card next-run line | **Runs when you choose** | `AUTO_ORGANIZE_MANUAL_NEXT_RUN_LABEL` |
+| Manual cadence / default name | **Manual only** | `AUTO_ORGANIZE_MANUAL_CADENCE_SUMMARY` |
 | Admin add CTA | **Add** | `AUTO_ORGANIZE_ADD_LABEL` |
 | One configured auto-organize | auto-organize (card/editor) | **`auto_organizes`** row |
 | Bucket + amount rows | lines | **`auto_organize_lines`** |
@@ -193,7 +231,8 @@ Do not introduce a second product term (`schedules`, `set_aside_*`) in schema or
 | Execute one | Run now / automatic run | **`run_auto_organize(auto_organize_id, …)`** |
 | Cron entry point | — | **`run_due_auto_organizes()`** |
 | Cron job name | — | **`run-due-auto-organizes`** |
-| Future kind | — | **`auto_organize_kind`**: `organize` \| `send` (v1 = organize only) |
+| Future kind | — | **`auto_organize_kind`**: `organize` \| `top_up` \| `save_off` |
+| save-off destination | — | **`destination_bucket_id`** (null = Float) |
 | History actor (automatic) | **Scheduled** | `HISTORY_SCHEDULED_MOVE_LABEL` |
 | Manual move dialog | **Set aside** / **Use from bucket** / **Move money** | unchanged |
 
@@ -211,7 +250,7 @@ Manual one-off Float → bucket stays **`Set aside`** in the move dialog only �
 ## Data model
 
 Migrations `00000000000048_auto_organize.sql`, `00000000000049_auto_organize_cron.sql`,
-`00000000000050_auto_organize_manual_runs_per_day.sql`.
+`00000000000050_auto_organize_manual_runs_per_day.sql`, `00000000000058_auto_organize_kinds.sql`.
 
 ```text
 families
@@ -223,6 +262,8 @@ auto_organizes
   family_id uuid not null
   name text                    -- optional label ("Payday", etc.)
   paused boolean not null default false
+  auto_organize_kind text not null default 'organize'  -- organize | top_up | save_off
+  destination_bucket_id uuid   -- save_off only; null = sweep to Float
   auto_organize_type text not null  -- 'interval' | 'monthly'
   start_date date              -- interval auto-organizes
   interval_count int           -- 1, 2, 3, 4, 6
@@ -236,7 +277,7 @@ auto_organize_lines
   id uuid pk
   auto_organize_id uuid not null references auto_organizes on delete cascade
   bucket_id uuid not null references buckets
-  amount numeric(14,2) not null
+  amount numeric(14,2) not null  -- organize/top_up: fixed or target; save_off: keep (>= 0)
   sort_order int not null
 
 auto_organize_runs
@@ -257,7 +298,7 @@ transactions
 Indexes / constraints:
 
 - **Scheduled:** partial unique on `(auto_organize_id, run_on)` where `trigger = 'scheduled'` — at most one automatic run per local day.
-- **Manual (Run now):** no daily cap — multiple runs on the same local day are allowed (confirm sheet warns if one already ran today).
+- **Manual (Run now):** no daily cap — multiple runs on the same local day are allowed (confirm sheet shows last-run context when the rule has run before).
 - `(family_id)` on `auto_organizes` and `auto_organize_runs` for RLS.
 
 Optional later: `owner_member_id uuid null` on `auto_organizes` for kid scope.
@@ -270,12 +311,12 @@ Optional later: `owner_member_id uuid null` on `auto_organizes` for kid scope.
 
 `SECURITY DEFINER`. Callable by service role (scheduled) and admin (manual only).
 
-1. Lock row; reject if **paused** (including manual — must unpause first).
+1. Lock row; reject if **paused** (scheduled rules only — manual-only is never paused in UI and ignores stale `paused` on run).
 2. Validate lines: buckets exist, family-pool scope, same `family_id`.
 3. If any line invalid → record failed run or reject without partial moves.
 4. Insert `auto_organize_runs` row.
-5. For each line: `move_money(null, bucket_id, amount, note)` with auto-organize name note;
-   set `auto_organize_run_id` on each transaction.
+5. For each line (by kind): `_auto_organize_apply_line` (organize/top_up) or
+   `_auto_organize_sweep_line` (save_off); set `auto_organize_run_id` on each transaction.
 6. Single transaction — all lines or none.
 
 Manual: require `auth_role() = 'admin'` and set `triggered_by_member_id`.
@@ -351,24 +392,25 @@ when paused. No Edit / Pause / Run now.
 
 ### Admin
 
-Same cards + section **Add** CTA, **Edit**, **Pause / Resume**, **Run now** (disabled
+Same cards + section **Add** CTA, **Edit**, **Pause / Resume** (scheduled rules only), **Run now** (disabled
 when paused, with status copy explaining why).
 
 ### Auto-organize editor (Sheet)
 
 1. Name (optional)
 2. Lines: bucket + amount; **running total** in sticky footer ([Plan total](#plan-total-required))
-3. Frequency: flat list (**Every 2 weeks**, **Every week**, **Once a month**,
+3. Frequency: flat list (**Manual only**, **Every 2 weeks**, **Every week**, **Once a month**,
    **Twice a month**, **Every 2 / 3 / 4 / 6 months**) plus branching fields per
-   [Auto-organize model](#auto-organize-model)
+   [Auto-organize model](#auto-organize-model). **Manual only** hides schedule sub-fields and the editor next-run preview.
 4. Family timezone (first auto-organize: default from browser; stored on `families`)
 5. Save (no separate review step in v1)
 
 ### Run now
 
 Confirm sheet: bucket lines + **total per run**, Float row in Current | Move | Will be
-grid, consequential intro copy. Primary **Run now** / **Running…**. Amber warning if
-already ran today. Paused auto-organizes cannot Run now until **Resume**.
+grid, consequential intro copy. Primary **Run now** / **Running…**. Last-run banner when
+the rule has run before (amber + time when today; neutral date/time for older runs). Paused
+auto-organizes cannot Run now until **Resume**.
 
 ### Bucket polish (*deferred*)
 
@@ -391,8 +433,9 @@ choose**).
 | Run now | `Bucket move · by {name} · {time}` |
 | Ordinary manual | unchanged |
 
-Use `auto_organize_run_id` + run `trigger` to choose label. Optional row icon for
-automatic moves. Auto-note on tx optional (auto-organize name).
+Use `auto_organize_run_id` + run `trigger` to choose label. Transaction **note** shows
+**{kind} · {rule name}** (e.g. `Auto top-up · Month-start refill`) for auto-organize runs.
+Manual bucket moves without a stored note show **Set aside** / **Use from bucket** / **Move money**.
 
 ---
 
@@ -402,7 +445,7 @@ automatic moves. Auto-note on tx optional (auto-organize name).
 | --- | --- |
 | Bucket deleted | Sheet explains auto-organize block; **Remove and delete** clears lines (and empty auto-organizes) then deletes bucket |
 | Bucket renamed | Auto-organize uses `bucket_id`; UI shows current name |
-| Auto-organize paused | No automatic or manual run until resumed; Shared sees **Paused** badge + status line |
+| Auto-organize paused | Scheduled rules: no automatic or manual run until resumed; Shared sees **Paused** badge + status line. Manual-only: pause hidden; not applicable. |
 | Cron / manual same day | Any run for `(auto_organize_id, run_on)` skips cron; multiple **manual** runs same day OK |
 | Scheduled idempotency | Partial unique on `(auto_organize_id, run_on)` where `trigger = 'scheduled'` |
 | Insufficient Float on run | **Allow**; Float goes red (all roles) |
@@ -413,8 +456,10 @@ automatic moves. Auto-note on tx optional (auto-organize name).
 
 | Layer | Coverage |
 | --- | --- |
-| `tests/db/auto_organize.test.ts` | Happy manual run, cron idempotency, RLS read (member/child), member write denial, manual run denied for member/child, scheduled trigger denied for authenticated users, invalid bucket line, multiple manual runs/day, one scheduled run/day, manual run blocks cron same day |
-| `src/lib/autoOrganizeCadence.test.ts` | Cadence matching, next-run labels, editor schedule summaries |
+| `tests/db/auto_organize.test.ts` | Happy manual run, cron idempotency, RLS read (member/child), member write denial, manual run denied for member/child, scheduled trigger denied for authenticated users, invalid bucket line, multiple manual runs/day, one scheduled run/day, manual run blocks cron same day, **top_up fill-to-target** (+ history note), **save_off to bucket and Float** (+ history note), **same-day sweep-before-fill order**, manual-only cron skip, zero-move run when all lines at target |
+| `src/lib/autoOrganize.test.ts` | Per-line move math, totals, active lines, save-off preview consistency |
+| `src/lib/autoOrganizeCadence.test.ts` | Cadence matching, next-run labels, editor schedule summaries, run-now last-run context |
+| `src/lib/historyTransactionNote.test.ts` | History note enrichment and manual-move defaults |
 | `tests/db/move_money.test.ts` | Float → bucket over current Float (admin + child) |
 | Seed | `auto-organize` scenario — *deferred* |
 | Manual | Admin CRUD, pause/resume, Run now confirm; Shared read-only; History **Scheduled** |

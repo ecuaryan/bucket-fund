@@ -68,6 +68,7 @@ import {
 } from '@/lib/historyLabels'
 import { HistoryEntityTransfer } from '@/features/history/HistoryEntityTransfer'
 import { historyBalanceSides } from '@/lib/historyBalanceSides'
+import { historyTransactionNoteDisplay } from '@/lib/historyTransactionNote'
 
 type TxRow = HistoryDisplayRow
 
@@ -663,7 +664,16 @@ function TxItem({
     }
   }
 
-  const noteQuote = row.note ? (
+  const displayedNote = historyTransactionNoteDisplay({
+    type: row.type,
+    note: row.note,
+    from_bucket_id: row.from_bucket_id,
+    to_bucket_id: row.to_bucket_id,
+    auto_organize_run_id: row.auto_organize_run_id,
+    auto_organize_kind: row.auto_organize_kind,
+  })
+
+  const noteQuote = displayedNote ? (
     <button
       type="button"
       onClick={() => setNoteExpanded((v) => !v)}
@@ -674,7 +684,7 @@ function TxItem({
         (noteExpanded ? 'whitespace-pre-wrap break-words' : 'truncate')
       }
     >
-      “{row.note}”
+      “{displayedNote}”
     </button>
   ) : null
 
@@ -686,7 +696,7 @@ function TxItem({
           onClick={openNoteEditor}
           className="text-xs text-zinc-500 hover:text-zinc-300"
         >
-          {row.note ? HISTORY_NOTE_EDIT : HISTORY_NOTE_ADD}
+          {row.note || displayedNote ? HISTORY_NOTE_EDIT : HISTORY_NOTE_ADD}
         </button>
       </div>
       <p className="shrink-0 text-xs text-zinc-500">{subtitle}</p>

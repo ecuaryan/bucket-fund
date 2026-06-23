@@ -471,8 +471,14 @@ export function bucketsDeleteBucketConfirm(name: string): string {
 export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO =
   'This bucket is still included in a scheduled rule that moves money here.'
 
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO_MANUAL =
+  'This bucket is still included in a manual-only rule that moves money here.'
+
 export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_ACTION_HINT =
   'This will remove the bucket from the following and delete it. Schedules with no buckets left are deleted too.'
+
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_ACTION_HINT_MANUAL =
+  'This will remove the bucket from the following rules and delete it. Rules with no buckets left are deleted too.'
 
 export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_USED_IN_LABEL =
   'Bucket is included in:'
@@ -482,10 +488,25 @@ export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_CONFIRM_LABEL = 'Remove and del
 export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK =
   'Deleting will still remove this bucket from any schedules it appears on.'
 
-/** @deprecated Use BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO */
-export function bucketsDeleteBucketAutoOrganizeIntro(bucketName: string): string {
-  void bucketName
-  return BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO
+export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK_MANUAL =
+  'Deleting will still remove this bucket from any auto-organize rules it appears on.'
+
+export function bucketsDeleteBucketAutoOrganizeIntro(allManualOnly: boolean): string {
+  return allManualOnly
+    ? BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO_MANUAL
+    : BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_INTRO
+}
+
+export function bucketsDeleteBucketAutoOrganizeActionHint(allManualOnly: boolean): string {
+  return allManualOnly
+    ? BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_ACTION_HINT_MANUAL
+    : BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_ACTION_HINT
+}
+
+export function bucketsDeleteBucketAutoOrganizeLoadFallback(allManualOnly: boolean): string {
+  return allManualOnly
+    ? BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK_MANUAL
+    : BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK
 }
 
 /** @deprecated Use BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_CONFIRM_LABEL */
@@ -595,16 +616,197 @@ export function bucketsFloatStatusGuide(isChild: boolean): readonly FloatStatusG
 /** Buckets tab section header. Schema: `auto_organizes`. */
 export const AUTO_ORGANIZE_SECTION_TITLE = 'Auto-organize'
 
+export const AUTO_ORGANIZE_LOAD_ERROR_TITLE = 'Could not load auto-organize'
+
+export const AUTO_ORGANIZE_LOADING_ARIA_LABEL = 'Loading auto-organize'
+
 /** One line under the section header (admin + Shared). */
 export const AUTO_ORGANIZE_GUARDRAIL =
-  'You choose when and how much — money moves into buckets automatically.'
+  'You choose when and how much — on a schedule or when you tap Run now.'
 
 /** Admin CTA in the section header (empty state uses the same label). */
 export const AUTO_ORGANIZE_ADD_LABEL = 'Add'
 
 /** Empty state when no auto-organizes exist (admin). */
 export const AUTO_ORGANIZE_EMPTY_BODY =
-  'Organize your money into buckets on the days you choose.'
+  'Set up moves, top-ups, or save-offs — on a schedule or when you choose.'
+
+export type AutoOrganizeKind = 'organize' | 'top_up' | 'save_off'
+
+export const AUTO_ORGANIZE_KIND_ORGANIZE_LABEL = 'Auto-organize'
+
+export const AUTO_ORGANIZE_KIND_TOPUP_LABEL = 'Auto top-up'
+
+export const AUTO_ORGANIZE_KIND_SAVEOFF_LABEL = 'Auto save-off'
+
+export const AUTO_ORGANIZE_KIND_ORGANIZE_DESC =
+  'Set aside into buckets on a schedule or when you run it — think rent, groceries, or whatever you fund.'
+
+export const AUTO_ORGANIZE_KIND_TOPUP_DESC =
+  'Top up buckets to your targets on a schedule or when you run it — think month start or payday.'
+
+export const AUTO_ORGANIZE_KIND_SAVEOFF_DESC =
+  "Move what's left wherever you want on a schedule or when you run it — think month end or after payday."
+
+export const AUTO_ORGANIZE_KIND_CHOOSER_TITLE = 'What would you like to add?'
+
+export const AUTO_ORGANIZE_ORGANIZE_SUBTITLE =
+  'Set aside into buckets on a schedule.'
+
+export const AUTO_ORGANIZE_ORGANIZE_SUBTITLE_MANUAL =
+  'Set aside into buckets when you run it.'
+
+export const AUTO_ORGANIZE_TOPUP_SUBTITLE =
+  'Brings each bucket back to your target amount.'
+
+export const AUTO_ORGANIZE_TOPUP_SUBTITLE_MANUAL =
+  'Brings each bucket back to your target when you run it.'
+
+export const AUTO_ORGANIZE_SAVEOFF_SUBTITLE =
+  'Leaves what you choose in each bucket and moves the rest on a schedule.'
+
+export const AUTO_ORGANIZE_SAVEOFF_SUBTITLE_MANUAL =
+  'Leaves what you choose and moves the rest when you run it.'
+
+export const AUTO_ORGANIZE_TOPUP_FILL_TO_LABEL = 'Fill to'
+
+export const AUTO_ORGANIZE_SAVEOFF_SOURCES_LABEL = 'From these buckets'
+
+export const AUTO_ORGANIZE_SAVEOFF_KEEP_LABEL = 'Leave at least'
+
+export const AUTO_ORGANIZE_SAVEOFF_SWEEP_ALL_LABEL = 'Sweep all'
+
+export const AUTO_ORGANIZE_SAVEOFF_DESTINATION_LABEL = 'Send the rest to'
+
+export const AUTO_ORGANIZE_SAVEOFF_DEST_FLOAT_LABEL = FLOAT_LABEL
+
+export const AUTO_ORGANIZE_ESTIMATED_TOTAL_LABEL = 'If it ran now'
+
+export const AUTO_ORGANIZE_NOTHING_TO_MOVE_NOW_LABEL = 'Nothing to move now'
+
+/** Top-up fill met, or save-off balance at/below keep amount. */
+export const AUTO_ORGANIZE_AT_TARGET_LABEL = 'At target'
+
+/** @deprecated use AUTO_ORGANIZE_AT_TARGET_LABEL */
+export const AUTO_ORGANIZE_TOPUP_AT_TARGET_LABEL = AUTO_ORGANIZE_AT_TARGET_LABEL
+
+export const AUTO_ORGANIZE_TOPUP_DIFFERENCE_HINT =
+  "Adds only what's needed to reach your target."
+
+export const AUTO_ORGANIZE_SAVEOFF_BUCKETS_HINT =
+  'Leave blank to skip a bucket. Enter $0 to sweep its full balance each run.'
+
+export const AUTO_ORGANIZE_SAVEOFF_EXPLAINER_HINT =
+  'Money above what you leave moves to your destination below. $0 means sweep everything.'
+
+export const AUTO_ORGANIZE_SAVEOFF_KEEP_ZERO_ROW_HINT =
+  'Sweeps the full balance each run.'
+
+export const AUTO_ORGANIZE_SAVEOFF_DESTINATION_HINT =
+  'Your Float or another bucket — wherever the extra should go.'
+
+export const AUTO_ORGANIZE_RUN_NOW_NOTHING_TO_MOVE = AUTO_ORGANIZE_NOTHING_TO_MOVE_NOW_LABEL
+
+export const AUTO_ORGANIZE_SWEEP_THEN_FILL_TOPUP_NOTE =
+  'This bucket is also in a save-off rule. Excess is swept before top-ups on the same day.'
+
+export const AUTO_ORGANIZE_SWEEP_THEN_FILL_SAVEOFF_NOTE =
+  'This bucket is also in a top-up or auto-organize rule. Save-offs run before refills on the same day.'
+
+/** @deprecated use AUTO_ORGANIZE_SWEEP_THEN_FILL_TOPUP_NOTE or AUTO_ORGANIZE_SWEEP_THEN_FILL_SAVEOFF_NOTE */
+export const AUTO_ORGANIZE_SWEEP_THEN_FILL_NOTE =
+  AUTO_ORGANIZE_SWEEP_THEN_FILL_TOPUP_NOTE
+
+export function autoOrganizeSaveOffKeepRuleShort(
+  amount: number,
+  formatMoney: (value: number) => string,
+): string {
+  if (amount === 0) return AUTO_ORGANIZE_SAVEOFF_SWEEP_ALL_LABEL
+  return `Keep ${formatMoney(amount)}`
+}
+
+export function autoOrganizeSaveOffMovesNowLabel(
+  move: number,
+  formatMoney: (value: number) => string,
+): string {
+  return `Moves ${formatMoney(move)}`
+}
+
+export function autoOrganizeTopUpAddsNowLabel(
+  move: number,
+  formatMoney: (value: number) => string,
+): string {
+  return `Adds ${formatMoney(move)}`
+}
+
+export function autoOrganizeBucketsSectionLabel(kind: AutoOrganizeKind): string {
+  if (kind === 'save_off') return AUTO_ORGANIZE_SAVEOFF_SOURCES_LABEL
+  return AUTO_ORGANIZE_BUCKETS_LABEL
+}
+
+export function autoOrganizeKindLabel(kind: AutoOrganizeKind): string {
+  switch (kind) {
+    case 'top_up':
+      return AUTO_ORGANIZE_KIND_TOPUP_LABEL
+    case 'save_off':
+      return AUTO_ORGANIZE_KIND_SAVEOFF_LABEL
+    default:
+      return AUTO_ORGANIZE_KIND_ORGANIZE_LABEL
+  }
+}
+
+/** History transaction note for an auto-organize run (kind + rule name). */
+export function autoOrganizeHistoryNote(
+  kind: AutoOrganizeKind,
+  displayName: string,
+): string {
+  return `${autoOrganizeKindLabel(kind)} · ${displayName}`
+}
+
+export function autoOrganizeKindSubtitle(
+  kind: AutoOrganizeKind,
+  manual = false,
+): string {
+  if (manual) {
+    switch (kind) {
+      case 'top_up':
+        return AUTO_ORGANIZE_TOPUP_SUBTITLE_MANUAL
+      case 'save_off':
+        return AUTO_ORGANIZE_SAVEOFF_SUBTITLE_MANUAL
+      default:
+        return AUTO_ORGANIZE_ORGANIZE_SUBTITLE_MANUAL
+    }
+  }
+  switch (kind) {
+    case 'top_up':
+      return AUTO_ORGANIZE_TOPUP_SUBTITLE
+    case 'save_off':
+      return AUTO_ORGANIZE_SAVEOFF_SUBTITLE
+    default:
+      return AUTO_ORGANIZE_ORGANIZE_SUBTITLE
+  }
+}
+
+export function autoOrganizeSaveOffDestinationLabel(
+  destinationBucketName: string | null,
+): string {
+  if (destinationBucketName) return destinationBucketName
+  return AUTO_ORGANIZE_SAVEOFF_DEST_FLOAT_LABEL
+}
+
+export function autoOrganizeRunNowConfirmBodyForKind(
+  kind: AutoOrganizeKind,
+  totalLabel: string,
+): string {
+  switch (kind) {
+    case 'top_up':
+      return `This will top up your buckets by ${totalLabel} now.`
+    case 'save_off':
+      return `This will move ${totalLabel} from your buckets now.`
+    default:
+      return `This will move ${totalLabel} into your buckets now.`
+  }
+}
 
 /** History subtitle label for moves from an automatic run (not a member name). */
 export const HISTORY_SCHEDULED_MOVE_LABEL = 'Scheduled'
@@ -622,8 +824,11 @@ export const AUTO_ORGANIZE_RUN_NOW_LABEL = 'Run now'
 export const AUTO_ORGANIZE_RUN_NOW_SUBMITTING_LABEL = 'Running…'
 
 /** Run-now confirm when this auto-organize already ran today (any trigger). */
+/** @deprecated use autoOrganizeRunNowLastRunContext */
 export const AUTO_ORGANIZE_RUN_NOW_ALREADY_RAN_WARNING =
   'This already ran today. Running again will move the same amounts again.'
+
+export const AUTO_ORGANIZE_RUN_NOW_LAST_RUN_TODAY_PREFIX = 'Last run today at'
 
 export const AUTO_ORGANIZE_RUN_NOW_CURRENT_LABEL = 'Current'
 
@@ -634,6 +839,16 @@ export const AUTO_ORGANIZE_RUN_NOW_AFTER_LABEL = 'Will be'
 export function autoOrganizeViewBucketsLabel(count: number): string {
   if (count === 1) return 'View 1 bucket'
   return `View ${count} buckets`
+}
+
+export function autoOrganizeViewLinesLabel(
+  kind: AutoOrganizeKind,
+  count: number,
+): string {
+  if (kind === 'save_off') {
+    return count === 1 ? 'View 1 source bucket' : `View ${count} source buckets`
+  }
+  return autoOrganizeViewBucketsLabel(count)
 }
 
 export const AUTO_ORGANIZE_PAUSE_LABEL = 'Pause'
@@ -647,6 +862,10 @@ export const AUTO_ORGANIZE_PAUSED_STATUS =
 /** List card when paused; shared members cannot resume. */
 export const AUTO_ORGANIZE_PAUSED_STATUS_SHARED = 'Automatic runs are off.'
 
+export function autoOrganizePausedStatus(shared: boolean): string {
+  return shared ? AUTO_ORGANIZE_PAUSED_STATUS_SHARED : AUTO_ORGANIZE_PAUSED_STATUS
+}
+
 export const AUTO_ORGANIZE_RESUME_LABEL = 'Resume'
 
 export const AUTO_ORGANIZE_EDIT_LABEL = 'Edit'
@@ -659,6 +878,15 @@ export function autoOrganizeDeleteSheetTitle(displayName: string): string {
 
 export const AUTO_ORGANIZE_DELETE_SHEET_BODY =
   'This stops future auto-organize runs. Past moves stay in History.'
+
+export const AUTO_ORGANIZE_DELETE_SHEET_BODY_MANUAL =
+  'This removes the rule. Past moves stay in History.'
+
+export function autoOrganizeDeleteSheetBody(isManual: boolean): string {
+  return isManual
+    ? AUTO_ORGANIZE_DELETE_SHEET_BODY_MANUAL
+    : AUTO_ORGANIZE_DELETE_SHEET_BODY
+}
 
 export const AUTO_ORGANIZE_DELETED_TOAST = 'Deleted.'
 
@@ -675,7 +903,31 @@ export const AUTO_ORGANIZE_ADD_REQUIRES_BUCKETS_HINT =
   'Create a shared bucket first.'
 
 export const AUTO_ORGANIZE_NAME_HINT =
-  'Leave blank to use the schedule (e.g. Every 2 weeks) as the name.'
+  'Leave blank to use Manual only or the frequency summary as the name.'
+
+export const AUTO_ORGANIZE_FREQUENCY_MANUAL_LABEL = 'Manual only'
+
+export const AUTO_ORGANIZE_MANUAL_CADENCE_SUMMARY = 'Manual only'
+
+export const AUTO_ORGANIZE_MANUAL_NEXT_RUN_LABEL = 'Runs when you choose'
+
+export const AUTO_ORGANIZE_MANUAL_EDITOR_HINT =
+  'Only runs when you tap Run now on the card.'
+
+export const AUTO_ORGANIZE_FREQUENCY_LABEL = 'Frequency'
+
+export const AUTO_ORGANIZE_NO_UPCOMING_RUN_LABEL = 'No upcoming run'
+
+export function autoOrganizeNamePlaceholder(kind: AutoOrganizeKind): string {
+  switch (kind) {
+    case 'top_up':
+      return 'Month-start refill'
+    case 'save_off':
+      return 'Month-end sweep'
+    default:
+      return 'Payday'
+  }
+}
 
 export const AUTO_ORGANIZE_BUCKETS_LABEL = 'Buckets'
 
@@ -686,6 +938,7 @@ export const AUTO_ORGANIZE_NO_BUCKETS_ERROR =
   'Enter an amount for at least one bucket.'
 
 export const AUTO_ORGANIZE_FREQUENCY_OPTIONS = [
+  { value: 'manual-only', label: AUTO_ORGANIZE_FREQUENCY_MANUAL_LABEL },
   { value: '1-week', label: 'Every week' },
   { value: '2-week', label: 'Every 2 weeks' },
   { value: 'monthly-once', label: 'Once a month' },
@@ -716,6 +969,9 @@ export const AUTO_ORGANIZE_TIMEZONE_LABEL = 'Timezone'
 
 export const AUTO_ORGANIZE_TIMEZONE_HINT =
   'Scheduled runs happen around 3 AM in this timezone.'
+
+export const AUTO_ORGANIZE_TIMEZONE_HINT_MANUAL =
+  "Run now uses today's date in this timezone."
 
 export const AUTO_ORGANIZE_START_DATE_TODAY_ERROR =
   'Start date can’t be today. Pick a later date, or save and use Run now on the card.'
@@ -752,7 +1008,7 @@ export function autoOrganizeRunNowConfirmTitle(name: string): string {
 }
 
 export function autoOrganizeRunNowConfirmBody(totalLabel: string): string {
-  return `This will move ${totalLabel} from ${FLOAT_LABEL} into your buckets now.`
+  return `This will move ${totalLabel} into your buckets now.`
 }
 
 export const BUCKETS_LINK_BANK_TITLE = 'Link a bank account'

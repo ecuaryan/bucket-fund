@@ -22,4 +22,15 @@ describe('familyTimezones', () => {
   it('prefers stored timezone when valid', () => {
     expect(resolveFamilyTimezone('America/Denver')).toBe('America/Denver')
   })
+
+  it('treats schema-default UTC as unset when requested', () => {
+    const browser = Intl.DateTimeFormat().resolvedOptions().timeZone
+    expect(
+      resolveFamilyTimezone('UTC', { treatUtcAsUnset: true }),
+    ).toBe(browser && isValidIanaTimezone(browser) ? browser : 'America/New_York')
+  })
+
+  it('keeps UTC when household has already configured schedules', () => {
+    expect(resolveFamilyTimezone('UTC', { treatUtcAsUnset: false })).toBe('UTC')
+  })
 })

@@ -57,8 +57,18 @@ export function familyTimezoneSelectOptions(
 }
 
 /** Resolve editor default: stored household TZ, else browser, else Eastern. */
-export function resolveFamilyTimezone(stored: string | null | undefined): string {
-  if (stored && isValidIanaTimezone(stored)) return stored
+export function resolveFamilyTimezone(
+  stored: string | null | undefined,
+  options?: { treatUtcAsUnset?: boolean },
+): string {
+  const treatUtcAsUnset = options?.treatUtcAsUnset ?? false
+  if (
+    stored &&
+    isValidIanaTimezone(stored) &&
+    !(treatUtcAsUnset && stored === 'UTC')
+  ) {
+    return stored
+  }
   try {
     const browser = Intl.DateTimeFormat().resolvedOptions().timeZone
     if (browser && isValidIanaTimezone(browser)) return browser
