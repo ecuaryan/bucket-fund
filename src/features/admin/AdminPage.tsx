@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { LoadErrorPanel } from '@/components/ui/LoadErrorPanel'
 import { formatLoadErrorMessage, withAuthLockRetry } from '@/lib/authLockError'
 import { supabase } from '@/lib/supabase'
@@ -15,6 +16,7 @@ import {
   ADMIN_MONEY_SOURCES_INTRO,
   ADMIN_MANUAL_GROUP_TITLE,
   ADMIN_MONEY_SOURCES_SECTION_TITLE,
+  ADMIN_PAGE_TABS_ARIA_LABEL,
   ADMIN_LINK_BANK_CONFIRM_ACTION,
   ADMIN_LINK_BANK_CONFIRM_EFFECTS,
   ADMIN_LINK_BANK_CONFIRM_SHEET_INTRO,
@@ -58,6 +60,13 @@ import { Sheet } from '@/components/ui/Sheet'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import { LoadingStatus } from '@/components/ui/LoadingStatus'
+import { SegmentedTabs } from '@/components/ui/SegmentedTabs'
+import {
+  ADMIN_PAGE_TAB_OPTIONS,
+  applyAdminPageTabToSearchParams,
+  parseAdminPageTab,
+  type AdminPageTab,
+} from '@/lib/adminPageTabs'
 import type { Database } from '@/types/database'
 
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -122,6 +131,30 @@ export default function AdminPage() {
   const [unlinkTarget, setUnlinkTarget] = useState<InstitutionGroup | null>(null)
 
   const isAdmin = member?.role === 'admin'
+
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = parseAdminPageTab(searchParams.get('tab'))
+  const [householdPanelMounted, setHouseholdPanelMounted] = useState(
+    () => parseAdminPageTab(searchParams.get('tab')) === 'household',
+  )
+  const [accountPanelMounted, setAccountPanelMounted] = useState(
+    () => parseAdminPageTab(searchParams.get('tab')) === 'account',
+  )
+
+  useEffect(() => {
+    if (activeTab === 'household') setHouseholdPanelMounted(true)
+    if (activeTab === 'account') setAccountPanelMounted(true)
+  }, [activeTab])
+
+  const onAdminPageTabChange = useCallback(
+    (tab: AdminPageTab) => {
+      setSearchParams(
+        (prev) => applyAdminPageTabToSearchParams(prev, tab),
+        { replace: true },
+      )
+    },
+    [setSearchParams],
+  )
 
   function toggleGroupExpanded(groupKey: string) {
     setExpandedGroupKeys((prev) => {
@@ -392,6 +425,19 @@ export default function AdminPage() {
         </div>
       </header>
 
+      <SegmentedTabs
+        value={activeTab}
+        options={ADMIN_PAGE_TAB_OPTIONS}
+        onChange={onAdminPageTabChange}
+        ariaLabel={ADMIN_PAGE_TABS_ARIA_LABEL}
+      />
+
+      <div
+        role="tabpanel"
+        id="segmented-panel-money-sources"
+        aria-labelledby="segmented-tab-money-sources"
+        hidden={activeTab !== 'money-sources'}
+      >
       <BusyOverlay
         busy={
           manualDialog === null &&
@@ -412,7 +458,7 @@ export default function AdminPage() {
       <section aria-label="Money sources">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-base font-semibold">
+            <h2 className="sr-only text-base font-semibold">
               {ADMIN_MONEY_SOURCES_SECTION_TITLE}
             </h2>
             <p className="mt-1 text-xs text-zinc-400">
@@ -708,6 +754,30 @@ export default function AdminPage() {
         )}
       </section>
       </BusyOverlay>
+      </div>
+
+      <div
+        role="tabpanel"
+        id="segmented-panel-household"
+        aria-labelledby="segmented-tab-household"
+        hidden={activeTab !== 'household'}
+      >
+        {householdPanelMounted ? (
+          <div className="space-y-6">
+            <MembersSection onRosterChanged={loadMembers} />
+            <FamilyJoinSection />
+          </div>
+        ) : null}
+      </div>
+
+      <div
+        role="tabpanel"
+        id="segmented-panel-account"
+        aria-labelledby="segmented-tab-account"
+        hidden={activeTab !== 'account'}
+      >
+        {accountPanelMounted ? <AdminAccountSection /> : null}
+      </div>
 
       <ManualSourceDialog
         open={manualDialog !== null}
@@ -912,11 +982,6 @@ export default function AdminPage() {
           </div>
         </Sheet>
       ) : null}
-
-      <MembersSection onRosterChanged={loadMembers} />
-      <FamilyJoinSection />
-
-      <AdminAccountSection />
 
       <AppVersionFooter />
     </div>
