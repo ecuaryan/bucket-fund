@@ -30,7 +30,8 @@ fits your life.
 
 ## Screenshots
 
-Installable PWA with phone-sized UI — Buckets, History, and Send.
+Installable PWA with phone-sized UI — Buckets, History, and Send. Regenerate
+after significant UI changes ([docs/MAINTENANCE.md § PWA assets](./docs/MAINTENANCE.md#regenerating-readme--pwa-assets)).
 
 <p align="center">
   <img src="public/screenshots/buckets.png" alt="Buckets tab — Float, emoji buckets, and Auto-organize tabs" width="49%" />

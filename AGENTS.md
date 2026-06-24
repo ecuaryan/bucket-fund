@@ -64,6 +64,10 @@ Entry point for AI coding agents (and humans) working in this repo.
 - **Destructive / consequential UI:** confirm with `Sheet` + `brand.ts` copy when
   the action has real impact (money, access, hard-to-undo state)—not for trivial
   reversible edits. Never `window.confirm` (breaks in Cursor’s browser).
+- **Portfolio / PWA marketing assets:** significant UI/UX changes to Buckets,
+  History, Send, Admin, or the shell require refreshing install screenshots
+  (`npm run pwa:screenshots`) and the README demo GIF (`npm run pwa:gifs`) in
+  the same PR when possible. See [docs/MAINTENANCE.md § Regenerating README / PWA assets](./docs/MAINTENANCE.md#regenerating-readme--pwa-assets).
 - **Ephemeral feedback:** use `toast` from `@/lib/toast` for action success/errors
   far from the user’s focus (toast sits below the top safe area app-wide); keep form
   validation inline. Short copy auto-dismisses after 7s; errors and long copy need
