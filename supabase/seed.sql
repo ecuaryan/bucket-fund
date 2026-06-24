@@ -2,4 +2,4 @@
 -- After reset:  npm run db:seed              — list scenarios
 --               npm run db:reset:seed -- all   — reset + seed every scenario
 --               npm run db:reset:seed -- solo — reset + seed one scenario
--- Sign in as <scenario>@bmm.dev / asdfasdf. See README § Local database scenarios.
+-- Sign in as <scenario>@bmm.dev / asdfasdf. See docs/MAINTENANCE.md § Local database scenarios.

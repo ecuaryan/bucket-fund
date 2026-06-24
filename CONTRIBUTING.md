@@ -12,7 +12,7 @@ How we ship changes safely: branches, CI, GitHub, and Vercel.
 
 Pushes and CI **do not** reset or seed production. Migrations and Edge Functions
 reach production via **[`deploy-supabase.yml`](./.github/workflows/deploy-supabase.yml)**
-after green CI on `main` (see [README § Production Supabase deploy](./README.md#production-supabase-deploy-one-time-secrets)).
+after green CI on `main` (see [docs/MAINTENANCE.md § CI and hosted deploy](./docs/MAINTENANCE.md#ci-and-hosted-deploy)).
 
 ## Branch workflow
 
@@ -166,7 +166,7 @@ npm run test:e2e      # Playwright (first time: npx playwright install chromium)
 npm run check:full    # lint + unit + db + build (not e2e)
 ```
 
-Local Supabase env: `source scripts/env-local.sh` (see [README.md](./README.md)).
+Local Supabase env: `source scripts/env-local.sh` (see [docs/MAINTENANCE.md](./docs/MAINTENANCE.md)).
 
 ## When you change…
 
@@ -239,7 +239,7 @@ the site already updated.
 | **Deploy Supabase** failed | Open that workflow run on GitHub; fix secrets or `db push` errors |
 | Deploy succeeded | Confirm migration in Supabase → **Database → Migrations** |
 
-One-time GitHub **production** environment secrets: [README § Production Supabase deploy](./README.md#production-supabase-deploy-one-time-secrets).
+One-time GitHub **production** environment secrets: [docs/MAINTENANCE.md § Production Supabase deploy](./docs/MAINTENANCE.md#production-supabase-deploy-one-time-secrets).
 
 Manual fallback (hosted DB — use with care):
 
@@ -253,5 +253,4 @@ npx supabase unlink
 Edge Function **secrets** (`TELLER_SIGNING_SECRET`, service role, etc.) stay in the
 Supabase dashboard / `supabase secrets set` — deploy only ships function code.
 
-See [README.md § Before connecting real Teller data](./README.md) for security TODOs.
-See [README.md § Production database](./README.md#production-database) for hosted DB access.
+See [docs/MAINTENANCE.md § Security and production checklist](./docs/MAINTENANCE.md#security-and-production-checklist) for security TODOs and hosted DB access rules.
