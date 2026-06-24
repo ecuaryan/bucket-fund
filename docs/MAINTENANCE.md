@@ -71,6 +71,19 @@ CI does **not** run seeds — database tests create their own fixtures.
 
 ## Regenerating README / PWA assets
 
+**When to refresh:** After any **significant UI/UX change** to Buckets, History,
+Send, Admin, or the app shell — update **both** the install screenshots and the
+README demo GIF in the same PR (or immediately after) so GitHub, the PWA install
+sheet, and portfolio viewers stay in sync with the product.
+
+| Asset | Where it appears | Command |
+| ----- | ---------------- | ------- |
+| Install PNGs | PWA manifest (`public/screenshots/`), [README Screenshots](./README.md#screenshots) | `npm run pwa:screenshots` |
+| Demo GIF | [README Demo](./README.md#demo) | `npm run pwa:gifs` |
+
+Cosmetic copy tweaks usually do not need a refresh; new layouts, tabs, flows, or
+visual hierarchy do.
+
 **Demo GIF** ([`public/demos/organize-money.gif`](../public/demos/organize-money.gif)):
 
 ```bash

@@ -177,6 +177,7 @@ Local Supabase env: `source scripts/env-local.sh` (see [docs/MAINTENANCE.md](./d
 | Transaction visibility | `tests/db/transactions.test.ts` |
 | Auth helpers | `src/lib/*.test.ts` |
 | Login / home smoke | `tests/e2e/smoke.spec.ts` |
+| Significant UI/UX (Buckets, History, Send, Admin, shell) | Refresh PWA screenshots + README GIF — [docs/MAINTENANCE.md § Regenerating README / PWA assets](./docs/MAINTENANCE.md#regenerating-readme--pwa-assets) |
 
 ## Deploying backend changes
 
