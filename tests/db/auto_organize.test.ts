@@ -749,6 +749,90 @@ describe('auto_organize', () => {
     void topUpId
   })
 
+  it('run_due_auto_organizes runs save_off before top_up when sweeping to Float', async () => {
+    const family = await createAdminFamily('ao-order-sweep-float')
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const svc = serviceClient()
+    await svc
+      .from('families')
+      .update({ timezone: 'UTC', auto_organize_run_hour: 0 })
+      .eq('id', family.familyId)
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 2000,
+    })
+    const groceries = await insertBucket(svc, family.familyId, 'Groceries', null)
+    await svc
+      .from('buckets')
+      .update({ allocated_amount: 300 })
+      .eq('id', groceries)
+
+    const saveOffId = await insertAutoOrganize(svc, {
+      familyId: family.familyId,
+      createdByMemberId: family.adminMemberId,
+      autoOrganizeKind: 'save_off',
+      destinationBucketId: null,
+      autoOrganizeType: 'monthly',
+      daysOfMonth: [28],
+      lines: [{ bucketId: groceries, amount: 0, sortOrder: 0 }],
+    })
+    const topUpId = await insertAutoOrganize(svc, {
+      familyId: family.familyId,
+      createdByMemberId: family.adminMemberId,
+      autoOrganizeKind: 'top_up',
+      autoOrganizeType: 'monthly',
+      daysOfMonth: [28],
+      lines: [{ bucketId: groceries, amount: 400, sortOrder: 0 }],
+    })
+
+    const floatBefore = await getFloatBalance(admin)
+    expect(floatBefore).toBe(1700)
+
+    const asOf = '2026-06-28T04:00:00.000Z'
+    const { error } = await svc.rpc('run_due_auto_organizes', {
+      p_as_of: asOf,
+    })
+    expect(error).toBeNull()
+
+    // save_off first: sweep 300 to Float (1700→2000), then top_up 400 (2000→1600).
+    // Wrong order ends at Float 2000 with groceries empty.
+    expect(await getFloatBalance(admin)).toBe(1600)
+    expect(await getBucketAllocation(svc, groceries)).toBe(400)
+
+    const { data: runs, error: runsError } = await svc
+      .from('auto_organize_runs')
+      .select('id, auto_organize_id')
+      .eq('family_id', family.familyId)
+      .eq('run_on', '2026-06-28')
+    expect(runsError).toBeNull()
+    expect(runs).toHaveLength(2)
+
+    const saveOffRunId = runs!.find((r) => r.auto_organize_id === saveOffId)!.id
+    const topUpRunId = runs!.find((r) => r.auto_organize_id === topUpId)!.id
+
+    const { data: txs, error: txsError } = await svc
+      .from('transactions')
+      .select('id, auto_organize_run_id, float_balance_before, float_balance_after')
+      .eq('family_id', family.familyId)
+      .in('auto_organize_run_id', [saveOffRunId, topUpRunId])
+    expect(txsError).toBeNull()
+    expect(txs).toHaveLength(2)
+
+    const byFloatBefore = [...txs!].sort(
+      (a, b) =>
+        Number(a.float_balance_before) - Number(b.float_balance_before),
+    )
+    expect(byFloatBefore[0].auto_organize_run_id).toBe(saveOffRunId)
+    expect(byFloatBefore[1].auto_organize_run_id).toBe(topUpRunId)
+    expect(Number(byFloatBefore[0].float_balance_before)).toBe(1700)
+    expect(Number(byFloatBefore[0].float_balance_after)).toBe(2000)
+    expect(Number(byFloatBefore[1].float_balance_before)).toBe(2000)
+    expect(Number(byFloatBefore[1].float_balance_after)).toBe(1600)
+  })
+
   it('manual-only rules are skipped by cron and use Manual only as transaction note', async () => {
     const family = await createAdminFamily('ao-manual-only')
     const svc = serviceClient()
