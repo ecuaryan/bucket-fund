@@ -16,10 +16,12 @@ Entry point for AI coding agents (and humans) working in this repo.
    - `tailwind-v4.mdc` — this project uses Tailwind v4 (CSS-first config,
      no `tailwind.config.ts`). Do not generate v3 patterns.
    - `production-database.mdc` — no destructive hosted SQL; local Docker for data.
-4. **[README.md](./README.md)** — dev setup, scripts, security TODOs (Teller + production database).
-5. **[docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md)** — **Auto-organize** feature:
+4. **[README.md](./README.md)** — overview, demo, stack, local dev quick start.
+5. **[docs/MAINTENANCE.md](./docs/MAINTENANCE.md)** — full dev commands, seed
+   scenarios, PWA asset regen, security TODOs (Teller + production database).
+6. **[docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md)** — **Auto-organize** feature:
    cadence, `auto_organize_*` schema/RPCs, cron, roles, History.
-6. **[docs/BRAND.md](./docs/BRAND.md)** — product voice, Float terminology,
+7. **[docs/BRAND.md](./docs/BRAND.md)** — product voice, Float terminology,
    and the full **Product narrative** (word-for-word). User-facing strings live in
    `src/lib/brand.ts`.
 
@@ -73,7 +75,7 @@ Entry point for AI coding agents (and humans) working in this repo.
   Supabase service role key live in Edge Function env only — never
   prefixed with `VITE_`, never imported by client code.
 - **Hosted database:** keep prod unlinked on dev machines; no bulk DELETE via CLI
-  or agents. See `production-database.mdc` and README § Production database.
+  or agents. See `production-database.mdc` and [docs/MAINTENANCE.md § Production database](./docs/MAINTENANCE.md#production-database).
 - **Hosted schema deploy:** add SQL under `supabase/migrations/`. On merge to
   `main`, **[Deploy Supabase](./.github/workflows/deploy-supabase.yml)** runs
   `supabase db push` after green CI — **do not** tell the user to run `db push`
@@ -113,7 +115,7 @@ Use the `@/` alias for absolute imports from `src/`.
 
 - **`npm test`** — unit tests (fast, no Docker).
 - **`npm run db:seed`** / **`npm run db:reset:seed -- <scenario>`** — local Docker
-  demo data only (`scripts/seed/`; see README § Local database scenarios). CI
+  demo data only (`scripts/seed/`; see [docs/MAINTENANCE.md § Local database scenarios](./docs/MAINTENANCE.md#local-database-scenarios)). CI
   does not run seeds.
 - **`npm run test:db`** — database tests (needs `npm run db:start`): RLS in
   `tests/db/rls.test.ts`, `move_money` in `move_money.test.ts`, `send_money`

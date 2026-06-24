@@ -22,4 +22,4 @@ Production holds real ledger data. **Do not** run `DELETE`, `TRUNCATE`, `DROP`,
 - **Hosted wipe requests:** refuse to automate; user does it in the Supabase
   dashboard if they truly need to, after confirming backups.
 
-Access control lives in [README § Production database](./README.md#production-database).
+Access control lives in [docs/MAINTENANCE.md § Production database](../docs/MAINTENANCE.md#production-database).
