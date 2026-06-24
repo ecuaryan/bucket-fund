@@ -63,7 +63,12 @@ import {
 import {
   bucketEndpointLabel,
   historyBucketMoveSubtitle,
+  historySendActor,
   historySendSubtitle,
+  historyShowBucketMoveActor,
+  historyShowSendActor,
+  historyTakeSubtitle,
+  isParentTakeFromChild,
   sendMemberEndpointLabel,
 } from '@/lib/historyLabels'
 import { HistoryEntityTransfer } from '@/features/history/HistoryEntityTransfer'
@@ -563,7 +568,12 @@ function TxItem({
   const [savingNote, setSavingNote] = useState(false)
   const [noteError, setNoteError] = useState<string | null>(null)
   const time = timeFormatter.format(new Date(row.created_at))
-  const showActor = viewerRole === 'admin' || viewerRole === 'member'
+  const showBucketMoveActor = historyShowBucketMoveActor(viewerRole)
+  const showSendActor = historyShowSendActor({
+    viewerRole,
+    currentMemberId,
+    row,
+  })
 
   let title: string
   let subtitle: string
@@ -591,7 +601,7 @@ function TxItem({
       actorMemberId,
       actorName,
       currentMemberId,
-      showActor,
+      showActor: showBucketMoveActor,
       autoOrganizeRunTrigger: row.auto_organize_run_trigger,
     })
   } else {
@@ -608,15 +618,20 @@ function TxItem({
       isMe: toIsMe,
     })
     title = `${fromLabel} → ${toLabel}`
-    actorMemberId = row.from_member_id
-    actorName = row.from_member_name ?? row.from_member?.name
-    subtitle = historySendSubtitle({
+    const { actorMemberId: sendActorId, actorName: sendActorName } =
+      historySendActor({ row })
+    actorMemberId = sendActorId
+    actorName = sendActorName
+    const subtitleArgs = {
       time,
       actorMemberId,
       actorName,
       currentMemberId,
-      showActor,
-    })
+      showActor: showSendActor,
+    }
+    subtitle = isParentTakeFromChild(row)
+      ? historyTakeSubtitle(subtitleArgs)
+      : historySendSubtitle(subtitleArgs)
   }
 
   const amountValue = Number(row.amount)

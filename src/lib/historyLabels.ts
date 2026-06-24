@@ -37,8 +37,31 @@ export function historyMoveActorLabel(args: {
   return 'Someone'
 }
 
+/** Adults see move actors; children do not. */
+export function historyShowBucketMoveActor(viewerRole: string): boolean {
+  return viewerRole === 'admin' || viewerRole === 'member'
+}
+
+/** Adults see all send actors; children see who gave/took on their own rows. */
+export function historyShowSendActor(args: {
+  viewerRole: string
+  currentMemberId: string
+  row: {
+    type: string
+    from_member_id: string | null
+    to_member_id: string | null
+  }
+}): boolean {
+  if (args.viewerRole === 'admin' || args.viewerRole === 'member') return true
+  if (args.row.type !== 'send') return false
+  return (
+    args.row.from_member_id === args.currentMemberId ||
+    args.row.to_member_id === args.currentMemberId
+  )
+}
+
 function historyTxSubtitle(args: {
-  kind: 'Bucket move' | 'Send'
+  kind: 'Bucket move' | 'Send' | 'Take'
   time: string
   actorMemberId: string | null | undefined
   actorName: string | null | undefined
@@ -72,4 +95,49 @@ export function historySendSubtitle(args: {
   showActor: boolean
 }): string {
   return historyTxSubtitle({ ...args, kind: 'Send' })
+}
+
+/** Parent took unallocated money from a virtual kid (return_from_child). */
+export function historyTakeSubtitle(args: {
+  time: string
+  actorMemberId: string | null | undefined
+  actorName: string | null | undefined
+  currentMemberId: string
+  showActor: boolean
+}): string {
+  return historyTxSubtitle({ ...args, kind: 'Take' })
+}
+
+export function isParentTakeFromChild(row: {
+  type: string
+  from_member_id: string | null
+  initiated_by_member_id?: string | null
+}): boolean {
+  return (
+    row.type === 'send' &&
+    row.initiated_by_member_id != null &&
+    row.initiated_by_member_id !== row.from_member_id
+  )
+}
+
+export function historySendActor(args: {
+  row: {
+    type: string
+    from_member_id: string | null
+    from_member_name: string | null | undefined
+    initiated_by_member_id?: string | null
+    initiated_by_member_name?: string | null
+    from_member?: { name: string } | null
+  }
+}): { actorMemberId: string | null; actorName: string | null | undefined } {
+  if (isParentTakeFromChild(args.row)) {
+    return {
+      actorMemberId: args.row.initiated_by_member_id ?? null,
+      actorName: args.row.initiated_by_member_name ?? null,
+    }
+  }
+  return {
+    actorMemberId: args.row.from_member_id,
+    actorName: args.row.from_member_name ?? args.row.from_member?.name,
+  }
 }

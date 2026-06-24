@@ -157,6 +157,38 @@ export function formatFloatSummary(
   return `${summary.label}: ${formatMoney(summary.amount)}`
 }
 
+/** Flat Float hero subtext — cash context only (no allocations or kids). */
+export function formatFloatCashSubtext(
+  breakdown: BucketsBalanceBreakdown,
+  opts: BuildOpts,
+  formatMoney: (amount: number) => string,
+): string | null {
+  if (opts.isChild) {
+    if (opts.childTotal <= 0) return null
+    if (breakdown.bankCash > 0 && opts.bankAccountsCount > 0) {
+      const suffix =
+        opts.bankAccountsCount === 1
+          ? 'linked account'
+          : `${opts.bankAccountsCount} linked accounts`
+      return `${formatMoney(breakdown.bankCash)} across ${suffix}`
+    }
+    return formatFloatSummary(
+      { label: 'Total balance', amount: opts.childTotal },
+      formatMoney,
+    )
+  }
+
+  if (breakdown.totalCash <= 0) return null
+
+  if (breakdown.bankCash > 0 && breakdown.manualCash > 0) {
+    return `${formatMoney(breakdown.bankCash)} linked · ${formatMoney(breakdown.manualCash)} manual`
+  }
+
+  const summary = floatSummary(breakdown, opts)
+  if (!summary) return null
+  return formatFloatSummary(summary, formatMoney)
+}
+
 export function formatBucketsHeaderSubtitle(
   bucketCount: number,
   bucketAllocated: number,

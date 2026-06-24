@@ -15,6 +15,7 @@ import {
   MANUAL_SOURCE_SUGGESTED_AMOUNT,
 } from '@/lib/brand'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
+import { sanitizeAmountInput } from '@/lib/amountInput'
 
 type Props = {
   open: boolean
@@ -139,7 +140,7 @@ export default function ManualSourceDialog({
             type="text"
             inputMode="decimal"
             value={amountStr}
-            onValueChange={(v) => setAmountStr(v.replace(/-/g, ''))}
+            onValueChange={(v) => setAmountStr(sanitizeAmountInput(v))}
             onFocus={onAmountFocus}
             inputClassName="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm tabular-nums text-zinc-100"
           />

@@ -538,6 +538,8 @@ export type Database = {
           from_member_id: string | null
           from_member_name: string | null
           id: string
+          initiated_by_member_id: string | null
+          initiated_by_member_name: string | null
           note: string | null
           to_bucket_balance_after: number | null
           to_bucket_balance_before: number | null
@@ -565,6 +567,8 @@ export type Database = {
           from_member_id?: string | null
           from_member_name?: string | null
           id?: string
+          initiated_by_member_id?: string | null
+          initiated_by_member_name?: string | null
           note?: string | null
           to_bucket_balance_after?: number | null
           to_bucket_balance_before?: number | null
@@ -592,6 +596,8 @@ export type Database = {
           from_member_id?: string | null
           from_member_name?: string | null
           id?: string
+          initiated_by_member_id?: string | null
+          initiated_by_member_name?: string | null
           note?: string | null
           to_bucket_balance_after?: number | null
           to_bucket_balance_before?: number | null
@@ -668,6 +674,8 @@ export type Database = {
           from_member_id: string | null
           from_member_name: string | null
           id: string | null
+          initiated_by_member_id: string | null
+          initiated_by_member_name: string | null
           note: string | null
           to_bucket_balance_after: number | null
           to_bucket_balance_before: number | null
@@ -870,6 +878,14 @@ export type Database = {
       run_due_auto_organizes: { Args: { p_as_of?: string }; Returns: number }
       send_money: {
         Args: { p_amount: number; p_note?: string; p_to_member_id: string }
+        Returns: string
+      }
+      return_from_child: {
+        Args: {
+          p_amount: number
+          p_from_child_id: string
+          p_note?: string
+        }
         Returns: string
       }
       transaction_visible_to_caller: {

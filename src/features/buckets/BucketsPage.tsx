@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useId,
   useMemo,
   useRef,
   useState,
@@ -36,7 +35,6 @@ import {
   bucketsKidFloatHint,
   BUCKETS_DB_UPDATE_PENDING_BODY,
   bucketsMemberNoBucketsHint,
-  bucketsFloatInfoAriaLabel,
   FLOAT_HERO_SUBTITLE,
   FLOAT_NEGATIVE_HINT,
   FLOAT_LABEL,
@@ -44,14 +42,13 @@ import {
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import OnboardingCoachCard from '@/features/buckets/OnboardingCoachCard'
 import FloatInfoSheet from '@/features/buckets/FloatInfoSheet'
+import FloatHero from '@/features/buckets/FloatHero'
 import SuggestedBucketChips from '@/features/buckets/SuggestedBucketChips'
 import { Sheet } from '@/components/ui/Sheet'
-import InfoIconButton from '@/components/ui/InfoIconButton'
 import { isCashAccount } from '@/lib/accounts'
 import BucketsPageSkeleton from '@/components/BucketsPageSkeleton'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import { ClearableInput } from '@/components/ui/ClearableInput'
-import RefreshIconButton from '@/components/ui/RefreshIconButton'
 import {
   childTotalBalance,
   type BucketsBalanceBreakdown,
@@ -97,15 +94,9 @@ import { useFlipList } from '@/hooks/useFlipList'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { refreshBalances } from '@/lib/teller'
 import {
-  buildFloatLines,
   formatBucketsHeaderSubtitle,
-  formatFloatSummary,
-  floatSummary,
+  formatFloatCashSubtext,
 } from '@/lib/floatBreakdown'
-import {
-  readFloatDetailsOpen,
-  writeFloatDetailsOpen,
-} from '@/lib/floatDetailsStorage'
 import {
   getOnboardingCoachState,
   shouldShowOnboardingCoach,
@@ -167,14 +158,13 @@ export default function BucketsPage() {
   const [autoOrganizePanelMounted, setAutoOrganizePanelMounted] = useState(
     () => searchParams.get('tab') === 'auto-organize',
   )
-  const [detailsOpen, setDetailsOpen] = useState(false)
   const [floatInfoOpen, setFloatInfoOpen] = useState(false)
   const [coachDismissed, setCoachDismissed] = useState(true)
   const [movePreferredIntent, setMovePreferredIntent] = useState<
     MoveMoneyIntent | undefined
   >(undefined)
   const createBucketInputRef = useRef<HTMLInputElement | null>(null)
-  const [prevDetailsMemberId, setPrevDetailsMemberId] = useState<string | null>(
+  const [prevCoachMemberId, setPrevCoachMemberId] = useState<string | null>(
     null,
   )
 
@@ -184,9 +174,8 @@ export default function BucketsPage() {
   const familyId = member?.family_id ?? null
   const memberId = member?.id ?? null
 
-  if (memberId !== prevDetailsMemberId) {
-    setPrevDetailsMemberId(memberId)
-    setDetailsOpen(memberId ? readFloatDetailsOpen(memberId) : false)
+  if (memberId !== prevCoachMemberId) {
+    setPrevCoachMemberId(memberId)
     setCoachDismissed(memberId ? readOnboardingCoachDismissed(memberId) : true)
   }
 
@@ -208,7 +197,6 @@ export default function BucketsPage() {
 
   const loadGeneration = useRef(0)
   const { listRef, prepareFlip } = useFlipList(buckets)
-  const detailsPanelId = useId()
 
   const loadData = useCallback(async () => {
     if (!familyId || !memberId) return
@@ -657,17 +645,6 @@ export default function BucketsPage() {
   const float = balanceBreakdown.float
   const isAdult = !isChild
   const childTotal = isChild ? childTotalBalance(balanceBreakdown) : 0
-  const showAdultBreakdown =
-    isAdult &&
-    !balanceUsesFallback &&
-    (balanceBreakdown.totalCash > 0 ||
-      balanceBreakdown.bucketAllocated > 0 ||
-      balanceBreakdown.children.length > 0)
-  const showChildBreakdown =
-    isChild &&
-    !balanceUsesFallback &&
-    (childTotal > 0 || balanceBreakdown.bucketAllocated > 0)
-  const showBalanceBreakdown = showAdultBreakdown || showChildBreakdown
   const hasMoneySources = accounts.length > 0
   // Once money is in a bucket it is "organized" — show the negative red
   // negative float rebalance signal rather than the getting-started CTA. Only
@@ -702,17 +679,6 @@ export default function BucketsPage() {
     (isAdult && hasMoneySources && bankAccountsCount > 0) ||
     (isChild && hasLinkedBanks)
 
-  const floatHint =
-    showAddSourceCard || showCoach
-      ? null
-      : float < 0
-        ? FLOAT_NEGATIVE_HINT
-        : showBalanceBreakdown
-          ? null
-          : isChild
-            ? bucketsKidFloatHint(householdAdminName)
-            : FLOAT_HERO_SUBTITLE
-
   const breakdownOpts = {
     isChild,
     cashAccountsCount,
@@ -720,38 +686,20 @@ export default function BucketsPage() {
     manualAccountsCount,
     childTotal,
   }
-  const breakdownLines = buildFloatLines(balanceBreakdown, breakdownOpts)
-  const collapsedSummary = floatSummary(balanceBreakdown, breakdownOpts)
+  const cashSubtext = !balanceUsesFallback
+    ? formatFloatCashSubtext(balanceBreakdown, breakdownOpts, formatMoney)
+    : null
 
-  function toggleDetailsOpen() {
-    if (!memberId) return
-    setDetailsOpen((prev) => {
-      const next = !prev
-      writeFloatDetailsOpen(memberId, next)
-      return next
-    })
-  }
-
-  const freshnessFooter =
-    bankSyncedLabel || (isAdult && hasMoneySources) || canRefreshBalances ? (
-      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-        {bankSyncedLabel ? (
-          <p className="text-[11px] opacity-50">
-            Balances refreshed {bankSyncedLabel}
-          </p>
-        ) : null}
-        {canRefreshBalances ? (
-          <RefreshIconButton
-            busy={syncing}
-            disabled={syncing}
-            onClick={() => void handleRefreshBalances()}
-          />
-        ) : null}
-        {refreshError ? (
-          <p className="w-full text-[11px] text-red-300/80">{refreshError}</p>
-        ) : null}
-      </div>
-    ) : null
+  const floatHint =
+    showAddSourceCard || showCoach
+      ? null
+      : float < 0
+        ? FLOAT_NEGATIVE_HINT
+        : cashSubtext
+          ? null
+          : isChild
+            ? bucketsKidFloatHint(householdAdminName)
+            : FLOAT_HERO_SUBTITLE
 
   return (
     <>
@@ -831,102 +779,19 @@ export default function BucketsPage() {
           ) : null}
         </section>
       ) : (
-        <section
-          className={`rounded-2xl px-4 py-5 ring-1 ${floatColor}`}
-          aria-label={`${FLOAT_LABEL} balance`}
-        >
-          <div className="flex items-center gap-0.5">
-            <p className="text-xs font-medium uppercase tracking-wide opacity-70">
-              {FLOAT_LABEL}
-            </p>
-            <InfoIconButton
-              label={bucketsFloatInfoAriaLabel()}
-              onClick={() => setFloatInfoOpen(true)}
-            />
-          </div>
-          <p className="mt-1 text-3xl font-semibold tabular-nums">
-            {formatMoney(float)}
-          </p>
-          {floatHint ? (
-            <p className="mt-1 text-xs opacity-70">{floatHint}</p>
-          ) : null}
-          {showBalanceBreakdown && (
-            <>
-              <button
-                type="button"
-                aria-expanded={detailsOpen}
-                aria-controls={detailsPanelId}
-                onClick={toggleDetailsOpen}
-                className="mt-2 flex w-full items-center justify-start gap-1.5 rounded-lg py-1 text-left text-xs opacity-70 transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
-              >
-                <span className="min-w-0 truncate">
-                  {detailsOpen
-                    ? 'Breakdown'
-                    : collapsedSummary
-                      ? formatFloatSummary(collapsedSummary, formatMoney)
-                      : 'Breakdown'}
-                </span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                  className={
-                    'h-4 w-4 shrink-0 motion-safe:transition-transform motion-safe:duration-200 ' +
-                    (detailsOpen ? 'rotate-180' : '')
-                  }
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-              <div
-                id={detailsPanelId}
-                className={
-                  'grid motion-safe:transition-[grid-template-rows] motion-safe:duration-200 ' +
-                  (detailsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')
-                }
-              >
-                <div className="min-h-0 overflow-hidden">
-                  <dl className="space-y-1 border-t border-current/10 pt-3 text-xs opacity-90">
-                    {breakdownLines.map((line) => (
-                      <div
-                        key={line.key}
-                        className={
-                          'flex justify-between gap-4 tabular-nums ' +
-                          (line.indent ? 'pl-4' : '')
-                        }
-                      >
-                        <dt
-                          className={
-                            'truncate ' + (line.indent ? 'opacity-80' : '')
-                          }
-                        >
-                          {line.label}
-                        </dt>
-                        <dd>
-                          {line.kind === 'subtract' ? '−' : ''}
-                          {formatMoney(line.amount)}
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
-                  {freshnessFooter ? (
-                    <div className="mt-3 border-t border-current/10 pt-2">
-                      {freshnessFooter}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            </>
-          )}
-          {!showBalanceBreakdown && freshnessFooter ? (
-            <div className="mt-2">{freshnessFooter}</div>
-          ) : null}
-        </section>
+        <FloatHero
+          floatLabel={FLOAT_LABEL}
+          amount={formatMoney(float)}
+          floatColorClass={floatColor}
+          cashSubtext={cashSubtext}
+          hint={floatHint}
+          onInfoClick={() => setFloatInfoOpen(true)}
+          bankSyncedLabel={bankSyncedLabel}
+          canRefresh={canRefreshBalances}
+          syncing={syncing}
+          refreshError={refreshError}
+          onRefresh={() => void handleRefreshBalances()}
+        />
       )}
 
       {showBucketsPageTabs ? (

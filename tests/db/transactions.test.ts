@@ -5,6 +5,7 @@ import {
   insertBucket,
   moveMoney,
   sendMoney,
+  returnFromChild,
   serviceClient,
   setBucketAllocation,
   updateTransactionNote,
@@ -382,5 +383,75 @@ describe('update_transaction_note', () => {
         note: 'nope',
       }),
     ).rejects.toThrow(/transaction not found/i)
+  })
+
+  it('admin can read transactions_client with History embed select', async () => {
+    const family = await createAdminFamily('tx-client-history-select')
+    const child = await addMember(family.familyId, 'child', 'Alex')
+    const svc = serviceClient()
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 200,
+    })
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    await sendMoney(admin, { toMemberId: child.memberId, amount: 50 })
+    await returnFromChild(admin, { fromChildId: child.memberId, amount: 20 })
+
+    const historySelect =
+      '*, from_bucket:buckets!from_bucket_id(name), to_bucket:buckets!to_bucket_id(name), from_member:family_members!from_member_id(name), to_member:family_members!to_member_id(name)'
+
+    const { data, error } = await admin
+      .from(TRANSACTIONS_CLIENT)
+      .select(historySelect)
+      .order('created_at', { ascending: false })
+
+    expect(error).toBeNull()
+    expect(data?.length).toBeGreaterThanOrEqual(2)
+    const take = data?.find(
+      (row) =>
+        row.initiated_by_member_id === family.adminMemberId &&
+        row.from_member_id === child.memberId,
+    )
+    expect(take?.initiated_by_member_name).toBeTruthy()
+  })
+
+  it('child can read initiated_by on their own give and take rows', async () => {
+    const family = await createAdminFamily('tx-child-send-actor')
+    const child = await addMember(family.familyId, 'child', 'J')
+    const svc = serviceClient()
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 20_000,
+    })
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    await sendMoney(admin, { toMemberId: child.memberId, amount: 50 })
+    await returnFromChild(admin, { fromChildId: child.memberId, amount: 20 })
+
+    const childClient = await userClient(child.email, child.password)
+    const { data, error } = await childClient
+      .from(TRANSACTIONS_CLIENT)
+      .select(
+        'type, from_member_id, to_member_id, from_member_name, to_member_name, initiated_by_member_id, initiated_by_member_name',
+      )
+      .order('created_at', { ascending: false })
+
+    expect(error).toBeNull()
+    expect(data?.length).toBe(2)
+
+    const give = data?.find((row) => row.to_member_id === child.memberId)
+    expect(give?.from_member_name).toBeTruthy()
+    expect(give?.initiated_by_member_id).toBeNull()
+
+    const take = data?.find((row) => row.from_member_id === child.memberId)
+    expect(take?.initiated_by_member_id).toBe(family.adminMemberId)
+    expect(take?.initiated_by_member_name).toBeTruthy()
   })
 })

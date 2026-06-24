@@ -54,6 +54,12 @@ import {
   validateMemberNameForFamily,
 } from '@/lib/memberName'
 import { toast } from '@/lib/toast'
+import KidAccountAssignment from '@/features/admin/KidAccountAssignment'
+import { accountAssignmentChildId, isTellerAccount } from '@/lib/accounts'
+import type { Database } from '@/types/database'
+
+type LinkedAccount = Database['public']['Tables']['accounts']['Row']
+
 type Member = {
   id: string
   name: string
@@ -71,9 +77,18 @@ type Member = {
 type MembersSectionProps = {
   /** Called when the family roster changes (add/remove) so siblings can refresh. */
   onRosterChanged?: () => void
+  /** Linked bank accounts for kid assignment UI (admin Household tab). */
+  linkedAccounts?: LinkedAccount[] | null
+  memberRolesById?: ReadonlyMap<string, string>
+  onLinkedAccountsChanged?: () => void
 }
 
-export default function MembersSection({ onRosterChanged }: MembersSectionProps) {
+export default function MembersSection({
+  onRosterChanged,
+  linkedAccounts = null,
+  memberRolesById = new Map(),
+  onLinkedAccountsChanged,
+}: MembersSectionProps) {
   const auth = useAuth()
   const selfMemberId =
     auth.status === 'signedIn' ? auth.member?.id ?? null : null
@@ -489,11 +504,32 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
         <LoadingStatus label={ADMIN_LOADING_MEMBERS} className="py-6" />
       ) : (
         <ul className="divide-y divide-zinc-800 overflow-hidden rounded-2xl bg-zinc-900 ring-1 ring-zinc-800">
-          {members.map((m) => (
+          {members.map((m) => {
+            const kidHasLinkedAccount =
+              m.role === 'child' &&
+              linkedAccounts != null &&
+              linkedAccounts.some(
+                (a) =>
+                  isTellerAccount(a) &&
+                  accountAssignmentChildId(a, memberRolesById) === m.id,
+              )
+
+            return (
             <li
               key={m.id}
-              className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+              className={
+                m.role === 'child' && linkedAccounts != null
+                  ? 'px-4 py-3'
+                  : 'flex flex-wrap items-center justify-between gap-3 px-4 py-3'
+              }
             >
+              <div
+                className={
+                  m.role === 'child' && linkedAccounts != null
+                    ? 'flex flex-wrap items-center justify-between gap-3'
+                    : 'contents'
+                }
+              >
               {renamingId === m.id ? (
                 <div className="flex min-w-0 flex-1 items-center gap-2">
                   <ClearableInput
@@ -529,6 +565,7 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
                     {m.pin_failed_attempts > 0 && !m.pin_locked
                       ? ` · ${m.pin_failed_attempts} failed attempt${m.pin_failed_attempts === 1 ? '' : 's'}`
                       : ''}
+                    {kidHasLinkedAccount ? ' · Linked account' : m.role === 'child' ? ' · Virtual' : ''}
                   </p>
                 </div>
               )}
@@ -568,8 +605,20 @@ export default function MembersSection({ onRosterChanged }: MembersSectionProps)
                   </button>
                 )}
               </div>
+              {m.role === 'child' && linkedAccounts != null ? (
+                <KidAccountAssignment
+                  kidId={m.id}
+                  kidName={m.name}
+                  accounts={linkedAccounts}
+                  memberRolesById={memberRolesById}
+                  onAccountsChanged={() => onLinkedAccountsChanged?.()}
+                  onError={(msg) => toast.error(msg)}
+                />
+              ) : null}
+              </div>
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
 

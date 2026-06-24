@@ -64,6 +64,7 @@ switch — no reset needed.
 | `many-buckets` | `many-buckets@bmm.dev` | 15 pool buckets — scroll and reorder |
 | `history` | `history@bmm.dev` | ~40 moves and sends — History volume |
 | `shared-only` | `shared-only@bmm.dev` | Shared member (PIN **0000**), no kid |
+| `golden` | `golden@bmm.dev` | R + S + 5 kids (PIN **0000**), 6 linked bank accounts ($25k each; K and A assigned), 30 emoji buckets ($100 each), J/T/Z with $10k each |
 | `pwa-screenshots` | `pwa-screenshots@bmm.dev` | Emoji buckets, green Float — PWA install screenshot source |
 | `pwa-gifs` | `pwa-gifs@bmm.dev` | $5k Float, no buckets — README demo GIF source |
 

@@ -4,7 +4,7 @@ import { LoadErrorPanel } from '@/components/ui/LoadErrorPanel'
 import { formatLoadErrorMessage, withAuthLockRetry } from '@/lib/authLockError'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
-import { accountAssignmentChildId, deleteManualAccount } from '@/lib/accounts'
+import { deleteManualAccount } from '@/lib/accounts'
 import {
   ADMIN_ADD_MONEY_SOURCE_ACTION,
   ADMIN_ADD_SOURCE_LINK_OPTION,
@@ -49,7 +49,6 @@ import {
 } from '@/lib/teller'
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
 import RefreshIcon from '@/components/ui/RefreshIcon'
-import AccountAssignmentSelect from '@/features/admin/AccountAssignmentSelect'
 import BankAccountActivity from '@/features/admin/BankAccountActivity'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import AdminAccountSection from '@/features/admin/AdminAccountSection'
@@ -245,14 +244,6 @@ export default function AdminPage() {
 
   const memberRolesById = useMemo(
     () => new Map((members ?? []).map((m) => [m.id, m.role])),
-    [members],
-  )
-
-  const childMembers = useMemo(
-    () =>
-      (members ?? [])
-        .filter((m) => m.role === 'child')
-        .map((m) => ({ id: m.id, name: m.name })),
     [members],
   )
 
@@ -711,31 +702,7 @@ export default function AdminPage() {
                               Remove
                             </button>
                           </>
-                        ) : (
-                          <AccountAssignmentSelect
-                            accountId={a.id}
-                            assignedChildId={accountAssignmentChildId(
-                              a,
-                              memberRolesById,
-                            )}
-                            children={childMembers}
-                            onAssigned={(ownerMemberId) => {
-                              setAccounts((prev) =>
-                                prev
-                                  ? prev.map((row) =>
-                                      row.id === a.id
-                                        ? {
-                                            ...row,
-                                            owner_member_id: ownerMemberId,
-                                          }
-                                        : row,
-                                    )
-                                  : prev,
-                              )
-                            }}
-                            onError={(msg) => toast.error(msg)}
-                          />
-                        )}
+                        ) : null}
                         <p className="text-sm font-medium tabular-nums text-zinc-300">
                           {formatMoney(Number(a.current_balance))}
                         </p>
@@ -764,7 +731,15 @@ export default function AdminPage() {
       >
         {householdPanelMounted ? (
           <div className="space-y-6">
-            <MembersSection onRosterChanged={loadMembers} />
+            <MembersSection
+              onRosterChanged={() => {
+                void loadMembers()
+                void loadAccounts()
+              }}
+              linkedAccounts={accounts}
+              memberRolesById={memberRolesById}
+              onLinkedAccountsChanged={() => void loadAccounts()}
+            />
             <FamilyJoinSection />
           </div>
         ) : null}

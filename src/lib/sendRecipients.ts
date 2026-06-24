@@ -33,17 +33,22 @@ export function filterSendRecipients(
   return others.filter((m) => !linkedChildIds.has(m.id))
 }
 
-/** Nav + route: show Send when there are recipients, or a static explainer (linked kid / adults with only linked kids). */
+/** Nav + route: adults with kids use the Kids tab instead of Send. */
+export function shouldShowKidsNav(callerRole: string, childCount: number): boolean {
+  return (
+    (callerRole === 'admin' || callerRole === 'member') && childCount > 0
+  )
+}
+
+/** Nav + route: show Send for virtual kids; linked kids get the explainer page. */
 export function shouldShowSendNav(args: {
   callerRole: string
   callerIsLinkedChild: boolean
   recipientCount: number
-  linkedChildCount: number
 }): boolean {
+  if (args.callerRole === 'admin' || args.callerRole === 'member') {
+    return false
+  }
   if (args.recipientCount > 0) return true
-  if (args.callerIsLinkedChild) return true
-  return (
-    (args.callerRole === 'admin' || args.callerRole === 'member') &&
-    args.linkedChildCount > 0
-  )
+  return args.callerIsLinkedChild
 }

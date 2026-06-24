@@ -40,6 +40,51 @@ export async function sendMoney(args: SendMoneyArgs): Promise<string> {
   return data as unknown as string
 }
 
+export type ReturnFromChildArgs = {
+  fromChildId: string
+  amount: number
+  note?: string | null
+}
+
+export async function returnFromChild(
+  args: ReturnFromChildArgs,
+): Promise<string> {
+  const { data, error } = await supabase.rpc('return_from_child', {
+    p_from_child_id: args.fromChildId,
+    p_amount: args.amount,
+    p_note: args.note ?? undefined,
+  })
+  if (error) {
+    if (isMissingDbFunctionError(error.message)) {
+      throw new Error(
+        'Take is temporarily unavailable while the server finishes updating. Try again in a few minutes.',
+      )
+    }
+    throw new Error(humaniseReturnError(error.message))
+  }
+  return data as unknown as string
+}
+
+function humaniseReturnError(msg: string): string {
+  const lower = msg.toLowerCase()
+  if (lower.includes('insufficient float')) {
+    return 'That amount exceeds what the kid has available outside buckets.'
+  }
+  if (lower.includes('amount must be positive')) {
+    return 'Enter an amount greater than $0.'
+  }
+  if (lower.includes('settle through the bank')) {
+    return 'That kid has a linked bank account — settle through the bank instead.'
+  }
+  if (lower.includes('only adults can return')) {
+    return 'Only adults on the shared balance can take money from a kid.'
+  }
+  if (lower.includes('not authenticated')) {
+    return 'Session expired. Please sign in again.'
+  }
+  return msg
+}
+
 function humaniseSendError(msg: string): string {
   const lower = msg.toLowerCase()
   if (lower.includes('insufficient float')) {
