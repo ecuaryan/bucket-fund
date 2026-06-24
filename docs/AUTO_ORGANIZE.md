@@ -92,8 +92,8 @@ Future: `owner_member_id` on `auto_organizes` (null = household), scheduled **Se
   `auto_organize_runs` row so the day is not re-run.
 - **Card totals:** organize shows exact **Total per run**; top_up/save_off show **Estimated this
   run** (~) from current balances.
-- **Same-day order:** cron runs **save_off before organize/top_up** (then `created_at, id`) so
-  sweeps clear leftovers before refills.
+- **Same-day order:** cron runs **save_off before organize/top_up** in two explicit
+  passes (then `created_at, id` within each pass) so sweeps clear leftovers before refills.
 
 Kind is chosen on **Add** (chooser sheet) and **locked after create** — Edit changes amounts and
 schedule only.

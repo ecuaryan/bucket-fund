@@ -125,7 +125,6 @@ import {
   type BucketsPageTab,
 } from '@/lib/bucketsPageTabs'
 import { BUCKETS_PAGE_TABS_ARIA_LABEL } from '@/lib/brand'
-import { scrollWindowToTop } from '@/hooks/useScrollToTopOnPathname'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -411,7 +410,6 @@ export default function BucketsPage() {
         (prev) => applyBucketsPageTabToSearchParams(prev, tab),
         { replace: true },
       )
-      scrollWindowToTop()
     },
     [setSearchParams],
   )
