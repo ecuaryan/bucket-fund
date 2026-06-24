@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { ScrollFade } from '@/components/ui/ScrollFade'
 import {
   ADMIN_BANK_ACTIVITY_EMPTY,
-  ADMIN_BANK_ACTIVITY_LOADING,
   ADMIN_BANK_ACTIVITY_PENDING,
   ADMIN_BANK_ACTIVITY_RETRY,
   ADMIN_BANK_ACTIVITY_SCOPE,
   ADMIN_BANK_ACTIVITY_TOGGLE_HIDE,
   ADMIN_BANK_ACTIVITY_TOGGLE_SHOW,
+  LOADING_STATUS_LABEL,
 } from '@/lib/brand'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { fetchBankTransactions, type BankTransactionRow } from '@/lib/teller'
@@ -88,7 +89,14 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
         <div className="mt-2 space-y-2">
           <p className="text-xs text-zinc-500">{ADMIN_BANK_ACTIVITY_SCOPE}</p>
           {loading ? (
-            <p className="text-xs text-zinc-400">{ADMIN_BANK_ACTIVITY_LOADING}</p>
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex justify-center py-2"
+            >
+              <LoadingSpinner className="h-4 w-4" />
+              <span className="sr-only">{LOADING_STATUS_LABEL}</span>
+            </div>
           ) : error ? (
             <div className="space-y-2">
               <p className="text-xs text-red-300/90">{error}</p>

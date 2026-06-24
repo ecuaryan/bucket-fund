@@ -19,9 +19,15 @@ test('admin tab renders content after sign-in', async ({ page }) => {
   await expect(
     page.getByRole('heading', { name: 'Admin', exact: true }),
   ).toBeVisible()
+
+  const moneySourcesTab = page.getByRole('tab', { name: 'Money sources' })
+  await expect(moneySourcesTab).toHaveAttribute('aria-selected', 'true')
   await expect(
-    page.getByRole('heading', { name: 'Money sources', exact: true }),
+    page.getByRole('button', { name: 'Add money source' }),
   ).toBeVisible()
+
+  await page.getByRole('tab', { name: 'Household' }).click()
+  await expect(moneySourcesTab).toHaveAttribute('aria-selected', 'false')
   await expect(
     page.getByRole('heading', { name: 'Household members' }),
   ).toBeVisible()

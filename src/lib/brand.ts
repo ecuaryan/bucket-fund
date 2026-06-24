@@ -293,7 +293,6 @@ export const ADMIN_BANK_ACTIVITY_TOGGLE_SHOW = 'Show recent activity'
 export const ADMIN_BANK_ACTIVITY_TOGGLE_HIDE = 'Hide recent activity'
 export const ADMIN_BANK_ACTIVITY_SCOPE = 'Last 2 weeks · up to 50 transactions'
 export const ADMIN_BANK_ACTIVITY_RETRY = 'Try again'
-export const ADMIN_BANK_ACTIVITY_LOADING = 'Loading bank activity…'
 export const ADMIN_BANK_ACTIVITY_EMPTY =
   'No bank activity in the last 2 weeks.'
 export const ADMIN_BANK_ACTIVITY_PENDING = 'Pending'
@@ -1087,6 +1086,10 @@ export const MANUAL_SOURCE_SUGGESTED_AMOUNT = 1000
 
 export const ADMIN_MANUAL_GROUP_TITLE = 'Manual sources'
 export const ADMIN_MONEY_SOURCES_SECTION_TITLE = 'Money sources'
+
+export const ADMIN_PAGE_TAB_HOUSEHOLD_LABEL = 'Household'
+export const ADMIN_PAGE_TAB_ACCOUNT_LABEL = 'Account'
+export const ADMIN_PAGE_TABS_ARIA_LABEL = 'Admin page sections'
 export const ADMIN_ADD_MONEY_SOURCE_ACTION = 'Add money source'
 export const ADMIN_ADD_SOURCE_LINK_OPTION = 'Link a bank'
 export const ADMIN_ADD_SOURCE_MANUAL_OPTION = 'Enter an amount manually'
