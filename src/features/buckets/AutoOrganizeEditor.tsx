@@ -469,7 +469,9 @@ export default function AutoOrganizeEditor({
             ),
           }
 
-    return formatEditorNextRunSummary(previewCadence, familyTimezone)
+    return formatEditorNextRunSummary(previewCadence, familyTimezone, new Date(), {
+      skipRunOnDates: initial?.occupiedRunOnDates,
+    })
   }, [
     isManual,
     frequencySelection,
@@ -477,6 +479,7 @@ export default function AutoOrganizeEditor({
     monthlyPreset,
     monthlyOnceDay,
     familyTimezone,
+    initial?.occupiedRunOnDates,
   ])
 
   function setFrequencySelection(selection: AutoOrganizeFrequencySelection) {

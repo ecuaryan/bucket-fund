@@ -312,6 +312,46 @@ describe('computeNextRunOn', () => {
       ),
     ).toBeNull()
   })
+
+  it('skips due dates that already have a run (monthly on the 24th)', () => {
+    const cadence = {
+      autoOrganizeType: 'monthly' as const,
+      startDate: null,
+      intervalCount: null,
+      intervalUnit: null,
+      daysOfMonth: [24],
+    }
+    const from = new Date('2026-06-24T12:00:00Z')
+    expect(
+      computeNextRunOn(cadence, 'America/Los_Angeles', from, {
+        skipRunOnDates: ['2026-06-24'],
+      }),
+    ).toBe('2026-07-24')
+    expect(
+      formatNextRunLabelForCadence(
+        cadence,
+        computeNextRunOn(cadence, 'America/Los_Angeles', from, {
+          skipRunOnDates: ['2026-06-24'],
+        }),
+      ),
+    ).toBe('Next run Jul 24')
+  })
+
+  it('skips due dates that already have a run (weekly interval)', () => {
+    const cadence = {
+      autoOrganizeType: 'interval' as const,
+      startDate: '2026-06-12',
+      intervalCount: 1,
+      intervalUnit: 'week' as const,
+      daysOfMonth: null,
+    }
+    const from = new Date('2026-06-12T12:00:00Z')
+    expect(
+      computeNextRunOn(cadence, 'America/Los_Angeles', from, {
+        skipRunOnDates: ['2026-06-12'],
+      }),
+    ).toBe('2026-06-19')
+  })
 })
 
 describe('formatLocalDateLabel', () => {

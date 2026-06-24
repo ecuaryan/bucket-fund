@@ -421,14 +421,18 @@ export function computeNextRunOn(
   cadence: AutoOrganizeCadence,
   timeZone: string,
   from: Date = new Date(),
-  options?: { notBefore?: string },
+  options?: { notBefore?: string; skipRunOnDates?: readonly string[] },
 ): string | null {
   if (cadence.autoOrganizeType === 'manual') return null
 
   const todayIso = localDateIsoInTimeZone(timeZone, from)
   const startIso = options?.notBefore ?? todayIso
+  const skipRunOn = options?.skipRunOnDates?.length
+    ? new Set(options.skipRunOnDates)
+    : undefined
   for (let offset = 0; offset < 366; offset += 1) {
     const probeIso = addCalendarDays(startIso, offset)
+    if (skipRunOn?.has(probeIso)) continue
     if (isDueOn(cadence, probeIso)) return probeIso
   }
   return null
@@ -533,6 +537,7 @@ export function formatEditorNextRunSummary(
   cadence: AutoOrganizeCadence,
   timeZone: string,
   from: Date = new Date(),
+  options?: { skipRunOnDates?: readonly string[] },
 ): string | null {
   if (cadence.autoOrganizeType === 'monthly') {
     if (!cadence.daysOfMonth?.length) return null
@@ -544,7 +549,7 @@ export function formatEditorNextRunSummary(
     return null
   }
 
-  const next = computeNextRunOn(cadence, timeZone, from)
+  const next = computeNextRunOn(cadence, timeZone, from, options)
   if (!next) return null
   return formatNextRunDateLabel(next)
 }
@@ -573,6 +578,7 @@ export function formatEditorSaveScheduleSummary(
   cadence: AutoOrganizeCadence,
   timeZone: string,
   from: Date = new Date(),
+  options?: { skipRunOnDates?: readonly string[] },
 ): string | null {
   const pattern = formatCadenceSummary(cadence)
 
@@ -586,7 +592,7 @@ export function formatEditorSaveScheduleSummary(
     return null
   }
 
-  const next = computeNextRunOn(cadence, timeZone, from)
+  const next = computeNextRunOn(cadence, timeZone, from, options)
   if (!next) return pattern
   return `${pattern} · ${formatEditorNextRunSuffix(next)}`
 }
@@ -595,6 +601,7 @@ export function formatEditorSaveScheduleSummary(
 export function formatEditorRunSchedulePreview(
   cadence: AutoOrganizeCadence,
   timeZone: string,
+  options?: { skipRunOnDates?: readonly string[] },
 ): string | null {
-  return formatEditorSaveScheduleSummary(cadence, timeZone)
+  return formatEditorSaveScheduleSummary(cadence, timeZone, new Date(), options)
 }
