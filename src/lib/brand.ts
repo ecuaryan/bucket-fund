@@ -166,10 +166,113 @@ export const ADMIN_HOUSEHOLD_ROLES_HELP_TOGGLE = 'About household roles'
 export const ADMIN_ROLE_CONTEXT_ADMIN =
   'Full household control—banks, members, and auto-organize. Shares buckets and float with Shared members.'
 
-export const ADMIN_ROLE_CONTEXT_SHARED = `Shares household buckets and ${FLOAT_LABEL_LOWER}. Fund kids with Send.`
+export const ADMIN_ROLE_CONTEXT_SHARED = `Shares household buckets and ${FLOAT_LABEL_LOWER}. Give to kids on the Kids tab.`
+
+// --- Kids tab (adults) ---
+
+export const KIDS_PAGE_TITLE = 'Kids'
+
+export const KIDS_PAGE_INTRO =
+  'Give virtual kids money here. Linked accounts follow the bank—not this app.'
+
+export const KIDS_VIRTUAL_SECTION_TITLE = 'Virtual kids'
+
+export const KIDS_LINKED_SECTION_TITLE = 'Linked bank accounts'
+
+export const KIDS_LINKED_SECTION_BODY =
+  'Money moves at the bank. Assign or change accounts in Admin → Household.'
+
+export function kidsLinkedSectionBody(
+  isAdmin: boolean,
+  adminName: string | null | undefined,
+): string {
+  if (isAdmin) return KIDS_LINKED_SECTION_BODY
+  return `Money moves at the bank. Ask ${householdAdminLabel(adminName)} to assign or change linked accounts.`
+}
+
+export const KIDS_LINKED_ONLY_BODY =
+  'Every kid in your household has a linked bank account—their balance comes from the bank. To give them money, transfer or deposit at your bank.'
+
+export const KIDS_GIVE_ACTION = 'Give'
+
+export function kidsGiveSheetTitle(kidName: string): string {
+  return `Give to ${kidName}`
+}
+
+export function kidsGiveSheetIntro(availableLabel: string): string {
+  return `You have ${availableLabel} available from shared ${FLOAT_LABEL_LOWER}.`
+}
+
+export function kidsGiveOverdraftMessage(availableLabel: string): string {
+  return `You can only give up to ${availableLabel}.`
+}
+
+export function kidsGiveAvailableHint(availableLabel: string): string {
+  return `You have ${availableLabel} available to give.`
+}
+
+export const KIDS_GIVE_SUBMIT = 'Give'
+
+export const KIDS_GIVE_SUBMITTING = 'Giving…'
+
+export const KIDS_GIVE_FAILED = 'Give failed. Try again.'
+
+export function kidsGiveSuccessToast(amountLabel: string, kidName: string): string {
+  return `Gave ${amountLabel} to ${kidName}.`
+}
+
+export const KIDS_TAKE_ACTION = 'Take'
+
+export function kidsTakeSheetTitle(kidName: string): string {
+  return `Take from ${kidName}`
+}
+
+export function kidsTakeSheetIntro(
+  kidName: string,
+  availableLabel: string,
+): string {
+  return `${kidName} has ${availableLabel} available to take back to shared ${FLOAT_LABEL_LOWER}.`
+}
+
+export function kidsTakeOverdraftMessage(availableLabel: string): string {
+  return `You can only take up to ${availableLabel}.`
+}
+
+export function kidsTakeAvailableHint(availableLabel: string): string {
+  return `${availableLabel} is available to take.`
+}
+
+export function kidsTakeSubmitLabel(): string {
+  return `Take back to ${FLOAT_LABEL}`
+}
+
+export const KIDS_TAKE_SUBMITTING = 'Taking…'
+
+export const KIDS_TAKE_FAILED = 'Take failed. Try again.'
+
+export function kidsTakeSuccessToast(amountLabel: string, kidName: string): string {
+  return `Took ${amountLabel} from ${kidName} back to shared ${FLOAT_LABEL_LOWER}.`
+}
+
+export const KIDS_EMPTY_VIRTUAL_BODY =
+  'Add a kid in Admin → Household to track allowance or birthday money here.'
+
+export function kidsEmptyVirtualBody(
+  isAdmin: boolean,
+  adminName: string | null | undefined,
+): string {
+  if (isAdmin) return KIDS_EMPTY_VIRTUAL_BODY
+  return `Ask ${householdAdminLabel(adminName)} to add a kid if you want to track allowance or birthday money here.`
+}
 
 export const ADMIN_ROLE_CONTEXT_KID =
-  'Own buckets—not shared float. Fund with Send, or assign a bank account in Money sources.'
+  'Own buckets—not shared float. Give on the Kids tab, or assign a linked account below.'
+
+/** Shared family pool label for linked-account assignment (not the Household admin tab). */
+export const SHARED_BALANCE_LABEL = 'Shared balance'
+
+/** @deprecated Use {@link SHARED_BALANCE_LABEL} for account assignment UI. */
+export const HOUSEHOLD_LABEL = SHARED_BALANCE_LABEL
 
 /** Shown in the expanded roles reference, not under the add form. */
 export const ADMIN_ROLE_PIN_RESET_NOTE =
@@ -258,9 +361,6 @@ export function manualSourceRemovedSuccess(label: string): string {
 export const TOAST_DISMISS_LABEL = 'Dismiss'
 
 export const HISTORY_NOTE_SAVED = 'Note saved.'
-
-/** Admin: linked account or bucket belongs to the shared balance (not a kid). */
-export const HOUSEHOLD_LABEL = 'Household'
 
 /** Who can link banks, add members, and change Admin settings. */
 export const HOUSEHOLD_ADMIN_PHRASE = 'your household admin'
@@ -423,14 +523,32 @@ export const ADMIN_ASSIGN_ACCOUNT_TO_KID_WHAT_CHANGES = 'What changes'
 
 /** Shown before assigning a linked account to a kid (Send rules, bank-based balance). */
 export const ADMIN_ASSIGN_ACCOUNT_TO_KID_EFFECTS = [
-  'Send is turned off for this kid—you can’t fund them here, and they can’t Send in the app.',
+  'Send is turned off for this kid—you can’t give them money here, and they can’t Send in the app.',
   'Their balance follows this linked account (debit card spending updates automatically).',
   'Moving money in or out happens at the bank—transfers and deposits, not Send.',
-  'To let this kid use Send again, assign the account back to Household.',
+  'To let this kid use Send again, unassign all linked accounts.',
 ] as const
 
 export function adminAssignAccountToKidConfirm(kidName: string): string {
   return `Assign to ${kidName}`
+}
+
+/** Kid row in Admin → Household — linked bank account list + add picker. */
+export const ADMIN_KID_LINKED_ACCOUNTS_LABEL = 'Linked accounts'
+
+export const ADMIN_KID_NO_LINKED_ACCOUNTS_HINT =
+  'None yet — balance is virtual (Give on the Kids tab).'
+
+export const ADMIN_KID_ADD_LINKED_ACCOUNT_LABEL = 'Add linked account'
+
+export const ADMIN_KID_LINKED_ACCOUNT_NONE_AVAILABLE =
+  'All linked accounts are assigned to other kids.'
+
+export function adminUnassignLinkedAccountAria(
+  accountLabel: string,
+  kidName: string,
+): string {
+  return `Unassign ${accountLabel} from ${kidName}`
 }
 
 // --- Buckets (main tab) ---
@@ -556,6 +674,13 @@ export const FLOAT_HERO_SUBTITLE = 'Left over after buckets'
 
 /** One-line hint when Float is negative. */
 export const FLOAT_NEGATIVE_HINT = 'Your buckets total more than your cash.'
+
+/** Float hero: linked-balance refresh control when no prior sync time exists. */
+export const FLOAT_REFRESH_BALANCES_LABEL = 'Refresh balances'
+
+export function floatRefreshedLabel(relativeTime: string): string {
+  return `Refreshed ${relativeTime}`
+}
 
 /** Guidance bullets for the Float info sheet on the Buckets tab. */
 export function bucketsFloatInfoPoints(isChild: boolean): readonly string[] {

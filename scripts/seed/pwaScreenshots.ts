@@ -54,7 +54,7 @@ export const PWA_MANIFEST_SCREENSHOTS = [
     form_factor: 'narrow',
   },
   {
-    src: '/screenshots/send.png',
+    src: '/screenshots/kids.png',
     sizes: screenshotSize,
     type: 'image/png',
     form_factor: 'narrow',

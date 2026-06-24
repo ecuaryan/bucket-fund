@@ -19,6 +19,8 @@ export type ChildSetAsideLine = {
   memberId: string
   name: string
   amount: number
+  /** Recallable Float for virtual kids (adult breakdown only). */
+  availableFloat?: number
 }
 
 export type BucketsBalanceBreakdown = {
@@ -56,6 +58,10 @@ function parseChildLines(raw: unknown): ChildSetAsideLine[] {
       memberId,
       name,
       amount: Number(row.amount ?? 0),
+      availableFloat:
+        row.available_float !== undefined
+          ? Number(row.available_float ?? 0)
+          : undefined,
     })
   }
   return lines

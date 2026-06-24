@@ -17,9 +17,6 @@ import {
   SEND_KID_INTRO,
   SEND_SHARED_BALANCE_INTRO,
   SEND_DB_NOT_READY_BODY,
-  SEND_ADULT_LINKED_KIDS_ONLY_BODY,
-  SEND_ADULT_LINKED_KIDS_ONLY_SEND_FOR,
-  SEND_ADULT_LINKED_KIDS_ONLY_TITLE,
   SEND_LINKED_KID_BODY,
   SEND_LINKED_KID_TITLE,
   SEND_LINKED_KIDS_EXCLUDED_HINT,
@@ -39,6 +36,7 @@ import { FieldLabel } from '@/components/ui/FieldLabel'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
+import { sanitizeAmountInput } from '@/lib/amountInput'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import type { Database } from '@/types/database'
@@ -260,6 +258,10 @@ export default function SendPage() {
     return <LoadingStatus className="py-8" />
   }
 
+  if (isAdult) {
+    return <Navigate to="/kids" replace />
+  }
+
   if (isLinkedChildUser) {
     return (
       <div className="mx-auto max-w-md space-y-6">
@@ -274,40 +276,6 @@ export default function SendPage() {
             {SEND_LINKED_KID_TITLE}
           </h2>
           <p className="mt-2 text-sm text-zinc-400">{SEND_LINKED_KID_BODY}</p>
-          <Link
-            to="/"
-            className="mt-4 inline-flex rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-emerald-400"
-          >
-            Back to Buckets
-          </Link>
-        </section>
-      </div>
-    )
-  }
-
-  const adultLinkedKidsOnly =
-    isAdult && linkedChildIds.size > 0 && recipients.length === 0
-
-  if (adultLinkedKidsOnly) {
-    return (
-      <div className="mx-auto max-w-md space-y-6">
-        <header>
-          <h1 className="text-xl font-semibold">Send</h1>
-          <p className="mt-1 text-sm text-zinc-400">{SEND_SHARED_BALANCE_INTRO}</p>
-        </header>
-        <section
-          className="rounded-2xl bg-zinc-900 px-4 py-5 ring-1 ring-zinc-800"
-          aria-label="Linked kids and Send"
-        >
-          <h2 className="text-lg font-semibold text-zinc-100">
-            {SEND_ADULT_LINKED_KIDS_ONLY_TITLE}
-          </h2>
-          <p className="mt-2 text-sm text-zinc-400">
-            {SEND_ADULT_LINKED_KIDS_ONLY_BODY}
-          </p>
-          <p className="mt-3 text-sm text-zinc-400">
-            {SEND_ADULT_LINKED_KIDS_ONLY_SEND_FOR}
-          </p>
           <Link
             to="/"
             className="mt-4 inline-flex rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-emerald-400"
@@ -455,7 +423,7 @@ export default function SendPage() {
               inputMode="decimal"
               value={amountStr}
               onValueChange={(v) => {
-                setAmountStr(v.replace(/-/g, ''))
+                setAmountStr(sanitizeAmountInput(v))
                 setSubmitError(null)
               }}
               onFocus={(e) => scrollFocusedIntoView(e.currentTarget)}

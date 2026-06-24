@@ -212,3 +212,47 @@ export async function getJoinCode(familyId: string): Promise<string> {
   if (error) throw error
   return data.join_code
 }
+
+const SEED_TELLER_INSTITUTION = 'Seed Bank'
+
+export async function addSeedTellerAccounts(
+  familyId: string,
+  accounts: {
+    label: string
+    accountType: string
+    balance: number
+    ownerMemberId?: string | null
+  }[],
+): Promise<void> {
+  const svc = serviceClient()
+  const { data: enrollment, error: enrollError } = await svc
+    .from('teller_enrollments')
+    .insert({
+      family_id: familyId,
+      enrollment_id: `seed-${crypto.randomUUID()}`,
+      access_token: 'seed-local-fake-token',
+      institution_name: SEED_TELLER_INSTITUTION,
+      status: 'active',
+      last_synced_at: new Date().toISOString(),
+    })
+    .select('id')
+    .single()
+  if (enrollError) throw enrollError
+
+  const syncedAt = new Date().toISOString()
+  for (const account of accounts) {
+    const { error } = await svc.from('accounts').insert({
+      family_id: familyId,
+      owner_member_id: account.ownerMemberId ?? null,
+      teller_account_id: `seed-${crypto.randomUUID()}`,
+      teller_enrollment_id: enrollment.id,
+      institution_name: SEED_TELLER_INSTITUTION,
+      account_name: account.label,
+      account_type: account.accountType,
+      current_balance: account.balance,
+      source: 'teller',
+      last_synced_at: syncedAt,
+    })
+    if (error) throw error
+  }
+}

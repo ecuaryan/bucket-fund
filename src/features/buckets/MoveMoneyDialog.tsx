@@ -24,6 +24,7 @@ import {
 } from '@/lib/moveMoneyDialogCopy'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
+import { sanitizeAmountInput } from '@/lib/amountInput'
 import type { Database } from '@/types/database'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
@@ -259,13 +260,11 @@ export default function MoveMoneyDialog({
             <FieldLabel>Amount</FieldLabel>
             <ClearableInput
               ref={amountRef}
-              type="number"
+              type="text"
               inputMode="decimal"
-              min="0"
-              step="0.01"
               value={amountStr}
               onValueChange={(v) => {
-                setAmountStr(v.replace(/-/g, ''))
+                setAmountStr(sanitizeAmountInput(v))
                 setError(null)
               }}
               onFocus={(e) => scrollFocusedIntoView(e.currentTarget)}

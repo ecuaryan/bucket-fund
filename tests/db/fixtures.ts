@@ -170,6 +170,19 @@ export async function sendMoney(
   return data
 }
 
+export async function returnFromChild(
+  client: Db,
+  args: { fromChildId: string; amount: number; note?: string },
+): Promise<string> {
+  const { data, error } = await client.rpc('return_from_child', {
+    p_from_child_id: args.fromChildId,
+    p_amount: args.amount,
+    p_note: args.note ?? undefined,
+  })
+  if (error) throw error
+  return data
+}
+
 export async function updateTransactionNote(
   client: Db,
   args: { transactionId: string; note: string | null },

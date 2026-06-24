@@ -3,8 +3,16 @@ import { activeNavTabIndex } from '@/components/layout/navBubbleIndicator'
 import { buildNavTabs } from '@/components/layout/navTabs'
 
 describe('activeNavTabIndex', () => {
-  const oddTabs = buildNavTabs(true, true)
-  const evenTabs = buildNavTabs(false, true)
+  const oddTabs = buildNavTabs({
+    showSendNav: false,
+    showKidsNav: true,
+    isAdmin: true,
+  })
+  const evenTabs = buildNavTabs({
+    showSendNav: false,
+    showKidsNav: false,
+    isAdmin: true,
+  })
 
   it('matches buckets at /', () => {
     expect(activeNavTabIndex(oddTabs, '/')).toBe(2)
@@ -12,6 +20,7 @@ describe('activeNavTabIndex', () => {
   })
 
   it('matches side routes', () => {
+    expect(activeNavTabIndex(oddTabs, '/kids')).toBe(0)
     expect(activeNavTabIndex(oddTabs, '/history')).toBe(1)
     expect(activeNavTabIndex(oddTabs, '/settings')).toBe(3)
   })

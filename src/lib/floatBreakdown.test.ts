@@ -3,6 +3,7 @@ import type { BucketsBalanceBreakdown } from '@/lib/availableBalance'
 import {
   buildFloatLines,
   formatBucketsHeaderSubtitle,
+  formatFloatCashSubtext,
   formatFloatSummary,
   floatSummary,
 } from '@/lib/floatBreakdown'
@@ -228,6 +229,38 @@ describe('floatSummary', () => {
     expect(formatFloatSummary(summary!, fmt)).toBe(
       '$5000.00 across 3 money sources',
     )
+  })
+})
+
+describe('formatFloatCashSubtext', () => {
+  it('formats mixed linked and manual cash for adults', () => {
+    const text = formatFloatCashSubtext(
+      adultBreakdown({ totalCash: 5000, bankCash: 3000, manualCash: 2000 }),
+      {
+        isChild: false,
+        cashAccountsCount: 3,
+        bankAccountsCount: 2,
+        manualAccountsCount: 1,
+        childTotal: 0,
+      },
+      fmt,
+    )
+    expect(text).toBe('$3000.00 linked · $2000.00 manual')
+  })
+
+  it('formats child linked account subtext', () => {
+    const text = formatFloatCashSubtext(
+      adultBreakdown({ bankCash: 130.7, totalCash: 130.7 }),
+      {
+        isChild: true,
+        cashAccountsCount: 1,
+        bankAccountsCount: 1,
+        manualAccountsCount: 0,
+        childTotal: 130.7,
+      },
+      fmt,
+    )
+    expect(text).toBe('$130.70 across linked account')
   })
 })
 

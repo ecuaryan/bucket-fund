@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   filterSendRecipients,
   isLinkedChild,
+  shouldShowKidsNav,
   shouldShowSendNav,
 } from '@/lib/sendRecipients'
 
@@ -55,14 +56,38 @@ describe('filterSendRecipients', () => {
   })
 })
 
+describe('shouldShowKidsNav', () => {
+  it('shows for adults with children', () => {
+    expect(shouldShowKidsNav('admin', 2)).toBe(true)
+    expect(shouldShowKidsNav('member', 1)).toBe(true)
+  })
+
+  it('hides for adults without children', () => {
+    expect(shouldShowKidsNav('admin', 0)).toBe(false)
+  })
+
+  it('hides for children', () => {
+    expect(shouldShowKidsNav('child', 2)).toBe(false)
+  })
+})
+
 describe('shouldShowSendNav', () => {
-  it('shows when there are virtual recipients', () => {
+  it('hides for adults even with virtual recipients', () => {
     expect(
       shouldShowSendNav({
         callerRole: 'admin',
         callerIsLinkedChild: false,
         recipientCount: 1,
-        linkedChildCount: 1,
+      }),
+    ).toBe(false)
+  })
+
+  it('shows for virtual kids with recipients', () => {
+    expect(
+      shouldShowSendNav({
+        callerRole: 'child',
+        callerIsLinkedChild: false,
+        recipientCount: 2,
       }),
     ).toBe(true)
   })
@@ -73,18 +98,6 @@ describe('shouldShowSendNav', () => {
         callerRole: 'child',
         callerIsLinkedChild: true,
         recipientCount: 0,
-        linkedChildCount: 1,
-      }),
-    ).toBe(true)
-  })
-
-  it('shows for adults when every kid is linked', () => {
-    expect(
-      shouldShowSendNav({
-        callerRole: 'admin',
-        callerIsLinkedChild: false,
-        recipientCount: 0,
-        linkedChildCount: 1,
       }),
     ).toBe(true)
   })
@@ -95,7 +108,6 @@ describe('shouldShowSendNav', () => {
         callerRole: 'admin',
         callerIsLinkedChild: false,
         recipientCount: 0,
-        linkedChildCount: 0,
       }),
     ).toBe(false)
   })

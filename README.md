@@ -8,11 +8,11 @@
 
 **Live:** [bucketmymoney.com](https://bucketmymoney.com)
 
-A bank-agnostic PWA—for solo use or a shared household. Connect read-only
-bank accounts, **organize** cash into buckets, and see where your money actually
-is at a glance. When the bank balance moves, pick which bucket covers it.
-
-Side project / portfolio piece (proprietary — not open source).
+Bucket My Money is a progressive web app for organizing cash into **buckets**
+— so you know what's actually available, not just what your bank shows. Use it
+solo or with a shared household: connect read-only bank accounts, set money aside
+from **Float**, and see where your money is at a glance. When the bank balance
+moves, pick which bucket covers it.
 
 ## Demo
 
@@ -30,8 +30,8 @@ fits your life.
 
 ## Screenshots
 
-Installable PWA with phone-sized UI — Buckets, History, and Send. Regenerate
-after significant UI changes ([docs/MAINTENANCE.md § PWA assets](./docs/MAINTENANCE.md#regenerating-readme--pwa-assets)).
+Installable progressive web app with phone-sized UI — Buckets, History, and Kids.
+Regenerate after significant UI changes ([docs/MAINTENANCE.md § PWA assets](./docs/MAINTENANCE.md#regenerating-readme--pwa-assets)).
 
 <p align="center">
   <img src="public/screenshots/buckets.png" alt="Buckets tab — Float, emoji buckets, and Auto-organize tabs" width="49%" />
@@ -39,7 +39,7 @@ after significant UI changes ([docs/MAINTENANCE.md § PWA assets](./docs/MAINTEN
 </p>
 <p align="center">
   <img src="public/screenshots/history.png" alt="History tab — bucket moves and sends" width="49%" />
-  <img src="public/screenshots/send.png" alt="Send tab — allowance to a kid" width="49%" />
+  <img src="public/screenshots/kids.png" alt="Kids tab — virtual kid balances with Give" width="49%" />
 </p>
 
 ## What it does
@@ -128,4 +128,5 @@ Full command list, seed scenarios, PWA asset regen, and security checklists:
 
 ## License
 
-Proprietary — all rights reserved. See [LICENSE](./LICENSE).
+Proprietary — all rights reserved. Side project / portfolio piece; not open
+source. See [LICENSE](./LICENSE).

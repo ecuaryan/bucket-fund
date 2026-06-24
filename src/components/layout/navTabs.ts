@@ -1,4 +1,5 @@
 import type { NavTabId } from '@/components/layout/NavTabIcon'
+import { KIDS_PAGE_TITLE } from '@/lib/brand'
 
 export type SideTab = {
   to: string
@@ -10,14 +11,26 @@ export type NavTabItem =
   | { kind: 'buckets' }
   | ({ kind: 'side' } & SideTab)
 
+export type BuildNavTabsArgs = {
+  showSendNav: boolean
+  showKidsNav: boolean
+  isAdmin: boolean
+}
+
 /**
  * Order bottom-nav tabs: Buckets centered when odd count, leading when even (4).
- * Side tabs keep a stable priority — Send, History, then Settings, Admin.
+ * Side tabs keep a stable priority — Kids/Send, History, then Settings, Admin.
  */
-export function buildNavTabs(showSendNav: boolean, isAdmin: boolean): NavTabItem[] {
+export function buildNavTabs({
+  showSendNav,
+  showKidsNav,
+  isAdmin,
+}: BuildNavTabsArgs): NavTabItem[] {
   const side: SideTab[] = []
 
-  if (showSendNav) {
+  if (showKidsNav) {
+    side.push({ to: '/kids', label: KIDS_PAGE_TITLE, tab: 'kids' })
+  } else if (showSendNav) {
     side.push({ to: '/send', label: 'Send', tab: 'send' })
   }
   side.push({ to: '/history', label: 'History', tab: 'history' })

@@ -30,8 +30,8 @@ export default function AppShell() {
         : null) ??
     'You'
   const isAdmin = member?.role === 'admin'
-  const { showSendNav } = useSendRecipients()
-  const navTabs = buildNavTabs(showSendNav, isAdmin)
+  const { showSendNav, showKidsNav } = useSendRecipients()
+  const navTabs = buildNavTabs({ showSendNav, showKidsNav, isAdmin })
 
   async function onSignOut() {
     setSigningOut(true)

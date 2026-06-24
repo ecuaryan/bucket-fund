@@ -1,6 +1,6 @@
 import { APP_ICON_NAV } from '@/lib/brand'
 
-export type NavTabId = 'buckets' | 'send' | 'history' | 'settings' | 'admin'
+export type NavTabId = 'buckets' | 'send' | 'kids' | 'history' | 'settings' | 'admin'
 
 type Props = {
   tab: NavTabId
@@ -44,6 +44,25 @@ export default function NavTabIcon({ tab, size = 'default' }: Props) {
             strokeLinejoin="round"
             d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
           />
+        </svg>
+      )
+    case 'kids':
+      return (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          className={iconSizes.default}
+        >
+          <circle cx="9" cy="7" r="3.75" />
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
         </svg>
       )
     case 'history':

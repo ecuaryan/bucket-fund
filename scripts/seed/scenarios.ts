@@ -1,4 +1,5 @@
 import { seedAdminEmail, SEED_PIN } from './constants'
+import { GOLDEN_BUCKET_NAMES } from './golden'
 import {
   PWA_SCREENSHOT_ADMIN_DISPLAY_NAME,
   PWA_SCREENSHOT_BUCKETS,
@@ -14,6 +15,7 @@ import {
 import {
   addManualSource,
   addSeedMember,
+  addSeedTellerAccounts,
   assignAccountOwner,
   createSeedAdmin,
   getJoinCode,
@@ -38,6 +40,7 @@ export const SCENARIO_IDS = [
   'many-buckets',
   'history',
   'shared-only',
+  'golden',
   PWA_SCREENSHOT_SCENARIO_ID,
   PWA_DEMO_GIF_SCENARIO_ID,
 ] as const
@@ -104,6 +107,11 @@ export function listScenarios(): { id: SeedTarget; description: string }[] {
       description: 'Admin + shared member (PIN 0000), no kid — member sign-in and Send rules',
     },
     {
+      id: 'golden',
+      description:
+        'R + S + 5 kids (PIN 0000), six linked bank accounts ($25k each), 30 emoji buckets',
+    },
+    {
       id: PWA_SCREENSHOT_SCENARIO_ID,
       description:
         'Emoji buckets, green Float — sign in and run npm run pwa:screenshots for install UI PNGs',
@@ -146,6 +154,8 @@ export async function seedScenario(id: ScenarioId): Promise<SeedResult> {
       return seedHistory(id)
     case 'shared-only':
       return seedSharedOnly(id)
+    case 'golden':
+      return seedGolden(id)
     case PWA_SCREENSHOT_SCENARIO_ID:
       return seedPwaScreenshots(id)
     case PWA_DEMO_GIF_SCENARIO_ID:
@@ -506,8 +516,97 @@ async function seedPwaScreenshots(id: ScenarioId): Promise<SeedResult> {
     members: [sam],
     notes: [
       'Buckets tab shows emoji labels and green Float — onboarding coach is complete.',
-      'Send and History tabs have sample activity for install screenshots.',
+      'Kids and History tabs have sample activity for install screenshots.',
       `Sign in at /login as ${admin.adminEmail}, then run npm run pwa:screenshots.`,
+    ],
+  }
+}
+
+async function seedGolden(id: ScenarioId): Promise<SeedResult> {
+  const label = 'Seed · Golden'
+  const admin = await createSeedAdmin(label, seedAdminEmail(id), {
+    displayName: 'R',
+  })
+  await setMemberPin(admin.adminMemberId)
+
+  const shared = await addSeedMember(admin.familyId, 'member', 'S', id)
+  const kids = await Promise.all(
+    (['K', 'A', 'J', 'T', 'Z'] as const).map((name) =>
+      addSeedMember(admin.familyId, 'child', name, id),
+    ),
+  )
+
+  const pinMembers: { name: string; pin: string }[] = [
+    { name: 'R', pin: SEED_PIN },
+    { name: 'S', pin: SEED_PIN },
+    ...kids.map((kid) => ({ name: kid.name, pin: SEED_PIN })),
+  ]
+  await setMemberPin(shared.memberId)
+  for (const kid of kids) {
+    await setMemberPin(kid.memberId)
+  }
+
+  const kidK = kids.find((kid) => kid.name === 'K')
+  const kidA = kids.find((kid) => kid.name === 'A')
+  if (!kidK || !kidA) throw new Error('golden seed: missing kid K or A')
+
+  await addSeedTellerAccounts(
+    admin.familyId,
+    [
+      { label: 'Primary checking', accountType: 'checking', balance: 25_000 },
+      { label: 'Joint checking', accountType: 'checking', balance: 25_000 },
+      { label: 'Bills checking', accountType: 'checking', balance: 25_000 },
+      { label: 'Emergency savings', accountType: 'savings', balance: 25_000 },
+      {
+        label: 'K checking',
+        accountType: 'checking',
+        balance: 25_000,
+        ownerMemberId: kidK.memberId,
+      },
+      {
+        label: 'A savings',
+        accountType: 'savings',
+        balance: 25_000,
+        ownerMemberId: kidA.memberId,
+      },
+    ],
+  )
+
+  const svc = serviceClient()
+  const adminClient = await userClient(admin.adminEmail, admin.adminPassword)
+  for (const name of GOLDEN_BUCKET_NAMES) {
+    const bucketId = await insertBucket(svc, admin.familyId, name, null)
+    await moveMoney(adminClient, {
+      fromBucketId: null,
+      toBucketId: bucketId,
+      amount: 100,
+    })
+  }
+
+  for (const kidName of ['J', 'T', 'Z'] as const) {
+    const kid = kids.find((member) => member.name === kidName)
+    if (!kid) throw new Error(`golden seed: missing kid ${kidName}`)
+    await sendMoney(adminClient, {
+      toMemberId: kid.memberId,
+      amount: 10_000,
+      note: 'Seed allowance',
+    })
+  }
+
+  const joinCode = await getJoinCode(admin.familyId)
+  return {
+    scenario: id,
+    familyName: label,
+    admin,
+    joinCode,
+    members: [shared, ...kids],
+    pinMembers,
+    notes: [
+      '$150,000 linked bank cash (6 × $25k), 30 family-pool buckets ($100 each).',
+      'J, T, and Z each have $10,000 spending money (virtual kids).',
+      'K and A each have one assigned bank account (linked kids).',
+      `Sign in at /login as ${admin.adminEmail} (password ${admin.adminPassword}).`,
+      'Family login: join code above, then R / S / K / A / J / T / Z — PIN 0000.',
     ],
   }
 }

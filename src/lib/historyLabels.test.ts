@@ -3,8 +3,11 @@ import { FLOAT_LABEL } from '@/lib/brand'
 import {
   bucketEndpointLabel,
   historyBucketMoveSubtitle,
+  historySendActor,
   historySendSubtitle,
+  historyTakeSubtitle,
   historyMoveActorLabel,
+  historyShowSendActor,
   sendMemberEndpointLabel,
 } from '@/lib/historyLabels'
 
@@ -153,6 +156,45 @@ describe('historyBucketMoveSubtitle', () => {
   })
 })
 
+describe('historyShowSendActor', () => {
+  it('is always on for adults', () => {
+    expect(
+      historyShowSendActor({
+        viewerRole: 'admin',
+        currentMemberId: 'kid',
+        row: { type: 'send', from_member_id: 'dad', to_member_id: 'kid' },
+      }),
+    ).toBe(true)
+  })
+
+  it('is on for a child on their own send rows', () => {
+    expect(
+      historyShowSendActor({
+        viewerRole: 'child',
+        currentMemberId: 'kid',
+        row: { type: 'send', from_member_id: 'dad', to_member_id: 'kid' },
+      }),
+    ).toBe(true)
+    expect(
+      historyShowSendActor({
+        viewerRole: 'child',
+        currentMemberId: 'kid',
+        row: { type: 'send', from_member_id: 'kid', to_member_id: 'dad' },
+      }),
+    ).toBe(true)
+  })
+
+  it('is off for a child on bucket moves', () => {
+    expect(
+      historyShowSendActor({
+        viewerRole: 'child',
+        currentMemberId: 'kid',
+        row: { type: 'bucket_move', from_member_id: 'dad', to_member_id: null },
+      }),
+    ).toBe(false)
+  })
+})
+
 describe('historySendSubtitle', () => {
   it('includes sender for adults', () => {
     expect(
@@ -176,5 +218,61 @@ describe('historySendSubtitle', () => {
         showActor: true,
       }),
     ).toBe('Send · by you · 9:00 AM')
+  })
+})
+
+describe('historyTakeSubtitle', () => {
+  it('labels parent-initiated takes', () => {
+    expect(
+      historyTakeSubtitle({
+        time: '3:45 PM',
+        actorMemberId: 'm1',
+        actorName: 'Ryan',
+        currentMemberId: 'm2',
+        showActor: true,
+      }),
+    ).toBe('Take · by Ryan · 3:45 PM')
+  })
+
+  it('shows parent name to the child who was taken from', () => {
+    expect(
+      historyTakeSubtitle({
+        time: '3:45 PM',
+        actorMemberId: 'dad',
+        actorName: 'R',
+        currentMemberId: 'kid',
+        showActor: true,
+      }),
+    ).toBe('Take · by R · 3:45 PM')
+  })
+})
+
+describe('historySendActor', () => {
+  it('uses initiator for parent takes', () => {
+    expect(
+      historySendActor({
+        row: {
+          type: 'send',
+          from_member_id: 'kid',
+          from_member_name: 'Jake',
+          initiated_by_member_id: 'dad',
+          initiated_by_member_name: 'Ryan',
+        },
+      }),
+    ).toEqual({ actorMemberId: 'dad', actorName: 'Ryan' })
+  })
+
+  it('uses sender for normal sends', () => {
+    expect(
+      historySendActor({
+        row: {
+          type: 'send',
+          from_member_id: 'dad',
+          from_member_name: 'Ryan',
+          initiated_by_member_id: null,
+          initiated_by_member_name: null,
+        },
+      }),
+    ).toEqual({ actorMemberId: 'dad', actorName: 'Ryan' })
   })
 })

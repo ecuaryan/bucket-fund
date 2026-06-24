@@ -4,6 +4,7 @@ import { subscribeHouseholdRosterRefresh } from '@/lib/householdRosterRefresh'
 import {
   filterSendRecipients,
   isLinkedChild,
+  shouldShowKidsNav,
   shouldShowSendNav,
   type SendRecipientMember,
 } from '@/lib/sendRecipients'
@@ -80,21 +81,31 @@ export function useSendRecipients() {
     )
   }, [members, member, linkedChildIds])
 
+  const childCount = useMemo(() => {
+    if (!members) return 0
+    return members.filter((m) => m.role === 'child').length
+  }, [members])
+
   const sendReady = members !== null
   const callerIsLinkedChild =
     member != null && isLinkedChild(member.id, member.role, linkedChildIds)
+  const showKidsNav =
+    sendReady &&
+    shouldShowKidsNav(member?.role ?? '', childCount)
   const showSendNav =
     sendReady &&
+    !showKidsNav &&
     shouldShowSendNav({
       callerRole: member?.role ?? '',
       callerIsLinkedChild,
       recipientCount: recipients.length,
-      linkedChildCount: linkedChildIds.size,
     })
 
   return {
     recipients,
     sendReady,
     showSendNav,
+    showKidsNav,
+    childCount,
   }
 }

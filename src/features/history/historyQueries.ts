@@ -19,6 +19,8 @@ export type HistoryTxRow = {
   from_member_name: string | null
   to_member_id: string | null
   to_member_name: string | null
+  initiated_by_member_id: string | null
+  initiated_by_member_name: string | null
   from_member_balance_before: string | number | null
   from_member_balance_after: string | number | null
   to_member_balance_before: string | number | null

@@ -88,6 +88,7 @@ import {
 } from '@/lib/autoOrganizeCadence'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
+import { sanitizeAmountInput } from '@/lib/amountInput'
 import type { Database } from '@/types/database'
 
 type Bucket = Pick<
@@ -194,10 +195,6 @@ function bucketDraftsFromBuckets(
     bucketId: bucket.id,
     amountStr: amountByBucketId.get(bucket.id) ?? '',
   }))
-}
-
-function sanitizeAmountInput(value: string): string {
-  return value.replace(/-/g, '')
 }
 
 function snapshotFromState(state: EditorSnapshot): string {

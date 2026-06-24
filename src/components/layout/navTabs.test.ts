@@ -6,39 +6,43 @@ function tabLabels(tabs: ReturnType<typeof buildNavTabs>) {
 }
 
 describe('buildNavTabs', () => {
-  it('four tabs: Buckets leads (admin without send)', () => {
-    expect(tabLabels(buildNavTabs(false, true))).toEqual([
-      'Buckets',
-      'History',
-      'Settings',
-      'Admin',
-    ])
+  it('four tabs: Buckets leads (admin without send or kids)', () => {
+    expect(
+      tabLabels(
+        buildNavTabs({ showSendNav: false, showKidsNav: false, isAdmin: true }),
+      ),
+    ).toEqual(['Buckets', 'History', 'Settings', 'Admin'])
   })
 
   it('four tabs: Buckets leads (child with send)', () => {
-    expect(tabLabels(buildNavTabs(true, false))).toEqual([
-      'Buckets',
-      'Send',
-      'History',
-      'Settings',
-    ])
+    expect(
+      tabLabels(
+        buildNavTabs({ showSendNav: true, showKidsNav: false, isAdmin: false }),
+      ),
+    ).toEqual(['Buckets', 'Send', 'History', 'Settings'])
   })
 
-  it('five tabs: Buckets centered (admin with send)', () => {
-    expect(tabLabels(buildNavTabs(true, true))).toEqual([
-      'Send',
-      'History',
-      'Buckets',
-      'Settings',
-      'Admin',
-    ])
+  it('five tabs: Buckets centered (admin with kids)', () => {
+    expect(
+      tabLabels(
+        buildNavTabs({ showSendNav: false, showKidsNav: true, isAdmin: true }),
+      ),
+    ).toEqual(['Kids', 'History', 'Buckets', 'Settings', 'Admin'])
   })
 
-  it('three tabs: Buckets centered (no send)', () => {
-    expect(tabLabels(buildNavTabs(false, false))).toEqual([
-      'History',
-      'Buckets',
-      'Settings',
-    ])
+  it('five tabs: Buckets centered (admin with send — virtual kid session)', () => {
+    expect(
+      tabLabels(
+        buildNavTabs({ showSendNav: true, showKidsNav: false, isAdmin: true }),
+      ),
+    ).toEqual(['Send', 'History', 'Buckets', 'Settings', 'Admin'])
+  })
+
+  it('three tabs: Buckets centered (no send or kids)', () => {
+    expect(
+      tabLabels(
+        buildNavTabs({ showSendNav: false, showKidsNav: false, isAdmin: false }),
+      ),
+    ).toEqual(['History', 'Buckets', 'Settings'])
   })
 })
