@@ -43,7 +43,8 @@ test('capture PWA install screenshots', async ({ page }) => {
 
   await page.waitForURL('/')
   await page.getByText(PWA_SCREENSHOT_ADMIN_DISPLAY_NAME).waitFor()
-  await page.getByRole('heading', { name: NAV_BUCKETS_LABEL }).waitFor()
+  const bucketsTab = page.getByRole('tab', { name: NAV_BUCKETS_LABEL })
+  await expect(bucketsTab).toHaveAttribute('aria-selected', 'true')
   for (const bucket of PWA_SCREENSHOT_BUCKETS) {
     await page.getByText(bucket.name, { exact: true }).waitFor()
   }
@@ -68,7 +69,8 @@ test('capture PWA install screenshots', async ({ page }) => {
 
   await applyPwaScreenshotRebalance(adminEmail)
   await page.goto('/')
-  await waitForNavSettled(page, 'Buckets')
+  await waitForNavSettled(page, NAV_BUCKETS_LABEL)
+  await expect(bucketsTab).toHaveAttribute('aria-selected', 'true')
   await page.getByText(FLOAT_NEGATIVE_HINT).waitFor()
   await page.screenshot({ path: join(outputDir, 'buckets-rebalance.png') })
 })
