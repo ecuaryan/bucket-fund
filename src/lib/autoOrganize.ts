@@ -51,6 +51,8 @@ export type AutoOrganizeWithDetails = AutoOrganizeRow & {
   lastRunLabel: string | null
   /** Any run (manual or scheduled) on the family's local calendar today. */
   hasRunToday: boolean
+  /** Local run_on dates with an existing run (matches cron idempotency). */
+  occupiedRunOnDates: readonly string[]
   totalPerRun: number
   /** True when totalPerRun is computed from current balances (top_up / save_off). */
   totalIsEstimate: boolean
@@ -288,7 +290,10 @@ export async function fetchAutoOrganizes(): Promise<AutoOrganizeWithDetails[]> {
       intervalUnit: row.interval_unit as AutoOrganizeCadence['intervalUnit'],
       daysOfMonth: row.days_of_month,
     }
-    const nextRunOn = computeNextRunOn(cadence, timeZone)
+    const occupiedRunOnDates = runs.map((run) => run.run_on)
+    const nextRunOn = computeNextRunOn(cadence, timeZone, new Date(), {
+      skipRunOnDates: occupiedRunOnDates,
+    })
     const todayIso = localTodayIso(timeZone)
     const { total, isEstimate } = computeTotalPerRun(kind, lines)
     const destNested = destBucket as { name: string } | null
@@ -299,6 +304,7 @@ export async function fetchAutoOrganizes(): Promise<AutoOrganizeWithDetails[]> {
       lastRun: lastSuccessfulRun,
       lastRunLabel: formatLastRunLabel(lastSuccessfulRun?.run_on ?? null),
       hasRunToday: autoOrganizeHasRunOnDate(runs, todayIso),
+      occupiedRunOnDates,
       totalPerRun: total,
       totalIsEstimate: isEstimate,
       cadenceSummary: formatCadenceSummary(cadence),
