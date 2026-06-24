@@ -7,6 +7,11 @@ import {
   PWA_SCREENSHOT_SEND_AMOUNT,
 } from './pwaScreenshots'
 import {
+  PWA_DEMO_GIF_ADMIN_DISPLAY_NAME,
+  PWA_DEMO_GIF_MANUAL_SOURCE,
+  PWA_DEMO_GIF_SCENARIO_ID,
+} from './pwaDemoGifs'
+import {
   addManualSource,
   addSeedMember,
   assignAccountOwner,
@@ -34,6 +39,7 @@ export const SCENARIO_IDS = [
   'history',
   'shared-only',
   PWA_SCREENSHOT_SCENARIO_ID,
+  PWA_DEMO_GIF_SCENARIO_ID,
 ] as const
 
 export type ScenarioId = (typeof SCENARIO_IDS)[number]
@@ -102,6 +108,11 @@ export function listScenarios(): { id: SeedTarget; description: string }[] {
       description:
         'Emoji buckets, green Float — sign in and run npm run pwa:screenshots for install UI PNGs',
     },
+    {
+      id: PWA_DEMO_GIF_SCENARIO_ID,
+      description:
+        'Cash in Float, no buckets — sign in and run npm run pwa:gifs for README demo GIF',
+    },
   ]
 }
 
@@ -137,10 +148,37 @@ export async function seedScenario(id: ScenarioId): Promise<SeedResult> {
       return seedSharedOnly(id)
     case PWA_SCREENSHOT_SCENARIO_ID:
       return seedPwaScreenshots(id)
+    case PWA_DEMO_GIF_SCENARIO_ID:
+      return seedPwaGifs(id)
     default: {
       const _exhaustive: never = id
       throw new Error(`Unknown scenario: ${_exhaustive}`)
     }
+  }
+}
+
+async function seedPwaGifs(id: ScenarioId): Promise<SeedResult> {
+  const admin = await createSeedAdmin(
+    'Seed · PWA GIFs',
+    seedAdminEmail(id),
+    { displayName: PWA_DEMO_GIF_ADMIN_DISPLAY_NAME },
+  )
+  const adminClient = await userClient(admin.adminEmail, admin.adminPassword)
+  await addManualSource(
+    adminClient,
+    PWA_DEMO_GIF_MANUAL_SOURCE.label,
+    PWA_DEMO_GIF_MANUAL_SOURCE.amount,
+  )
+  const joinCode = await getJoinCode(admin.familyId)
+  return {
+    scenario: id,
+    familyName: 'Seed · PWA GIFs',
+    admin,
+    joinCode,
+    notes: [
+      '$5,000 manual source, no buckets — run npm run pwa:gifs after sign-in.',
+      `Sign in at /login as ${admin.adminEmail}.`,
+    ],
   }
 }
 

@@ -19,6 +19,23 @@ and architecture. **Auto-organize** (automatic organization into buckets;
 See [AGENTS.md](./AGENTS.md) for AI agent / contributor
 entry points.
 
+## Demo
+
+Your bank shows one balance. Buckets show where that money is actually going —
+create a few, set money aside from **Float**, and put them in the order that
+fits your life.
+
+<p align="center">
+  <img
+    src="public/demos/organize-money.gif"
+    alt="Buckets tab — create emoji buckets, set money aside from Float, drag Rent up"
+    width="280"
+  />
+</p>
+
+**Regenerate:** `npm run pwa:gifs` (resets the `pwa-gifs` seed, Playwright + ffmpeg).
+Constants live in [`scripts/seed/pwaDemoGifs.ts`](./scripts/seed/pwaDemoGifs.ts).
+
 ## Install experience
 
 Bucket My Money ships as an installable PWA. On Chromium browsers, the
@@ -86,6 +103,7 @@ use another for `npm run dev` (or `npm run dev:phone`). After pulling SQL change
 | `npm run test:db` | RLS + `move_money` + transaction visibility (local Supabase) |
 | `npm run test:e2e` | Playwright smoke (Docker + local Supabase; first run: `npx playwright install chromium`) |
 | `npm run pwa:screenshots` | Refresh PWA manifest install PNGs (local seed + Playwright; not CI) |
+| `npm run pwa:gifs` | Refresh README demo GIF (`pwa-gifs` seed + Playwright; not CI) |
 | `npm run test:all` | Unit + database tests |
 | `npm run check:full` | Lint + all tests + production build |
 
@@ -126,6 +144,7 @@ another email to switch — no reset needed.
 | `history` | `history@bmm.dev` | ~40 moves and sends — History volume |
 | `shared-only` | `shared-only@bmm.dev` | Shared member (PIN **0000**), no kid |
 | `pwa-screenshots` | `pwa-screenshots@bmm.dev` | Emoji buckets, green Float — PWA install screenshot source |
+| `pwa-gifs` | `pwa-gifs@bmm.dev` | $5k Float, no buckets — README demo GIF source (`npm run pwa:gifs`) |
 
 **PWA install screenshots (Chrome Richer Install UI):** see [Install experience](#install-experience) for the gallery. To refresh PNGs: seed `pwa-screenshots`, sign in locally, then
 `npm run pwa:screenshots`. Bucket

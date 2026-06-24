@@ -1,48 +1,26 @@
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { NAV_BUCKETS_LABEL, FLOAT_NEGATIVE_HINT } from '../../src/lib/brand'
-import { SEED_PASSWORD, seedAdminEmail } from '../../scripts/seed/constants'
 import { applyPwaScreenshotRebalance } from '../../scripts/seed/pwaScreenshotRebalance'
+import { seedAdminEmail } from '../../scripts/seed/constants'
 import {
-  PWA_SCREENSHOT_ADMIN_DISPLAY_NAME,
   PWA_SCREENSHOT_BUCKETS,
   PWA_SCREENSHOT_SCENARIO_ID,
 } from '../../scripts/seed/pwaScreenshots'
+import {
+  signInPwaScreenshotAdmin,
+  waitForNavSettled,
+} from '../pwa-media/helpers'
 
 const outputDir = join(process.cwd(), 'public/screenshots')
-
-/** Nav bubble re-measures in layout effect — wait until it centers on the active tab. */
-async function waitForNavSettled(page: Page, label: string) {
-  const tab = page.locator('nav').getByLabel(label)
-  await expect(tab).toHaveClass(/text-emerald-300/)
-  await page.waitForFunction((tabLabel) => {
-    const link = Array.from(document.querySelectorAll('nav a')).find(
-      (a) => a.getAttribute('aria-label') === tabLabel,
-    )
-    const bubble = document.querySelector('nav ul > div[aria-hidden]')
-    if (!link || !bubble) return false
-    const linkRect = link.getBoundingClientRect()
-    const bubbleRect = bubble.getBoundingClientRect()
-    const linkCenter = linkRect.left + linkRect.width / 2
-    const bubbleCenter = bubbleRect.left + bubbleRect.width / 2
-    return Math.abs(linkCenter - bubbleCenter) < 2
-  }, label)
-}
 
 test('capture PWA install screenshots', async ({ page }) => {
   await mkdir(outputDir, { recursive: true })
   await page.emulateMedia({ reducedMotion: 'reduce' })
 
+  await signInPwaScreenshotAdmin(page)
   const adminEmail = seedAdminEmail(PWA_SCREENSHOT_SCENARIO_ID)
-
-  await page.goto('/login')
-  await page.locator('#login-email').fill(adminEmail)
-  await page.locator('#login-password').fill(SEED_PASSWORD)
-  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-
-  await page.waitForURL('/')
-  await page.getByText(PWA_SCREENSHOT_ADMIN_DISPLAY_NAME).waitFor()
   const bucketsTab = page.getByRole('tab', { name: NAV_BUCKETS_LABEL })
   await expect(bucketsTab).toHaveAttribute('aria-selected', 'true')
   for (const bucket of PWA_SCREENSHOT_BUCKETS) {
