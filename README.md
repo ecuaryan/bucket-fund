@@ -19,6 +19,27 @@ and architecture. **Auto-organize** (automatic organization into buckets;
 See [AGENTS.md](./AGENTS.md) for AI agent / contributor
 entry points.
 
+## Install experience
+
+Bucket My Money ships as an installable PWA. On Chromium browsers, the
+[Richer Install UI](https://web.dev/patterns/web-apps/richer-install-ui/) reads
+`screenshots` from the web app manifest — the same assets committed under
+`public/screenshots/`, captured at **412×915** to match a typical phone viewport.
+
+<p align="center">
+  <img src="public/screenshots/buckets.png" alt="Buckets tab — Float, emoji buckets, and Auto-organize tabs" width="49%" />
+  <img src="public/screenshots/buckets-rebalance.png" alt="Buckets tab — negative Float rebalance signal" width="49%" />
+</p>
+<p align="center">
+  <img src="public/screenshots/history.png" alt="History tab — bucket moves and sends" width="49%" />
+  <img src="public/screenshots/send.png" alt="Send tab — allowance to a kid" width="49%" />
+</p>
+
+**Regenerate after UI changes:** seed the `pwa-screenshots` scenario locally, sign
+in, then run `npm run pwa:screenshots` (Playwright). Bucket names, amounts, and
+manifest entries live in [`scripts/seed/pwaScreenshots.ts`](./scripts/seed/pwaScreenshots.ts).
+See [Local database scenarios](#local-database-scenarios) for the `pwa-screenshots` seed.
+
 ## Stack
 
 - Vite + React 19 + TypeScript
@@ -64,6 +85,7 @@ use another for `npm run dev` (or `npm run dev:phone`). After pulling SQL change
 | `node scripts/supabase-env.mjs` | Print `export …` lines (for manual copy) |
 | `npm run test:db` | RLS + `move_money` + transaction visibility (local Supabase) |
 | `npm run test:e2e` | Playwright smoke (Docker + local Supabase; first run: `npx playwright install chromium`) |
+| `npm run pwa:screenshots` | Refresh PWA manifest install PNGs (local seed + Playwright; not CI) |
 | `npm run test:all` | Unit + database tests |
 | `npm run check:full` | Lint + all tests + production build |
 
@@ -105,9 +127,8 @@ another email to switch — no reset needed.
 | `shared-only` | `shared-only@bmm.dev` | Shared member (PIN **0000**), no kid |
 | `pwa-screenshots` | `pwa-screenshots@bmm.dev` | Emoji buckets, green Float — PWA install screenshot source |
 
-**PWA install screenshots (Chrome Richer Install UI):** seed `pwa-screenshots`, sign in locally, then
-`npm run pwa:screenshots` to refresh PNGs under `public/screenshots/` (green Buckets, rebalance Buckets,
-History, Send — committed to the repo). Bucket
+**PWA install screenshots (Chrome Richer Install UI):** see [Install experience](#install-experience) for the gallery. To refresh PNGs: seed `pwa-screenshots`, sign in locally, then
+`npm run pwa:screenshots`. Bucket
 names and amounts live in [`scripts/seed/pwaScreenshots.ts`](./scripts/seed/pwaScreenshots.ts).
 
 CI does **not** run seeds — database tests still create their own fixtures.
@@ -224,6 +245,7 @@ checks are deferred until a possible paid SaaS phase.
 - Admin: assign linked bank accounts to kids (family pool default)
 - Dark theme (pure black + zinc palette)
 - PWA icons, favicons, apple-touch-icon, offline fallback, service worker registration
+- PWA manifest install screenshots (Chrome Richer Install UI; Playwright capture flow)
 - Background sign-out (60s hidden → local sign-out for all roles; branded gate on hide; family PIN re-auth)
 - Session-scoped auth (kill / cold PWA reopen → sign in again; tab reload keeps session)
 - **Auto-organize:** admin CRUD, pause/resume, Run now (confirm sheet), Shared
