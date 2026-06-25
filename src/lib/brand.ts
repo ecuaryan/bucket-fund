@@ -179,6 +179,9 @@ export const KIDS_VIRTUAL_SECTION_TITLE = 'Virtual kids'
 
 export const KIDS_LINKED_SECTION_TITLE = 'Linked bank accounts'
 
+/** Footer link from the Kids linked-accounts section to the Buckets Bank tab. */
+export const KIDS_LINKED_VIEW_ACTIVITY = 'View recent bank activity'
+
 export const KIDS_LINKED_SECTION_BODY =
   'Money moves at the bank. Assign or change accounts in Admin → Household.'
 
