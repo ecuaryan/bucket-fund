@@ -82,6 +82,59 @@ describe('float RPC security', () => {
     expect(Number(childRow.bank_cash)).toBe(0)
   })
 
+  it('has_linked_bank tracks the caller, not the family-wide bank', async () => {
+    const family = await createAdminFamily('sm-has-linked-bank')
+    const virtualKid = await addMember(family.familyId, 'child', 'Vera')
+    const linkedKid = await addMember(family.familyId, 'child', 'Liam')
+    const svc = serviceClient()
+
+    // Parent's family-pool bank account that has actually synced — this is
+    // what made the virtual kid's refresh button appear: bank_last_synced_at
+    // is family-wide, so it is non-null for every member.
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 1000,
+      last_synced_at: new Date().toISOString(),
+    })
+    // The linked kid owns a Teller account that has never synced and sits at
+    // $0 — the case bank_cash / bank_last_synced_at can't gate correctly.
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: linkedKid.memberId,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 0,
+    })
+
+    const virtualClient = await userClient(
+      virtualKid.email,
+      virtualKid.password,
+    )
+    const virtualRow = (await virtualClient.rpc('get_home_balance_breakdown'))
+      .data as Record<string, unknown>
+    // Family bank synced, so the family-wide timestamp is non-null...
+    expect(virtualRow.bank_last_synced_at).not.toBeNull()
+    // ...but the virtual kid owns nothing, so the refresh gate stays false.
+    expect(virtualRow.has_linked_bank).toBe(false)
+
+    const linkedClient = await userClient(linkedKid.email, linkedKid.password)
+    const linkedRow = (await linkedClient.rpc('get_home_balance_breakdown'))
+      .data as Record<string, unknown>
+    // Owns a Teller account despite $0 and no sync — gate is true.
+    expect(Number(linkedRow.bank_cash)).toBe(0)
+    expect(linkedRow.has_linked_bank).toBe(true)
+
+    // Adults personally own nothing here (family-pool is null-owned), so the
+    // field is false for them — their gate uses the readable accounts list.
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const adminRow = (await admin.rpc('get_home_balance_breakdown'))
+      .data as Record<string, unknown>
+    expect(adminRow.has_linked_bank).toBe(false)
+  })
+
   it('child cannot read shared pool snapshots from transactions_client', async () => {
     const family = await createAdminFamily('sm-client-redact')
     const child = await addMember(family.familyId, 'child', 'Alex')
