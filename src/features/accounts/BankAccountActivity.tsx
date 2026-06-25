@@ -125,7 +125,9 @@ export default function BankAccountActivity({
             </div>
           ) : rows && rows.length > 0 ? (
             <ScrollFade className="max-h-52" scrollClassName="px-0.5">
-              <ul className="space-y-1.5">
+              {/* py-1: keep the first/last row ring off the scroll viewport's
+                  overflow-hidden edges, which would clip them flush. */}
+              <ul className="space-y-1.5 py-1">
                 {rows.map((txn) => (
                   <li
                     key={txn.id}
