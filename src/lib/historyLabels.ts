@@ -61,7 +61,7 @@ export function historyShowSendActor(args: {
 }
 
 function historyTxSubtitle(args: {
-  kind: 'Bucket move' | 'Send' | 'Take'
+  kind: 'Bucket move' | 'Give' | 'Take'
   time: string
   actorMemberId: string | null | undefined
   actorName: string | null | undefined
@@ -94,7 +94,7 @@ export function historySendSubtitle(args: {
   currentMemberId: string
   showActor: boolean
 }): string {
-  return historyTxSubtitle({ ...args, kind: 'Send' })
+  return historyTxSubtitle({ ...args, kind: 'Give' })
 }
 
 /** Parent took unallocated money from a virtual kid (return_from_child). */

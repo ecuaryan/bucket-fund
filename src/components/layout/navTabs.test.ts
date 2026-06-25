@@ -19,7 +19,7 @@ describe('buildNavTabs', () => {
       tabLabels(
         buildNavTabs({ showSendNav: true, showKidsNav: false, isAdmin: false }),
       ),
-    ).toEqual(['Buckets', 'Send', 'History', 'Settings'])
+    ).toEqual(['Buckets', 'Give', 'History', 'Settings'])
   })
 
   it('five tabs: Buckets centered (admin with kids)', () => {
@@ -35,7 +35,7 @@ describe('buildNavTabs', () => {
       tabLabels(
         buildNavTabs({ showSendNav: true, showKidsNav: false, isAdmin: true }),
       ),
-    ).toEqual(['Send', 'History', 'Buckets', 'Settings', 'Admin'])
+    ).toEqual(['Give', 'History', 'Buckets', 'Settings', 'Admin'])
   })
 
   it('three tabs: Buckets centered (no send or kids)', () => {

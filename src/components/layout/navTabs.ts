@@ -31,7 +31,7 @@ export function buildNavTabs({
   if (showKidsNav) {
     side.push({ to: '/kids', label: KIDS_PAGE_TITLE, tab: 'kids' })
   } else if (showSendNav) {
-    side.push({ to: '/send', label: 'Send', tab: 'send' })
+    side.push({ to: '/give', label: 'Give', tab: 'send' })
   }
   side.push({ to: '/history', label: 'History', tab: 'history' })
   side.push({ to: '/settings', label: 'Settings', tab: 'settings' })

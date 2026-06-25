@@ -111,7 +111,7 @@ export default function SendPage() {
         setSendEnabled(!usedFallback)
       })
     } catch (e) {
-      setLoadError(formatLoadErrorMessage(e, 'Could not load send screen.'))
+      setLoadError(formatLoadErrorMessage(e, 'Could not load give screen.'))
     }
   }, [memberId])
 
@@ -206,7 +206,7 @@ export default function SendPage() {
     setSubmitError(null)
 
     if (!toMemberId) {
-      setSubmitError('Choose who to send to.')
+      setSubmitError('Choose who to give to.')
       return
     }
     if (!amountValid) {
@@ -228,8 +228,8 @@ export default function SendPage() {
       const recipient = recipients.find((m) => m.id === toMemberId)
       toast.success(
         recipient
-          ? `Sent ${formatMoney(amount)} to ${recipient.name}.`
-          : `Sent ${formatMoney(amount)}.`,
+          ? `Gave ${formatMoney(amount)} to ${recipient.name}.`
+          : `Gave ${formatMoney(amount)}.`,
       )
       setAmountStr('')
       setNote('')
@@ -237,7 +237,7 @@ export default function SendPage() {
       await loadData()
     } catch (err) {
       setSubmitError(
-        err instanceof Error ? err.message : 'Send failed. Try again.',
+        err instanceof Error ? err.message : 'Give failed. Try again.',
       )
     } finally {
       setSubmitting(false)
@@ -247,7 +247,7 @@ export default function SendPage() {
   if (loadError) {
     return (
       <LoadErrorPanel
-        title="Could not load send"
+        title="Could not load give"
         message={loadError}
         onRetry={() => void loadData()}
       />
@@ -266,7 +266,7 @@ export default function SendPage() {
     return (
       <div className="mx-auto max-w-md space-y-6">
         <header>
-          <h1 className="text-xl font-semibold">Send</h1>
+          <h1 className="text-xl font-semibold">Give</h1>
         </header>
         <section
           className="rounded-2xl bg-zinc-900 px-4 py-5 ring-1 ring-zinc-800"
@@ -308,11 +308,11 @@ export default function SendPage() {
     <>
     <BusyOverlay
       busy={submitting && !manualSourceOpen}
-      label="Sending…"
+      label="Giving…"
     >
       <div className="mx-auto max-w-md space-y-6">
       <header>
-        <h1 className="text-xl font-semibold">Send</h1>
+        <h1 className="text-xl font-semibold">Give</h1>
         <p className="mt-1 text-sm text-zinc-400">
           {isAdult ? SEND_SHARED_BALANCE_INTRO : SEND_KID_INTRO}
         </p>
@@ -480,7 +480,7 @@ export default function SendPage() {
             disabled={submitting || overdraft}
             className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {submitting ? 'Sending…' : 'Send'}
+            {submitting ? 'Giving…' : 'Give'}
           </button>
         </form>
       ) : !sendEnabled ? (
@@ -490,7 +490,7 @@ export default function SendPage() {
       ) : null}
 
       <p className="text-center text-xs text-zinc-500">
-        Sent money shows in{' '}
+        Given money shows in{' '}
         <Link to="/history" className="text-emerald-400 hover:underline">
           History
         </Link>

@@ -205,7 +205,7 @@ describe('historySendSubtitle', () => {
         currentMemberId: 'm2',
         showActor: true,
       }),
-    ).toBe('Send · by Ryan · 3:45 PM')
+    ).toBe('Give · by Ryan · 3:45 PM')
   })
 
   it('uses "you" when the viewer sent', () => {
@@ -217,7 +217,7 @@ describe('historySendSubtitle', () => {
         currentMemberId: 'm1',
         showActor: true,
       }),
-    ).toBe('Send · by you · 9:00 AM')
+    ).toBe('Give · by you · 9:00 AM')
   })
 })
 
