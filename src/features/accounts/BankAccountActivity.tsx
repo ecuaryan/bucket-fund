@@ -23,19 +23,9 @@ type Props = {
   accountId: string
   /** When false, collapse and discard cached rows. */
   panelOpen: boolean
-  /**
-   * Skip the show/hide toggle and render the activity directly whenever the
-   * panel is open — used when the activity is the whole surface (e.g. a child's
-   * Bank tab), so a toggle would be redundant.
-   */
-  alwaysExpanded?: boolean
 }
 
-export default function BankAccountActivity({
-  accountId,
-  panelOpen,
-  alwaysExpanded = false,
-}: Props) {
+export default function BankAccountActivity({ accountId, panelOpen }: Props) {
   const { formatMoney } = useHideAmounts()
   const [expanded, setExpanded] = useState(false)
   const [attempted, setAttempted] = useState(false)
@@ -43,9 +33,6 @@ export default function BankAccountActivity({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fetchGeneration = useRef(0)
-
-  // When always-expanded, the activity shows as soon as the panel is open.
-  const showActivity = alwaysExpanded ? panelOpen : expanded
 
   const load = useCallback(async () => {
     const generation = ++fetchGeneration.current
@@ -77,11 +64,13 @@ export default function BankAccountActivity({
     }
   }, [panelOpen])
 
+  // Fetch only after the user opens this account's activity — opening the Bank
+  // tab must not fire a Teller call for every account at once.
   useEffect(() => {
-    if (!showActivity || attempted || loading) return
+    if (!expanded || attempted || loading) return
     setAttempted(true)
     void load()
-  }, [showActivity, attempted, loading, load])
+  }, [expanded, attempted, loading, load])
 
   function retry() {
     setAttempted(false)
@@ -91,17 +80,15 @@ export default function BankAccountActivity({
 
   return (
     <div className="mt-2 rounded-xl bg-zinc-950/50 px-3 py-2 ring-1 ring-inset ring-zinc-800/60">
-      {alwaysExpanded ? null : (
-        <button
-          type="button"
-          onClick={() => setExpanded((prev) => !prev)}
-          className="text-xs font-semibold text-emerald-400/90 transition hover:text-emerald-300"
-        >
-          {expanded ? BANK_ACTIVITY_TOGGLE_HIDE : BANK_ACTIVITY_TOGGLE_SHOW}
-        </button>
-      )}
-      {showActivity ? (
-        <div className={`${alwaysExpanded ? '' : 'mt-2 '}space-y-2`}>
+      <button
+        type="button"
+        onClick={() => setExpanded((prev) => !prev)}
+        className="text-xs font-semibold text-emerald-400/90 transition hover:text-emerald-300"
+      >
+        {expanded ? BANK_ACTIVITY_TOGGLE_HIDE : BANK_ACTIVITY_TOGGLE_SHOW}
+      </button>
+      {expanded ? (
+        <div className="mt-2 space-y-2">
           <p className="text-xs text-zinc-500">{BANK_ACTIVITY_SCOPE}</p>
           {loading ? (
             <div

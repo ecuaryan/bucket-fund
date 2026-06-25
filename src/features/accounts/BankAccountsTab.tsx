@@ -21,8 +21,10 @@ type Props = {
 
 /**
  * The Bank tab body: each visible linked account with a summary header (name +
- * balance + a Shared/kid tag) and its recent activity. Adults see every family
- * account; a child sees only their own (enforced by RLS + the edge function).
+ * balance + a Shared/kid tag) and its recent activity (loaded on demand, not
+ * on tab open). Adults see every family account; a child sees only their own
+ * (enforced by RLS + the edge function). Unassigned/household accounts sort
+ * first, then accounts assigned to a kid.
  */
 export default function BankAccountsTab({
   accounts,
@@ -33,9 +35,10 @@ export default function BankAccountsTab({
   const [roles, setRoles] = useState<ReadonlyMap<string, string>>(new Map())
   const [names, setNames] = useState<ReadonlyMap<string, string>>(new Map())
 
-  // Only accounts assigned to someone other than the viewer need a member name
-  // to label them; pool accounts tag as "Shared" without a lookup.
-  const needsMemberNames = useMemo(
+  // Accounts assigned to someone other than the viewer (e.g. a kid). Drives
+  // both the member-name lookup and whether to show tags at all — with no such
+  // account there is nothing to distinguish, so a solo viewer sees no chips.
+  const hasAssignedAccounts = useMemo(
     () =>
       accounts.some(
         (a) => a.owner_member_id && a.owner_member_id !== viewerMemberId,
@@ -43,8 +46,19 @@ export default function BankAccountsTab({
     [accounts, viewerMemberId],
   )
 
+  // Household (unassigned) accounts first, then accounts assigned to a kid.
+  const ordered = useMemo(
+    () =>
+      [...accounts].sort(
+        (a, b) =>
+          Number(Boolean(a.owner_member_id)) -
+          Number(Boolean(b.owner_member_id)),
+      ),
+    [accounts],
+  )
+
   useEffect(() => {
-    if (!needsMemberNames) return
+    if (!hasAssignedAccounts) return
     let cancelled = false
     void (async () => {
       const { data, error } = await supabase
@@ -57,11 +71,11 @@ export default function BankAccountsTab({
     return () => {
       cancelled = true
     }
-  }, [needsMemberNames])
+  }, [hasAssignedAccounts])
 
   return (
     <div className="space-y-4">
-      {accounts.map((a) => {
+      {ordered.map((a) => {
         const tag = bankAccountOwnerTag(a, roles, names, viewerMemberId, {
           sharedLabel: BANK_ACCOUNT_SHARED_TAG,
           fallbackName: BANK_ACCOUNT_MEMBER_FALLBACK,
@@ -74,7 +88,8 @@ export default function BankAccountsTab({
                   <p className="truncate text-sm font-semibold text-zinc-200">
                     {a.account_name ?? a.institution_name ?? 'Bank account'}
                   </p>
-                  {tag ? (
+                  {/* Tag only when there's a mix to disambiguate; a kid tag always shows. */}
+                  {tag && (tag.kind === 'member' || hasAssignedAccounts) ? (
                     <span
                       className={
                         'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ' +
@@ -97,11 +112,7 @@ export default function BankAccountsTab({
                 {formatMoney(Number(a.current_balance))}
               </p>
             </div>
-            <BankAccountActivity
-              accountId={a.id}
-              panelOpen={active}
-              alwaysExpanded
-            />
+            <BankAccountActivity accountId={a.id} panelOpen={active} />
           </div>
         )
       })}
