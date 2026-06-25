@@ -383,9 +383,13 @@ export default function BucketsPage() {
   useEffect(() => {
     if (!isAdmin && autoOrganizeTabAvailable === null) return
     const urlTab = parseBucketsPageTab(searchParams.get('tab'))
+    // Don't strip ?tab=account while accounts are still loading — the Bank tab
+    // only looks unavailable because the data hasn't arrived yet. Waiting for
+    // accounts to resolve lets a deep link (e.g. from the Kids page) land on
+    // the Bank tab instead of bouncing to Buckets.
     const tabUnavailable =
       (urlTab === 'auto-organize' && !showAutoOrganizeTab) ||
-      (urlTab === 'account' && !showAccountTab)
+      (urlTab === 'account' && accounts !== null && !showAccountTab)
     if (tabUnavailable) {
       setSearchParams(
         (prev) => applyBucketsPageTabToSearchParams(prev, 'buckets'),
@@ -393,6 +397,7 @@ export default function BucketsPage() {
       )
     }
   }, [
+    accounts,
     autoOrganizeTabAvailable,
     isAdmin,
     searchParams,
