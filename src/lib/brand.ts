@@ -166,7 +166,7 @@ export const ADMIN_HOUSEHOLD_ROLES_HELP_TOGGLE = 'About household roles'
 export const ADMIN_ROLE_CONTEXT_ADMIN =
   'Full household control—banks, members, and auto-organize. Shares buckets and float with Shared members.'
 
-export const ADMIN_ROLE_CONTEXT_SHARED = `Shares household buckets and ${FLOAT_LABEL_LOWER}. Give to kids on the Kids tab.`
+export const ADMIN_ROLE_CONTEXT_SHARED = `Shares household buckets and ${FLOAT_LABEL_LOWER}, and can see bank activity. Give to kids on the Kids tab.`
 
 // --- Kids tab (adults) ---
 
@@ -744,8 +744,9 @@ export function bucketsFloatStatusGuide(isChild: boolean): readonly FloatStatusG
 export const AUTO_ORGANIZE_SECTION_TITLE = 'Auto-organize'
 
 export const BUCKETS_PAGE_TABS_ARIA_LABEL = 'Buckets page sections'
-/** Tab label for a linked member's own bank account activity. "Bank" (not
- * "Activity") to avoid clashing with the in-app History feed. */
+/** Tab label for the bank account activity view (adults see all family
+ * accounts, a child sees their own). "Bank" (not "Activity") to avoid
+ * clashing with the in-app History feed. */
 export const BUCKETS_PAGE_TAB_ACCOUNT_LABEL = 'Bank'
 
 export const AUTO_ORGANIZE_LOAD_ERROR_TITLE = 'Could not load auto-organize'
