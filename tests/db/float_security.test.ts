@@ -101,7 +101,7 @@ describe('float RPC security', () => {
     const { data, error } = await childClient
       .from(TRANSACTIONS_CLIENT)
       .select('float_balance_before, float_balance_after, type')
-      .eq('type', 'send')
+      .eq('type', 'give')
       .single()
 
     expect(error).toBeNull()
@@ -117,15 +117,15 @@ describe('float RPC security', () => {
     const { data: directRow, error: directError } = await childClient
       .from('transactions')
       .select('id, type')
-      .eq('type', 'send')
+      .eq('type', 'give')
       .single()
     expect(directError).toBeNull()
-    expect(directRow?.type).toBe('send')
+    expect(directRow?.type).toBe('give')
 
     const { data: adminTx, error: adminError } = await admin
       .from(TRANSACTIONS_CLIENT)
       .select('float_balance_before, float_balance_after, type')
-      .eq('type', 'send')
+      .eq('type', 'give')
       .single()
     expect(adminError).toBeNull()
     expect(adminTx?.float_balance_before).not.toBeNull()

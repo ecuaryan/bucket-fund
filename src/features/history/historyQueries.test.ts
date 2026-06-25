@@ -140,7 +140,7 @@ describe('fetchHistoryPage', () => {
 
   it('applies sends filter', async () => {
     await fetchHistoryPage({ kind: 'send' }, null, 10)
-    expect(chain.eq).toHaveBeenCalledWith('type', 'send')
+    expect(chain.eq).toHaveBeenCalledWith('type', 'give')
     expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false })
     expect(mockSecondOrder).toHaveBeenCalledWith('id', { ascending: false })
   })

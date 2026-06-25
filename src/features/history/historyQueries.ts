@@ -5,7 +5,7 @@ import type { HistoryFilter } from '@/features/history/historyFilters'
 export type HistoryTxRow = {
   id: string
   family_id: string
-  type: 'bucket_move' | 'send'
+  type: 'bucket_move' | 'give'
   amount: string | number
   from_bucket_id: string | null
   to_bucket_id: string | null
@@ -137,7 +137,7 @@ export async function fetchHistoryPage(
         .limit(limit)
       if (before) query = query.or(historyPageCursorFilter(before))
       if (activeFilter.kind === 'send') {
-        query = query.eq('type', 'send')
+        query = query.eq('type', 'give')
       } else if (activeFilter.kind === 'bucket') {
         query = query.or(
           `from_bucket_id.eq.${activeFilter.bucketId},to_bucket_id.eq.${activeFilter.bucketId}`,

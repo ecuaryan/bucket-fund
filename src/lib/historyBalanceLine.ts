@@ -23,7 +23,7 @@ function snapshotPair(
 }
 
 export type HistoryBalanceTxRow = {
-  type: 'bucket_move' | 'send'
+  type: 'bucket_move' | 'give'
   from_bucket_id: string | null
   to_bucket_id: string | null
   from_bucket_name: string | null
@@ -90,7 +90,7 @@ export function historySendBalanceLine(
   row: HistoryBalanceTxRow,
   currentMemberId: string,
 ): HistoryBalanceLine | null {
-  if (row.type !== 'send') return null
+  if (row.type !== 'give') return null
 
   const toPair = snapshotPair(
     row.to_member_balance_before,

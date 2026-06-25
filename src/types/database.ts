@@ -639,6 +639,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_initiated_by_member_id_fkey"
+            columns: ["initiated_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_to_bucket_id_fkey"
             columns: ["to_bucket_id"]
             isOneToOne: false
@@ -659,6 +666,7 @@ export type Database = {
       transactions_client: {
         Row: {
           amount: number | null
+          auto_organize_kind: string | null
           auto_organize_run_id: string | null
           auto_organize_run_trigger: string | null
           created_at: string | null
@@ -712,6 +720,13 @@ export type Database = {
           {
             foreignKeyName: "transactions_from_member_id_fkey"
             columns: ["from_member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_initiated_by_member_id_fkey"
+            columns: ["initiated_by_member_id"]
             isOneToOne: false
             referencedRelation: "family_members"
             referencedColumns: ["id"]
@@ -788,6 +803,18 @@ export type Database = {
         }
         Returns: string
       }
+      auto_organize_history_note: {
+        Args: {
+          p_auto_organize_type: string
+          p_days_of_month: number[]
+          p_interval_count: number
+          p_interval_unit: string
+          p_kind: string
+          p_name: string
+          p_start_date: string
+        }
+        Returns: string
+      }
       auto_organize_is_due_on: {
         Args: {
           p_auto_organize_type: string
@@ -834,6 +861,10 @@ export type Database = {
       get_float_balance: { Args: never; Returns: number }
       get_home_balance_breakdown: { Args: never; Returns: Json }
       get_home_page_data: { Args: never; Returns: Json }
+      give_money: {
+        Args: { p_amount: number; p_note?: string; p_to_member_id: string }
+        Returns: string
+      }
       is_cash_account_type: { Args: { p_type: string }; Returns: boolean }
       member_child_virtual_balance: {
         Args: { p_child_member_id: string }
@@ -861,6 +892,10 @@ export type Database = {
         Args: { p_ordered_bucket_ids: string[] }
         Returns: undefined
       }
+      return_from_child: {
+        Args: { p_amount: number; p_from_child_id: string; p_note?: string }
+        Returns: string
+      }
       revoke_member_sessions: {
         Args: { p_family_id: string; p_user_id: string }
         Returns: undefined
@@ -876,18 +911,6 @@ export type Database = {
         Returns: string
       }
       run_due_auto_organizes: { Args: { p_as_of?: string }; Returns: number }
-      send_money: {
-        Args: { p_amount: number; p_note?: string; p_to_member_id: string }
-        Returns: string
-      }
-      return_from_child: {
-        Args: {
-          p_amount: number
-          p_from_child_id: string
-          p_note?: string
-        }
-        Returns: string
-      }
       transaction_visible_to_caller: {
         Args: { p_transaction_id: string }
         Returns: boolean

@@ -114,7 +114,7 @@ describe('historyBalanceSides', () => {
     const sides = historyBalanceSides(
       {
         ...baseRow,
-        type: 'send',
+        type: 'give',
         from_member_id: 'admin',
         to_member_id: 'kid',
         to_member_name: 'Sam',
@@ -184,7 +184,7 @@ describe('historyBalanceSides', () => {
     const sides = historyBalanceSides(
       {
         ...baseRow,
-        type: 'send',
+        type: 'give',
         from_member_id: 'kid',
         to_member_id: 'adult',
         from_member_name: 'Sam',
@@ -211,7 +211,7 @@ describe('historyBalanceSides', () => {
     const sides = historyBalanceSides(
       {
         ...baseRow,
-        type: 'send',
+        type: 'give',
         from_member_id: 'admin',
         to_member_id: 'kid',
         to_member_name: 'Sam',

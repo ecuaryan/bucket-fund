@@ -24,7 +24,7 @@ export async function fetchLinkedChildMemberIds(): Promise<Set<string>> {
 }
 
 export async function sendMoney(args: SendMoneyArgs): Promise<string> {
-  const { data, error } = await supabase.rpc('send_money', {
+  const { data, error } = await supabase.rpc('give_money', {
     p_to_member_id: args.toMemberId,
     p_amount: args.amount,
     p_note: args.note ?? undefined,
@@ -32,7 +32,7 @@ export async function sendMoney(args: SendMoneyArgs): Promise<string> {
   if (error) {
     if (isMissingDbFunctionError(error.message)) {
       throw new Error(
-        'Send is temporarily unavailable while the server finishes updating. Try again in a few minutes.',
+        'Give is temporarily unavailable while the server finishes updating. Try again in a few minutes.',
       )
     }
     throw new Error(humaniseSendError(error.message))
@@ -90,7 +90,7 @@ function humaniseSendError(msg: string): string {
   if (lower.includes('insufficient float')) {
     return `Not enough ${FLOAT_LABEL_LOWER} for that amount.`
   }
-  if (lower.includes('cannot send to yourself')) {
+  if (lower.includes('cannot give to yourself')) {
     return 'Pick someone else in your household.'
   }
   if (lower.includes('amount must be positive')) {
@@ -103,7 +103,7 @@ function humaniseSendError(msg: string): string {
     return 'Session expired. Please sign in again.'
   }
   if (lower.includes('settles at the bank')) {
-    return 'Your linked bank account settles at the bank, not by sending here.'
+    return 'Your linked bank account settles at the bank, not by giving here.'
   }
   if (lower.includes('settle through the bank')) {
     return 'That person has a linked bank account — settle through the bank instead.'

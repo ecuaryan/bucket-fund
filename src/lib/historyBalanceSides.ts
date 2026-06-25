@@ -76,7 +76,7 @@ function hideSharedPoolSnapshots(
   currentMemberId: string,
 ): boolean {
   if (viewerRole !== 'child') return false
-  if (row.type === 'send') return true
+  if (row.type === 'give') return true
   return row.from_member_id !== currentMemberId
 }
 

@@ -194,7 +194,7 @@ export async function sendMoney(
   client: Db,
   args: { toMemberId: string; amount: number; note?: string },
 ): Promise<void> {
-  const { error } = await client.rpc('send_money', {
+  const { error } = await client.rpc('give_money', {
     p_to_member_id: args.toMemberId,
     p_amount: args.amount,
     p_note: args.note ?? undefined,

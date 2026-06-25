@@ -67,10 +67,10 @@ describe('historyTransactionNoteDisplay', () => {
     ).toBe('Rent split')
   })
 
-  it('leaves send notes unchanged', () => {
+  it('leaves give notes unchanged', () => {
     expect(
       historyTransactionNoteDisplay({
-        type: 'send',
+        type: 'give',
         note: 'Lunch',
         from_bucket_id: null,
         to_bucket_id: null,
