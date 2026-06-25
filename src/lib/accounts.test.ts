@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   accountAssignmentChildId,
+  bankAccountOwnerTag,
   isCashAccount,
   isFamilyPoolAccount,
   isManualAccount,
   latestCashSyncAt,
-  ownedLinkedAccounts,
   sumCashBalance,
 } from '@/lib/accounts'
 import type { Database } from '@/types/database'
@@ -45,48 +45,69 @@ describe('isCashAccount', () => {
   })
 })
 
-describe('ownedLinkedAccounts', () => {
-  const mine = account({
-    id: 'mine-teller',
-    current_balance: 100,
-    owner_member_id: 'child-id',
-    source: 'teller',
-  })
-  const myManual = account({
-    id: 'mine-manual',
-    current_balance: 50,
-    owner_member_id: 'child-id',
-    source: 'manual',
-  })
-  const otherChild = account({
-    id: 'other-teller',
-    current_balance: 200,
-    owner_member_id: 'other-id',
-    source: 'teller',
-  })
-  const pool = account({
-    id: 'pool-teller',
-    current_balance: 300,
-    owner_member_id: null,
-    source: 'teller',
-  })
-  const all = [mine, myManual, otherChild, pool]
+describe('bankAccountOwnerTag', () => {
+  const roles = new Map([
+    ['admin-id', 'admin'],
+    ['kaycee-id', 'child'],
+  ])
+  const names = new Map([
+    ['admin-id', 'Dad'],
+    ['kaycee-id', 'Kaycee'],
+  ])
+  const opts = { sharedLabel: 'Shared', fallbackName: 'Family member' }
 
-  it('returns only linked (teller) accounts owned by the member', () => {
-    expect(ownedLinkedAccounts(all, 'child-id').map((a) => a.id)).toEqual([
-      'mine-teller',
-    ])
+  it('tags a family-pool account as Shared', () => {
+    expect(
+      bankAccountOwnerTag({ owner_member_id: null }, roles, names, 'admin-id', opts),
+    ).toEqual({ kind: 'shared', label: 'Shared' })
   })
 
-  it('excludes other members and pool accounts (no cross-account leakage)', () => {
-    const ids = ownedLinkedAccounts(all, 'child-id').map((a) => a.id)
-    expect(ids).not.toContain('other-teller')
-    expect(ids).not.toContain('pool-teller')
+  it('tags an adult-owned (legacy) account as Shared', () => {
+    expect(
+      bankAccountOwnerTag(
+        { owner_member_id: 'admin-id' },
+        roles,
+        names,
+        'kaycee-id',
+        opts,
+      ),
+    ).toEqual({ kind: 'shared', label: 'Shared' })
   })
 
-  it('returns empty for a null member or no matches', () => {
-    expect(ownedLinkedAccounts(all, null)).toEqual([])
-    expect(ownedLinkedAccounts(all, 'nobody')).toEqual([])
+  it("labels another member's account with their name", () => {
+    expect(
+      bankAccountOwnerTag(
+        { owner_member_id: 'kaycee-id' },
+        roles,
+        names,
+        'admin-id',
+        opts,
+      ),
+    ).toEqual({ kind: 'member', label: 'Kaycee' })
+  })
+
+  it('returns null for the viewer’s own account (no tag needed)', () => {
+    expect(
+      bankAccountOwnerTag(
+        { owner_member_id: 'kaycee-id' },
+        roles,
+        names,
+        'kaycee-id',
+        opts,
+      ),
+    ).toBeNull()
+  })
+
+  it('falls back when the name map is not loaded yet', () => {
+    expect(
+      bankAccountOwnerTag(
+        { owner_member_id: 'kaycee-id' },
+        new Map(),
+        new Map(),
+        'admin-id',
+        opts,
+      ),
+    ).toEqual({ kind: 'member', label: 'Family member' })
   })
 })
 

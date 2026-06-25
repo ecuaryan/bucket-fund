@@ -45,7 +45,7 @@ import FloatInfoSheet from '@/features/buckets/FloatInfoSheet'
 import FloatHero from '@/features/buckets/FloatHero'
 import SuggestedBucketChips from '@/features/buckets/SuggestedBucketChips'
 import { Sheet } from '@/components/ui/Sheet'
-import { isCashAccount, ownedLinkedAccounts } from '@/lib/accounts'
+import { isCashAccount, isTellerAccount } from '@/lib/accounts'
 import BucketsPageSkeleton from '@/components/BucketsPageSkeleton'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import { ClearableInput } from '@/components/ui/ClearableInput'
@@ -119,7 +119,7 @@ import {
   BUCKETS_PAGE_TAB_ACCOUNT_LABEL,
   BUCKETS_PAGE_TABS_ARIA_LABEL,
 } from '@/lib/brand'
-import BankAccountActivity from '@/features/accounts/BankAccountActivity'
+import BankAccountsTab from '@/features/accounts/BankAccountsTab'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -191,10 +191,11 @@ export default function BucketsPage() {
     isAdmin,
     autoOrganizeTabAvailable,
   )
-  // Linked bank accounts assigned to the viewer (e.g. a linked child). RLS
-  // already scopes `accounts` to rows they own, so this surfaces only theirs.
-  const myLinkedAccounts = ownedLinkedAccounts(accounts ?? [], memberId)
-  const showAccountTab = myLinkedAccounts.length > 0
+  // Linked bank accounts visible to the viewer. RLS already scopes `accounts`
+  // per role: adults (admin/member) get every family account, a child gets only
+  // the one assigned to them — so this is the right set for everyone.
+  const bankAccounts = (accounts ?? []).filter(isTellerAccount)
+  const showAccountTab = bankAccounts.length > 0
   const showBucketsPageTabs = showAutoOrganizeTab || showAccountTab
   const bucketsTabOptions = bucketsPageTabOptions({
     showAutoOrganize: showAutoOrganizeTab,
@@ -962,34 +963,12 @@ export default function BucketsPage() {
           aria-labelledby="segmented-tab-account"
           hidden={activeTab !== 'account'}
         >
-          <section
-            aria-label={BUCKETS_PAGE_TAB_ACCOUNT_LABEL}
-            className="space-y-4"
-          >
-            {myLinkedAccounts.map((a) => (
-              <div key={a.id}>
-                <div className="flex items-baseline justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-zinc-200">
-                      {a.account_name ?? a.institution_name ?? 'Bank account'}
-                    </p>
-                    {a.institution_name && a.account_name ? (
-                      <p className="truncate text-xs text-zinc-500">
-                        {a.institution_name}
-                      </p>
-                    ) : null}
-                  </div>
-                  <p className="shrink-0 text-sm font-medium tabular-nums text-zinc-200">
-                    {formatMoney(Number(a.current_balance))}
-                  </p>
-                </div>
-                <BankAccountActivity
-                  accountId={a.id}
-                  panelOpen={activeTab === 'account'}
-                  alwaysExpanded
-                />
-              </div>
-            ))}
+          <section aria-label={BUCKETS_PAGE_TAB_ACCOUNT_LABEL}>
+            <BankAccountsTab
+              accounts={bankAccounts}
+              viewerMemberId={memberId}
+              active={activeTab === 'account'}
+            />
           </section>
         </div>
       ) : null}
