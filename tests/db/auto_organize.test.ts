@@ -833,6 +833,79 @@ describe('auto_organize', () => {
     expect(Number(byFloatBefore[1].float_balance_after)).toBe(1600)
   })
 
+  it('stamps cron transactions with distinct created_at in execution order', async () => {
+    const family = await createAdminFamily('ao-order-created-at')
+    const svc = serviceClient()
+    await svc
+      .from('families')
+      .update({ timezone: 'UTC', auto_organize_run_hour: 0 })
+      .eq('id', family.familyId)
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 2000,
+    })
+    // Two source buckets so save_off writes two sweep rows in one run,
+    // exercising within-run ordering as well as save_off-before-top_up.
+    const groceries = await insertBucket(svc, family.familyId, 'Groceries', null)
+    const gas = await insertBucket(svc, family.familyId, 'Gas', null)
+    await svc.from('buckets').update({ allocated_amount: 300 }).eq('id', groceries)
+    await svc.from('buckets').update({ allocated_amount: 100 }).eq('id', gas)
+
+    await insertAutoOrganize(svc, {
+      familyId: family.familyId,
+      createdByMemberId: family.adminMemberId,
+      autoOrganizeKind: 'save_off',
+      destinationBucketId: null,
+      autoOrganizeType: 'monthly',
+      daysOfMonth: [28],
+      lines: [
+        { bucketId: groceries, amount: 0, sortOrder: 0 },
+        { bucketId: gas, amount: 0, sortOrder: 1 },
+      ],
+    })
+    await insertAutoOrganize(svc, {
+      familyId: family.familyId,
+      createdByMemberId: family.adminMemberId,
+      autoOrganizeKind: 'top_up',
+      autoOrganizeType: 'monthly',
+      daysOfMonth: [28],
+      lines: [{ bucketId: groceries, amount: 400, sortOrder: 0 }],
+    })
+
+    const { error } = await svc.rpc('run_due_auto_organizes', {
+      p_as_of: '2026-06-28T04:00:00.000Z',
+    })
+    expect(error).toBeNull()
+
+    const { data: txs, error: txsError } = await svc
+      .from('transactions')
+      .select('created_at, float_balance_before')
+      .eq('family_id', family.familyId)
+      .not('auto_organize_run_id', 'is', null)
+      .order('created_at', { ascending: true })
+    expect(txsError).toBeNull()
+    expect(txs).toHaveLength(3)
+
+    // created_at must be strictly increasing — i.e. distinct, not the
+    // shared transaction-start now() that would leave History unordered.
+    // Compare the raw ISO strings: clock_timestamp() differs at the
+    // microsecond level that JS Date (millisecond) precision would lose,
+    // but the DB sorts on full timestamptz precision the same way.
+    const times = txs!.map((t) => t.created_at as string)
+    expect(new Set(times).size).toBe(3)
+    expect(times[0] < times[1]).toBe(true)
+    expect(times[1] < times[2]).toBe(true)
+
+    // And that ascending-created_at order matches execution order: both
+    // save_off sweeps raise Float before the top_up draws it back down.
+    const floats = txs!.map((t) => Number(t.float_balance_before))
+    expect(floats[0]).toBeLessThanOrEqual(floats[1])
+    expect(floats[2]).toBeGreaterThan(floats[0])
+  })
+
   it('manual-only rules are skipped by cron and use Manual only as transaction note', async () => {
     const family = await createAdminFamily('ao-manual-only')
     const svc = serviceClient()

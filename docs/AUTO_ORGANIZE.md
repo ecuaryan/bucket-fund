@@ -94,6 +94,9 @@ Future: `owner_member_id` on `auto_organizes` (null = household), scheduled **Se
   run** (~) from current balances.
 - **Same-day order:** cron runs **save_off before organize/top_up** in two explicit
   passes (then `created_at, id` within each pass) so sweeps clear leftovers before refills.
+  Every cron move is stamped with `clock_timestamp()` (not the shared transaction-start
+  `now()`), so History sorts each tick's rows by real execution order instead of randomly
+  by `id`.
 
 Kind is chosen on **Add** (chooser sheet) and **locked after create** — Edit changes amounts and
 schedule only.
