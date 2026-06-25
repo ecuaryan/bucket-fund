@@ -12,13 +12,13 @@ import { flushSync } from 'react-dom'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
-import { useSendRecipients } from '@/hooks/useSendRecipients'
+import { useGiveRecipients } from '@/hooks/useGiveRecipients'
 import { useAuth } from '@/lib/auth'
 import {
   HISTORY_EMPTY_BODY,
   HISTORY_EMPTY_BUCKET_BODY,
   HISTORY_EMPTY_SENDS_BODY,
-  HISTORY_FILTER_SENT_MONEY,
+  HISTORY_FILTER_GIVEN_MONEY,
   HISTORY_NOTE_ADD,
   HISTORY_NOTE_CLEAR,
   HISTORY_NOTE_EDIT,
@@ -44,7 +44,7 @@ import {
   filterFromSearchParams,
   historyFilterSearchKey,
   searchParamsForFilter,
-  SEND_FILTER_VALUE,
+  GIVE_FILTER_VALUE,
   type HistoryFilter,
 } from '@/features/history/historyFilters'
 import {
@@ -63,13 +63,13 @@ import {
 import {
   bucketEndpointLabel,
   historyBucketMoveSubtitle,
-  historySendActor,
-  historySendSubtitle,
+  historyGiveActor,
+  historyGiveSubtitle,
   historyShowBucketMoveActor,
-  historyShowSendActor,
+  historyShowGiveActor,
   historyTakeSubtitle,
   isParentTakeFromChild,
-  sendMemberEndpointLabel,
+  giveMemberEndpointLabel,
 } from '@/lib/historyLabels'
 import { HistoryEntityTransfer } from '@/features/history/HistoryEntityTransfer'
 import { historyBalanceSides } from '@/lib/historyBalanceSides'
@@ -133,8 +133,8 @@ export default function HistoryPage() {
   const accessToken =
     auth.status === 'signedIn' ? auth.session.access_token : null
   const familyId = member?.family_id ?? null
-  const { sendReady, showSendNav } = useSendRecipients()
-  const showSendFilter = sendReady && showSendNav
+  const { giveReady, showGiveNav } = useGiveRecipients()
+  const showGiveFilter = giveReady && showGiveNav
 
   const scheduleClearJustArrived = useCallback(() => {
     clearTimeout(arrivedClearTimer.current)
@@ -274,9 +274,9 @@ export default function HistoryPage() {
   }, [familyId, loadBuckets])
 
   useEffect(() => {
-    if (!sendReady || showSendNav || filter.kind !== 'send') return
+    if (!giveReady || showGiveNav || filter.kind !== 'give') return
     setSearchParams({})
-  }, [sendReady, showSendNav, filter.kind, setSearchParams])
+  }, [giveReady, showGiveNav, filter.kind, setSearchParams])
 
   usePostgresChanges(
     accessToken,
@@ -339,11 +339,11 @@ export default function HistoryPage() {
           {rows === null
             ? LOADING_STATUS_LABEL
             : rows.length === 0
-              ? filter.kind === 'send'
-                ? 'No sends yet'
+              ? filter.kind === 'give'
+                ? 'No gives yet'
                 : 'No transactions yet'
-              : filter.kind === 'send'
-                ? `${rows.length}${hasMore ? '+' : ''} ${rows.length === 1 ? 'send' : 'sends'}`
+              : filter.kind === 'give'
+                ? `${rows.length}${hasMore ? '+' : ''} ${rows.length === 1 ? 'give' : 'gives'}`
                 : `${rows.length}${hasMore ? '+' : ''} ${rows.length === 1 ? 'transaction' : 'transactions'}`}
         </p>
       </header>
@@ -352,7 +352,7 @@ export default function HistoryPage() {
         buckets={buckets ?? []}
         filter={filter}
         activeBucketName={filteredBucketName}
-        showSendFilter={showSendFilter}
+        showGiveFilter={showGiveFilter}
         onChange={setFilter}
       />
 
@@ -361,14 +361,14 @@ export default function HistoryPage() {
       ) : rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-zinc-700 p-6 text-center">
           <p className="text-sm font-medium text-zinc-300">
-            {filter.kind === 'send'
-              ? 'No sends yet'
+            {filter.kind === 'give'
+              ? 'No gives yet'
               : filter.kind === 'bucket'
                 ? 'No moves for this bucket yet'
                 : 'Nothing here yet'}
           </p>
           <p className="mt-1 text-xs text-zinc-400">
-            {filter.kind === 'send'
+            {filter.kind === 'give'
               ? HISTORY_EMPTY_SENDS_BODY
               : filter.kind === 'bucket'
                 ? HISTORY_EMPTY_BUCKET_BODY
@@ -449,19 +449,19 @@ function FilterBar({
   buckets,
   filter,
   activeBucketName,
-  showSendFilter,
+  showGiveFilter,
   onChange,
 }: {
   buckets: Bucket[]
   filter: HistoryFilter
   activeBucketName: string | null
-  showSendFilter: boolean
+  showGiveFilter: boolean
   onChange: (filter: HistoryFilter) => void
 }) {
   const selectValue =
-    filter.kind === 'send'
-      ? showSendFilter
-        ? SEND_FILTER_VALUE
+    filter.kind === 'give'
+      ? showGiveFilter
+        ? GIVE_FILTER_VALUE
         : ''
       : filter.kind === 'bucket'
         ? filter.bucketId
@@ -484,14 +484,14 @@ function FilterBar({
         onChange={(e) => {
           const value = e.target.value
           if (value === '') onChange({ kind: 'all' })
-          else if (value === SEND_FILTER_VALUE) onChange({ kind: 'send' })
+          else if (value === GIVE_FILTER_VALUE) onChange({ kind: 'give' })
           else onChange({ kind: 'bucket', bucketId: value })
         }}
         className="rounded-lg border-0 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
       >
         <option value="">All transactions</option>
-        {showSendFilter ? (
-          <option value={SEND_FILTER_VALUE}>{HISTORY_FILTER_SENT_MONEY}</option>
+        {showGiveFilter ? (
+          <option value={GIVE_FILTER_VALUE}>{HISTORY_FILTER_GIVEN_MONEY}</option>
         ) : null}
         {buckets.map((b) => (
           <option key={b.id} value={b.id}>
@@ -503,9 +503,9 @@ function FilterBar({
         )}
       </select>
 
-      {showSendFilter && filter.kind === 'send' && (
+      {showGiveFilter && filter.kind === 'give' && (
         <ActiveFilterChip
-          label={HISTORY_FILTER_SENT_MONEY}
+          label={HISTORY_FILTER_GIVEN_MONEY}
           onClear={() => onChange({ kind: 'all' })}
         />
       )}
@@ -569,7 +569,7 @@ function TxItem({
   const [noteError, setNoteError] = useState<string | null>(null)
   const time = timeFormatter.format(new Date(row.created_at))
   const showBucketMoveActor = historyShowBucketMoveActor(viewerRole)
-  const showSendActor = historyShowSendActor({
+  const showSendActor = historyShowGiveActor({
     viewerRole,
     currentMemberId,
     row,
@@ -607,19 +607,19 @@ function TxItem({
   } else {
     const fromIsMe = row.from_member_id === currentMemberId
     const toIsMe = row.to_member_id === currentMemberId
-    fromLabel = sendMemberEndpointLabel({
+    fromLabel = giveMemberEndpointLabel({
       snapshotName: row.from_member_name,
       joinedName: row.from_member?.name,
       isMe: fromIsMe,
     })
-    toLabel = sendMemberEndpointLabel({
+    toLabel = giveMemberEndpointLabel({
       snapshotName: row.to_member_name,
       joinedName: row.to_member?.name,
       isMe: toIsMe,
     })
     title = `${fromLabel} → ${toLabel}`
     const { actorMemberId: sendActorId, actorName: sendActorName } =
-      historySendActor({ row })
+      historyGiveActor({ row })
     actorMemberId = sendActorId
     actorName = sendActorName
     const subtitleArgs = {
@@ -631,7 +631,7 @@ function TxItem({
     }
     subtitle = isParentTakeFromChild(row)
       ? historyTakeSubtitle(subtitleArgs)
-      : historySendSubtitle(subtitleArgs)
+      : historyGiveSubtitle(subtitleArgs)
   }
 
   const amountValue = Number(row.amount)

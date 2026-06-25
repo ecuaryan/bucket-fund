@@ -190,7 +190,7 @@ export async function moveMoney(
   if (error) throw error
 }
 
-export async function sendMoney(
+export async function giveMoney(
   client: Db,
   args: { toMemberId: string; amount: number; note?: string },
 ): Promise<void> {

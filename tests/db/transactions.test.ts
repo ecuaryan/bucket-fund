@@ -4,7 +4,7 @@ import {
   createAdminFamily,
   insertBucket,
   moveMoney,
-  sendMoney,
+  giveMoney,
   returnFromChild,
   serviceClient,
   setBucketAllocation,
@@ -141,7 +141,7 @@ describe('RLS: transaction history visibility', () => {
     })
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    const txId = await sendMoney(admin, {
+    const txId = await giveMoney(admin, {
       toMemberId: child.memberId,
       amount: 30,
       note: 'allowance',
@@ -211,7 +211,7 @@ describe('RLS: transaction history visibility', () => {
     )
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    await sendMoney(admin, { toMemberId: child.memberId, amount: 20 })
+    await giveMoney(admin, { toMemberId: child.memberId, amount: 20 })
 
     const childClient = await userClient(child.email, child.password)
     const txId = await moveMoney(childClient, {
@@ -242,10 +242,10 @@ describe('RLS: transaction history visibility', () => {
     })
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    await sendMoney(admin, { toMemberId: child.memberId, amount: 25 })
+    await giveMoney(admin, { toMemberId: child.memberId, amount: 25 })
 
     const childClient = await userClient(child.email, child.password)
-    const txId = await sendMoney(childClient, {
+    const txId = await giveMoney(childClient, {
       toMemberId: member.memberId,
       amount: 10,
     })
@@ -274,7 +274,7 @@ describe('update_transaction_note', () => {
     })
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    const txId = await sendMoney(admin, {
+    const txId = await giveMoney(admin, {
       toMemberId: child.memberId,
       amount: 15,
     })
@@ -398,7 +398,7 @@ describe('update_transaction_note', () => {
     })
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    await sendMoney(admin, { toMemberId: child.memberId, amount: 50 })
+    await giveMoney(admin, { toMemberId: child.memberId, amount: 50 })
     await returnFromChild(admin, { fromChildId: child.memberId, amount: 20 })
 
     const historySelect =
@@ -432,7 +432,7 @@ describe('update_transaction_note', () => {
     })
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    await sendMoney(admin, { toMemberId: child.memberId, amount: 50 })
+    await giveMoney(admin, { toMemberId: child.memberId, amount: 50 })
     await returnFromChild(admin, { fromChildId: child.memberId, amount: 20 })
 
     const childClient = await userClient(child.email, child.password)

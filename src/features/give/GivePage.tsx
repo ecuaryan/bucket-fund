@@ -12,21 +12,21 @@ import {
   BUCKETS_ADD_SOURCE_LINK_ACTION,
   BUCKETS_ADD_SOURCE_MANUAL_ACTION,
   bucketsAddSourceMemberBody,
-  SEND_ADD_SOURCE_ADMIN_BODY,
-  SEND_ADD_SOURCE_TITLE,
-  SEND_KID_INTRO,
-  SEND_SHARED_BALANCE_INTRO,
-  SEND_DB_NOT_READY_BODY,
-  SEND_LINKED_KID_BODY,
-  SEND_LINKED_KID_TITLE,
-  SEND_LINKED_KIDS_EXCLUDED_HINT,
+  GIVE_ADD_SOURCE_ADMIN_BODY,
+  GIVE_ADD_SOURCE_TITLE,
+  GIVE_KID_INTRO,
+  GIVE_SHARED_BALANCE_INTRO,
+  GIVE_DB_NOT_READY_BODY,
+  GIVE_LINKED_KID_BODY,
+  GIVE_LINKED_KID_TITLE,
+  GIVE_LINKED_KIDS_EXCLUDED_HINT,
   FLOAT_LABEL_LOWER,
 } from '@/lib/brand'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import { fetchHouseholdAdminName } from '@/lib/householdAdmin'
 import { subscribeHouseholdRosterRefresh } from '@/lib/householdRosterRefresh'
-import { filterSendRecipients, isLinkedChild } from '@/lib/sendRecipients'
-import { fetchLinkedChildMemberIds, sendMoney } from '@/lib/sends'
+import { filterGiveRecipients, isLinkedChild } from '@/lib/giveRecipients'
+import { fetchLinkedChildMemberIds, giveMoney } from '@/lib/give'
 import { toast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
@@ -47,7 +47,7 @@ type Member = Pick<
 >
 type Account = Database['public']['Tables']['accounts']['Row']
 
-export default function SendPage() {
+export default function GivePage() {
   const { formatMoney } = useHideAmounts()
   const auth = useAuth()
   const member = auth.status === 'signedIn' ? auth.member : null
@@ -65,7 +65,7 @@ export default function SendPage() {
   const [balanceBreakdown, setBalanceBreakdown] =
     useState<BucketsBalanceBreakdown | null>(null)
   const [balanceUsesFallback, setBalanceUsesFallback] = useState(false)
-  const [sendEnabled, setSendEnabled] = useState(true)
+  const [giveEnabled, setGiveEnabled] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [toMemberId, setToMemberId] = useState('')
   const [amountStr, setAmountStr] = useState('')
@@ -108,7 +108,7 @@ export default function SendPage() {
         setBalanceBreakdown(breakdown)
         setBalanceUsesFallback(usedFallback)
         setAvailable(breakdown.float)
-        setSendEnabled(!usedFallback)
+        setGiveEnabled(!usedFallback)
       })
     } catch (e) {
       setLoadError(formatLoadErrorMessage(e, 'Could not load give screen.'))
@@ -148,7 +148,7 @@ export default function SendPage() {
 
   usePostgresChanges(
     accessToken,
-    familyId ? `send:${familyId}` : null,
+    familyId ? `give:${familyId}` : null,
     realtimeSpecs,
     loadData,
   )
@@ -167,7 +167,7 @@ export default function SendPage() {
   const callerRole = member?.role
   const recipients = useMemo(() => {
     if (!members || !memberId || !callerRole || !linkedChildIds) return []
-    return filterSendRecipients(
+    return filterGiveRecipients(
       members,
       memberId,
       callerRole,
@@ -194,11 +194,11 @@ export default function SendPage() {
     amountValid && available !== null && amount > available
   const overdraftMessage =
     overdraft && available !== null
-      ? `You can only send up to ${formatMoney(available)}.`
+      ? `You can only give up to ${formatMoney(available)}.`
       : null
-  const sendAvailableHint =
+  const giveAvailableHint =
     available !== null && !overdraft
-      ? `You have ${formatMoney(available)} available to send.`
+      ? `You have ${formatMoney(available)} available to give.`
       : null
 
   async function onSubmit(e: FormEvent) {
@@ -220,7 +220,7 @@ export default function SendPage() {
 
     setSubmitting(true)
     try {
-      await sendMoney({
+      await giveMoney({
         toMemberId,
         amount,
         note: note.trim() || null,
@@ -273,9 +273,9 @@ export default function SendPage() {
           aria-label="Linked bank account"
         >
           <h2 className="text-lg font-semibold text-zinc-100">
-            {SEND_LINKED_KID_TITLE}
+            {GIVE_LINKED_KID_TITLE}
           </h2>
-          <p className="mt-2 text-sm text-zinc-400">{SEND_LINKED_KID_BODY}</p>
+          <p className="mt-2 text-sm text-zinc-400">{GIVE_LINKED_KID_BODY}</p>
           <Link
             to="/"
             className="mt-4 inline-flex rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-emerald-400"
@@ -293,11 +293,11 @@ export default function SendPage() {
 
   const hasMoneySources = accounts.length > 0
   // Allocated buckets count as organized money: show the real (possibly
-  // negative) balance instead of the getting-started CTA. Sending stays
+  // negative) balance instead of the getting-started CTA. Giving stays
   // blocked by the overdraft guard when there is nothing available.
   const hasAllocations = (balanceBreakdown?.bucketAllocated ?? 0) > 0
   const showAddSourceCard = isAdult && !hasMoneySources && !hasAllocations
-  const canSend = sendEnabled && !showAddSourceCard
+  const canGive = giveEnabled && !showAddSourceCard
 
   const availableColor =
     available >= 0
@@ -314,7 +314,7 @@ export default function SendPage() {
       <header>
         <h1 className="text-xl font-semibold">Give</h1>
         <p className="mt-1 text-sm text-zinc-400">
-          {isAdult ? SEND_SHARED_BALANCE_INTRO : SEND_KID_INTRO}
+          {isAdult ? GIVE_SHARED_BALANCE_INTRO : GIVE_KID_INTRO}
         </p>
       </header>
 
@@ -324,14 +324,14 @@ export default function SendPage() {
           aria-label="Add a money source"
         >
           <p className="text-xs font-medium uppercase tracking-wide text-emerald-300/70">
-            Before you send
+            Before you give
           </p>
           <h2 className="mt-1 text-lg font-semibold text-emerald-100">
-            {SEND_ADD_SOURCE_TITLE}
+            {GIVE_ADD_SOURCE_TITLE}
           </h2>
           <p className="mt-2 text-sm text-emerald-200/80">
             {member?.role === 'admin'
-              ? SEND_ADD_SOURCE_ADMIN_BODY
+              ? GIVE_ADD_SOURCE_ADMIN_BODY
               : bucketsAddSourceMemberBody(householdAdminName)}
           </p>
           {member?.role === 'admin' ? (
@@ -358,7 +358,7 @@ export default function SendPage() {
           aria-label={`Your ${FLOAT_LABEL_LOWER} balance`}
         >
           <p className="text-xs font-medium uppercase tracking-wide opacity-70">
-            You can send
+            You can give
           </p>
           <p className="mt-1 text-2xl font-semibold tabular-nums">
             {formatMoney(available)}
@@ -382,13 +382,13 @@ export default function SendPage() {
         </section>
       )}
 
-      {!sendEnabled && (
+      {!giveEnabled && (
         <p className="rounded-2xl bg-amber-500/10 px-4 py-3 text-sm text-amber-200 ring-1 ring-amber-500/30">
-          {SEND_DB_NOT_READY_BODY}
+          {GIVE_DB_NOT_READY_BODY}
         </p>
       )}
 
-      {canSend ? (
+      {canGive ? (
         <form
           onSubmit={onSubmit}
           className="space-y-4 rounded-2xl bg-zinc-900 p-5 ring-1 ring-zinc-800"
@@ -410,7 +410,7 @@ export default function SendPage() {
             </select>
             {showLinkedKidsHint ? (
               <p className="mt-2 text-xs text-zinc-500">
-                {SEND_LINKED_KIDS_EXCLUDED_HINT}
+                {GIVE_LINKED_KIDS_EXCLUDED_HINT}
               </p>
             ) : null}
           </label>
@@ -431,8 +431,8 @@ export default function SendPage() {
               required
               aria-invalid={overdraft || undefined}
               aria-describedby={amountLimitDescribedBy(
-                'send-amount-hint',
-                sendAvailableHint,
+                'give-amount-hint',
+                giveAvailableHint,
                 overdraftMessage,
               )}
               leading={
@@ -447,8 +447,8 @@ export default function SendPage() {
               }`}
             />
             <AmountLimitHint
-              id="send-amount-hint"
-              availableHint={sendAvailableHint}
+              id="give-amount-hint"
+              availableHint={giveAvailableHint}
               overdraftMessage={overdraftMessage}
             />
           </label>
@@ -483,9 +483,9 @@ export default function SendPage() {
             {submitting ? 'Giving…' : 'Give'}
           </button>
         </form>
-      ) : !sendEnabled ? (
+      ) : !giveEnabled ? (
         <p className="rounded-2xl bg-zinc-900 px-4 py-3 text-sm text-zinc-400 ring-1 ring-zinc-800">
-          {SEND_DB_NOT_READY_BODY}
+          {GIVE_DB_NOT_READY_BODY}
         </p>
       ) : null}
 

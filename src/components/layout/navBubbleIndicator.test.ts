@@ -4,12 +4,12 @@ import { buildNavTabs } from '@/components/layout/navTabs'
 
 describe('activeNavTabIndex', () => {
   const oddTabs = buildNavTabs({
-    showSendNav: false,
+    showGiveNav: false,
     showKidsNav: true,
     isAdmin: true,
   })
   const evenTabs = buildNavTabs({
-    showSendNav: false,
+    showGiveNav: false,
     showKidsNav: false,
     isAdmin: true,
   })

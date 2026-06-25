@@ -136,7 +136,7 @@ export async function fetchHistoryPage(
         .order('id', { ascending: false })
         .limit(limit)
       if (before) query = query.or(historyPageCursorFilter(before))
-      if (activeFilter.kind === 'send') {
+      if (activeFilter.kind === 'give') {
         query = query.eq('type', 'give')
       } else if (activeFilter.kind === 'bucket') {
         query = query.or(

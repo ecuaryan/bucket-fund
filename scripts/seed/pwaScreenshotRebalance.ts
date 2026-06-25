@@ -3,7 +3,7 @@ import { moveMoney, serviceClient, userClient } from './db'
 import {
   PWA_SCREENSHOT_BUCKETS,
   PWA_SCREENSHOT_MANUAL_SOURCE,
-  PWA_SCREENSHOT_SEND_AMOUNT,
+  PWA_SCREENSHOT_GIVE_AMOUNT,
 } from './pwaScreenshots'
 
 /** Target Float after rebalance capture (~same magnitude as `rebalance` seed). */
@@ -13,7 +13,7 @@ export const PWA_SCREENSHOT_REBALANCE_TARGET_FLOAT = -245
 export function pwaScreenshotRebalanceMoveAmount(): number {
   const allocated = PWA_SCREENSHOT_BUCKETS.reduce((sum, bucket) => sum + bucket.amount, 0)
   const greenFloat =
-    PWA_SCREENSHOT_MANUAL_SOURCE.amount - allocated - PWA_SCREENSHOT_SEND_AMOUNT
+    PWA_SCREENSHOT_MANUAL_SOURCE.amount - allocated - PWA_SCREENSHOT_GIVE_AMOUNT
   return greenFloat - PWA_SCREENSHOT_REBALANCE_TARGET_FLOAT
 }
 

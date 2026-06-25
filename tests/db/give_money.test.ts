@@ -6,7 +6,7 @@ import {
   insertBucket,
   memberBalance,
   moveMoney,
-  sendMoney,
+  giveMoney,
   serviceClient,
   setBucketAllocation,
   userClient,
@@ -27,7 +27,7 @@ describe('give_money RPC', () => {
     })
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    const txId = await sendMoney(admin, {
+    const txId = await giveMoney(admin, {
       toMemberId: child.memberId,
       amount: 75,
       note: 'allowance',
@@ -76,7 +76,7 @@ describe('give_money RPC', () => {
     })
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    const txId = await sendMoney(admin, {
+    const txId = await giveMoney(admin, {
       toMemberId: child.memberId,
       amount: 40,
     })
@@ -114,7 +114,7 @@ describe('give_money RPC', () => {
     })
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    await sendMoney(admin, { toMemberId: child.memberId, amount: 75 })
+    await giveMoney(admin, { toMemberId: child.memberId, amount: 75 })
     expect(await getFloatBalance(admin)).toBe(125)
 
     const kidBucket = await insertBucket(
@@ -188,14 +188,14 @@ describe('give_money RPC', () => {
     })
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    await sendMoney(admin, { toMemberId: child.memberId, amount: 40 })
+    await giveMoney(admin, { toMemberId: child.memberId, amount: 40 })
 
     expect(await memberBalance(svc, child.memberId)).toBe(40)
 
     const childClient = await userClient(child.email, child.password)
     expect(await getFloatBalance(childClient)).toBe(40)
 
-    await sendMoney(childClient, { toMemberId: member.memberId, amount: 15 })
+    await giveMoney(childClient, { toMemberId: member.memberId, amount: 15 })
 
     expect(await getFloatBalance(childClient)).toBe(25)
     // Child → adult returns funds to the shared pool (not personal send_net).
@@ -318,7 +318,7 @@ describe('give_money RPC', () => {
     })
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    await sendMoney(admin, { toMemberId: virtualChild.memberId, amount: 30 })
+    await giveMoney(admin, { toMemberId: virtualChild.memberId, amount: 30 })
 
     const linkedClient = await userClient(linkedChild.email, linkedChild.password)
     const { error } = await linkedClient.rpc('give_money', {
@@ -345,10 +345,10 @@ describe('give_money RPC', () => {
     })
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    await sendMoney(admin, { toMemberId: childA.memberId, amount: 40 })
+    await giveMoney(admin, { toMemberId: childA.memberId, amount: 40 })
 
     const childAClient = await userClient(childA.email, childA.password)
-    await sendMoney(childAClient, { toMemberId: childB.memberId, amount: 15 })
+    await giveMoney(childAClient, { toMemberId: childB.memberId, amount: 15 })
 
     expect(await getFloatBalance(childAClient)).toBe(25)
     expect(await getFloatBalance(await userClient(childB.email, childB.password))).toBe(15)
@@ -377,7 +377,7 @@ describe('give_money RPC', () => {
     })
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    const txId = await sendMoney(admin, {
+    const txId = await giveMoney(admin, {
       toMemberId: virtualChild.memberId,
       amount: 60,
       note: 'birthday',

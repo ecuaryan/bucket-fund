@@ -1,6 +1,6 @@
 import { APP_ICON_NAV } from '@/lib/brand'
 
-export type NavTabId = 'buckets' | 'send' | 'kids' | 'history' | 'settings' | 'admin'
+export type NavTabId = 'buckets' | 'give' | 'kids' | 'history' | 'settings' | 'admin'
 
 type Props = {
   tab: NavTabId
@@ -28,7 +28,7 @@ export default function NavTabIcon({ tab, size = 'default' }: Props) {
           className={className + ' object-contain'}
         />
       )
-    case 'send':
+    case 'give':
       return (
         <svg
           xmlns="http://www.w3.org/2000/svg"

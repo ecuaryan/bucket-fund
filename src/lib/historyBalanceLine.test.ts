@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { FLOAT_LABEL } from '@/lib/brand'
 import {
   historyBucketMoveBalanceLine,
-  historySendBalanceLine,
+  historyGiveBalanceLine,
   HISTORY_FLOAT_LABEL,
   shouldShowBalanceLabel,
 } from '@/lib/historyBalanceLine'
@@ -81,10 +81,10 @@ describe('historyBucketMoveBalanceLine', () => {
   })
 })
 
-describe('historySendBalanceLine', () => {
+describe('historyGiveBalanceLine', () => {
   it('shows recipient kid balance on adult → kid send', () => {
     expect(
-      historySendBalanceLine(
+      historyGiveBalanceLine(
         {
           type: 'give',
           from_bucket_id: null,
@@ -111,7 +111,7 @@ describe('historySendBalanceLine', () => {
 
   it('uses Float label when viewer is the kid', () => {
     expect(
-      historySendBalanceLine(
+      historyGiveBalanceLine(
         {
           type: 'give',
           from_bucket_id: null,
@@ -138,7 +138,7 @@ describe('historySendBalanceLine', () => {
 
   it('shows sender kid balance on kid → adult send', () => {
     expect(
-      historySendBalanceLine(
+      historyGiveBalanceLine(
         {
           type: 'give',
           from_bucket_id: null,

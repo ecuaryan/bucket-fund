@@ -4,7 +4,7 @@ import {
   createAdminFamily,
   getFloatBalance,
   insertBucket,
-  sendMoney,
+  giveMoney,
   serviceClient,
   userClient,
   TRANSACTIONS_CLIENT,
@@ -64,7 +64,7 @@ describe('float RPC security', () => {
     await insertBucket(svc, family.familyId, 'Alex stash', childA.memberId)
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    await sendMoney(admin, { toMemberId: childA.memberId, amount: 30 })
+    await giveMoney(admin, { toMemberId: childA.memberId, amount: 30 })
 
     const adminBreakdown = await admin.rpc('get_home_balance_breakdown')
     expect(adminBreakdown.error).toBeNull()
@@ -95,7 +95,7 @@ describe('float RPC security', () => {
     })
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    await sendMoney(admin, { toMemberId: child.memberId, amount: 40 })
+    await giveMoney(admin, { toMemberId: child.memberId, amount: 40 })
 
     const childClient = await userClient(child.email, child.password)
     const { data, error } = await childClient
@@ -146,7 +146,7 @@ describe('float RPC security', () => {
     })
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    await sendMoney(admin, { toMemberId: child.memberId, amount: 20 })
+    await giveMoney(admin, { toMemberId: child.memberId, amount: 20 })
 
     const childClient = await userClient(child.email, child.password)
     const { data: hidden } = await childClient

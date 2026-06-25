@@ -1,4 +1,4 @@
-/** Inline hint + over-limit error under money amount fields (Send, Move). */
+/** Inline hint + over-limit error under money amount fields (Give, Move). */
 type Props = {
   id: string
   /** Shown in zinc when the amount is within the limit (or empty). */

@@ -3,7 +3,7 @@ import { withAuthLockRetry } from '@/lib/authLockError'
 import { supabase } from '@/lib/supabase'
 import { FLOAT_LABEL_LOWER } from '@/lib/brand'
 
-export type SendMoneyArgs = {
+export type GiveMoneyArgs = {
   toMemberId: string
   amount: number
   note?: string | null
@@ -23,7 +23,7 @@ export async function fetchLinkedChildMemberIds(): Promise<Set<string>> {
   })
 }
 
-export async function sendMoney(args: SendMoneyArgs): Promise<string> {
+export async function giveMoney(args: GiveMoneyArgs): Promise<string> {
   const { data, error } = await supabase.rpc('give_money', {
     p_to_member_id: args.toMemberId,
     p_amount: args.amount,
@@ -35,7 +35,7 @@ export async function sendMoney(args: SendMoneyArgs): Promise<string> {
         'Give is temporarily unavailable while the server finishes updating. Try again in a few minutes.',
       )
     }
-    throw new Error(humaniseSendError(error.message))
+    throw new Error(humaniseGiveError(error.message))
   }
   return data as unknown as string
 }
@@ -85,7 +85,7 @@ function humaniseReturnError(msg: string): string {
   return msg
 }
 
-function humaniseSendError(msg: string): string {
+function humaniseGiveError(msg: string): string {
   const lower = msg.toLowerCase()
   if (lower.includes('insufficient float')) {
     return `Not enough ${FLOAT_LABEL_LOWER} for that amount.`
