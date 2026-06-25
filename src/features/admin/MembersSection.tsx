@@ -515,21 +515,8 @@ export default function MembersSection({
               )
 
             return (
-            <li
-              key={m.id}
-              className={
-                m.role === 'child' && linkedAccounts != null
-                  ? 'px-4 py-3'
-                  : 'flex flex-wrap items-center justify-between gap-3 px-4 py-3'
-              }
-            >
-              <div
-                className={
-                  m.role === 'child' && linkedAccounts != null
-                    ? 'flex flex-wrap items-center justify-between gap-3'
-                    : 'contents'
-                }
-              >
+            <li key={m.id} className="px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
               {renamingId === m.id ? (
                 <div className="flex min-w-0 flex-1 items-center gap-2">
                   <ClearableInput
@@ -605,6 +592,7 @@ export default function MembersSection({
                   </button>
                 )}
               </div>
+              </div>
               {m.role === 'child' && linkedAccounts != null ? (
                 <KidAccountAssignment
                   kidId={m.id}
@@ -615,7 +603,6 @@ export default function MembersSection({
                   onError={(msg) => toast.error(msg)}
                 />
               ) : null}
-              </div>
             </li>
             )
           })}
