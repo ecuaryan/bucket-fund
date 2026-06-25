@@ -33,9 +33,9 @@ test.describe('Kids tab', () => {
     await signInAdmin(page, family.adminEmail, family.adminPassword)
 
     await expect(page.getByRole('link', { name: 'Kids' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Send' })).not.toBeVisible()
+    await expect(page.getByRole('link', { name: 'Give' })).not.toBeVisible()
 
-    await page.goto('/send')
+    await page.goto('/give')
     await expect(page).toHaveURL('/kids')
 
     await expect(page.getByRole('heading', { name: 'Kids', exact: true })).toBeVisible()

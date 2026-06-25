@@ -31,7 +31,7 @@ precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
 
 // SPA shell: one precached index.html for every in-app route. Avoids stale
-// /send or /history navigation cache entries after a deploy changes chunk hashes.
+// /give or /history navigation cache entries after a deploy changes chunk hashes.
 const navigationHandler = createHandlerBoundToURL('/index.html')
 registerRoute(
   new NavigationRoute(navigationHandler, {

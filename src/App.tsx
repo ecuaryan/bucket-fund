@@ -81,7 +81,7 @@ export default function App() {
           }
         />
         <Route
-          path="/send"
+          path="/give"
           element={
             <Lazy>
               <SendPage />
