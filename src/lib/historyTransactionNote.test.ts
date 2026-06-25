@@ -28,30 +28,30 @@ describe('historyTransactionNoteDisplay', () => {
     ).toBe('Auto top-up · Month-start refill')
   })
 
-  it('defaults manual bucket moves without a stored note', () => {
+  it('shows no note for manual bucket moves without a stored note', () => {
     expect(
       historyTransactionNoteDisplay({
         type: 'bucket_move',
         note: null,
-        from_bucket_id: null,
-        to_bucket_id: 'b1',
+        from_bucket_id: 'b1',
+        to_bucket_id: null,
         auto_organize_run_id: null,
         auto_organize_kind: null,
       }),
-    ).toBe('Set aside')
+    ).toBeNull()
   })
 
-  it('defaults bucket-to-bucket moves without a stored note', () => {
+  it('shows no note for blank-noted bucket-to-bucket moves', () => {
     expect(
       historyTransactionNoteDisplay({
         type: 'bucket_move',
-        note: '',
+        note: '   ',
         from_bucket_id: 'b1',
         to_bucket_id: 'b2',
         auto_organize_run_id: null,
         auto_organize_kind: null,
       }),
-    ).toBe('Move money')
+    ).toBeNull()
   })
 
   it('keeps user-entered notes for ordinary moves', () => {
