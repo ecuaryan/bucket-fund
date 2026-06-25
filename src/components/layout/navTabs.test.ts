@@ -6,18 +6,18 @@ function tabLabels(tabs: ReturnType<typeof buildNavTabs>) {
 }
 
 describe('buildNavTabs', () => {
-  it('four tabs: Buckets leads (admin without send or kids)', () => {
+  it('four tabs: Buckets leads (admin without give or kids)', () => {
     expect(
       tabLabels(
-        buildNavTabs({ showSendNav: false, showKidsNav: false, isAdmin: true }),
+        buildNavTabs({ showGiveNav: false, showKidsNav: false, isAdmin: true }),
       ),
     ).toEqual(['Buckets', 'History', 'Settings', 'Admin'])
   })
 
-  it('four tabs: Buckets leads (child with send)', () => {
+  it('four tabs: Buckets leads (child with give)', () => {
     expect(
       tabLabels(
-        buildNavTabs({ showSendNav: true, showKidsNav: false, isAdmin: false }),
+        buildNavTabs({ showGiveNav: true, showKidsNav: false, isAdmin: false }),
       ),
     ).toEqual(['Buckets', 'Give', 'History', 'Settings'])
   })
@@ -25,23 +25,23 @@ describe('buildNavTabs', () => {
   it('five tabs: Buckets centered (admin with kids)', () => {
     expect(
       tabLabels(
-        buildNavTabs({ showSendNav: false, showKidsNav: true, isAdmin: true }),
+        buildNavTabs({ showGiveNav: false, showKidsNav: true, isAdmin: true }),
       ),
     ).toEqual(['Kids', 'History', 'Buckets', 'Settings', 'Admin'])
   })
 
-  it('five tabs: Buckets centered (admin with send — virtual kid session)', () => {
+  it('five tabs: Buckets centered (admin with give — virtual kid session)', () => {
     expect(
       tabLabels(
-        buildNavTabs({ showSendNav: true, showKidsNav: false, isAdmin: true }),
+        buildNavTabs({ showGiveNav: true, showKidsNav: false, isAdmin: true }),
       ),
     ).toEqual(['Give', 'History', 'Buckets', 'Settings', 'Admin'])
   })
 
-  it('three tabs: Buckets centered (no send or kids)', () => {
+  it('three tabs: Buckets centered (no give or kids)', () => {
     expect(
       tabLabels(
-        buildNavTabs({ showSendNav: false, showKidsNav: false, isAdmin: false }),
+        buildNavTabs({ showGiveNav: false, showKidsNav: false, isAdmin: false }),
       ),
     ).toEqual(['History', 'Buckets', 'Settings'])
   })

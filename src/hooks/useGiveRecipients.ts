@@ -2,23 +2,23 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { subscribeHouseholdRosterRefresh } from '@/lib/householdRosterRefresh'
 import {
-  filterSendRecipients,
+  filterGiveRecipients,
   isLinkedChild,
   shouldShowKidsNav,
-  shouldShowSendNav,
-  type SendRecipientMember,
-} from '@/lib/sendRecipients'
-import { fetchLinkedChildMemberIds } from '@/lib/sends'
+  shouldShowGiveNav,
+  type GiveRecipientMember,
+} from '@/lib/giveRecipients'
+import { fetchLinkedChildMemberIds } from '@/lib/give'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 
-export function useSendRecipients() {
+export function useGiveRecipients() {
   const auth = useAuth()
   const member = auth.status === 'signedIn' ? auth.member : null
   const accessToken =
     auth.status === 'signedIn' ? auth.session.access_token : null
   const familyId = member?.family_id ?? null
-  const [members, setMembers] = useState<SendRecipientMember[] | null>(null)
+  const [members, setMembers] = useState<GiveRecipientMember[] | null>(null)
   const [linkedChildIds, setLinkedChildIds] = useState<Set<string>>(new Set())
 
   const loadMembers = useCallback(async () => {
@@ -66,14 +66,14 @@ export function useSendRecipients() {
 
   usePostgresChanges(
     accessToken,
-    familyId ? `send-nav:${familyId}` : null,
+    familyId ? `give-nav:${familyId}` : null,
     realtimeSpecs,
     loadMembers,
   )
 
   const recipients = useMemo(() => {
     if (!members || !member) return []
-    return filterSendRecipients(
+    return filterGiveRecipients(
       members,
       member.id,
       member.role,
@@ -86,16 +86,16 @@ export function useSendRecipients() {
     return members.filter((m) => m.role === 'child').length
   }, [members])
 
-  const sendReady = members !== null
+  const giveReady = members !== null
   const callerIsLinkedChild =
     member != null && isLinkedChild(member.id, member.role, linkedChildIds)
   const showKidsNav =
-    sendReady &&
+    giveReady &&
     shouldShowKidsNav(member?.role ?? '', childCount)
-  const showSendNav =
-    sendReady &&
+  const showGiveNav =
+    giveReady &&
     !showKidsNav &&
-    shouldShowSendNav({
+    shouldShowGiveNav({
       callerRole: member?.role ?? '',
       callerIsLinkedChild,
       recipientCount: recipients.length,
@@ -103,8 +103,8 @@ export function useSendRecipients() {
 
   return {
     recipients,
-    sendReady,
-    showSendNav,
+    giveReady,
+    showGiveNav,
     showKidsNav,
     childCount,
   }

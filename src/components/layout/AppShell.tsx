@@ -11,7 +11,7 @@ import {
 } from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
 import { useScrollToTopOnPathname } from '@/hooks/useScrollToTopOnPathname'
-import { useSendRecipients } from '@/hooks/useSendRecipients'
+import { useGiveRecipients } from '@/hooks/useGiveRecipients'
 import { NAV_CENTER_MAIN_PB, APP_CHROME_Z_INDEX } from '@/components/layout/navLayout'
 import { buildNavTabs } from '@/components/layout/navTabs'
 
@@ -30,8 +30,8 @@ export default function AppShell() {
         : null) ??
     'You'
   const isAdmin = member?.role === 'admin'
-  const { showSendNav, showKidsNav } = useSendRecipients()
-  const navTabs = buildNavTabs({ showSendNav, showKidsNav, isAdmin })
+  const { showGiveNav, showKidsNav } = useGiveRecipients()
+  const navTabs = buildNavTabs({ showGiveNav, showKidsNav, isAdmin })
 
   async function onSignOut() {
     setSigningOut(true)

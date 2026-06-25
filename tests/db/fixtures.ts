@@ -157,7 +157,7 @@ export async function moveMoney(
   return data
 }
 
-export async function sendMoney(
+export async function giveMoney(
   client: Db,
   args: { toMemberId: string; amount: number; note?: string },
 ): Promise<string> {

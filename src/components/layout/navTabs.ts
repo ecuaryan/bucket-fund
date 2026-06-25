@@ -12,17 +12,17 @@ export type NavTabItem =
   | ({ kind: 'side' } & SideTab)
 
 export type BuildNavTabsArgs = {
-  showSendNav: boolean
+  showGiveNav: boolean
   showKidsNav: boolean
   isAdmin: boolean
 }
 
 /**
  * Order bottom-nav tabs: Buckets centered when odd count, leading when even (4).
- * Side tabs keep a stable priority — Kids/Send, History, then Settings, Admin.
+ * Side tabs keep a stable priority — Kids/Give, History, then Settings, Admin.
  */
 export function buildNavTabs({
-  showSendNav,
+  showGiveNav,
   showKidsNav,
   isAdmin,
 }: BuildNavTabsArgs): NavTabItem[] {
@@ -30,8 +30,8 @@ export function buildNavTabs({
 
   if (showKidsNav) {
     side.push({ to: '/kids', label: KIDS_PAGE_TITLE, tab: 'kids' })
-  } else if (showSendNav) {
-    side.push({ to: '/give', label: 'Give', tab: 'send' })
+  } else if (showGiveNav) {
+    side.push({ to: '/give', label: 'Give', tab: 'give' })
   }
   side.push({ to: '/history', label: 'History', tab: 'history' })
   side.push({ to: '/settings', label: 'Settings', tab: 'settings' })

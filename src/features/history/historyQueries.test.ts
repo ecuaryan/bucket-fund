@@ -138,8 +138,8 @@ describe('fetchHistoryPage', () => {
     mockSelect.mockReturnValue({ order: mockOrder })
   })
 
-  it('applies sends filter', async () => {
-    await fetchHistoryPage({ kind: 'send' }, null, 10)
+  it('applies gives filter', async () => {
+    await fetchHistoryPage({ kind: 'give' }, null, 10)
     expect(chain.eq).toHaveBeenCalledWith('type', 'give')
     expect(mockOrder).toHaveBeenCalledWith('created_at', { ascending: false })
     expect(mockSecondOrder).toHaveBeenCalledWith('id', { ascending: false })

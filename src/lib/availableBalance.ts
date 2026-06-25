@@ -35,12 +35,12 @@ export type BucketsBalanceBreakdown = {
   bankLastSyncedAt: string | null
 }
 
-/** Net sends for a child (positive when funded by family). */
+/** Net gives for a child (positive when funded by family). */
 export function childFamilyFunding(breakdown: BucketsBalanceBreakdown): number {
   return breakdown.float + breakdown.bucketAllocated - breakdown.totalCash
 }
 
-/** Child's total funds before bucket splits (linked cash + net sends). */
+/** Child's total funds before bucket splits (linked cash + net gives). */
 export function childTotalBalance(breakdown: BucketsBalanceBreakdown): number {
   return breakdown.float + breakdown.bucketAllocated
 }
@@ -95,7 +95,7 @@ export function parseBreakdownRow(data: Json): BucketsBalanceBreakdown | null {
 
 /**
  * Client-side float estimate (cash − visible bucket allocations).
- * Omits child virtual draw and sends — use only when the RPC is unavailable.
+ * Omits child virtual draw and gives — use only when the RPC is unavailable.
  */
 export function computeClientFloat(
   accounts: Account[],

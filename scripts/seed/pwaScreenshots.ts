@@ -25,8 +25,8 @@ export const PWA_SCREENSHOT_BUCKETS = [
   { name: '🚗 Transportation', amount: 200 },
 ] as const
 
-/** Matches `sendMoney` in the pwa-screenshots seed — affects Float before rebalance capture. */
-export const PWA_SCREENSHOT_SEND_AMOUNT = 40
+/** Matches `giveMoney` in the pwa-screenshots seed — affects Float before rebalance capture. */
+export const PWA_SCREENSHOT_GIVE_AMOUNT = 40
 
 /** Playwright device viewport — sizes must match manifest `sizes` and PNG pixels. */
 export const PWA_SCREENSHOT_VIEWPORT = { width: 412, height: 915 } as const

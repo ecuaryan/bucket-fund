@@ -13,7 +13,7 @@ import {
   kidsTakeSheetTitle,
   kidsTakeSubmitLabel,
 } from '@/lib/brand'
-import { returnFromChild } from '@/lib/sends'
+import { returnFromChild } from '@/lib/give'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
 import { sanitizeAmountInput } from '@/lib/amountInput'
 

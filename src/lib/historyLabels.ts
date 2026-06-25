@@ -12,8 +12,8 @@ export function bucketEndpointLabel(args: {
   return FLOAT_LABEL
 }
 
-/** Label for one endpoint of a send row in History. */
-export function sendMemberEndpointLabel(args: {
+/** Label for one endpoint of a give row in History. */
+export function giveMemberEndpointLabel(args: {
   snapshotName: string | null | undefined
   joinedName: string | null | undefined
   isMe: boolean
@@ -42,8 +42,8 @@ export function historyShowBucketMoveActor(viewerRole: string): boolean {
   return viewerRole === 'admin' || viewerRole === 'member'
 }
 
-/** Adults see all send actors; children see who gave/took on their own rows. */
-export function historyShowSendActor(args: {
+/** Adults see all give actors; children see who gave/took on their own rows. */
+export function historyShowGiveActor(args: {
   viewerRole: string
   currentMemberId: string
   row: {
@@ -87,7 +87,7 @@ export function historyBucketMoveSubtitle(args: {
   return historyTxSubtitle({ ...args, kind: 'Bucket move' })
 }
 
-export function historySendSubtitle(args: {
+export function historyGiveSubtitle(args: {
   time: string
   actorMemberId: string | null | undefined
   actorName: string | null | undefined
@@ -120,7 +120,7 @@ export function isParentTakeFromChild(row: {
   )
 }
 
-export function historySendActor(args: {
+export function historyGiveActor(args: {
   row: {
     type: string
     from_member_id: string | null

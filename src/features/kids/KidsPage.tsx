@@ -26,7 +26,7 @@ import {
 import { fetchHouseholdAdminName } from '@/lib/householdAdmin'
 import { subscribeHouseholdRosterRefresh } from '@/lib/householdRosterRefresh'
 import { buildKidsPageModel, type VirtualKidRow as VirtualKidRowData } from '@/lib/kidsPageModel'
-import { fetchLinkedChildMemberIds } from '@/lib/sends'
+import { fetchLinkedChildMemberIds } from '@/lib/give'
 import { toast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'

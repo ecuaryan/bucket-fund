@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  filterSendRecipients,
+  filterGiveRecipients,
   isLinkedChild,
   shouldShowKidsNav,
-  shouldShowSendNav,
-} from '@/lib/sendRecipients'
+  shouldShowGiveNav,
+} from '@/lib/giveRecipients'
 
 const roster = [
   { id: 'a', name: 'Admin', role: 'admin' },
@@ -23,28 +23,28 @@ describe('isLinkedChild', () => {
   })
 })
 
-describe('filterSendRecipients', () => {
+describe('filterGiveRecipients', () => {
   it('adult sees only virtual children', () => {
     expect(
-      filterSendRecipients(roster, 'a', 'admin', linked).map((m) => m.id),
+      filterGiveRecipients(roster, 'a', 'admin', linked).map((m) => m.id),
     ).toEqual(['c'])
     expect(
-      filterSendRecipients(roster, 'm', 'member', linked).map((m) => m.id),
+      filterGiveRecipients(roster, 'm', 'member', linked).map((m) => m.id),
     ).toEqual(['c'])
   })
 
   it('virtual child sees adults and virtual siblings, not linked siblings', () => {
     expect(
-      filterSendRecipients(roster, 'c', 'child', linked).map((m) => m.id),
+      filterGiveRecipients(roster, 'c', 'child', linked).map((m) => m.id),
     ).toEqual(['a', 'm'])
   })
 
   it('linked child caller has no recipients', () => {
-    expect(filterSendRecipients(roster, 'c2', 'child', linked)).toEqual([])
+    expect(filterGiveRecipients(roster, 'c2', 'child', linked)).toEqual([])
   })
 
   it('child sees other members when none are linked', () => {
-    expect(filterSendRecipients(roster, 'c', 'child').map((m) => m.id)).toEqual([
+    expect(filterGiveRecipients(roster, 'c', 'child').map((m) => m.id)).toEqual([
       'a',
       'm',
       'c2',
@@ -52,7 +52,7 @@ describe('filterSendRecipients', () => {
   })
 
   it('solo admin has no recipients', () => {
-    expect(filterSendRecipients([roster[0]], 'a', 'admin')).toEqual([])
+    expect(filterGiveRecipients([roster[0]], 'a', 'admin')).toEqual([])
   })
 })
 
@@ -71,10 +71,10 @@ describe('shouldShowKidsNav', () => {
   })
 })
 
-describe('shouldShowSendNav', () => {
+describe('shouldShowGiveNav', () => {
   it('hides for adults even with virtual recipients', () => {
     expect(
-      shouldShowSendNav({
+      shouldShowGiveNav({
         callerRole: 'admin',
         callerIsLinkedChild: false,
         recipientCount: 1,
@@ -84,7 +84,7 @@ describe('shouldShowSendNav', () => {
 
   it('shows for virtual kids with recipients', () => {
     expect(
-      shouldShowSendNav({
+      shouldShowGiveNav({
         callerRole: 'child',
         callerIsLinkedChild: false,
         recipientCount: 2,
@@ -94,7 +94,7 @@ describe('shouldShowSendNav', () => {
 
   it('shows for linked kids (static explainer page)', () => {
     expect(
-      shouldShowSendNav({
+      shouldShowGiveNav({
         callerRole: 'child',
         callerIsLinkedChild: true,
         recipientCount: 0,
@@ -104,7 +104,7 @@ describe('shouldShowSendNav', () => {
 
   it('hides for solo admin with no children', () => {
     expect(
-      shouldShowSendNav({
+      shouldShowGiveNav({
         callerRole: 'admin',
         callerIsLinkedChild: false,
         recipientCount: 0,

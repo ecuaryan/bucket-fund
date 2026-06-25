@@ -3,12 +3,12 @@ import { FLOAT_LABEL } from '@/lib/brand'
 import {
   bucketEndpointLabel,
   historyBucketMoveSubtitle,
-  historySendActor,
-  historySendSubtitle,
+  historyGiveActor,
+  historyGiveSubtitle,
   historyTakeSubtitle,
   historyMoveActorLabel,
-  historyShowSendActor,
-  sendMemberEndpointLabel,
+  historyShowGiveActor,
+  giveMemberEndpointLabel,
 } from '@/lib/historyLabels'
 
 describe('bucketEndpointLabel', () => {
@@ -53,10 +53,10 @@ describe('bucketEndpointLabel', () => {
   })
 })
 
-describe('sendMemberEndpointLabel', () => {
+describe('giveMemberEndpointLabel', () => {
   it('prefers snapshot name over live join', () => {
     expect(
-      sendMemberEndpointLabel({
+      giveMemberEndpointLabel({
         snapshotName: 'Alex',
         joinedName: 'New name',
         isMe: false,
@@ -66,7 +66,7 @@ describe('sendMemberEndpointLabel', () => {
 
   it('returns You for the current member', () => {
     expect(
-      sendMemberEndpointLabel({
+      giveMemberEndpointLabel({
         snapshotName: 'Jamie',
         joinedName: 'Jamie',
         isMe: true,
@@ -76,7 +76,7 @@ describe('sendMemberEndpointLabel', () => {
 
   it('keeps name after member removed via snapshot', () => {
     expect(
-      sendMemberEndpointLabel({
+      giveMemberEndpointLabel({
         snapshotName: 'Alex',
         joinedName: null,
         isMe: false,
@@ -86,7 +86,7 @@ describe('sendMemberEndpointLabel', () => {
 
   it('falls back to Someone without snapshot or join', () => {
     expect(
-      sendMemberEndpointLabel({
+      giveMemberEndpointLabel({
         snapshotName: null,
         joinedName: null,
         isMe: false,
@@ -156,10 +156,10 @@ describe('historyBucketMoveSubtitle', () => {
   })
 })
 
-describe('historyShowSendActor', () => {
+describe('historyShowGiveActor', () => {
   it('is always on for adults', () => {
     expect(
-      historyShowSendActor({
+      historyShowGiveActor({
         viewerRole: 'admin',
         currentMemberId: 'kid',
         row: { type: 'give', from_member_id: 'dad', to_member_id: 'kid' },
@@ -169,14 +169,14 @@ describe('historyShowSendActor', () => {
 
   it('is on for a child on their own send rows', () => {
     expect(
-      historyShowSendActor({
+      historyShowGiveActor({
         viewerRole: 'child',
         currentMemberId: 'kid',
         row: { type: 'give', from_member_id: 'dad', to_member_id: 'kid' },
       }),
     ).toBe(true)
     expect(
-      historyShowSendActor({
+      historyShowGiveActor({
         viewerRole: 'child',
         currentMemberId: 'kid',
         row: { type: 'give', from_member_id: 'kid', to_member_id: 'dad' },
@@ -186,7 +186,7 @@ describe('historyShowSendActor', () => {
 
   it('is off for a child on bucket moves', () => {
     expect(
-      historyShowSendActor({
+      historyShowGiveActor({
         viewerRole: 'child',
         currentMemberId: 'kid',
         row: { type: 'bucket_move', from_member_id: 'dad', to_member_id: null },
@@ -195,10 +195,10 @@ describe('historyShowSendActor', () => {
   })
 })
 
-describe('historySendSubtitle', () => {
+describe('historyGiveSubtitle', () => {
   it('includes sender for adults', () => {
     expect(
-      historySendSubtitle({
+      historyGiveSubtitle({
         time: '3:45 PM',
         actorMemberId: 'm1',
         actorName: 'Ryan',
@@ -210,7 +210,7 @@ describe('historySendSubtitle', () => {
 
   it('uses "you" when the viewer sent', () => {
     expect(
-      historySendSubtitle({
+      historyGiveSubtitle({
         time: '9:00 AM',
         actorMemberId: 'm1',
         actorName: 'Ryan',
@@ -247,10 +247,10 @@ describe('historyTakeSubtitle', () => {
   })
 })
 
-describe('historySendActor', () => {
+describe('historyGiveActor', () => {
   it('uses initiator for parent takes', () => {
     expect(
-      historySendActor({
+      historyGiveActor({
         row: {
           type: 'give',
           from_member_id: 'kid',
@@ -264,7 +264,7 @@ describe('historySendActor', () => {
 
   it('uses sender for normal sends', () => {
     expect(
-      historySendActor({
+      historyGiveActor({
         row: {
           type: 'give',
           from_member_id: 'dad',

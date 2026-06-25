@@ -86,7 +86,7 @@ export function historyBucketMoveBalanceLine(
 /**
  * One muted balance line for a send (recipient kid total, else sender kid total).
  */
-export function historySendBalanceLine(
+export function historyGiveBalanceLine(
   row: HistoryBalanceTxRow,
   currentMemberId: string,
 ): HistoryBalanceLine | null {

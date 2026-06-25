@@ -6,7 +6,7 @@ import {
   getBucketAllocation,
   insertBucket,
   moveMoney,
-  sendMoney,
+  giveMoney,
   serviceClient,
   setBucketAllocation,
   userClient,
@@ -203,7 +203,7 @@ describe('move_money RPC', () => {
       current_balance: 500,
     })
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    await sendMoney(admin, { toMemberId: child.memberId, amount: 25 })
+    await giveMoney(admin, { toMemberId: child.memberId, amount: 25 })
     const kidBucket = await insertBucket(
       svc,
       family.familyId,

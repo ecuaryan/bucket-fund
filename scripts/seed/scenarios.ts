@@ -5,7 +5,7 @@ import {
   PWA_SCREENSHOT_BUCKETS,
   PWA_SCREENSHOT_MANUAL_SOURCE,
   PWA_SCREENSHOT_SCENARIO_ID,
-  PWA_SCREENSHOT_SEND_AMOUNT,
+  PWA_SCREENSHOT_GIVE_AMOUNT,
 } from './pwaScreenshots'
 import {
   PWA_DEMO_GIF_ADMIN_DISPLAY_NAME,
@@ -21,7 +21,7 @@ import {
   getJoinCode,
   insertBucket,
   moveMoney,
-  sendMoney,
+  giveMoney,
   serviceClient,
   setMemberPin,
   userClient,
@@ -256,7 +256,7 @@ async function seedHousehold(
   await moveMoney(adminClient, { fromBucketId: null, toBucketId: groceriesId, amount: 300 })
   await moveMoney(adminClient, { fromBucketId: null, toBucketId: funId, amount: 100 })
   await moveMoney(adminClient, { fromBucketId: null, toBucketId: allowanceId, amount: 75 })
-  await sendMoney(adminClient, {
+  await giveMoney(adminClient, {
     toMemberId: sam.memberId,
     amount: 40,
     note: 'Lunch money',
@@ -300,7 +300,7 @@ async function seedLinkedKid(id: ScenarioId): Promise<SeedResult> {
 
   await moveMoney(adminClient, { fromBucketId: null, toBucketId: allowanceId, amount: 50 })
   await moveMoney(adminClient, { fromBucketId: null, toBucketId: spendingId, amount: 25 })
-  await sendMoney(adminClient, { toMemberId: sam.memberId, amount: 20, note: 'Weekend' })
+  await giveMoney(adminClient, { toMemberId: sam.memberId, amount: 20, note: 'Weekend' })
 
   const joinCode = await getJoinCode(admin.familyId)
   return {
@@ -334,7 +334,7 @@ async function seedKidView(id: ScenarioId): Promise<SeedResult> {
   await moveMoney(adminClient, { fromBucketId: null, toBucketId: allowanceId, amount: 60 })
   await moveMoney(adminClient, { fromBucketId: null, toBucketId: spendingId, amount: 35 })
   await moveMoney(adminClient, { fromBucketId: null, toBucketId: savingsId, amount: 40 })
-  await sendMoney(adminClient, { toMemberId: sam.memberId, amount: 15, note: 'Chores' })
+  await giveMoney(adminClient, { toMemberId: sam.memberId, amount: 15, note: 'Chores' })
 
   const joinCode = await getJoinCode(admin.familyId)
   return {
@@ -424,7 +424,7 @@ async function seedHistory(id: ScenarioId): Promise<SeedResult> {
   }
 
   for (let i = 1; i <= 15; i++) {
-    await sendMoney(adminClient, {
+    await giveMoney(adminClient, {
       toMemberId: sam.memberId,
       amount: 5 + (i % 10),
       note: i % 3 === 0 ? `Allowance week ${i}` : undefined,
@@ -501,9 +501,9 @@ async function seedPwaScreenshots(id: ScenarioId): Promise<SeedResult> {
     })
   }
 
-  await sendMoney(adminClient, {
+  await giveMoney(adminClient, {
     toMemberId: sam.memberId,
-    amount: PWA_SCREENSHOT_SEND_AMOUNT,
+    amount: PWA_SCREENSHOT_GIVE_AMOUNT,
     note: 'Allowance',
   })
 
@@ -586,7 +586,7 @@ async function seedGolden(id: ScenarioId): Promise<SeedResult> {
   for (const kidName of ['J', 'T', 'Z'] as const) {
     const kid = kids.find((member) => member.name === kidName)
     if (!kid) throw new Error(`golden seed: missing kid ${kidName}`)
-    await sendMoney(adminClient, {
+    await giveMoney(adminClient, {
       toMemberId: kid.memberId,
       amount: 10_000,
       note: 'Seed allowance',

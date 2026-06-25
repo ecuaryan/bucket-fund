@@ -6,16 +6,16 @@ import {
 } from './historyFilters'
 
 describe('historyFilters', () => {
-  it('parses sends-only filter from URL', () => {
-    expect(filterFromSearchParams(new URLSearchParams('type=send'))).toEqual({
-      kind: 'send',
+  it('parses gives-only filter from URL', () => {
+    expect(filterFromSearchParams(new URLSearchParams('type=give'))).toEqual({
+      kind: 'give',
     })
   })
 
-  it('prefers sends filter over bucket when both are present', () => {
+  it('prefers gives filter over bucket when both are present', () => {
     expect(
-      filterFromSearchParams(new URLSearchParams('type=send&bucket=abc')),
-    ).toEqual({ kind: 'send' })
+      filterFromSearchParams(new URLSearchParams('type=give&bucket=abc')),
+    ).toEqual({ kind: 'give' })
   })
 
   it('parses bucket filter from URL', () => {
@@ -27,7 +27,7 @@ describe('historyFilters', () => {
 
   it('builds search params for active filter', () => {
     expect(searchParamsForFilter({ kind: 'all' })).toEqual({})
-    expect(searchParamsForFilter({ kind: 'send' })).toEqual({ type: 'send' })
+    expect(searchParamsForFilter({ kind: 'give' })).toEqual({ type: 'give' })
     expect(
       searchParamsForFilter({ kind: 'bucket', bucketId: 'abc' }),
     ).toEqual({ bucket: 'abc' })
@@ -35,7 +35,7 @@ describe('historyFilters', () => {
 
   it('uses URL string as stable filter key', () => {
     expect(
-      historyFilterSearchKey(new URLSearchParams('type=send&bucket=ignored')),
-    ).toBe('type=send&bucket=ignored')
+      historyFilterSearchKey(new URLSearchParams('type=give&bucket=ignored')),
+    ).toBe('type=give&bucket=ignored')
   })
 })

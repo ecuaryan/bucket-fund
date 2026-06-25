@@ -664,7 +664,7 @@ export const BUCKETS_REORDER_POPOVER_LABEL =
 export function bucketsKidFloatHint(
   adminName: string | null | undefined,
 ): string {
-  return `When someone on the shared balance sends you money, move it into buckets—or ask ${householdAdminLabel(adminName)} to link your bank account.`
+  return `When someone on the shared balance gives you money, move it into buckets—or ask ${householdAdminLabel(adminName)} to link your bank account.`
 }
 
 export function bucketsFloatInfoAriaLabel(): string {
@@ -1239,9 +1239,9 @@ export function floatSourcesCountText(count: number): string | undefined {
   return `across ${count} money source${count === 1 ? '' : 's'}`
 }
 
-export const SEND_ADD_SOURCE_TITLE = 'Add a money source first'
+export const GIVE_ADD_SOURCE_TITLE = 'Add a money source first'
 
-export const SEND_ADD_SOURCE_ADMIN_BODY =
+export const GIVE_ADD_SOURCE_ADMIN_BODY =
   'Give uses cash from the household balance in Buckets. Add a money source in Admin—a linked bank or just an amount—so we know how much you can give.'
 
 export function bucketsLinkBankMemberBody(
@@ -1250,7 +1250,7 @@ export function bucketsLinkBankMemberBody(
   return `No bank accounts are linked yet. Ask ${householdAdminLabel(adminName)} to connect a bank account so balances can refresh and your float stays current.`
 }
 
-export function sendLinkBankMemberBody(
+export function giveLinkBankMemberBody(
   adminName: string | null | undefined,
 ): string {
   return `No bank accounts are linked yet. Ask ${householdAdminLabel(adminName)} to connect one before you can give.`
@@ -1262,34 +1262,34 @@ export function bucketsMemberNoBucketsHint(
   return `Ask ${householdAdminLabel(adminName)} to add buckets.`
 }
 
-// --- Send ---
+// --- Give ---
 
-export const SEND_SHARED_BALANCE_INTRO =
+export const GIVE_SHARED_BALANCE_INTRO =
   'Give money to other people in your household.'
 
-export const SEND_SHARED_BALANCE_NO_ACCOUNTS_BODY =
+export const GIVE_SHARED_BALANCE_NO_ACCOUNTS_BODY =
   'Give uses cash from the household balance in Buckets. Link a bank account in Admin first so we know how much you can give.'
 
-export const SEND_KID_INTRO =
+export const GIVE_KID_INTRO =
   `Give your ${FLOAT_LABEL_LOWER} to another household member.`
 
-export const SEND_LINKED_KID_TITLE = 'Your money is in your bank account'
+export const GIVE_LINKED_KID_TITLE = 'Your money is in your bank account'
 
-export const SEND_LINKED_KID_BODY =
+export const GIVE_LINKED_KID_BODY =
   'Spending comes from your debit card. When you need to move money in or out, use your bank app or ask your household admin to transfer at the bank.'
 
-export const SEND_LINKED_KIDS_EXCLUDED_HINT =
+export const GIVE_LINKED_KIDS_EXCLUDED_HINT =
   'Kids with a linked account aren’t listed—transfer or deposit at your bank to give them money.'
 
-export const SEND_ADULT_LINKED_KIDS_ONLY_TITLE = 'Your kids have linked accounts'
+export const GIVE_ADULT_LINKED_KIDS_ONLY_TITLE = 'Your kids have linked accounts'
 
-export const SEND_ADULT_LINKED_KIDS_ONLY_BODY =
+export const GIVE_ADULT_LINKED_KIDS_ONLY_BODY =
   'Every kid in your household has their own linked bank account—their balance comes from the bank. To give them money, transfer or deposit at your bank.'
 
-export const SEND_ADULT_LINKED_KIDS_ONLY_SEND_FOR =
+export const GIVE_ADULT_LINKED_KIDS_ONLY_GIVE_FOR =
   'Give is for kids who don’t have a linked account—you can track their money here instead.'
 
-export const SEND_DB_NOT_READY_BODY =
+export const GIVE_DB_NOT_READY_BODY =
   'Give is temporarily unavailable while the server finishes updating. Try again in a few minutes, then refresh.'
 
 export const BUCKETS_DB_UPDATE_PENDING_BODY =
@@ -1297,8 +1297,8 @@ export const BUCKETS_DB_UPDATE_PENDING_BODY =
 
 // --- History ---
 
-/** History filter dropdown + active chip (Give/send transactions only). */
-export const HISTORY_FILTER_SENT_MONEY = 'Given money'
+/** History filter dropdown + active chip (Give transactions only). */
+export const HISTORY_FILTER_GIVEN_MONEY = 'Given money'
 
 /** History balance trail when the viewer is the subject kid. */
 export const HISTORY_BALANCE_YOUR_LABEL = FLOAT_LABEL

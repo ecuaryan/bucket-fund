@@ -11,7 +11,7 @@ const ForgotPasswordPage = lazy(() => import('@/features/auth/ForgotPasswordPage
 const ResetPasswordPage = lazy(() => import('@/features/auth/ResetPasswordPage'))
 const BucketsPage = lazy(() => import('@/features/buckets/BucketsPage'))
 const KidsPage = lazy(() => import('@/features/kids/KidsPage'))
-const SendPage = lazy(() => import('@/features/sends/SendPage'))
+const GivePage = lazy(() => import('@/features/give/GivePage'))
 const HistoryPage = lazy(() => import('@/features/history/HistoryPage'))
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'))
 const AdminPage = lazy(() => import('@/features/admin/AdminPage'))
@@ -84,7 +84,7 @@ export default function App() {
           path="/give"
           element={
             <Lazy>
-              <SendPage />
+              <GivePage />
             </Lazy>
           }
         />

@@ -1,5 +1,5 @@
-/** Minimal member row for Send recipient filtering (matches Send page). */
-export type SendRecipientMember = {
+/** Minimal member row for Give recipient filtering (matches Give page). */
+export type GiveRecipientMember = {
   id: string
   name: string
   role: string
@@ -13,13 +13,13 @@ export function isLinkedChild(
   return role === 'child' && linkedChildIds.has(memberId)
 }
 
-/** Same rules as SendPage: shared balance → virtual kids only; kids → everyone except linked kids. */
-export function filterSendRecipients(
-  members: SendRecipientMember[],
+/** Same rules as GivePage: shared balance → virtual kids only; kids → everyone except linked kids. */
+export function filterGiveRecipients(
+  members: GiveRecipientMember[],
   callerMemberId: string,
   callerRole: string,
   linkedChildIds: ReadonlySet<string> = new Set(),
-): SendRecipientMember[] {
+): GiveRecipientMember[] {
   if (isLinkedChild(callerMemberId, callerRole, linkedChildIds)) {
     return []
   }
@@ -33,15 +33,15 @@ export function filterSendRecipients(
   return others.filter((m) => !linkedChildIds.has(m.id))
 }
 
-/** Nav + route: adults with kids use the Kids tab instead of Send. */
+/** Nav + route: adults with kids use the Kids tab instead of Give. */
 export function shouldShowKidsNav(callerRole: string, childCount: number): boolean {
   return (
     (callerRole === 'admin' || callerRole === 'member') && childCount > 0
   )
 }
 
-/** Nav + route: show Send for virtual kids; linked kids get the explainer page. */
-export function shouldShowSendNav(args: {
+/** Nav + route: show Give for virtual kids; linked kids get the explainer page. */
+export function shouldShowGiveNav(args: {
   callerRole: string
   callerIsLinkedChild: boolean
   recipientCount: number

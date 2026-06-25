@@ -3,7 +3,7 @@ import {
   addMember,
   createAdminFamily,
   memberBalance,
-  sendMoney,
+  giveMoney,
   serviceClient,
   userClient,
 } from './fixtures'
@@ -105,7 +105,7 @@ describe('manual money sources', () => {
     })
     expect(manualId).toBeTruthy()
 
-    await sendMoney(admin, { toMemberId: child.memberId, amount: 100 })
+    await giveMoney(admin, { toMemberId: child.memberId, amount: 100 })
 
     const childBefore = await memberBalance(svc, child.memberId)
     const adultBefore = await memberBalance(svc, family.adminMemberId)

@@ -81,7 +81,7 @@ function TwoSidedTransfer({
   )
 }
 
-/** Two-sided balance display for History rows (bucket moves and sends). */
+/** Two-sided balance display for History rows (bucket moves and gives). */
 export function HistoryEntityTransfer({
   sides,
   amount,

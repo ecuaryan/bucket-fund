@@ -13,7 +13,7 @@ import {
   kidsGiveSheetIntro,
   kidsGiveSheetTitle,
 } from '@/lib/brand'
-import { sendMoney } from '@/lib/sends'
+import { giveMoney } from '@/lib/give'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
 import { sanitizeAmountInput } from '@/lib/amountInput'
 
@@ -76,7 +76,7 @@ export default function FundKidSheet({
 
     setSubmitting(true)
     try {
-      await sendMoney({
+      await giveMoney({
         toMemberId: kidId,
         amount,
         note: note.trim() || null,
