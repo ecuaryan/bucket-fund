@@ -157,7 +157,7 @@ describe('RLS: transaction history visibility', () => {
     expect(error).toBeNull()
     expect(data).toMatchObject({
       id: txId,
-      type: 'send',
+      type: 'give',
       from_member_id: family.adminMemberId,
       to_member_id: child.memberId,
     })
@@ -257,7 +257,7 @@ describe('RLS: transaction history visibility', () => {
       .single()
 
     expect(error).toBeNull()
-    expect(data).toMatchObject({ id: txId, type: 'send' })
+    expect(data).toMatchObject({ id: txId, type: 'give' })
   })
 })
 

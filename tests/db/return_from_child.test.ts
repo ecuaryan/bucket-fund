@@ -51,7 +51,7 @@ describe('return_from_child RPC', () => {
       .single()
     expect(error).toBeNull()
     expect(tx).toMatchObject({
-      type: 'send',
+      type: 'give',
       amount: 30,
       from_member_id: child.memberId,
       to_member_id: family.adminMemberId,
@@ -191,7 +191,7 @@ describe('return_from_child RPC', () => {
 
     const { error } = await admin.from('transactions').insert({
       family_id: family.familyId,
-      type: 'send',
+      type: 'give',
       amount: 10,
       from_member_id: child.memberId,
       to_member_id: family.adminMemberId,

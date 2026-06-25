@@ -53,7 +53,7 @@ export function historyShowSendActor(args: {
   }
 }): boolean {
   if (args.viewerRole === 'admin' || args.viewerRole === 'member') return true
-  if (args.row.type !== 'send') return false
+  if (args.row.type !== 'give') return false
   return (
     args.row.from_member_id === args.currentMemberId ||
     args.row.to_member_id === args.currentMemberId
@@ -114,7 +114,7 @@ export function isParentTakeFromChild(row: {
   initiated_by_member_id?: string | null
 }): boolean {
   return (
-    row.type === 'send' &&
+    row.type === 'give' &&
     row.initiated_by_member_id != null &&
     row.initiated_by_member_id !== row.from_member_id
   )

@@ -12,7 +12,7 @@ import {
   userClient,
 } from './fixtures'
 
-describe('send_money RPC', () => {
+describe('give_money RPC', () => {
   it('transfers unallocated balance and records a send transaction', async () => {
     const family = await createAdminFamily('send-happy')
     const child = await addMember(family.familyId, 'child', 'Alex')
@@ -48,7 +48,7 @@ describe('send_money RPC', () => {
       .single()
     expect(error).toBeNull()
     expect(tx).toMatchObject({
-      type: 'send',
+      type: 'give',
       amount: 75,
       from_member_id: family.adminMemberId,
       to_member_id: child.memberId,
@@ -150,7 +150,7 @@ describe('send_money RPC', () => {
     })
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    const { error } = await admin.rpc('send_money', {
+    const { error } = await admin.rpc('give_money', {
       p_to_member_id: child.memberId,
       p_amount: 50,
     })
@@ -164,13 +164,13 @@ describe('send_money RPC', () => {
     const family = await createAdminFamily('send-self')
     const admin = await userClient(family.adminEmail, family.adminPassword)
 
-    const { error } = await admin.rpc('send_money', {
+    const { error } = await admin.rpc('give_money', {
       p_to_member_id: family.adminMemberId,
       p_amount: 10,
     })
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(/cannot send to yourself/i)
+    expect(error?.message).toMatch(/cannot give to yourself/i)
   })
 
   it('child can send when they have balance from prior receive', async () => {
@@ -215,7 +215,7 @@ describe('send_money RPC', () => {
     })
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    const { error } = await admin.rpc('send_money', {
+    const { error } = await admin.rpc('give_money', {
       p_to_member_id: spouse.memberId,
       p_amount: 50,
     })
@@ -231,7 +231,7 @@ describe('send_money RPC', () => {
 
     const { error } = await admin.from('transactions').insert({
       family_id: family.familyId,
-      type: 'send',
+      type: 'give',
       amount: 10,
       from_member_id: family.adminMemberId,
       to_member_id: child.memberId,
@@ -262,7 +262,7 @@ describe('send_money RPC', () => {
     })
 
     const admin = await userClient(family.adminEmail, family.adminPassword)
-    const { error } = await admin.rpc('send_money', {
+    const { error } = await admin.rpc('give_money', {
       p_to_member_id: linkedChild.memberId,
       p_amount: 25,
     })
@@ -286,7 +286,7 @@ describe('send_money RPC', () => {
     })
 
     const linkedClient = await userClient(linkedChild.email, linkedChild.password)
-    const { error } = await linkedClient.rpc('send_money', {
+    const { error } = await linkedClient.rpc('give_money', {
       p_to_member_id: family.adminMemberId,
       p_amount: 10,
     })
@@ -321,7 +321,7 @@ describe('send_money RPC', () => {
     await sendMoney(admin, { toMemberId: virtualChild.memberId, amount: 30 })
 
     const linkedClient = await userClient(linkedChild.email, linkedChild.password)
-    const { error } = await linkedClient.rpc('send_money', {
+    const { error } = await linkedClient.rpc('give_money', {
       p_to_member_id: virtualChild.memberId,
       p_amount: 5,
     })

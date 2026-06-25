@@ -86,7 +86,7 @@ describe('historySendBalanceLine', () => {
     expect(
       historySendBalanceLine(
         {
-          type: 'send',
+          type: 'give',
           from_bucket_id: null,
           to_bucket_id: null,
           from_bucket_name: null,
@@ -113,7 +113,7 @@ describe('historySendBalanceLine', () => {
     expect(
       historySendBalanceLine(
         {
-          type: 'send',
+          type: 'give',
           from_bucket_id: null,
           to_bucket_id: null,
           from_bucket_name: null,
@@ -140,7 +140,7 @@ describe('historySendBalanceLine', () => {
     expect(
       historySendBalanceLine(
         {
-          type: 'send',
+          type: 'give',
           from_bucket_id: null,
           to_bucket_id: null,
           from_bucket_name: null,

@@ -162,7 +162,7 @@ describe('historyShowSendActor', () => {
       historyShowSendActor({
         viewerRole: 'admin',
         currentMemberId: 'kid',
-        row: { type: 'send', from_member_id: 'dad', to_member_id: 'kid' },
+        row: { type: 'give', from_member_id: 'dad', to_member_id: 'kid' },
       }),
     ).toBe(true)
   })
@@ -172,14 +172,14 @@ describe('historyShowSendActor', () => {
       historyShowSendActor({
         viewerRole: 'child',
         currentMemberId: 'kid',
-        row: { type: 'send', from_member_id: 'dad', to_member_id: 'kid' },
+        row: { type: 'give', from_member_id: 'dad', to_member_id: 'kid' },
       }),
     ).toBe(true)
     expect(
       historyShowSendActor({
         viewerRole: 'child',
         currentMemberId: 'kid',
-        row: { type: 'send', from_member_id: 'kid', to_member_id: 'dad' },
+        row: { type: 'give', from_member_id: 'kid', to_member_id: 'dad' },
       }),
     ).toBe(true)
   })
@@ -252,7 +252,7 @@ describe('historySendActor', () => {
     expect(
       historySendActor({
         row: {
-          type: 'send',
+          type: 'give',
           from_member_id: 'kid',
           from_member_name: 'Jake',
           initiated_by_member_id: 'dad',
@@ -266,7 +266,7 @@ describe('historySendActor', () => {
     expect(
       historySendActor({
         row: {
-          type: 'send',
+          type: 'give',
           from_member_id: 'dad',
           from_member_name: 'Ryan',
           initiated_by_member_id: null,

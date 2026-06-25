@@ -161,7 +161,7 @@ export async function sendMoney(
   client: Db,
   args: { toMemberId: string; amount: number; note?: string },
 ): Promise<string> {
-  const { data, error } = await client.rpc('send_money', {
+  const { data, error } = await client.rpc('give_money', {
     p_to_member_id: args.toMemberId,
     p_amount: args.amount,
     p_note: args.note ?? undefined,
@@ -200,7 +200,7 @@ export async function getFloatBalance(client: Db): Promise<number> {
   return Number(data)
 }
 
-/** Service role — same formula as Buckets tab / send_money. */
+/** Service role — same formula as Buckets tab / give_money. */
 export async function memberBalance(svc: Db, memberId: string): Promise<number> {
   const { data, error } = await svc.rpc('member_float', {
     p_member_id: memberId,

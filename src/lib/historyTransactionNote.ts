@@ -4,7 +4,7 @@ import {
 } from '@/lib/brand'
 
 export type HistoryTransactionNoteRow = {
-  type: 'bucket_move' | 'send'
+  type: 'bucket_move' | 'give'
   note: string | null
   from_bucket_id: string | null
   to_bucket_id: string | null
@@ -26,7 +26,7 @@ function isAutoOrganizeHistoryNote(note: string): boolean {
 export function historyTransactionNoteDisplay(
   row: HistoryTransactionNoteRow,
 ): string | null {
-  if (row.type === 'send') {
+  if (row.type === 'give') {
     const trimmed = row.note?.trim()
     return trimmed ? trimmed : null
   }
