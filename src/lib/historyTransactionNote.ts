@@ -2,11 +2,6 @@ import {
   autoOrganizeHistoryNote,
   type AutoOrganizeKind,
 } from '@/lib/brand'
-import { FLOAT_ENDPOINT_KEY } from '@/features/buckets/moveMoneyDefaults'
-import {
-  detectMoveMoneyIntent,
-  moveMoneyDialogTitle,
-} from '@/lib/moveMoneyDialogCopy'
 
 export type HistoryTransactionNoteRow = {
   type: 'bucket_move' | 'send'
@@ -27,17 +22,7 @@ function isAutoOrganizeHistoryNote(note: string): boolean {
   return AUTO_ORGANIZE_NOTE_PREFIXES.some((prefix) => note.startsWith(prefix))
 }
 
-function historyManualBucketMoveDefaultNote(
-  row: Pick<HistoryTransactionNoteRow, 'from_bucket_id' | 'to_bucket_id'>,
-): string | null {
-  const intent = detectMoveMoneyIntent({
-    fromKey: row.from_bucket_id ?? FLOAT_ENDPOINT_KEY,
-    toKey: row.to_bucket_id ?? FLOAT_ENDPOINT_KEY,
-  })
-  return moveMoneyDialogTitle(intent)
-}
-
-/** Note line shown on History rows — enriches auto-organize and manual moves. */
+/** Note line shown on History rows — enriches auto-organize moves only. */
 export function historyTransactionNoteDisplay(
   row: HistoryTransactionNoteRow,
 ): string | null {
@@ -55,7 +40,7 @@ export function historyTransactionNoteDisplay(
     return autoOrganizeHistoryNote(kind, 'Auto-organize')
   }
 
-  if (stored) return stored
-
-  return historyManualBucketMoveDefaultNote(row)
+  // A manual move with no note shows no note line — the card already says
+  // "Bucket move". Don't synthesize a label from the move direction.
+  return stored ? stored : null
 }
