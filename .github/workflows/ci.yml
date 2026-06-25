@@ -113,9 +113,36 @@ jobs:
         if: needs.changes.outputs.run_db != 'false'
         run: npm ci
 
+      # Cache the Supabase Docker images so `supabase start` loads them from disk
+      # instead of re-pulling ~1.5GB every run. Key on the pinned CLI version,
+      # which determines the image tags. actions/cache auto-uploads the tar in
+      # its post step on a miss; we just create it before the job ends.
+      - name: Cache Supabase Docker images
+        if: needs.changes.outputs.run_db != 'false'
+        id: supabase-images
+        uses: actions/cache@v4
+        with:
+          path: ~/supabase-images.tar
+          key: supabase-images-${{ runner.os }}-cli-2.105.0
+
+      - name: Load cached Supabase images
+        if: needs.changes.outputs.run_db != 'false' && steps.supabase-images.outputs.cache-hit == 'true'
+        run: docker load -i ~/supabase-images.tar
+
+      - name: Record pre-start image set
+        if: needs.changes.outputs.run_db != 'false' && steps.supabase-images.outputs.cache-hit != 'true'
+        run: docker images -q | sort -u > /tmp/img-before
+
       - name: Start Supabase
         if: needs.changes.outputs.run_db != 'false'
         run: supabase start --exclude "${{ env.SUPABASE_CI_EXCLUDE }}"
+
+      - name: Save Supabase images to cache
+        if: needs.changes.outputs.run_db != 'false' && steps.supabase-images.outputs.cache-hit != 'true'
+        run: |
+          docker images -q | sort -u > /tmp/img-after
+          NEW=$(comm -13 /tmp/img-before /tmp/img-after)
+          if [ -n "$NEW" ]; then docker save $NEW -o ~/supabase-images.tar; fi
 
       - name: Database RLS tests
         if: needs.changes.outputs.run_db != 'false'
@@ -166,9 +193,33 @@ jobs:
         if: needs.changes.outputs.run_e2e != 'false' && steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install chromium --with-deps
 
+      # Same Docker-image cache as the db job (see note there).
+      - name: Cache Supabase Docker images
+        if: needs.changes.outputs.run_e2e != 'false'
+        id: supabase-images
+        uses: actions/cache@v4
+        with:
+          path: ~/supabase-images.tar
+          key: supabase-images-${{ runner.os }}-cli-2.105.0
+
+      - name: Load cached Supabase images
+        if: needs.changes.outputs.run_e2e != 'false' && steps.supabase-images.outputs.cache-hit == 'true'
+        run: docker load -i ~/supabase-images.tar
+
+      - name: Record pre-start image set
+        if: needs.changes.outputs.run_e2e != 'false' && steps.supabase-images.outputs.cache-hit != 'true'
+        run: docker images -q | sort -u > /tmp/img-before
+
       - name: Start Supabase
         if: needs.changes.outputs.run_e2e != 'false'
         run: supabase start --exclude "${{ env.SUPABASE_CI_EXCLUDE }}"
+
+      - name: Save Supabase images to cache
+        if: needs.changes.outputs.run_e2e != 'false' && steps.supabase-images.outputs.cache-hit != 'true'
+        run: |
+          docker images -q | sort -u > /tmp/img-after
+          NEW=$(comm -13 /tmp/img-before /tmp/img-after)
+          if [ -n "$NEW" ]; then docker save $NEW -o ~/supabase-images.tar; fi
 
       - name: E2E smoke tests
         if: needs.changes.outputs.run_e2e != 'false'
