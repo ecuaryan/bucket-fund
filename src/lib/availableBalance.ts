@@ -33,6 +33,8 @@ export type BucketsBalanceBreakdown = {
   children: ChildSetAsideLine[]
   /** Family-wide latest bank sync (ISO), or null when nothing is synced. */
   bankLastSyncedAt: string | null
+  /** True when the signed-in member personally owns a Teller-linked account. */
+  hasLinkedBank: boolean
 }
 
 /** Net gives for a child (positive when funded by family). */
@@ -76,6 +78,7 @@ export function parseBreakdownRow(data: Json): BucketsBalanceBreakdown | null {
     typeof row.bank_last_synced_at === 'string'
       ? row.bank_last_synced_at
       : null
+  const hasLinkedBank = row.has_linked_bank === true
   const totalCash = num('total_cash')
   const bankCash =
     row.bank_cash !== undefined ? num('bank_cash') : totalCash
@@ -90,6 +93,7 @@ export function parseBreakdownRow(data: Json): BucketsBalanceBreakdown | null {
     childrenSetAside: num('children_set_aside'),
     children,
     bankLastSyncedAt,
+    hasLinkedBank,
   }
 }
 
@@ -135,6 +139,7 @@ function clientBreakdownFallback(
     childrenSetAside: 0,
     children: [],
     bankLastSyncedAt: latestCashSyncAt(accounts),
+    hasLinkedBank: accounts.some((a) => a.source === 'teller'),
   }
 }
 

@@ -27,6 +27,7 @@ const breakdown = (over: Partial<BucketsBalanceBreakdown> = {}): BucketsBalanceB
   childrenSetAside: 0,
   children: [],
   bankLastSyncedAt: null,
+  hasLinkedBank: false,
   ...over,
 })
 

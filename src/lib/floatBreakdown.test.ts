@@ -28,6 +28,7 @@ function adultBreakdown(
       { memberId: 'c2', name: 'Jake', amount: 20 },
     ],
     bankLastSyncedAt: null,
+    hasLinkedBank: false,
     ...overrides,
   }
 }

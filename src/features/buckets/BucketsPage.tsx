@@ -693,11 +693,13 @@ export default function BucketsPage() {
   // Family-wide bank sync time. Comes from the breakdown RPC so every role —
   // including children, who can't read the accounts table — sees the same value.
   const bankSyncedLabel = formatRelativeTime(balanceBreakdown.bankLastSyncedAt)
-  const hasLinkedBanks =
-    balanceBreakdown.bankLastSyncedAt != null || balanceBreakdown.bankCash > 0
+  // A child can refresh only their OWN linked bank — never the family-wide
+  // sync state. `hasLinkedBank` is authoritative (owns a Teller account)
+  // regardless of balance or whether it has synced yet, so virtual kids stay
+  // hidden and a freshly-linked kid at $0 still gets the control.
   const canRefreshBalances =
     (isAdult && hasMoneySources && bankAccountsCount > 0) ||
-    (isChild && hasLinkedBanks)
+    (isChild && balanceBreakdown.hasLinkedBank)
 
   const breakdownOpts = {
     isChild,
