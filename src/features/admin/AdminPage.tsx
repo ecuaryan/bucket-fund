@@ -49,7 +49,7 @@ import {
 } from '@/lib/teller'
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
 import RefreshIcon from '@/components/ui/RefreshIcon'
-import BankAccountActivity from '@/features/admin/BankAccountActivity'
+import BankAccountActivity from '@/features/accounts/BankAccountActivity'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import AdminAccountSection from '@/features/admin/AdminAccountSection'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'

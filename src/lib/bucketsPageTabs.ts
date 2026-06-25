@@ -1,32 +1,59 @@
-import { AUTO_ORGANIZE_SECTION_TITLE, NAV_BUCKETS_LABEL } from '@/lib/brand'
+import {
+  AUTO_ORGANIZE_SECTION_TITLE,
+  BUCKETS_PAGE_TAB_ACCOUNT_LABEL,
+  NAV_BUCKETS_LABEL,
+} from '@/lib/brand'
 
-export type BucketsPageTab = 'buckets' | 'auto-organize'
+export type BucketsPageTab = 'buckets' | 'auto-organize' | 'account'
 
 export const BUCKETS_PAGE_TAB_PARAM = 'tab'
 
-export const BUCKETS_PAGE_TAB_OPTIONS: {
-  value: BucketsPageTab
-  label: string
-}[] = [
-  { value: 'buckets', label: NAV_BUCKETS_LABEL },
-  { value: 'auto-organize', label: AUTO_ORGANIZE_SECTION_TITLE },
-]
+type BucketsPageTabOption = { value: BucketsPageTab; label: string }
+
+const BUCKETS_TAB_OPTION: BucketsPageTabOption = {
+  value: 'buckets',
+  label: NAV_BUCKETS_LABEL,
+}
+const AUTO_ORGANIZE_TAB_OPTION: BucketsPageTabOption = {
+  value: 'auto-organize',
+  label: AUTO_ORGANIZE_SECTION_TITLE,
+}
+const ACCOUNT_TAB_OPTION: BucketsPageTabOption = {
+  value: 'account',
+  label: BUCKETS_PAGE_TAB_ACCOUNT_LABEL,
+}
+
+/**
+ * Build the visible tab list. "Buckets" is always first; the optional tabs are
+ * appended only when available. In practice a role sees at most one optional
+ * tab (adults: auto-organize; a linked child: account), but both are supported.
+ */
+export function bucketsPageTabOptions(opts: {
+  showAutoOrganize: boolean
+  showAccount: boolean
+}): BucketsPageTabOption[] {
+  const options: BucketsPageTabOption[] = [BUCKETS_TAB_OPTION]
+  if (opts.showAutoOrganize) options.push(AUTO_ORGANIZE_TAB_OPTION)
+  if (opts.showAccount) options.push(ACCOUNT_TAB_OPTION)
+  return options
+}
 
 export function parseBucketsPageTab(
   raw: string | null | undefined,
 ): BucketsPageTab {
-  return raw === 'auto-organize' ? 'auto-organize' : 'buckets'
+  if (raw === 'auto-organize') return 'auto-organize'
+  if (raw === 'account') return 'account'
+  return 'buckets'
 }
 
-/** Coerce URL tab to one that is available (shared with no rules → buckets). */
+/** Coerce URL tab to one that is available (otherwise → buckets). */
 export function resolveBucketsPageTab(
   raw: string | null | undefined,
-  autoOrganizeTabAvailable: boolean,
+  available: { autoOrganize: boolean; account: boolean },
 ): BucketsPageTab {
   const parsed = parseBucketsPageTab(raw)
-  if (parsed === 'auto-organize' && !autoOrganizeTabAvailable) {
-    return 'buckets'
-  }
+  if (parsed === 'auto-organize' && !available.autoOrganize) return 'buckets'
+  if (parsed === 'account' && !available.account) return 'buckets'
   return parsed
 }
 
@@ -46,22 +73,16 @@ export function isAutoOrganizeTabAvailabilityPending(
   return canSeeAutoOrganize && !isAdmin && autoOrganizeTabAvailable === null
 }
 
-export function bucketsPageTabSearchParams(
-  tab: BucketsPageTab,
-): Record<string, string> {
-  return tab === 'auto-organize' ? { [BUCKETS_PAGE_TAB_PARAM]: tab } : {}
-}
-
 /** Merge tab into existing search params without dropping unrelated keys. */
 export function applyBucketsPageTabToSearchParams(
   params: URLSearchParams,
   tab: BucketsPageTab,
 ): URLSearchParams {
   const next = new URLSearchParams(params)
-  if (tab === 'auto-organize') {
-    next.set(BUCKETS_PAGE_TAB_PARAM, tab)
-  } else {
+  if (tab === 'buckets') {
     next.delete(BUCKETS_PAGE_TAB_PARAM)
+  } else {
+    next.set(BUCKETS_PAGE_TAB_PARAM, tab)
   }
   return next
 }

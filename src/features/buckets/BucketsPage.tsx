@@ -45,7 +45,7 @@ import FloatInfoSheet from '@/features/buckets/FloatInfoSheet'
 import FloatHero from '@/features/buckets/FloatHero'
 import SuggestedBucketChips from '@/features/buckets/SuggestedBucketChips'
 import { Sheet } from '@/components/ui/Sheet'
-import { isCashAccount } from '@/lib/accounts'
+import { isCashAccount, ownedLinkedAccounts } from '@/lib/accounts'
 import BucketsPageSkeleton from '@/components/BucketsPageSkeleton'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import { ClearableInput } from '@/components/ui/ClearableInput'
@@ -107,7 +107,7 @@ import {
 } from '@/lib/onboardingCoachStorage'
 import type { MoveMoneyIntent } from '@/lib/moveMoneyDialogCopy'
 import {
-  BUCKETS_PAGE_TAB_OPTIONS,
+  bucketsPageTabOptions,
   applyBucketsPageTabToSearchParams,
   resolveBucketsPageTab,
   parseBucketsPageTab,
@@ -115,7 +115,11 @@ import {
   isAutoOrganizeTabAvailabilityPending,
   type BucketsPageTab,
 } from '@/lib/bucketsPageTabs'
-import { BUCKETS_PAGE_TABS_ARIA_LABEL } from '@/lib/brand'
+import {
+  BUCKETS_PAGE_TAB_ACCOUNT_LABEL,
+  BUCKETS_PAGE_TABS_ARIA_LABEL,
+} from '@/lib/brand'
+import BankAccountActivity from '@/features/accounts/BankAccountActivity'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -187,11 +191,19 @@ export default function BucketsPage() {
     isAdmin,
     autoOrganizeTabAvailable,
   )
-  const showBucketsPageTabs = showAutoOrganizeTab
-  const activeTab = resolveBucketsPageTab(
-    searchParams.get('tab'),
-    showAutoOrganizeTab,
-  )
+  // Linked bank accounts assigned to the viewer (e.g. a linked child). RLS
+  // already scopes `accounts` to rows they own, so this surfaces only theirs.
+  const myLinkedAccounts = ownedLinkedAccounts(accounts ?? [], memberId)
+  const showAccountTab = myLinkedAccounts.length > 0
+  const showBucketsPageTabs = showAutoOrganizeTab || showAccountTab
+  const bucketsTabOptions = bucketsPageTabOptions({
+    showAutoOrganize: showAutoOrganizeTab,
+    showAccount: showAccountTab,
+  })
+  const activeTab = resolveBucketsPageTab(searchParams.get('tab'), {
+    autoOrganize: showAutoOrganizeTab,
+    account: showAccountTab,
+  })
   const canCreateBuckets = isAdmin || isChild
   const canManageStructure = isAdmin || isChild
 
@@ -369,10 +381,11 @@ export default function BucketsPage() {
 
   useEffect(() => {
     if (!isAdmin && autoOrganizeTabAvailable === null) return
-    if (
-      parseBucketsPageTab(searchParams.get('tab')) === 'auto-organize' &&
-      !showAutoOrganizeTab
-    ) {
+    const urlTab = parseBucketsPageTab(searchParams.get('tab'))
+    const tabUnavailable =
+      (urlTab === 'auto-organize' && !showAutoOrganizeTab) ||
+      (urlTab === 'account' && !showAccountTab)
+    if (tabUnavailable) {
       setSearchParams(
         (prev) => applyBucketsPageTabToSearchParams(prev, 'buckets'),
         { replace: true },
@@ -384,6 +397,7 @@ export default function BucketsPage() {
     searchParams,
     setSearchParams,
     showAutoOrganizeTab,
+    showAccountTab,
   ])
 
   useEffect(() => {
@@ -797,7 +811,7 @@ export default function BucketsPage() {
       {showBucketsPageTabs ? (
         <SegmentedTabs
           value={activeTab}
-          options={BUCKETS_PAGE_TAB_OPTIONS}
+          options={bucketsTabOptions}
           onChange={onBucketsPageTabChange}
           ariaLabel={BUCKETS_PAGE_TABS_ARIA_LABEL}
         />
@@ -938,6 +952,45 @@ export default function BucketsPage() {
             }}
             refreshToken={autoOrganizeRefreshToken}
           />
+        </div>
+      ) : null}
+
+      {showAccountTab ? (
+        <div
+          role="tabpanel"
+          id="segmented-panel-account"
+          aria-labelledby="segmented-tab-account"
+          hidden={activeTab !== 'account'}
+        >
+          <section
+            aria-label={BUCKETS_PAGE_TAB_ACCOUNT_LABEL}
+            className="space-y-4"
+          >
+            {myLinkedAccounts.map((a) => (
+              <div key={a.id}>
+                <div className="flex items-baseline justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-zinc-200">
+                      {a.account_name ?? a.institution_name ?? 'Bank account'}
+                    </p>
+                    {a.institution_name && a.account_name ? (
+                      <p className="truncate text-xs text-zinc-500">
+                        {a.institution_name}
+                      </p>
+                    ) : null}
+                  </div>
+                  <p className="shrink-0 text-sm font-medium tabular-nums text-zinc-200">
+                    {formatMoney(Number(a.current_balance))}
+                  </p>
+                </div>
+                <BankAccountActivity
+                  accountId={a.id}
+                  panelOpen={activeTab === 'account'}
+                  alwaysExpanded
+                />
+              </div>
+            ))}
+          </section>
         </div>
       ) : null}
         </div>

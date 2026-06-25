@@ -389,13 +389,12 @@ export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_SUFFIX =
 export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
   'Balances count toward the money you can organize into buckets.'
 
-export const ADMIN_BANK_ACTIVITY_TOGGLE_SHOW = 'Show recent activity'
-export const ADMIN_BANK_ACTIVITY_TOGGLE_HIDE = 'Hide recent activity'
-export const ADMIN_BANK_ACTIVITY_SCOPE = 'Last 2 weeks · up to 50 transactions'
-export const ADMIN_BANK_ACTIVITY_RETRY = 'Try again'
-export const ADMIN_BANK_ACTIVITY_EMPTY =
-  'No bank activity in the last 2 weeks.'
-export const ADMIN_BANK_ACTIVITY_PENDING = 'Pending'
+export const BANK_ACTIVITY_TOGGLE_SHOW = 'Show recent activity'
+export const BANK_ACTIVITY_TOGGLE_HIDE = 'Hide recent activity'
+export const BANK_ACTIVITY_SCOPE = 'Last 2 weeks · up to 50 transactions'
+export const BANK_ACTIVITY_RETRY = 'Try again'
+export const BANK_ACTIVITY_EMPTY = 'No bank activity in the last 2 weeks.'
+export const BANK_ACTIVITY_PENDING = 'Pending'
 
 /** Accessible label for expand/collapse on a money-source group header. */
 export function adminMoneySourceGroupExpandLabel(
@@ -741,6 +740,9 @@ export function bucketsFloatStatusGuide(isChild: boolean): readonly FloatStatusG
 export const AUTO_ORGANIZE_SECTION_TITLE = 'Auto-organize'
 
 export const BUCKETS_PAGE_TABS_ARIA_LABEL = 'Buckets page sections'
+/** Tab label for a linked member's own bank account activity. "Bank" (not
+ * "Activity") to avoid clashing with the in-app History feed. */
+export const BUCKETS_PAGE_TAB_ACCOUNT_LABEL = 'Bank'
 
 export const AUTO_ORGANIZE_LOAD_ERROR_TITLE = 'Could not load auto-organize'
 

@@ -61,6 +61,21 @@ export function isTellerAccount(a: Pick<Account, 'source'>): boolean {
   return a.source === 'teller'
 }
 
+/**
+ * Linked bank accounts assigned to a specific member. Used to surface a
+ * member's own bank activity (e.g. a linked child's "Bank" tab). RLS already
+ * scopes a child's account list to rows they own, but this filter keeps the
+ * intent explicit and handles members who can read more than their own.
+ */
+export function ownedLinkedAccounts<
+  T extends Pick<Account, 'owner_member_id' | 'source'>,
+>(accounts: readonly T[], memberId: string | null): T[] {
+  if (!memberId) return []
+  return accounts.filter(
+    (a) => a.owner_member_id === memberId && a.source === 'teller',
+  )
+}
+
 export function isCashAccount(a: Pick<Account, 'account_type'>): boolean {
   if (!a.account_type) return false
   return CASH_ACCOUNT_SUBTYPES.has(a.account_type.toLowerCase())

@@ -1,5 +1,7 @@
-// Returns recent bank transactions for a linked account (admin only).
-// Fetches on demand from Teller — nothing is persisted locally.
+// Returns recent bank transactions for a linked account. Viewable by an admin,
+// or by the member the account is assigned to (accounts.owner_member_id) — e.g.
+// a linked child seeing her own account. Fetches on demand from Teller —
+// nothing is persisted locally.
 
 // @ts-nocheck — targets the Deno runtime, not the Vite TS build.
 
@@ -77,9 +79,6 @@ Deno.serve(async (req: Request) => {
   if (!member) {
     return jsonResponse({ error: 'No family membership found' }, 403)
   }
-  if (member.role !== 'admin') {
-    return jsonResponse({ error: 'Only admins can view bank transactions' }, 403)
-  }
 
   let body: TransactionsRequest = {}
   try {
@@ -99,7 +98,9 @@ Deno.serve(async (req: Request) => {
 
   const { data: account, error: accountError } = await admin
     .from('accounts')
-    .select('id, family_id, teller_account_id, teller_enrollment_id, source')
+    .select(
+      'id, family_id, owner_member_id, teller_account_id, teller_enrollment_id, source',
+    )
     .eq('id', body.accountId.trim())
     .eq('family_id', member.family_id)
     .maybeSingle()
@@ -113,6 +114,16 @@ Deno.serve(async (req: Request) => {
   if (!account) {
     return jsonResponse({ error: 'Account not found in your family' }, 404)
   }
+
+  // Admins see every family account; everyone else only the account assigned
+  // to them. This is the same rule as the accounts RLS policy
+  // (accounts_select_family_or_self) — re-checked here because this function
+  // reads Teller with the service role and bypasses RLS.
+  const ownsAccount = account.owner_member_id === member.id
+  if (member.role !== 'admin' && !ownsAccount) {
+    return jsonResponse({ error: 'You can only view your own account' }, 403)
+  }
+
   if (account.source !== 'teller') {
     return jsonResponse({ error: 'Account is not linked to a bank' }, 400)
   }
