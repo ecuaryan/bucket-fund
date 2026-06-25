@@ -527,12 +527,12 @@ export function adminAssignAccountToKidSheetIntro(kidName: string): string {
 
 export const ADMIN_ASSIGN_ACCOUNT_TO_KID_WHAT_CHANGES = 'What changes'
 
-/** Shown before assigning a linked account to a kid (Send rules, bank-based balance). */
+/** Shown before assigning a linked account to a kid (Give rules, bank-based balance). */
 export const ADMIN_ASSIGN_ACCOUNT_TO_KID_EFFECTS = [
-  'Send is turned off for this kid—you can’t give them money here, and they can’t Send in the app.',
+  'Giving is turned off for this kid—you can’t give them money here, and they can’t give to others in the app.',
   'Their balance follows this linked account (debit card spending updates automatically).',
-  'Moving money in or out happens at the bank—transfers and deposits, not Send.',
-  'To let this kid use Send again, unassign all linked accounts.',
+  'Moving money in or out happens at the bank—transfers and deposits, not in the app.',
+  'To let this kid give again, unassign all linked accounts.',
 ] as const
 
 export function adminAssignAccountToKidConfirm(kidName: string): string {
@@ -1242,7 +1242,7 @@ export function floatSourcesCountText(count: number): string | undefined {
 export const SEND_ADD_SOURCE_TITLE = 'Add a money source first'
 
 export const SEND_ADD_SOURCE_ADMIN_BODY =
-  'Send uses cash from the household balance in Buckets. Add a money source in Admin—a linked bank or just an amount—so we know how much you can send.'
+  'Give uses cash from the household balance in Buckets. Add a money source in Admin—a linked bank or just an amount—so we know how much you can give.'
 
 export function bucketsLinkBankMemberBody(
   adminName: string | null | undefined,
@@ -1253,7 +1253,7 @@ export function bucketsLinkBankMemberBody(
 export function sendLinkBankMemberBody(
   adminName: string | null | undefined,
 ): string {
-  return `No bank accounts are linked yet. Ask ${householdAdminLabel(adminName)} to connect one before you can send.`
+  return `No bank accounts are linked yet. Ask ${householdAdminLabel(adminName)} to connect one before you can give.`
 }
 
 export function bucketsMemberNoBucketsHint(
@@ -1265,18 +1265,18 @@ export function bucketsMemberNoBucketsHint(
 // --- Send ---
 
 export const SEND_SHARED_BALANCE_INTRO =
-  'Send money to other people in your household.'
+  'Give money to other people in your household.'
 
 export const SEND_SHARED_BALANCE_NO_ACCOUNTS_BODY =
-  'Send uses cash from the household balance in Buckets. Link a bank account in Admin first so we know how much you can send.'
+  'Give uses cash from the household balance in Buckets. Link a bank account in Admin first so we know how much you can give.'
 
 export const SEND_KID_INTRO =
-  `Send your ${FLOAT_LABEL_LOWER} to another household member.`
+  `Give your ${FLOAT_LABEL_LOWER} to another household member.`
 
 export const SEND_LINKED_KID_TITLE = 'Your money is in your bank account'
 
 export const SEND_LINKED_KID_BODY =
-  'Spending comes from your debit card. When you need to move money in or out, use your bank app or ask your household admin to transfer at the bank—not Send here.'
+  'Spending comes from your debit card. When you need to move money in or out, use your bank app or ask your household admin to transfer at the bank.'
 
 export const SEND_LINKED_KIDS_EXCLUDED_HINT =
   'Kids with a linked account aren’t listed—transfer or deposit at your bank to give them money.'
@@ -1284,21 +1284,21 @@ export const SEND_LINKED_KIDS_EXCLUDED_HINT =
 export const SEND_ADULT_LINKED_KIDS_ONLY_TITLE = 'Your kids have linked accounts'
 
 export const SEND_ADULT_LINKED_KIDS_ONLY_BODY =
-  'Every kid in your household has their own linked bank account—their balance comes from the bank, not Send. To give them money, transfer or deposit at your bank.'
+  'Every kid in your household has their own linked bank account—their balance comes from the bank. To give them money, transfer or deposit at your bank.'
 
 export const SEND_ADULT_LINKED_KIDS_ONLY_SEND_FOR =
-  'Send is for kids who don’t have a linked account—you can track their money here instead.'
+  'Give is for kids who don’t have a linked account—you can track their money here instead.'
 
 export const SEND_DB_NOT_READY_BODY =
-  'Send is temporarily unavailable while the server finishes updating. Try again in a few minutes, then refresh.'
+  'Give is temporarily unavailable while the server finishes updating. Try again in a few minutes, then refresh.'
 
 export const BUCKETS_DB_UPDATE_PENDING_BODY =
   'Balance is estimated from linked accounts only. The server is still updating — try again in a few minutes.'
 
 // --- History ---
 
-/** History filter dropdown + active chip (Send tab transactions only). */
-export const HISTORY_FILTER_SENT_MONEY = 'Sent money'
+/** History filter dropdown + active chip (Give/send transactions only). */
+export const HISTORY_FILTER_SENT_MONEY = 'Given money'
 
 /** History balance trail when the viewer is the subject kid. */
 export const HISTORY_BALANCE_YOUR_LABEL = FLOAT_LABEL
@@ -1310,7 +1310,7 @@ export const HISTORY_EMPTY_BODY =
   `Move money between buckets and ${FLOAT_LABEL_LOWER} in Buckets—it will appear here.`
 
 export const HISTORY_EMPTY_SENDS_BODY =
-  'Send money to a household member and it will appear here.'
+  'Give money to a household member and it will appear here.'
 
 export const HISTORY_NOTE_ADD = 'Add note'
 
