@@ -62,18 +62,29 @@ export function isTellerAccount(a: Pick<Account, 'source'>): boolean {
 }
 
 /**
- * Linked bank accounts assigned to a specific member. Used to surface a
- * member's own bank activity (e.g. a linked child's "Bank" tab). RLS already
- * scopes a child's account list to rows they own, but this filter keeps the
- * intent explicit and handles members who can read more than their own.
+ * How to tag a linked account on the Bank tab so a shared/family account is
+ * visually distinct from a kid's personal account.
+ * - `shared`: family-pool (or legacy adult-owned) — labelled "Shared".
+ * - `member`: assigned to another member (a kid) — labelled with their name.
+ * - `null`: the viewer's own account — no tag needed.
  */
-export function ownedLinkedAccounts<
-  T extends Pick<Account, 'owner_member_id' | 'source'>,
->(accounts: readonly T[], memberId: string | null): T[] {
-  if (!memberId) return []
-  return accounts.filter(
-    (a) => a.owner_member_id === memberId && a.source === 'teller',
-  )
+export type BankAccountOwnerTag =
+  | { kind: 'shared'; label: string }
+  | { kind: 'member'; label: string }
+
+export function bankAccountOwnerTag(
+  account: Pick<Account, 'owner_member_id'>,
+  memberRolesById: ReadonlyMap<string, string>,
+  memberNamesById: ReadonlyMap<string, string>,
+  viewerMemberId: string | null,
+  opts: { sharedLabel: string; fallbackName: string },
+): BankAccountOwnerTag | null {
+  if (isFamilyPoolAccount(account, memberRolesById)) {
+    return { kind: 'shared', label: opts.sharedLabel }
+  }
+  if (account.owner_member_id === viewerMemberId) return null
+  const name = memberNamesById.get(account.owner_member_id as string)
+  return { kind: 'member', label: name ?? opts.fallbackName }
 }
 
 export function isCashAccount(a: Pick<Account, 'account_type'>): boolean {

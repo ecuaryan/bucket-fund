@@ -49,7 +49,6 @@ import {
 } from '@/lib/teller'
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
 import RefreshIcon from '@/components/ui/RefreshIcon'
-import BankAccountActivity from '@/features/accounts/BankAccountActivity'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import AdminAccountSection from '@/features/admin/AdminAccountSection'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
@@ -708,9 +707,6 @@ export default function AdminPage() {
                         </p>
                       </div>
                       </div>
-                      {!group.isManual ? (
-                        <BankAccountActivity accountId={a.id} panelOpen={expanded} />
-                      ) : null}
                     </li>
                   ))}
                 </ul>

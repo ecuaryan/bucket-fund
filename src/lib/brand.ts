@@ -389,6 +389,10 @@ export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_SUFFIX =
 export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
   'Balances count toward the money you can organize into buckets.'
 
+/** Tag for a family-pool / shared account on the Bank tab. */
+export const BANK_ACCOUNT_SHARED_TAG = 'Shared'
+/** Fallback tag when an assigned member's name is unknown. */
+export const BANK_ACCOUNT_MEMBER_FALLBACK = 'Family member'
 export const BANK_ACTIVITY_TOGGLE_SHOW = 'Show recent activity'
 export const BANK_ACTIVITY_TOGGLE_HIDE = 'Hide recent activity'
 export const BANK_ACTIVITY_SCOPE = 'Last 2 weeks · up to 50 transactions'
