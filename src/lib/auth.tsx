@@ -82,19 +82,40 @@ type AuthContextValue = AuthState & {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+// A stalled membership lookup must never leave the app on the loading screen.
+// applySession awaits this with `memberLoading: true`, and RequireAuth shows
+// the session gate the whole time — so a wedged first-load query (cold auth
+// lock, dropped request) would freeze until a manual refresh. Bound it: on
+// timeout we surface a retryable `error` outcome (→ memberError →
+// MemberLoadError), the same self-recovering path a network failure takes.
+const MEMBER_FETCH_TIMEOUT_MS = 10_000
+
 async function fetchMemberOutcome(
   userId: string,
 ): Promise<MemberFetchOutcome<FamilyMember>> {
-  const { data, error } = await supabase
-    .from('family_members')
-    .select('*')
-    .eq('user_id', userId)
-    .maybeSingle()
+  try {
+    const { data, error } = await withTimeout(
+      Promise.resolve(
+        supabase
+          .from('family_members')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle(),
+      ),
+      MEMBER_FETCH_TIMEOUT_MS,
+      'Member lookup timed out',
+    )
 
-  if (error) {
-    console.error('Failed to load family_member for user', userId, error)
+    if (error) {
+      console.error('Failed to load family_member for user', userId, error)
+    }
+    return classifyMemberFetch(data, error)
+  } catch (err) {
+    // Timeout (or any unexpected rejection) is a transient failure, not proof
+    // of removal — surface error so we never show the orphan screen here.
+    console.error('family_member lookup failed for user', userId, err)
+    return { status: 'error' }
   }
-  return classifyMemberFetch(data, error)
 }
 
 function AuthSessionEffects() {
