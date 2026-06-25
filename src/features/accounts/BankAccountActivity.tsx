@@ -2,12 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { ScrollFade } from '@/components/ui/ScrollFade'
 import {
-  ADMIN_BANK_ACTIVITY_EMPTY,
-  ADMIN_BANK_ACTIVITY_PENDING,
-  ADMIN_BANK_ACTIVITY_RETRY,
-  ADMIN_BANK_ACTIVITY_SCOPE,
-  ADMIN_BANK_ACTIVITY_TOGGLE_HIDE,
-  ADMIN_BANK_ACTIVITY_TOGGLE_SHOW,
+  BANK_ACTIVITY_EMPTY,
+  BANK_ACTIVITY_PENDING,
+  BANK_ACTIVITY_RETRY,
+  BANK_ACTIVITY_SCOPE,
+  BANK_ACTIVITY_TOGGLE_HIDE,
+  BANK_ACTIVITY_TOGGLE_SHOW,
   LOADING_STATUS_LABEL,
 } from '@/lib/brand'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
@@ -23,9 +23,19 @@ type Props = {
   accountId: string
   /** When false, collapse and discard cached rows. */
   panelOpen: boolean
+  /**
+   * Skip the show/hide toggle and render the activity directly whenever the
+   * panel is open — used when the activity is the whole surface (e.g. a child's
+   * Bank tab), so a toggle would be redundant.
+   */
+  alwaysExpanded?: boolean
 }
 
-export default function BankAccountActivity({ accountId, panelOpen }: Props) {
+export default function BankAccountActivity({
+  accountId,
+  panelOpen,
+  alwaysExpanded = false,
+}: Props) {
   const { formatMoney } = useHideAmounts()
   const [expanded, setExpanded] = useState(false)
   const [attempted, setAttempted] = useState(false)
@@ -33,6 +43,9 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fetchGeneration = useRef(0)
+
+  // When always-expanded, the activity shows as soon as the panel is open.
+  const showActivity = alwaysExpanded ? panelOpen : expanded
 
   const load = useCallback(async () => {
     const generation = ++fetchGeneration.current
@@ -65,10 +78,10 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
   }, [panelOpen])
 
   useEffect(() => {
-    if (!expanded || attempted || loading) return
+    if (!showActivity || attempted || loading) return
     setAttempted(true)
     void load()
-  }, [expanded, attempted, loading, load])
+  }, [showActivity, attempted, loading, load])
 
   function retry() {
     setAttempted(false)
@@ -78,16 +91,18 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
 
   return (
     <div className="mt-2 rounded-xl bg-zinc-950/50 px-3 py-2 ring-1 ring-inset ring-zinc-800/60">
-      <button
-        type="button"
-        onClick={() => setExpanded((prev) => !prev)}
-        className="text-xs font-semibold text-emerald-400/90 transition hover:text-emerald-300"
-      >
-        {expanded ? ADMIN_BANK_ACTIVITY_TOGGLE_HIDE : ADMIN_BANK_ACTIVITY_TOGGLE_SHOW}
-      </button>
-      {expanded ? (
-        <div className="mt-2 space-y-2">
-          <p className="text-xs text-zinc-500">{ADMIN_BANK_ACTIVITY_SCOPE}</p>
+      {alwaysExpanded ? null : (
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="text-xs font-semibold text-emerald-400/90 transition hover:text-emerald-300"
+        >
+          {expanded ? BANK_ACTIVITY_TOGGLE_HIDE : BANK_ACTIVITY_TOGGLE_SHOW}
+        </button>
+      )}
+      {showActivity ? (
+        <div className={`${alwaysExpanded ? '' : 'mt-2 '}space-y-2`}>
+          <p className="text-xs text-zinc-500">{BANK_ACTIVITY_SCOPE}</p>
           {loading ? (
             <div
               role="status"
@@ -105,7 +120,7 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
                 onClick={retry}
                 className="rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:bg-zinc-700"
               >
-                {ADMIN_BANK_ACTIVITY_RETRY}
+                {BANK_ACTIVITY_RETRY}
               </button>
             </div>
           ) : rows && rows.length > 0 ? (
@@ -123,7 +138,7 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
                       <p className="text-xs text-zinc-500">
                         {formatBankDate(txn.date)}
                         {txn.status === 'pending'
-                          ? ` · ${ADMIN_BANK_ACTIVITY_PENDING}`
+                          ? ` · ${BANK_ACTIVITY_PENDING}`
                           : ''}
                       </p>
                     </div>
@@ -139,7 +154,7 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
               </ul>
             </ScrollFade>
           ) : attempted ? (
-            <p className="text-xs text-zinc-500">{ADMIN_BANK_ACTIVITY_EMPTY}</p>
+            <p className="text-xs text-zinc-500">{BANK_ACTIVITY_EMPTY}</p>
           ) : null}
         </div>
       ) : null}

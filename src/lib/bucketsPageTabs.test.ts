@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyBucketsPageTabToSearchParams,
-  bucketsPageTabSearchParams,
+  bucketsPageTabOptions,
   isAutoOrganizeTabAvailabilityPending,
   parseBucketsPageTab,
   resolveBucketsPageTab,
@@ -19,15 +19,56 @@ describe('parseBucketsPageTab', () => {
   it('parses auto-organize', () => {
     expect(parseBucketsPageTab('auto-organize')).toBe('auto-organize')
   })
+
+  it('parses account', () => {
+    expect(parseBucketsPageTab('account')).toBe('account')
+  })
 })
 
 describe('resolveBucketsPageTab', () => {
   it('falls back to buckets when auto-organize tab is unavailable', () => {
-    expect(resolveBucketsPageTab('auto-organize', false)).toBe('buckets')
+    expect(
+      resolveBucketsPageTab('auto-organize', { autoOrganize: false, account: false }),
+    ).toBe('buckets')
   })
 
   it('keeps auto-organize when available', () => {
-    expect(resolveBucketsPageTab('auto-organize', true)).toBe('auto-organize')
+    expect(
+      resolveBucketsPageTab('auto-organize', { autoOrganize: true, account: false }),
+    ).toBe('auto-organize')
+  })
+
+  it('falls back to buckets when account tab is unavailable', () => {
+    expect(
+      resolveBucketsPageTab('account', { autoOrganize: false, account: false }),
+    ).toBe('buckets')
+  })
+
+  it('keeps account when available', () => {
+    expect(
+      resolveBucketsPageTab('account', { autoOrganize: false, account: true }),
+    ).toBe('account')
+  })
+})
+
+describe('bucketsPageTabOptions', () => {
+  it('returns only buckets when no optional tabs are available', () => {
+    const opts = bucketsPageTabOptions({ showAutoOrganize: false, showAccount: false })
+    expect(opts.map((o) => o.value)).toEqual(['buckets'])
+  })
+
+  it('appends optional tabs in order: buckets, auto-organize, account', () => {
+    const opts = bucketsPageTabOptions({ showAutoOrganize: true, showAccount: true })
+    expect(opts.map((o) => o.value)).toEqual([
+      'buckets',
+      'auto-organize',
+      'account',
+    ])
+  })
+
+  it('includes only the account tab for a linked child', () => {
+    const opts = bucketsPageTabOptions({ showAutoOrganize: false, showAccount: true })
+    expect(opts.map((o) => o.value)).toEqual(['buckets', 'account'])
   })
 })
 
@@ -60,18 +101,6 @@ describe('isAutoOrganizeTabAvailabilityPending', () => {
   })
 })
 
-describe('bucketsPageTabSearchParams', () => {
-  it('omits param for buckets', () => {
-    expect(bucketsPageTabSearchParams('buckets')).toEqual({})
-  })
-
-  it('sets tab param for auto-organize', () => {
-    expect(bucketsPageTabSearchParams('auto-organize')).toEqual({
-      tab: 'auto-organize',
-    })
-  })
-})
-
 describe('applyBucketsPageTabToSearchParams', () => {
   it('sets tab without dropping unrelated params', () => {
     const prev = new URLSearchParams('foo=bar')
@@ -84,6 +113,13 @@ describe('applyBucketsPageTabToSearchParams', () => {
     const prev = new URLSearchParams('tab=auto-organize&foo=bar')
     const next = applyBucketsPageTabToSearchParams(prev, 'buckets')
     expect(next.get('tab')).toBeNull()
+    expect(next.get('foo')).toBe('bar')
+  })
+
+  it('sets the account tab param', () => {
+    const prev = new URLSearchParams('foo=bar')
+    const next = applyBucketsPageTabToSearchParams(prev, 'account')
+    expect(next.get('tab')).toBe('account')
     expect(next.get('foo')).toBe('bar')
   })
 

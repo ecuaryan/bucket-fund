@@ -5,6 +5,7 @@ import {
   isFamilyPoolAccount,
   isManualAccount,
   latestCashSyncAt,
+  ownedLinkedAccounts,
   sumCashBalance,
 } from '@/lib/accounts'
 import type { Database } from '@/types/database'
@@ -41,6 +42,51 @@ describe('isCashAccount', () => {
     expect(isCashAccount({ account_type: 'credit_card' })).toBe(false)
     expect(isCashAccount({ account_type: 'loan' })).toBe(false)
     expect(isCashAccount({ account_type: null })).toBe(false)
+  })
+})
+
+describe('ownedLinkedAccounts', () => {
+  const mine = account({
+    id: 'mine-teller',
+    current_balance: 100,
+    owner_member_id: 'child-id',
+    source: 'teller',
+  })
+  const myManual = account({
+    id: 'mine-manual',
+    current_balance: 50,
+    owner_member_id: 'child-id',
+    source: 'manual',
+  })
+  const otherChild = account({
+    id: 'other-teller',
+    current_balance: 200,
+    owner_member_id: 'other-id',
+    source: 'teller',
+  })
+  const pool = account({
+    id: 'pool-teller',
+    current_balance: 300,
+    owner_member_id: null,
+    source: 'teller',
+  })
+  const all = [mine, myManual, otherChild, pool]
+
+  it('returns only linked (teller) accounts owned by the member', () => {
+    expect(ownedLinkedAccounts(all, 'child-id').map((a) => a.id)).toEqual([
+      'mine-teller',
+    ])
+  })
+
+  it('excludes other members and pool accounts (no cross-account leakage)', () => {
+    const ids = ownedLinkedAccounts(all, 'child-id').map((a) => a.id)
+    expect(ids).not.toContain('other-teller')
+    expect(ids).not.toContain('pool-teller')
+  })
+
+  it('returns empty for a null member or no matches', () => {
+    expect(ownedLinkedAccounts(all, null)).toEqual([])
+    expect(ownedLinkedAccounts(all, 'nobody')).toEqual([])
   })
 })
 
