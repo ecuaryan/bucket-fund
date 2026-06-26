@@ -86,6 +86,16 @@ export function useGiveRecipients() {
     return members.filter((m) => m.role === 'child').length
   }, [members])
 
+  // Virtual (non-bank-linked) kids — the only members that can hold gives or
+  // takes in History. Sorted by name for a stable filter dropdown.
+  const kids = useMemo(() => {
+    if (!members) return []
+    return members
+      .filter((m) => m.role === 'child' && !linkedChildIds.has(m.id))
+      .map((m) => ({ id: m.id, name: m.name }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [members, linkedChildIds])
+
   const giveReady = members !== null
   const callerIsLinkedChild =
     member != null && isLinkedChild(member.id, member.role, linkedChildIds)
@@ -107,5 +117,6 @@ export function useGiveRecipients() {
     showGiveNav,
     showKidsNav,
     childCount,
+    kids,
   }
 }

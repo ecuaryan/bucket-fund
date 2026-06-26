@@ -1297,8 +1297,8 @@ export const BUCKETS_DB_UPDATE_PENDING_BODY =
 
 // --- History ---
 
-/** History filter dropdown + active chip (Give transactions only). */
-export const HISTORY_FILTER_GIVEN_MONEY = 'Given money'
+/** History filter dropdown + active chip — all give/take activity. */
+export const HISTORY_FILTER_GIVES_AND_TAKES = 'Gives & takes'
 
 /** History balance trail when the viewer is the subject kid. */
 export const HISTORY_BALANCE_YOUR_LABEL = FLOAT_LABEL
@@ -1310,7 +1310,7 @@ export const HISTORY_EMPTY_BODY =
   `Move money between buckets and ${FLOAT_LABEL_LOWER} in Buckets—it will appear here.`
 
 export const HISTORY_EMPTY_SENDS_BODY =
-  'Give money to a household member and it will appear here.'
+  'Give money to a kid—or take it back—and it will appear here.'
 
 export const HISTORY_NOTE_ADD = 'Add note'
 

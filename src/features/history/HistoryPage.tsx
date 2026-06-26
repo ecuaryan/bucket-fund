@@ -18,7 +18,7 @@ import {
   HISTORY_EMPTY_BODY,
   HISTORY_EMPTY_BUCKET_BODY,
   HISTORY_EMPTY_SENDS_BODY,
-  HISTORY_FILTER_GIVEN_MONEY,
+  HISTORY_FILTER_GIVES_AND_TAKES,
   HISTORY_NOTE_ADD,
   HISTORY_NOTE_CLEAR,
   HISTORY_NOTE_EDIT,
@@ -133,8 +133,13 @@ export default function HistoryPage() {
   const accessToken =
     auth.status === 'signedIn' ? auth.session.access_token : null
   const familyId = member?.family_id ?? null
-  const { giveReady, showGiveNav } = useGiveRecipients()
-  const showGiveFilter = giveReady && showGiveNav
+  const { giveReady, showGiveNav, kids } = useGiveRecipients()
+  // Kids that give see it via showGiveNav; adults give/take with virtual kids
+  // (kids.length) but route through the Kids tab, so showGiveNav is false for
+  // them — surface the filter whenever give/take activity is possible.
+  const isAdult = member?.role === 'admin' || member?.role === 'member'
+  const showGiveFilter =
+    giveReady && (showGiveNav || (isAdult && kids.length > 0))
 
   const scheduleClearJustArrived = useCallback(() => {
     clearTimeout(arrivedClearTimer.current)
@@ -274,9 +279,9 @@ export default function HistoryPage() {
   }, [familyId, loadBuckets])
 
   useEffect(() => {
-    if (!giveReady || showGiveNav || filter.kind !== 'give') return
+    if (filter.kind !== 'give' || !giveReady || showGiveFilter) return
     setSearchParams({})
-  }, [giveReady, showGiveNav, filter.kind, setSearchParams])
+  }, [giveReady, showGiveFilter, filter.kind, setSearchParams])
 
   usePostgresChanges(
     accessToken,
@@ -331,6 +336,8 @@ export default function HistoryPage() {
     )
   }
 
+  const isGiveFilter = filter.kind === 'give'
+
   return (
     <div className="space-y-6">
       <header>
@@ -339,11 +346,11 @@ export default function HistoryPage() {
           {rows === null
             ? LOADING_STATUS_LABEL
             : rows.length === 0
-              ? filter.kind === 'give'
-                ? 'No gives yet'
+              ? isGiveFilter
+                ? 'No gives or takes yet'
                 : 'No transactions yet'
-              : filter.kind === 'give'
-                ? `${rows.length}${hasMore ? '+' : ''} ${rows.length === 1 ? 'give' : 'gives'}`
+              : isGiveFilter
+                ? `${rows.length}${hasMore ? '+' : ''} ${rows.length === 1 ? 'give or take' : 'gives & takes'}`
                 : `${rows.length}${hasMore ? '+' : ''} ${rows.length === 1 ? 'transaction' : 'transactions'}`}
         </p>
       </header>
@@ -361,14 +368,14 @@ export default function HistoryPage() {
       ) : rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-zinc-700 p-6 text-center">
           <p className="text-sm font-medium text-zinc-300">
-            {filter.kind === 'give'
-              ? 'No gives yet'
+            {isGiveFilter
+              ? 'No gives or takes yet'
               : filter.kind === 'bucket'
                 ? 'No moves for this bucket yet'
                 : 'Nothing here yet'}
           </p>
           <p className="mt-1 text-xs text-zinc-400">
-            {filter.kind === 'give'
+            {isGiveFilter
               ? HISTORY_EMPTY_SENDS_BODY
               : filter.kind === 'bucket'
                 ? HISTORY_EMPTY_BUCKET_BODY
@@ -483,15 +490,17 @@ function FilterBar({
         value={selectValue}
         onChange={(e) => {
           const value = e.target.value
-          if (value === '') onChange({ kind: 'all' })
-          else if (value === GIVE_FILTER_VALUE) onChange({ kind: 'give' })
-          else onChange({ kind: 'bucket', bucketId: value })
+          if (value === '') return onChange({ kind: 'all' })
+          if (value === GIVE_FILTER_VALUE) return onChange({ kind: 'give' })
+          onChange({ kind: 'bucket', bucketId: value })
         }}
         className="rounded-lg border-0 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-300 ring-1 ring-inset ring-zinc-700 focus:outline focus:outline-2 focus:outline-emerald-400"
       >
         <option value="">All transactions</option>
         {showGiveFilter ? (
-          <option value={GIVE_FILTER_VALUE}>{HISTORY_FILTER_GIVEN_MONEY}</option>
+          <option value={GIVE_FILTER_VALUE}>
+            {HISTORY_FILTER_GIVES_AND_TAKES}
+          </option>
         ) : null}
         {buckets.map((b) => (
           <option key={b.id} value={b.id}>
@@ -505,7 +514,7 @@ function FilterBar({
 
       {showGiveFilter && filter.kind === 'give' && (
         <ActiveFilterChip
-          label={HISTORY_FILTER_GIVEN_MONEY}
+          label={HISTORY_FILTER_GIVES_AND_TAKES}
           onClear={() => onChange({ kind: 'all' })}
         />
       )}
