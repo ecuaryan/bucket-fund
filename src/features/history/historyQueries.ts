@@ -137,6 +137,8 @@ export async function fetchHistoryPage(
         .limit(limit)
       if (before) query = query.or(historyPageCursorFilter(before))
       if (activeFilter.kind === 'give') {
+        // 'give'-type rows cover both gives (adult → kid) and takes
+        // (return_from_child), so one filter surfaces all give/take activity.
         query = query.eq('type', 'give')
       } else if (activeFilter.kind === 'bucket') {
         query = query.or(
