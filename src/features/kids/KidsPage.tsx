@@ -227,7 +227,7 @@ export default function KidsPage() {
       ) : !linkedOnly ? (
         <section
           className="rounded-2xl bg-zinc-900 px-4 py-5 ring-1 ring-zinc-800"
-          aria-label="No virtual kids"
+          aria-label="No kids without a linked account"
         >
           <p className="text-sm text-zinc-400">
             {kidsEmptyVirtualBody(isAdmin, householdAdminName)}

@@ -74,7 +74,7 @@ function humaniseReturnError(msg: string): string {
     return 'Enter an amount greater than $0.'
   }
   if (lower.includes('settle through the bank')) {
-    return 'That kid has a linked bank account — settle through the bank instead.'
+    return 'That kid has a linked account — settle through the bank instead.'
   }
   if (lower.includes('only adults can return')) {
     return 'Only adults on the shared balance can take money from a kid.'
@@ -103,10 +103,10 @@ function humaniseGiveError(msg: string): string {
     return 'Session expired. Please sign in again.'
   }
   if (lower.includes('settles at the bank')) {
-    return 'Your linked bank account settles at the bank, not by giving here.'
+    return 'Your linked account settles at the bank, not by giving here.'
   }
   if (lower.includes('settle through the bank')) {
-    return 'That person has a linked bank account — settle through the bank instead.'
+    return 'That person has a linked account — settle through the bank instead.'
   }
   return msg
 }

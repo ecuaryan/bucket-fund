@@ -18,31 +18,31 @@ export function VirtualKidRow({
 
   return (
     <li className="flex items-center justify-between gap-3 px-4 py-3">
-      <span className="min-w-0 truncate text-sm font-medium text-zinc-200">
+      <span className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-200">
         {kid.name}
       </span>
-      <span className="flex shrink-0 items-center gap-3 tabular-nums">
-        <span className="text-sm text-zinc-300">{formatMoney(kid.amount)}</span>
-        <span className="flex items-center gap-2">
+      <span className="shrink-0 text-sm tabular-nums text-zinc-300">
+        {formatMoney(kid.amount)}
+      </span>
+      <span className="flex shrink-0 items-center gap-2.5">
+        <button
+          type="button"
+          onClick={onGive}
+          aria-label={`Give to ${kid.name}`}
+          className="rounded-full bg-emerald-500/15 px-3.5 py-1.5 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-500/30 transition hover:bg-emerald-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+        >
+          {KIDS_GIVE_ACTION}
+        </button>
+        {canTake ? (
           <button
             type="button"
-            onClick={onGive}
-            aria-label={`Give to ${kid.name}`}
-            className="text-xs font-semibold text-emerald-400 transition hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+            onClick={onTake}
+            aria-label={`Take from ${kid.name}`}
+            className="rounded-full bg-zinc-800 px-3.5 py-1.5 text-xs font-semibold text-zinc-300 ring-1 ring-zinc-700 transition hover:bg-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-400"
           >
-            {KIDS_GIVE_ACTION}
+            {KIDS_TAKE_ACTION}
           </button>
-          {canTake ? (
-            <button
-              type="button"
-              onClick={onTake}
-              aria-label={`Take from ${kid.name}`}
-              className="text-xs font-semibold text-zinc-400 transition hover:text-zinc-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
-            >
-              {KIDS_TAKE_ACTION}
-            </button>
-          ) : null}
-        </span>
+        ) : null}
       </span>
     </li>
   )
@@ -55,12 +55,12 @@ type LinkedKidRowProps = {
 
 export function LinkedKidRow({ kid, formatMoney }: LinkedKidRowProps) {
   return (
-    <li className="px-4 py-3 opacity-60">
+    <li className="px-4 py-3">
       <div className="flex items-center justify-between gap-3">
-        <span className="min-w-0 truncate text-sm font-medium text-zinc-400">
+        <span className="min-w-0 truncate text-sm font-medium text-zinc-200">
           {kid.name}
         </span>
-        <span className="shrink-0 text-sm tabular-nums text-zinc-400">
+        <span className="shrink-0 text-sm tabular-nums text-zinc-300">
           {formatMoney(kid.amount)}
         </span>
       </div>
