@@ -1,10 +1,12 @@
 import HideAmountsPeekButton from '@/components/HideAmountsPeekButton'
-import { useHideAmounts } from '@/lib/HideAmountsProvider'
+import { useHideAmountsOptional } from '@/lib/HideAmountsProvider'
 
 /** Renders below the sheet panel — not over sheet action buttons. */
 export default function HideAmountsPeekSheetAnchor() {
-  const { hidden } = useHideAmounts()
-  if (!hidden) return null
+  // Sheets can open on pre-auth pages (e.g. the PIN login "different join code"
+  // confirm), which sit outside HideAmountsProvider — no provider, nothing to peek.
+  const ctx = useHideAmountsOptional()
+  if (!ctx?.hidden) return null
 
   return (
     <div
