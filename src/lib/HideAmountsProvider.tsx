@@ -99,3 +99,12 @@ export function useHideAmounts(): HideAmountsContextValue {
   }
   return ctx
 }
+
+/**
+ * Non-throwing variant for UI (e.g. sheet chrome) that can render on pre-auth
+ * pages outside the provider — returns null there instead of crashing.
+ */
+// eslint-disable-next-line react-refresh/only-export-components
+export function useHideAmountsOptional(): HideAmountsContextValue | null {
+  return useContext(HideAmountsContext)
+}
