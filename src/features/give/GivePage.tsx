@@ -270,7 +270,7 @@ export default function GivePage() {
         </header>
         <section
           className="rounded-2xl bg-zinc-900 px-4 py-5 ring-1 ring-zinc-800"
-          aria-label="Linked bank account"
+          aria-label="Linked account"
         >
           <h2 className="text-lg font-semibold text-zinc-100">
             {GIVE_LINKED_KID_TITLE}

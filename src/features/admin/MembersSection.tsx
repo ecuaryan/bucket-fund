@@ -552,7 +552,7 @@ export default function MembersSection({
                     {m.pin_failed_attempts > 0 && !m.pin_locked
                       ? ` · ${m.pin_failed_attempts} failed attempt${m.pin_failed_attempts === 1 ? '' : 's'}`
                       : ''}
-                    {kidHasLinkedAccount ? ' · Linked account' : m.role === 'child' ? ' · Virtual' : ''}
+                    {kidHasLinkedAccount ? ' · Linked account' : m.role === 'child' ? ' · No linked account' : ''}
                   </p>
                 </div>
               )}

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { FLOAT_LABEL } from '../../src/lib/brand'
+import { FLOAT_LABEL, KIDS_VIRTUAL_SECTION_TITLE } from '../../src/lib/brand'
 import { addMember, createAdminFamily, serviceClient } from '../db/fixtures'
 
 async function signInAdmin(
@@ -15,7 +15,7 @@ async function signInAdmin(
 }
 
 test.describe('Kids tab', () => {
-  test('admin sees Kids nav, Give and Take on a virtual kid', async ({ page }) => {
+  test('admin sees Kids nav, Give and Take on a kid without a linked account', async ({ page }) => {
     const pageErrors: string[] = []
     page.on('pageerror', (err) => pageErrors.push(err.message))
 
@@ -39,7 +39,9 @@ test.describe('Kids tab', () => {
     await expect(page).toHaveURL('/kids')
 
     await expect(page.getByRole('heading', { name: 'Kids', exact: true })).toBeVisible()
-    await expect(page.getByRole('region', { name: 'Virtual kids' })).toBeVisible()
+    await expect(
+      page.getByRole('region', { name: KIDS_VIRTUAL_SECTION_TITLE }),
+    ).toBeVisible()
 
     const samRow = page.getByRole('listitem').filter({ hasText: 'Sam' })
     await expect(samRow).toContainText('$0')

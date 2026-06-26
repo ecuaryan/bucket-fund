@@ -173,11 +173,11 @@ export const ADMIN_ROLE_CONTEXT_SHARED = `Shares household buckets and ${FLOAT_L
 export const KIDS_PAGE_TITLE = 'Kids'
 
 export const KIDS_PAGE_INTRO =
-  'Give virtual kids money here. Linked accounts follow the bank—not this app.'
+  'Give kids without a linked account money here. Linked accounts follow the bank—not this app.'
 
-export const KIDS_VIRTUAL_SECTION_TITLE = 'Virtual kids'
+export const KIDS_VIRTUAL_SECTION_TITLE = 'No linked account'
 
-export const KIDS_LINKED_SECTION_TITLE = 'Linked bank accounts'
+export const KIDS_LINKED_SECTION_TITLE = 'Linked accounts'
 
 /** Footer link from the Kids linked-accounts section to the Buckets Bank tab. */
 export const KIDS_LINKED_VIEW_ACTIVITY = 'View recent bank activity'
@@ -194,7 +194,7 @@ export function kidsLinkedSectionBody(
 }
 
 export const KIDS_LINKED_ONLY_BODY =
-  'Every kid in your household has a linked bank account—their balance comes from the bank. To give them money, transfer or deposit at your bank.'
+  'Every kid in your household has a linked account—their balance comes from the bank. To give them money, transfer or deposit at your bank.'
 
 export const KIDS_GIVE_ACTION = 'Give'
 
@@ -543,7 +543,7 @@ export function adminAssignAccountToKidConfirm(kidName: string): string {
 export const ADMIN_KID_LINKED_ACCOUNTS_LABEL = 'Linked accounts'
 
 export const ADMIN_KID_NO_LINKED_ACCOUNTS_HINT =
-  'None yet — balance is virtual (Give on the Kids tab).'
+  'None yet — balance lives in the app (Give on the Kids tab).'
 
 export const ADMIN_KID_ADD_LINKED_ACCOUNT_LABEL = 'Add linked account'
 
@@ -1284,7 +1284,7 @@ export const GIVE_LINKED_KIDS_EXCLUDED_HINT =
 export const GIVE_ADULT_LINKED_KIDS_ONLY_TITLE = 'Your kids have linked accounts'
 
 export const GIVE_ADULT_LINKED_KIDS_ONLY_BODY =
-  'Every kid in your household has their own linked bank account—their balance comes from the bank. To give them money, transfer or deposit at your bank.'
+  'Every kid in your household has their own linked account—their balance comes from the bank. To give them money, transfer or deposit at your bank.'
 
 export const GIVE_ADULT_LINKED_KIDS_ONLY_GIVE_FOR =
   'Give is for kids who don’t have a linked account—you can track their money here instead.'
