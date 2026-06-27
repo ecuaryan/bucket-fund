@@ -550,8 +550,17 @@ export default function FamilyLoginPage() {
   }
 
   const rosterMembers = sortJoinMembers(roster.members)
-  const pinReadyMembers = rosterMembers.filter((m) => m.hasPin)
-  const pinPendingMembers = rosterMembers.filter((m) => !m.hasPin)
+  // Biometric is per-device: on THIS device the enrolled member can sign in even
+  // without a PIN. (On another device they'd have no binding → PIN still needed,
+  // so the "PIN not set yet" copy is correct there.)
+  const canBiometric = (m: JoinMember) =>
+    biometricBinding?.memberId === m.id && biometricStatus === 'ready'
+  const pinReadyMembers = rosterMembers.filter(
+    (m) => m.hasPin || canBiometric(m),
+  )
+  const pinPendingMembers = rosterMembers.filter(
+    (m) => !m.hasPin && !canBiometric(m),
+  )
   const householdAdminName = pickHouseholdAdminName(roster.members)
 
   return (
@@ -581,12 +590,23 @@ export default function FamilyLoginPage() {
           ) : null}
           <ul className={pinPickerListClass()}>
             {rosterMembers.map((m, index) => {
-              const statusLine = pinPickerStatusLine(
-                m,
-                rosterMembers,
-                index,
-                PIN_MEMBER_NOT_SET_LABEL,
-              )
+              const biometricReady = canBiometric(m)
+              const pinUnavailable = !m.hasPin || m.pinLocked
+              // The enrolled member can sign in by biometric even without a
+              // usable PIN — show that instead of "PIN not set yet" / "Locked".
+              const statusLine =
+                biometricReady && pinUnavailable
+                  ? ({
+                      text: 'Face ID / Touch ID',
+                      visible: true,
+                      tone: 'ready',
+                    } as const)
+                  : pinPickerStatusLine(
+                      m,
+                      rosterMembers,
+                      index,
+                      PIN_MEMBER_NOT_SET_LABEL,
+                    )
               return (
               <li
                 key={m.id}
@@ -594,15 +614,7 @@ export default function FamilyLoginPage() {
               >
                 <button
                   type="button"
-                  disabled={
-                    (!m.hasPin || m.pinLocked) &&
-                    // The enrolled member can still unlock with biometric even
-                    // without a PIN.
-                    !(
-                      biometricBinding?.memberId === m.id &&
-                      biometricStatus === 'ready'
-                    )
-                  }
+                  disabled={pinUnavailable && !biometricReady}
                   onClick={() => selectMember(m)}
                   className={pinPickerTileClass(rosterMembers.length, index)}
                 >
@@ -615,7 +627,9 @@ export default function FamilyLoginPage() {
                           ? 'text-zinc-500'
                           : statusLine.tone === 'locked'
                             ? 'text-amber-300'
-                            : 'invisible'
+                            : statusLine.tone === 'ready'
+                              ? 'text-emerald-400'
+                              : 'invisible'
                       }`}
                     >
                       {statusLine.text}
