@@ -20,9 +20,11 @@ export function PinPickerPollIndicator({
   className = '',
 }: PinPickerPollIndicatorProps) {
   if (refreshing) {
+    // Match the countdown ring's size (h-5 w-5) so swapping between the two
+    // does not shift the layout.
     return (
       <LoadingSpinner
-        className={`h-4 w-4 border-2 ${className}`.trim()}
+        className={`h-5 w-5 border-2 ${className}`.trim()}
       />
     )
   }
