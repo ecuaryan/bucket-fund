@@ -38,7 +38,7 @@ import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import { amountLimitDescribedBy } from '@/lib/amountLimitHint'
 import { sanitizeAmountInput } from '@/lib/amountInput'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
-import { useHideAmounts } from '@/lib/HideAmountsProvider'
+import { useHideAmounts, usePeekTarget } from '@/lib/HideAmountsProvider'
 import type { Database } from '@/types/database'
 
 type Member = Pick<
@@ -49,6 +49,7 @@ type Account = Database['public']['Tables']['accounts']['Row']
 
 export default function GivePage() {
   const { formatMoney } = useHideAmounts()
+  usePeekTarget()
   const auth = useAuth()
   const member = auth.status === 'signedIn' ? auth.member : null
   const accessToken =

@@ -5,10 +5,11 @@ import { useSheetBackdropOpen } from '@/hooks/useSheetBackdropOpen'
 
 /** Fixed bottom-right peek — hidden while a sheet is open (see Sheet anchor). */
 export default function HideAmountsPeekFab() {
-  const { hidden } = useHideAmounts()
+  const { hidden, hasPeekTarget } = useHideAmounts()
   const sheetOpen = useSheetBackdropOpen()
 
-  if (!hidden || sheetOpen) return null
+  // Only show when amounts are hidden AND a surface with amounts is mounted.
+  if (!hidden || sheetOpen || !hasPeekTarget) return null
 
   return (
     <div

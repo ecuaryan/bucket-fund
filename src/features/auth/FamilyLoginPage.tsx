@@ -227,8 +227,10 @@ export default function FamilyLoginPage() {
     if (!roster || selected || biometricAutoSelected.current) return
     if (loginState?.info || skipAutoResume.current) return
     if (!platformAuthAvailable || !biometricBinding) return
+    // Biometric is a sign-in method on its own — land the enrolled member here
+    // even if they have no PIN (e.g. an owner who removed theirs).
     const member = roster.members.find((m) => m.id === biometricBinding.memberId)
-    if (!member?.hasPin || member.pinLocked) return
+    if (!member) return
     biometricAutoSelected.current = true
     setPin('')
     setPinError(null)
@@ -411,11 +413,18 @@ export default function FamilyLoginPage() {
     // shows the fingerprint; 'none' hides it and lets the PIN field autofocus.
     const biometricSlot = Boolean(matchesBinding) && biometricStatus !== 'none'
     const printReady = Boolean(matchesBinding) && biometricStatus === 'ready'
+    // A member can sign in by PIN and/or biometric. Only show the PIN field if
+    // they have a PIN — an enrolled member who removed theirs uses biometric.
+    const hasPinForSelected = selected.hasPin
+    const subtitle = hasPinForSelected
+      ? printReady
+        ? 'Tap the print, or enter your PIN'
+        : 'Enter your 4-digit PIN'
+      : biometricSlot
+        ? 'Tap to unlock with Face ID / Touch ID'
+        : 'Ask your admin to set your PIN'
     return (
-      <AuthShell
-        title={selected.name}
-        subtitle={printReady ? 'Tap the print, or enter your PIN' : 'Enter your 4-digit PIN'}
-      >
+      <AuthShell title={selected.name} subtitle={subtitle}>
         <form
           onSubmit={onPinSubmit}
           className="fade-in-enter space-y-4"
@@ -443,15 +452,17 @@ export default function FamilyLoginPage() {
               )}
             </div>
           )}
-          <PinInput
-            ref={pinInputRef}
-            autoFocus={!biometricSlot}
-            aria-label="4-digit PIN"
-            value={pin}
-            onChange={onPinChange}
-            placeholder="····"
-            className="block w-full rounded-xl border-0 bg-zinc-950 px-4 py-4 text-center text-2xl tracking-[0.5em] text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-600 focus:outline focus:outline-2 focus:outline-emerald-400"
-          />
+          {hasPinForSelected && (
+            <PinInput
+              ref={pinInputRef}
+              autoFocus={!biometricSlot}
+              aria-label="4-digit PIN"
+              value={pin}
+              onChange={onPinChange}
+              placeholder="····"
+              className="block w-full rounded-xl border-0 bg-zinc-950 px-4 py-4 text-center text-2xl tracking-[0.5em] text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-600 focus:outline focus:outline-2 focus:outline-emerald-400"
+            />
+          )}
           {(pinError || biometricError) && (
             <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30">
               {pinError ?? biometricError}
@@ -583,7 +594,15 @@ export default function FamilyLoginPage() {
               >
                 <button
                   type="button"
-                  disabled={!m.hasPin || m.pinLocked}
+                  disabled={
+                    (!m.hasPin || m.pinLocked) &&
+                    // The enrolled member can still unlock with biometric even
+                    // without a PIN.
+                    !(
+                      biometricBinding?.memberId === m.id &&
+                      biometricStatus === 'ready'
+                    )
+                  }
                   onClick={() => selectMember(m)}
                   className={pinPickerTileClass(rosterMembers.length, index)}
                 >

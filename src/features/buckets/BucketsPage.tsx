@@ -91,7 +91,7 @@ import SortableBucketList from '@/features/buckets/SortableBucketList'
 import { ReorderHintProvider } from '@/features/buckets/ReorderHintContext'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import { useFlipList } from '@/hooks/useFlipList'
-import { useHideAmounts } from '@/lib/HideAmountsProvider'
+import { useHideAmounts, usePeekTarget } from '@/lib/HideAmountsProvider'
 import { refreshBalances } from '@/lib/teller'
 import {
   formatBucketsHeaderSubtitle,
@@ -126,6 +126,7 @@ type Account = Database['public']['Tables']['accounts']['Row']
 
 export default function BucketsPage() {
   const { formatMoney } = useHideAmounts()
+  usePeekTarget()
   const auth = useAuth()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()

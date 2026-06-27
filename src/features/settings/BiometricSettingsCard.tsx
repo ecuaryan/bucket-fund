@@ -12,6 +12,7 @@ import {
   registerPasskey,
 } from '@/lib/passkey'
 import { supabase } from '@/lib/supabase'
+import FingerprintIcon from '@/components/ui/FingerprintIcon'
 
 /**
  * Enroll / remove a biometric passkey for the current member on THIS device.
@@ -87,7 +88,10 @@ export default function BiometricSettingsCard() {
 
   return (
     <section className="rounded-2xl bg-zinc-900 p-4 ring-1 ring-zinc-800">
-      <h2 className="text-sm font-semibold text-zinc-300">Biometric unlock</h2>
+      <h2 className="flex items-center gap-2 text-sm font-semibold text-zinc-300">
+        <FingerprintIcon className="h-5 w-5 text-emerald-400" />
+        Biometric unlock
+      </h2>
       <p className="mt-1 text-xs text-zinc-500">
         {enrolledHere
           ? 'Face ID / Touch ID is on for this device. Open the app and unlock without typing your PIN or password.'

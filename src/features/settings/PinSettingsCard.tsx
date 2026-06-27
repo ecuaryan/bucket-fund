@@ -4,6 +4,7 @@ import PinInput from '@/components/ui/PinInput'
 import { Sheet } from '@/components/ui/Sheet'
 import { clearOwnPin, setOwnPin } from '@/lib/memberAuth'
 import { toast } from '@/lib/toast'
+import KeypadIcon from '@/components/ui/KeypadIcon'
 
 /**
  * Self-service PIN management for the signed-in member (any role). Non-admins
@@ -85,7 +86,10 @@ export default function PinSettingsCard() {
 
   return (
     <section className="rounded-2xl bg-zinc-900 p-4 ring-1 ring-zinc-800">
-      <h2 className="text-sm font-semibold text-zinc-300">PIN</h2>
+      <h2 className="flex items-center gap-2 text-sm font-semibold text-zinc-300">
+        <KeypadIcon className="h-5 w-5 text-emerald-400" />
+        PIN
+      </h2>
       <p className="mt-1 text-xs text-zinc-500">
         {hasPin
           ? 'Your 4-digit PIN signs you in on this household’s devices. Changing it signs you out on your other devices.'

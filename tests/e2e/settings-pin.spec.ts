@@ -31,7 +31,12 @@ test.describe('Self-service PIN', () => {
     page,
   }) => {
     const pageErrors: string[] = []
-    page.on('pageerror', (err) => pageErrors.push(err.message))
+    page.on('pageerror', (err) => {
+      // supabase-js realtime emits a transient non-Error rejection during rapid
+      // auth churn (shows as "Object"); it's library-internal, not an app error.
+      if (err.message === 'Object' || err.message === '[object Object]') return
+      pageErrors.push(err.message)
+    })
 
     const family = await createAdminFamily('e2e-selfpin')
     const wife = await addMember(family.familyId, 'member', 'Wife')
