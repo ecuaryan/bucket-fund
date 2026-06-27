@@ -37,10 +37,20 @@ import { pickHouseholdAdminName } from '@/lib/householdAdmin'
 import { useAuth } from '@/lib/auth'
 import {
   bindFamily,
+  clearBiometricBinding,
   clearBoundFamily,
+  getBiometricBinding,
   getBoundFamilyId,
   getBoundJoinCode,
 } from '@/lib/familyDevice'
+import {
+  fetchLoginMethods,
+  isPlatformAuthenticatorAvailable,
+  loginWithPasskey,
+  passkeyErrorMessage,
+} from '@/lib/passkey'
+import FingerprintIcon from '@/components/ui/FingerprintIcon'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import PinInput from '@/components/ui/PinInput'
 import {
   exchangePinForSession,
@@ -96,6 +106,81 @@ export default function FamilyLoginPage() {
   /** Auto-resume after policy sign-out runs once; dismissing must not re-open PIN entry. */
   const skipAutoResume = useRef(false)
 
+  /** Biometric "fast path": this device's enrolled member, if any. */
+  const [biometricBinding, setBiometricBinding] = useState(() => getBiometricBinding())
+  const [platformAuthAvailable, setPlatformAuthAvailable] = useState(false)
+  // 'checking' while we confirm the server still has the passkey; 'ready' shows
+  // the fingerprint; 'none' means no biometric here (unavailable or revoked).
+  const [biometricStatus, setBiometricStatus] = useState<
+    'checking' | 'ready' | 'none'
+  >(() => (getBiometricBinding() ? 'checking' : 'none'))
+  const [biometricBusy, setBiometricBusy] = useState(false)
+  const [biometricError, setBiometricError] = useState<string | null>(null)
+  /** Auto-land the enrolled member on their PIN screen once (it has the print). */
+  const biometricAutoSelected = useRef(false)
+
+  useEffect(() => {
+    if (!biometricBinding) {
+      setPlatformAuthAvailable(false)
+      setBiometricStatus('none')
+      return
+    }
+    let active = true
+    setBiometricStatus('checking')
+    void (async () => {
+      const available = await isPlatformAuthenticatorAvailable()
+      if (!active) return
+      setPlatformAuthAvailable(available)
+      if (!available) {
+        setBiometricStatus('none')
+        return
+      }
+      const methods = await fetchLoginMethods({
+        familyId: biometricBinding.familyId,
+        memberId: biometricBinding.memberId,
+      })
+      if (!active) return
+      if (methods && !methods.hasPasskey) {
+        clearBiometricBinding()
+        setBiometricBinding(null)
+        setBiometricStatus('none')
+        return
+      }
+      setBiometricStatus('ready')
+    })()
+    return () => {
+      active = false
+    }
+  }, [biometricBinding])
+
+  const runBiometric = useCallback(
+    async (memberId: string) => {
+      const familyId = getBoundFamilyId()
+      if (!familyId) return
+      setBiometricBusy(true)
+      setBiometricError(null)
+      try {
+        const tokens = await loginWithPasskey({ familyId, memberId })
+        clearPasswordRecoveryFlow()
+        await auth.signInWithSession(tokens)
+        setSignInPreference('pin')
+      } catch (err) {
+        setBiometricBusy(false)
+        if ((err as { noPasskey?: boolean }).noPasskey) {
+          // The stored credential is gone (admin reset / removed). Forget it so
+          // the fingerprint disappears and only PIN entry remains.
+          clearBiometricBinding()
+          setBiometricBinding(null)
+          return
+        }
+        // Cancel, wrong finger, and timeout all surface as one ambiguous
+        // WebAuthn error — show a friendly retry hint, never the raw W3C text.
+        setBiometricError(passkeyErrorMessage(err))
+      }
+    },
+    [auth],
+  )
+
   function selectMember(member: JoinMember) {
     setPin('')
     setPinError(null)
@@ -134,6 +219,22 @@ export default function FamilyLoginPage() {
     flushSync(() => setSelected(member))
     pinInputRef.current?.focus()
   }, [roster, selected, loginState?.info, loginState?.resumeMemberId])
+
+  // Enrolled member opens the app → land straight on their PIN screen (which
+  // shows the fingerprint), skipping a separate "tap to unlock" gate. We do not
+  // focus the PIN field, so the keyboard stays down and biometric reads first.
+  useEffect(() => {
+    if (!roster || selected || biometricAutoSelected.current) return
+    if (loginState?.info || skipAutoResume.current) return
+    if (!platformAuthAvailable || !biometricBinding) return
+    const member = roster.members.find((m) => m.id === biometricBinding.memberId)
+    if (!member?.hasPin || member.pinLocked) return
+    biometricAutoSelected.current = true
+    setPin('')
+    setPinError(null)
+    pinSubmitInFlight.current = false
+    setSelected(member)
+  }, [roster, selected, platformAuthAvailable, biometricBinding, loginState?.info])
 
   const loadBoundRoster = useCallback(async () => {
     const storedCode = getBoundJoinCode()?.trim()
@@ -261,6 +362,7 @@ export default function FamilyLoginPage() {
 
   function onPinChange(next: string) {
     setPin(next)
+    if (biometricError) setBiometricError(null)
     if (next.length === 4) {
       void submitPin(next)
     }
@@ -295,7 +397,7 @@ export default function FamilyLoginPage() {
     }
   }
 
-  if (selected && submitting) {
+  if (selected && (submitting || biometricBusy)) {
     return (
       <AuthShell title={selected.name} subtitle="Signing you in…">
         <LoadingStatus className="py-4" />
@@ -304,26 +406,55 @@ export default function FamilyLoginPage() {
   }
 
   if (selected) {
+    const matchesBinding = biometricBinding?.memberId === selected.id
+    // While 'checking' a spinner holds the print's spot (Ally-style); 'ready'
+    // shows the fingerprint; 'none' hides it and lets the PIN field autofocus.
+    const biometricSlot = Boolean(matchesBinding) && biometricStatus !== 'none'
+    const printReady = Boolean(matchesBinding) && biometricStatus === 'ready'
     return (
-      <AuthShell title={selected.name} subtitle="Enter your 4-digit PIN">
+      <AuthShell
+        title={selected.name}
+        subtitle={printReady ? 'Tap the print, or enter your PIN' : 'Enter your 4-digit PIN'}
+      >
         <form
           onSubmit={onPinSubmit}
           className="fade-in-enter space-y-4"
           autoComplete="off"
           {...{ [APP_FORM_DATA_ATTR]: 'family-pin' }}
         >
+          {biometricSlot && (
+            <div className="flex flex-col items-center gap-1.5 pb-1">
+              {printReady ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void runBiometric(selected.id)}
+                    aria-label="Unlock with Face ID or Touch ID"
+                    className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/40 transition hover:bg-emerald-500/20 hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+                  >
+                    <FingerprintIcon className="h-8 w-8" />
+                  </button>
+                  <p className="text-xs text-zinc-500">Tap to unlock</p>
+                </>
+              ) : (
+                <span className="flex h-16 w-16 items-center justify-center">
+                  <LoadingSpinner className="h-7 w-7" />
+                </span>
+              )}
+            </div>
+          )}
           <PinInput
             ref={pinInputRef}
-            autoFocus
+            autoFocus={!biometricSlot}
             aria-label="4-digit PIN"
             value={pin}
             onChange={onPinChange}
             placeholder="····"
             className="block w-full rounded-xl border-0 bg-zinc-950 px-4 py-4 text-center text-2xl tracking-[0.5em] text-zinc-300 ring-1 ring-inset ring-zinc-700 placeholder:text-zinc-600 focus:outline focus:outline-2 focus:outline-emerald-400"
           />
-          {pinError && (
+          {(pinError || biometricError) && (
             <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-300 ring-1 ring-red-500/30">
-              {pinError}
+              {pinError ?? biometricError}
             </p>
           )}
           <button
@@ -333,6 +464,7 @@ export default function FamilyLoginPage() {
               setSelected(null)
               setPin('')
               setPinError(null)
+              setBiometricError(null)
               pinSubmitInFlight.current = false
             }}
             className="w-full text-sm text-zinc-400 hover:text-zinc-300"

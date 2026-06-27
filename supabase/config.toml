@@ -425,6 +425,32 @@ verify_jwt = true
 [functions.clear-pin-lockout]
 verify_jwt = true
 
+# Self-service PIN change for the signed-in member (any role).
+[functions.set-own-pin]
+verify_jwt = true
+
+# Remove your own PIN (account owner only; guarded inside the function too).
+[functions.clear-own-pin]
+verify_jwt = true
+
+# Passkey enrollment is for an already-signed-in member (verify their JWT).
+[functions.webauthn-register-options]
+verify_jwt = true
+
+[functions.webauthn-register-verify]
+verify_jwt = true
+
+# Passkey login happens before a session exists (member chosen from the
+# roster), like pin-login -- so JWT verification is off.
+[functions.webauthn-has-passkey]
+verify_jwt = false
+
+[functions.webauthn-login-options]
+verify_jwt = false
+
+[functions.webauthn-login-verify]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

@@ -130,6 +130,11 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
 
+    # e2e exercises the WebAuthn biometric-login edge functions, so this job
+    # keeps edge-runtime (the shared default excludes it for the db job's speed).
+    env:
+      SUPABASE_CI_EXCLUDE: studio,storage-api,imgproxy,inbucket,logflare,vector
+
     steps:
       - name: Skip (docs-only change)
         if: needs.changes.outputs.run_e2e == 'false'

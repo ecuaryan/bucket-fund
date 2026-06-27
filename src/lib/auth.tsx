@@ -12,7 +12,7 @@ import type { Session } from '@supabase/supabase-js'
 import { APP_NAME } from '@/lib/brand'
 import { clearAutoSignOut } from '@/lib/autoSignOut'
 import { clearLocalAuthSession } from '@/lib/authStorage'
-import { isPinBoundDevice } from '@/lib/familyDevice'
+import { isPinBoundDevice, setDeviceMember } from '@/lib/familyDevice'
 import { setLastPinMemberId } from '@/lib/lastPinMember'
 import {
   absentMembershipAction,
@@ -141,8 +141,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const applySession = useCallback(async (session: Session | null) => {
     // Sync JWT for Realtime; do not block sign-in on this — a wedged
-    // websocket can hang `setAuth` and leave the app on "Loading…".
-    void supabase.realtime.setAuth(session?.access_token ?? null)
+    // websocket can hang `setAuth` and leave the app on "Loading…". Swallow
+    // rejections so a transient websocket failure during sign-in/out churn does
+    // not surface as an unhandled promise rejection.
+    void supabase.realtime.setAuth(session?.access_token ?? null).catch(() => {})
     if (!session) {
       clearPasswordRecoveryFlow()
       clearBackgroundPrivacyState()
@@ -239,6 +241,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       member: outcome.member,
       memberLoading: false,
       memberError: false,
+    })
+    // Remember who used this device so the email/password page can offer their
+    // fast options (PIN / biometric) next time, even without a join code.
+    setDeviceMember({
+      memberId: outcome.member.id,
+      familyId: outcome.member.family_id,
     })
     if (
       isPinBoundDevice() &&

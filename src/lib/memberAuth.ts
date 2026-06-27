@@ -192,3 +192,23 @@ export async function clearPinLockout(memberId: string): Promise<void> {
   const token = await requireAdminAccessToken()
   await postFunction('clear-pin-lockout', { memberId }, token)
 }
+
+/**
+ * Set or update the signed-in member's OWN PIN (any role). Then sign out their
+ * other devices, matching the admin self-reset — the device that saved stays in.
+ */
+export async function setOwnPin(pin: string): Promise<void> {
+  const token = await getFreshAccessToken()
+  if (!token) throw new Error('Not signed in')
+  await postFunction('set-own-pin', { pin }, token)
+  await signOutOtherAuthSessions()
+  notifyHouseholdRosterChanged()
+}
+
+/** Remove the signed-in member's own PIN. Server allows this for the owner only. */
+export async function clearOwnPin(): Promise<void> {
+  const token = await getFreshAccessToken()
+  if (!token) throw new Error('Not signed in')
+  await postFunction('clear-own-pin', {}, token)
+  notifyHouseholdRosterChanged()
+}

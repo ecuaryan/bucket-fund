@@ -432,6 +432,60 @@ export type Database = {
           },
         ]
       }
+      member_passkeys: {
+        Row: {
+          counter: number
+          created_at: string
+          credential_id: string
+          device_label: string | null
+          family_id: string
+          id: string
+          last_used_at: string | null
+          member_id: string
+          public_key: string
+          transports: string[] | null
+        }
+        Insert: {
+          counter?: number
+          created_at?: string
+          credential_id: string
+          device_label?: string | null
+          family_id: string
+          id?: string
+          last_used_at?: string | null
+          member_id: string
+          public_key: string
+          transports?: string[] | null
+        }
+        Update: {
+          counter?: number
+          created_at?: string
+          credential_id?: string
+          device_label?: string | null
+          family_id?: string
+          id?: string
+          last_used_at?: string | null
+          member_id?: string
+          public_key?: string
+          transports?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_passkeys_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_passkeys_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teller_enrollments: {
         Row: {
           access_token: string
@@ -655,6 +709,44 @@ export type Database = {
           {
             foreignKeyName: "transactions_to_member_id_fkey"
             columns: ["to_member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webauthn_challenges: {
+        Row: {
+          challenge: string
+          created_at: string
+          expires_at: string
+          family_id: string | null
+          id: string
+          kind: string
+          member_id: string | null
+        }
+        Insert: {
+          challenge: string
+          created_at?: string
+          expires_at: string
+          family_id?: string | null
+          id?: string
+          kind: string
+          member_id?: string | null
+        }
+        Update: {
+          challenge?: string
+          created_at?: string
+          expires_at?: string
+          family_id?: string | null
+          id?: string
+          kind?: string
+          member_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webauthn_challenges_member_id_fkey"
+            columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "family_members"
             referencedColumns: ["id"]
