@@ -15,6 +15,7 @@ export type JoinMember = {
   avatarUrl: string | null
   hasPin: boolean
   pinLocked: boolean
+  isAccountOwner: boolean
 }
 
 export type ValidateJoinResult = {
