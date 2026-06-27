@@ -35,7 +35,7 @@ import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import { ClearableInput } from '@/components/ui/ClearableInput'
 import { FieldLabel } from '@/components/ui/FieldLabel'
 import { Sheet } from '@/components/ui/Sheet'
-import { useHideAmounts } from '@/lib/HideAmountsProvider'
+import { useHideAmounts, usePeekTarget } from '@/lib/HideAmountsProvider'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
 import { updateTransactionNote } from '@/lib/transactions'
 import { toast } from '@/lib/toast'
@@ -113,6 +113,8 @@ export default function HistoryPage() {
   const filter = useMemo(() => filterForKey(filterKey), [filterKey])
 
   const [rows, setRows] = useState<TxRow[] | null>(null)
+  // Only offer Peek when there are actually amounts on screen.
+  usePeekTarget((rows?.length ?? 0) > 0)
   const [buckets, setBuckets] = useState<Bucket[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null)

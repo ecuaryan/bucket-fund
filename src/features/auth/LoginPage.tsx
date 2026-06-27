@@ -104,9 +104,7 @@ export default function LoginPage() {
     Boolean(getBiometricBinding()),
   )
   // Spinner while we resolve which fast options exist for this device's member.
-  const [checking, setChecking] = useState(() =>
-    Boolean(getBiometricBinding() ?? getDeviceMember()),
-  )
+  const [checking, setChecking] = useState(() => Boolean(fastMember))
   const [fingerprintReady, setFingerprintReady] = useState(false)
   const [pinReady, setPinReady] = useState(false)
   const [biometricBusy, setBiometricBusy] = useState(false)
@@ -125,15 +123,18 @@ export default function LoginPage() {
     let active = true
     setChecking(true)
     void (async () => {
-      let available = false
-      if (hasBinding) {
-        available = await isPlatformAuthenticatorAvailable()
-        if (!active) return
-      }
-      const methods = await fetchLoginMethods({
-        familyId: fastMember.familyId,
-        memberId: fastMember.memberId,
-      })
+      // Run the local platform-authenticator check and the server check
+      // concurrently so they don't stack (the platform check can be ~1s on
+      // mobile). Still reveal only after both resolve — no flicker.
+      const [available, methods] = await Promise.all([
+        hasBinding
+          ? isPlatformAuthenticatorAvailable()
+          : Promise.resolve(false),
+        fetchLoginMethods({
+          familyId: fastMember.familyId,
+          memberId: fastMember.memberId,
+        }),
+      ])
       if (!active) return
       if (hasBinding && methods && !methods.hasPasskey) {
         // Passkey was revoked — drop the stale binding (a PIN may still remain).
@@ -146,7 +147,6 @@ export default function LoginPage() {
           hasBinding && available && methods?.hasPasskey !== false,
         )
       }
-      // Only offer PIN when we positively know it exists.
       setPinReady(methods?.hasPin === true)
       setChecking(false)
     })()

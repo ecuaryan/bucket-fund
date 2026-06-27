@@ -30,7 +30,7 @@ import { fetchLinkedChildMemberIds } from '@/lib/give'
 import { toast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
-import { useHideAmounts } from '@/lib/HideAmountsProvider'
+import { useHideAmounts, usePeekTarget } from '@/lib/HideAmountsProvider'
 import type { Database } from '@/types/database'
 
 type Member = Pick<
@@ -41,6 +41,7 @@ type Account = Database['public']['Tables']['accounts']['Row']
 
 export default function KidsPage() {
   const { formatMoney } = useHideAmounts()
+  usePeekTarget()
   const auth = useAuth()
   const member = auth.status === 'signedIn' ? auth.member : null
   const accessToken =

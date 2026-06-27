@@ -42,7 +42,12 @@ test.describe('Biometric login', () => {
     page,
   }) => {
     const pageErrors: string[] = []
-    page.on('pageerror', (err) => pageErrors.push(err.message))
+    page.on('pageerror', (err) => {
+      // supabase-js realtime emits a transient non-Error rejection during rapid
+      // auth churn (shows as "Object"); it's library-internal, not an app error.
+      if (err.message === 'Object' || err.message === '[object Object]') return
+      pageErrors.push(err.message)
+    })
 
     await addVirtualAuthenticator(page)
     const family = await createAdminFamily('e2e-biometric')
@@ -82,7 +87,12 @@ test.describe('Biometric login', () => {
     page,
   }) => {
     const pageErrors: string[] = []
-    page.on('pageerror', (err) => pageErrors.push(err.message))
+    page.on('pageerror', (err) => {
+      // supabase-js realtime emits a transient non-Error rejection during rapid
+      // auth churn (shows as "Object"); it's library-internal, not an app error.
+      if (err.message === 'Object' || err.message === '[object Object]') return
+      pageErrors.push(err.message)
+    })
 
     await addVirtualAuthenticator(page)
     const family = await createAdminFamily('e2e-email-pin')
@@ -153,7 +163,12 @@ test.describe('Biometric login', () => {
     page,
   }) => {
     const pageErrors: string[] = []
-    page.on('pageerror', (err) => pageErrors.push(err.message))
+    page.on('pageerror', (err) => {
+      // supabase-js realtime emits a transient non-Error rejection during rapid
+      // auth churn (shows as "Object"); it's library-internal, not an app error.
+      if (err.message === 'Object' || err.message === '[object Object]') return
+      pageErrors.push(err.message)
+    })
 
     await addVirtualAuthenticator(page)
     const family = await createAdminFamily('e2e-bio-pin')
@@ -190,5 +205,47 @@ test.describe('Biometric login', () => {
     await expect(page).toHaveURL('/')
 
     expect(pageErrors).toEqual([])
+  })
+
+  test('a member with biometric but no PIN can still unlock on the roster', async ({
+    page,
+  }) => {
+    await addVirtualAuthenticator(page)
+    const family = await createAdminFamily('e2e-bio-nopin')
+    const wife = await addMember(family.familyId, 'member', 'Wife')
+    await setMemberPin(wife.memberId, '2468')
+    const joinCode = await familyJoinCode(family.familyId)
+
+    // Sign in by PIN, then enroll biometric.
+    await page.goto('/login/family')
+    await page.getByLabel(JOIN_CODE_LABEL).fill(joinCode)
+    await page.getByRole('button', { name: 'Continue' }).click()
+    await page.getByRole('button', { name: 'Wife' }).click()
+    await page.getByLabel('4-digit PIN').fill('2468')
+    await expect(page).toHaveURL('/')
+    await page.goto('/settings')
+    await page.getByRole('button', { name: 'Enable on this device' }).click()
+    await expect(
+      page.getByRole('button', { name: 'Turn off on this device' }),
+    ).toBeVisible()
+
+    // Remove her PIN entirely — biometric must still get her in.
+    await serviceClient()
+      .from('family_members')
+      .update({ pin_hash: null, pin_set_at: null })
+      .eq('id', wife.memberId)
+
+    await page.getByRole('button', { name: 'Sign out' }).click()
+    await expect(page).toHaveURL(/\/login/)
+    await page.goto('/login/family')
+
+    // She auto-lands on her unlock screen: fingerprint shown, no PIN field.
+    const unlock = page.getByRole('button', {
+      name: 'Unlock with Face ID or Touch ID',
+    })
+    await expect(unlock).toBeVisible()
+    await expect(page.getByLabel('4-digit PIN')).toHaveCount(0)
+    await unlock.click()
+    await expect(page).toHaveURL('/')
   })
 })

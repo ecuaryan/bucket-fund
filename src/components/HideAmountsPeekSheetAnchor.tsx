@@ -6,7 +6,8 @@ export default function HideAmountsPeekSheetAnchor() {
   // Sheets can open on pre-auth pages (e.g. the PIN login "different join code"
   // confirm), which sit outside HideAmountsProvider — no provider, nothing to peek.
   const ctx = useHideAmountsOptional()
-  if (!ctx?.hidden) return null
+  // Only when amounts are hidden AND the surface under the sheet has amounts.
+  if (!ctx?.hidden || !ctx.hasPeekTarget) return null
 
   return (
     <div
