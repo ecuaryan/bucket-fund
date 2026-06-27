@@ -89,6 +89,10 @@ export const LOGIN_SHARED_TITLE = 'Sharing a household?'
 export const LOGIN_SHARED_SUB =
   'Use your household join code (in Admin), then your PIN.'
 
+// Reads as the shared-household path so it does not collide with the personal
+// "PIN" button on the email/password page.
+export const LOGIN_SHARED_CTA = 'Use a household join code →'
+
 // --- Household join code (Admin + PIN sign-in) ---
 
 export const JOIN_CODE_LABEL = 'Join code'

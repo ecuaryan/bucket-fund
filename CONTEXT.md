@@ -324,13 +324,22 @@ History view hardening in `00000000000057_transactions_client_security_invoker.s
   an internal `{memberId}@pin.bucketmymoney.internal` address (never shown in UI).
   **Admin PIN login** still uses the admin’s real email — the `pin-login` Edge
   Function issues a session via magic link without rotating the email password.
-- **PIN management:** admin only — set/reset PIN verbally for Shared and Kid; no self-service PIN
-  change for them in v1. Co-admins and the account owner can reset their own PIN from Admin →
-  household members. Resetting **another** member's PIN signs them out on every device.
-  Resetting **your own** PIN signs you out on every **other** device (revoked on
-  save via `signOut({ scope: 'others' })` on that device); the device where you
-  save stays signed in. Other devices drop on the next refresh or activity — JWTs
-  can linger until expiry.
+- **PIN management:** two surfaces. (1) **Admin page → household members** —
+  admins set/reset any member's PIN (initial setup for Shared/Kid, re-secure,
+  unlock). (2) **Settings → PIN** — every signed-in member sets or changes
+  **their own** PIN via the `set-own-pin` Edge Function (`requireMember`, touches
+  only the caller's row; no current-PIN required). Non-admins always already have
+  a PIN (an admin set it before they could sign in) so they see "Change PIN"; the
+  email account owner may have none yet, so they see "Set a PIN". Only the
+  **account owner** sees **Remove PIN** (`clear-own-pin`, owner-guarded) — they
+  keep email + password, whereas a PIN-only member removing theirs would be
+  locked out. A self change keeps the member's passkey; an **admin** resetting
+  **another** member's PIN
+  deletes that member's passkey (re-secure). Resetting **another** member's PIN
+  signs them out on every device. Resetting **your own** PIN (either surface)
+  signs you out on every **other** device (revoked on save via
+  `signOut({ scope: 'others' })`); the device where you save stays signed in.
+  Other devices drop on the next refresh or activity — JWTs can linger until expiry.
 - **Lockout:** 6 failed PIN attempts → locked until admin clears.
 - **Join code rotation:** admin can rotate; only affects **new** device binds.
 - **Sessions:** independent per person — logout on one device does not sign out others.
@@ -346,7 +355,55 @@ History view hardening in `00000000000057_transactions_client_security_invoker.s
 - **Buckets tab bucket visibility:** admin and member see family-pool + adult-owned buckets
   only (not children's buckets). Each adult orders that list independently via
   `member_bucket_order`. Children see only their own buckets.
-- **Deferred:** optional member email, WebAuthn fast path, children-first polish.
+- **Biometric (passkey) fast path:** any member can enroll a **WebAuthn passkey**
+  on their **own device** (Settings → Biometric unlock) so they open the app with
+  Face ID / Touch ID instead of typing their PIN (or, for the admin, email +
+  password). Each member already has an independent `auth.users` identity, so this
+  works for everyone — the admin, a shared spouse, and kids alike. A passkey only
+  replaces the credential-exchange step; sessions are minted by the **same**
+  `issueSessionForMember` helper that PIN login uses (`_shared/session.ts`). The
+  affordance is a **fingerprint icon** on both the member's **PIN screen** (the
+  enrolled member lands there directly — no separate "tap to unlock" gate) and the
+  **email/password page** (for an admin who never sets a PIN), shown only when a
+  passkey is bound to this device and a platform authenticator exists. On load
+  the screen shows a **spinner** while it confirms the server still has the
+  passkey (`webauthn-has-passkey`, pre-auth); it reveals the fingerprint only if
+  so, and silently drops a stale binding if not. If the server is unreachable it
+  stays optimistic and a bad tap self-heals. (This is why a dev reseed no longer
+  shows a dead print.) The page offers **exactly the fast methods that exist**:
+  fingerprint only when this device enrolled biometric (the binding) + the server
+  confirms the passkey; a small **"PIN" button** whenever the device's member has
+  a PIN. The member is remembered per device on **any** sign-in (`deviceMember`
+  in `localStorage`, set in `auth.tsx`), so a member who only ever set a PIN (no
+  biometric) still gets the PIN button — `webauthn-has-passkey` returns both
+  `exists` and `hasPin`. PIN routes through `pin-login` (same 6-attempt lockout,
+  no new brute-force surface, no join code), so the owner can have any of
+  biometric / PIN / email+password on their own device.
+  **PIN/password fallback** is always one tap away (so a kid handed a parent's
+  phone picks their own avatar + PIN). WebAuthn returns one ambiguous error for
+  cancel / wrong-finger / timeout, so failures show a friendly "That didn't work —
+  try again or use your PIN" (never the raw W3C text; see `passkeyErrorMessage` in
+  `src/lib/passkey.ts`). Credentials live in `member_passkeys` (public key
+  written only by Edge Functions via the service role, like `pin_hash`); a device
+  binds to exactly one member (`bucketmymoney_biometric` in `localStorage`), so a
+  borrowed phone's blast radius is that one account. Edge Functions:
+  `webauthn-register-options/-verify` (authenticated) and
+  `webauthn-login-options/-verify` (pre-session, like pin-login). Verification
+  uses `@simplewebauthn/server` with **user-verification required**, single-use
+  short-TTL challenges, origin/RP-ID checks, and signature-counter replay
+  protection. RP-ID/origins come from `WEBAUTHN_RP_ID` / `WEBAUTHN_ORIGINS` env
+  (default `localhost` for dev). **Lifecycle rules (keep these coherent):**
+  (1) **one passkey per member** — enrolling replaces any prior (latest device
+  wins), so re-enrolling never dead-ends even if a device's local binding was
+  lost; (2) the biometric binding is **independent of the join code** —
+  unlinking the household device does not remove a passkey; (3) an admin
+  **resetting another member's PIN** also deletes that member's passkey (a reset
+  re-secures, so an old passkey must not bypass the new PIN); resetting your own
+  PIN keeps your passkey; (4) removing a member cascades their passkeys; a login
+  against a revoked credential returns `noPasskey`, and the client clears the
+  stale binding. **Security ceiling:** biometric strength == the device's OS lock
+  — only enroll on a device whose lock is private to that member.
+- **Deferred:** optional member email, children-first polish.
 
 ### Hide amounts (Settings)
 

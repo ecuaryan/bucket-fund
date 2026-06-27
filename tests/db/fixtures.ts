@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import bcryptjs from 'bcryptjs'
 import {
   PIN_AUTH_EMAIL_SUFFIX,
   TEST_AUTH_EMAIL_DOMAIN,
@@ -102,6 +103,31 @@ export async function addMember(
   if (memberError) throw memberError
 
   return { memberId: member.id, email, password: PASSWORD }
+}
+
+/** Give a member a PIN directly (roster derives hasPin from pin_set_at). */
+export async function setMemberPin(memberId: string, pin: string): Promise<void> {
+  const hash = await bcryptjs.hash(pin, 10)
+  const { error } = await serviceClient()
+    .from('family_members')
+    .update({
+      pin_hash: hash,
+      pin_set_at: new Date().toISOString(),
+      pin_failed_attempts: 0,
+      pin_locked: false,
+    })
+    .eq('id', memberId)
+  if (error) throw error
+}
+
+export async function familyJoinCode(familyId: string): Promise<string> {
+  const { data, error } = await serviceClient()
+    .from('families')
+    .select('join_code')
+    .eq('id', familyId)
+    .single()
+  if (error) throw error
+  return data.join_code as string
 }
 
 export async function insertBucket(

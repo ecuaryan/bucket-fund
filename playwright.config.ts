@@ -12,12 +12,14 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   globalSetup: './tests/e2e/global-setup.ts',
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    // localhost (not 127.0.0.1) so the WebAuthn RP-ID "localhost" matches the
+    // page origin — RP-IDs cannot be IP addresses.
+    baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'npm run dev -- --host 127.0.0.1 --port 5173',
-    url: 'http://127.0.0.1:5173',
+    command: 'npm run dev -- --host localhost --port 5173',
+    url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     env: viteEnv,

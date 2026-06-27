@@ -65,3 +65,58 @@ export async function requireAdmin(
     memberId: member.id,
   }
 }
+
+/** Resolve the calling member from their JWT (any role, not just admin). */
+export async function requireMember(
+  authHeader: string | null,
+): Promise<
+  | { ok: true; userId: string; familyId: string; memberId: string; role: string }
+  | { ok: false; response: Response }
+> {
+  if (!authHeader) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({ error: 'Missing Authorization header' }),
+        { status: 401, headers: { 'content-type': 'application/json' } },
+      ),
+    }
+  }
+
+  const client = callerClient(authHeader)
+  const { data: userData, error: userError } = await client.auth.getUser()
+  if (userError || !userData.user) {
+    return {
+      ok: false,
+      response: new Response(JSON.stringify({ error: 'Invalid session' }), {
+        status: 401,
+        headers: { 'content-type': 'application/json' },
+      }),
+    }
+  }
+
+  const admin = serviceClient()
+  const { data: member, error: memberError } = await admin
+    .from('family_members')
+    .select('id, family_id, role')
+    .eq('user_id', userData.user.id)
+    .maybeSingle()
+
+  if (memberError || !member) {
+    return {
+      ok: false,
+      response: new Response(JSON.stringify({ error: 'Not a member' }), {
+        status: 403,
+        headers: { 'content-type': 'application/json' },
+      }),
+    }
+  }
+
+  return {
+    ok: true,
+    userId: userData.user.id,
+    familyId: member.family_id,
+    memberId: member.id,
+    role: member.role,
+  }
+}

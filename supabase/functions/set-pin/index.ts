@@ -67,6 +67,21 @@ Deno.serve(async (req: Request) => {
         500,
       )
     }
+
+    // Resetting another member's PIN re-secures their access, so also revoke
+    // their biometric passkey — otherwise an old passkey would bypass the new
+    // PIN. (Resetting your own PIN keeps your passkey: it is your own device.)
+    const { error: passkeyError } = await admin
+      .from('member_passkeys')
+      .delete()
+      .eq('member_id', member.id)
+    if (passkeyError) {
+      console.error('set-pin delete passkeys', passkeyError)
+      return jsonResponse(
+        { error: 'Could not reset their biometric unlock. Try again.' },
+        500,
+      )
+    }
   }
 
   const pinHash = await hashPin(pin)
