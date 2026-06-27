@@ -6,7 +6,7 @@ import {
   type FormEvent,
 } from 'react'
 import { flushSync } from 'react-dom'
-import { Link, Navigate, useLocation } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AuthShell } from '@/components/AuthShell'
 import { FieldLabel } from '@/components/ui/FieldLabel'
 import { LoadErrorPanel } from '@/components/ui/LoadErrorPanel'
@@ -83,6 +83,7 @@ const PIN_ROSTER_POLL_MS = 8_000
 export default function FamilyLoginPage() {
   const auth = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
   const loginState = location.state as LocationState
   const from = loginState?.from ?? '/'
 
@@ -558,10 +559,17 @@ export default function FamilyLoginPage() {
   const pinReadyMembers = rosterMembers.filter(
     (m) => m.hasPin || canBiometric(m),
   )
+  // The account owner always has email sign-in, so they're never "waiting" for
+  // a PIN even with none set.
   const pinPendingMembers = rosterMembers.filter(
-    (m) => !m.hasPin && !canBiometric(m),
+    (m) => !m.hasPin && !canBiometric(m) && !m.isAccountOwner,
   )
   const householdAdminName = pickHouseholdAdminName(roster.members)
+
+  function goToEmailSignIn() {
+    setSignInPreference('email')
+    navigate('/login', { state: { preferEmailSignIn: true, from } })
+  }
 
   return (
     <AuthShell title={APP_NAME} subtitle="Who's signing in?">
@@ -592,8 +600,11 @@ export default function FamilyLoginPage() {
             {rosterMembers.map((m, index) => {
               const biometricReady = canBiometric(m)
               const pinUnavailable = !m.hasPin || m.pinLocked
-              // The enrolled member can sign in by biometric even without a
-              // usable PIN — show that instead of "PIN not set yet" / "Locked".
+              // The owner can always fall back to email sign-in when this device
+              // has no PIN/biometric for them.
+              const ownerEmailFallback =
+                m.isAccountOwner && pinUnavailable && !biometricReady
+              // Show the method that actually works instead of "PIN not set yet".
               const statusLine =
                 biometricReady && pinUnavailable
                   ? ({
@@ -601,12 +612,18 @@ export default function FamilyLoginPage() {
                       visible: true,
                       tone: 'ready',
                     } as const)
-                  : pinPickerStatusLine(
-                      m,
-                      rosterMembers,
-                      index,
-                      PIN_MEMBER_NOT_SET_LABEL,
-                    )
+                  : ownerEmailFallback
+                    ? ({
+                        text: 'Sign in with email',
+                        visible: true,
+                        tone: 'ready',
+                      } as const)
+                    : pinPickerStatusLine(
+                        m,
+                        rosterMembers,
+                        index,
+                        PIN_MEMBER_NOT_SET_LABEL,
+                      )
               return (
               <li
                 key={m.id}
@@ -614,8 +631,10 @@ export default function FamilyLoginPage() {
               >
                 <button
                   type="button"
-                  disabled={pinUnavailable && !biometricReady}
-                  onClick={() => selectMember(m)}
+                  disabled={pinUnavailable && !biometricReady && !ownerEmailFallback}
+                  onClick={() =>
+                    ownerEmailFallback ? goToEmailSignIn() : selectMember(m)
+                  }
                   className={pinPickerTileClass(rosterMembers.length, index)}
                 >
                   <Avatar name={m.name} url={m.avatarUrl} />

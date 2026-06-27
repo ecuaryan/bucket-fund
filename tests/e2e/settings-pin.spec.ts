@@ -27,6 +27,26 @@ async function signInWithPin(
 }
 
 test.describe('Self-service PIN', () => {
+  test('owner with no PIN/biometric gets a tap-to-email tile on the roster', async ({
+    page,
+  }) => {
+    const family = await createAdminFamily('e2e-owner-email')
+    const joinCode = await familyJoinCode(family.familyId)
+
+    await page.goto('/login/family')
+    await page.getByLabel(JOIN_CODE_LABEL).fill(joinCode)
+    await page.getByRole('button', { name: 'Continue' }).click()
+
+    // The owner has no PIN and no biometric here, so their tile routes to email
+    // sign-in instead of dead-ending on "PIN not set yet".
+    const ownerTile = page
+      .getByRole('button')
+      .filter({ hasText: 'Sign in with email' })
+    await expect(ownerTile).toBeVisible()
+    await ownerTile.click()
+    await expect(page).toHaveURL(/\/login$/)
+  })
+
   test('a member changes their own PIN in Settings, then signs in with the new one', async ({
     page,
   }) => {

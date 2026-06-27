@@ -42,7 +42,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: members, error: membersError } = await admin
     .from('family_members')
-    .select('id, name, role, avatar_url, pin_set_at, pin_locked')
+    .select('id, name, role, avatar_url, pin_set_at, pin_locked, is_account_owner')
     .eq('family_id', family.id)
     .in('role', ['admin', 'member', 'child'])
     .order('created_at', { ascending: true })
@@ -62,6 +62,7 @@ Deno.serve(async (req: Request) => {
       avatarUrl: m.avatar_url,
       hasPin: Boolean(m.pin_set_at),
       pinLocked: m.pin_locked,
+      isAccountOwner: Boolean(m.is_account_owner),
     })),
   })
 })
