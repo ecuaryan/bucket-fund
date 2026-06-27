@@ -9,9 +9,8 @@ import { handleCors, jsonResponse } from '../_shared/http.ts'
 import { serviceClient } from '../_shared/supabase.ts'
 import { issueSessionForMember } from '../_shared/session.ts'
 import {
-  expectedOrigins,
   isoBase64URL,
-  rpID,
+  relyingParty,
   takeChallenge,
   verifyAuthenticationResponse,
 } from '../_shared/webauthn.ts'
@@ -39,6 +38,9 @@ Deno.serve(async (req: Request) => {
   if (!familyId || !memberId || !response?.id) {
     return jsonResponse({ error: 'familyId, memberId, and response are required' }, 400)
   }
+
+  const rp = relyingParty(req)
+  if (!rp) return jsonResponse({ error: 'Unsupported origin' }, 400)
 
   const admin = serviceClient()
 
@@ -75,8 +77,8 @@ Deno.serve(async (req: Request) => {
     verification = await verifyAuthenticationResponse({
       response,
       expectedChallenge,
-      expectedOrigin: expectedOrigins(),
-      expectedRPID: rpID(),
+      expectedOrigin: rp.origin,
+      expectedRPID: rp.rpID,
       requireUserVerification: true,
       credential: {
         id: passkey.credential_id,

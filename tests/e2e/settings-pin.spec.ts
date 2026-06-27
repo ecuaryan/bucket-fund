@@ -44,6 +44,7 @@ test.describe('Self-service PIN', () => {
     await page.goto('/settings')
     await page.getByRole('button', { name: 'Change PIN' }).click()
     await page.getByLabel('New 4-digit PIN').fill('2222')
+    await page.getByRole('button', { name: 'Save PIN' }).click()
     await expect(page.getByText('PIN updated.')).toBeVisible()
 
     // The old PIN no longer works; the new one does.
@@ -68,6 +69,7 @@ test.describe('Self-service PIN', () => {
     await page.goto('/settings')
     await page.getByRole('button', { name: 'Set a PIN' }).click()
     await page.getByLabel('New 4-digit PIN').fill('2468')
+    await page.getByRole('button', { name: 'Save PIN' }).click()
     await expect(page.getByText('PIN set.')).toBeVisible()
 
     await page.getByRole('button', { name: 'Sign out' }).click()
@@ -98,6 +100,7 @@ test.describe('Self-service PIN', () => {
     await page.goto('/settings')
     await page.getByRole('button', { name: 'Set a PIN' }).click()
     await page.getByLabel('New 4-digit PIN').fill('9876')
+    await page.getByRole('button', { name: 'Save PIN' }).click()
     await expect(page.getByText('PIN set.')).toBeVisible()
 
     // Owner-only "Remove PIN" now shows; removing returns to "Set a PIN".

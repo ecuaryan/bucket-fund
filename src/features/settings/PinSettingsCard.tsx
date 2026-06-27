@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useAuth } from '@/lib/auth'
 import PinInput from '@/components/ui/PinInput'
 import { Sheet } from '@/components/ui/Sheet'
@@ -78,10 +78,9 @@ export default function PinSettingsCard() {
     }
   }
 
-  function onPinChange(next: string) {
-    setPin(next)
-    if (error) setError(null)
-    if (next.length === 4) void save(next)
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault()
+    await save(pin)
   }
 
   return (
@@ -115,21 +114,10 @@ export default function PinSettingsCard() {
         onClose={closeSheet}
         aria-label={hasPin ? 'Change your PIN' : 'Set your PIN'}
       >
-        <form onSubmit={(e) => e.preventDefault()} autoComplete="off">
-          <header className="flex items-baseline justify-between">
-            <h2 className="text-lg font-semibold text-zinc-300">
-              {hasPin ? 'Change your PIN' : 'Set your PIN'}
-            </h2>
-            <button
-              type="button"
-              onClick={closeSheet}
-              disabled={saving}
-              aria-label="Close"
-              className="rounded p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-50"
-            >
-              ×
-            </button>
-          </header>
+        <form onSubmit={onSubmit} autoComplete="off">
+          <h3 className="text-lg font-semibold text-zinc-300">
+            {hasPin ? 'Change your PIN' : 'Set your PIN'}
+          </h3>
           <p className="mt-1 text-xs text-zinc-400">
             Enter a new 4-digit PIN. Your other devices will be signed out.
           </p>
@@ -145,18 +133,30 @@ export default function PinSettingsCard() {
             autoFocus
             aria-label="New 4-digit PIN"
             value={pin}
-            onChange={onPinChange}
+            onChange={(v) => {
+              setPin(v)
+              if (error) setError(null)
+            }}
             disabled={saving}
             className="mt-4 block w-full rounded-lg bg-zinc-950 px-3 py-3 text-center text-2xl tracking-[0.5em] text-zinc-300 ring-1 ring-zinc-700"
           />
-          <button
-            type="button"
-            onClick={closeSheet}
-            disabled={saving}
-            className="mt-4 w-full rounded-lg border border-zinc-700 py-2 text-sm text-zinc-400 disabled:opacity-50"
-          >
-            Cancel
-          </button>
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={closeSheet}
+              disabled={saving}
+              className="flex-1 rounded-lg border border-zinc-700 py-2 text-sm text-zinc-400 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving || pin.length !== 4}
+              className="flex-1 rounded-lg bg-emerald-500 py-2 text-sm font-semibold text-black disabled:opacity-50"
+            >
+              {saving ? 'Saving…' : 'Save PIN'}
+            </button>
+          </div>
         </form>
       </Sheet>
     </section>
