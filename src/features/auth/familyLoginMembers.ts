@@ -29,7 +29,7 @@ export function pinPickerRowPartnerIndex(
 export type PinPickerStatusLine = {
   text: string
   visible: boolean
-  tone: 'pending' | 'locked' | 'reserve'
+  tone: 'pending' | 'locked' | 'reserve' | 'ready'
 }
 
 /** Status copy, or an invisible same-height reserve to align names in a row. */

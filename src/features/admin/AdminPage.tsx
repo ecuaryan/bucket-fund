@@ -55,7 +55,7 @@ import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
 import MembersSection from '@/features/admin/MembersSection'
 import AppVersionFooter from '@/components/AppVersionFooter'
 import { Sheet } from '@/components/ui/Sheet'
-import { useHideAmounts } from '@/lib/HideAmountsProvider'
+import { useHideAmounts, usePeekTarget } from '@/lib/HideAmountsProvider'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import { LoadingStatus } from '@/components/ui/LoadingStatus'
 import { SegmentedTabs } from '@/components/ui/SegmentedTabs'
@@ -132,6 +132,9 @@ export default function AdminPage() {
 
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = parseAdminPageTab(searchParams.get('tab'))
+  // The Money sources tab shows account balances, so Peek belongs there when it
+  // has accounts (the other Admin tabs have no amounts).
+  usePeekTarget(activeTab === 'money-sources' && (accounts?.length ?? 0) > 0)
   const [householdPanelMounted, setHouseholdPanelMounted] = useState(
     () => parseAdminPageTab(searchParams.get('tab')) === 'household',
   )
