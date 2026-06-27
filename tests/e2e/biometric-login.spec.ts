@@ -95,6 +95,7 @@ test.describe('Biometric login', () => {
     ).toBeVisible()
     await page.getByRole('button', { name: 'Set a PIN' }).click()
     await page.getByLabel('New 4-digit PIN').fill('4321')
+    await page.getByRole('button', { name: 'Save PIN' }).click()
     await expect(page.getByText('PIN set.')).toBeVisible()
 
     await page.getByRole('button', { name: 'Sign out' }).click()

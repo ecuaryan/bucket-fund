@@ -10,8 +10,8 @@ import { requireMember, serviceClient } from '../_shared/supabase.ts'
 import {
   generateRegistrationOptions,
   isoUint8Array,
-  rpID,
-  rpName,
+  relyingParty,
+  RP_NAME,
   storeChallenge,
 } from '../_shared/webauthn.ts'
 
@@ -24,6 +24,9 @@ Deno.serve(async (req: Request) => {
 
   const auth = await requireMember(req.headers.get('Authorization'))
   if (!auth.ok) return auth.response
+
+  const rp = relyingParty(req)
+  if (!rp) return jsonResponse({ error: 'Unsupported origin' }, 400)
 
   const admin = serviceClient()
 
@@ -40,8 +43,8 @@ Deno.serve(async (req: Request) => {
   // re-enrollment from dead-ending on InvalidStateError when a device's local
   // binding was lost but the platform authenticator still holds the credential.
   const options = await generateRegistrationOptions({
-    rpName: rpName(),
-    rpID: rpID(),
+    rpName: RP_NAME,
+    rpID: rp.rpID,
     userID: isoUint8Array.fromUTF8String(auth.memberId),
     userName: displayName,
     userDisplayName: displayName,

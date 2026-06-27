@@ -7,9 +7,8 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { handleCors, jsonResponse } from '../_shared/http.ts'
 import { requireMember, serviceClient } from '../_shared/supabase.ts'
 import {
-  expectedOrigins,
   isoBase64URL,
-  rpID,
+  relyingParty,
   takeChallenge,
   verifyRegistrationResponse,
 } from '../_shared/webauthn.ts'
@@ -23,6 +22,9 @@ Deno.serve(async (req: Request) => {
 
   const auth = await requireMember(req.headers.get('Authorization'))
   if (!auth.ok) return auth.response
+
+  const rp = relyingParty(req)
+  if (!rp) return jsonResponse({ error: 'Unsupported origin' }, 400)
 
   let body: { response?: unknown; label?: string }
   try {
@@ -49,8 +51,8 @@ Deno.serve(async (req: Request) => {
     verification = await verifyRegistrationResponse({
       response: body.response,
       expectedChallenge,
-      expectedOrigin: expectedOrigins(),
-      expectedRPID: rpID(),
+      expectedOrigin: rp.origin,
+      expectedRPID: rp.rpID,
       requireUserVerification: true,
     })
   } catch (err) {

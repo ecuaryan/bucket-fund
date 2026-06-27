@@ -9,7 +9,7 @@ import { handleCors, jsonResponse } from '../_shared/http.ts'
 import { serviceClient } from '../_shared/supabase.ts'
 import {
   generateAuthenticationOptions,
-  rpID,
+  relyingParty,
   storeChallenge,
 } from '../_shared/webauthn.ts'
 
@@ -33,6 +33,9 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'familyId and memberId are required' }, 400)
   }
 
+  const rp = relyingParty(req)
+  if (!rp) return jsonResponse({ error: 'Unsupported origin' }, 400)
+
   const admin = serviceClient()
 
   const { data: member } = await admin
@@ -54,7 +57,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const options = await generateAuthenticationOptions({
-    rpID: rpID(),
+    rpID: rp.rpID,
     allowCredentials: creds.map((c) => ({
       id: c.credential_id,
       transports: c.transports ?? undefined,

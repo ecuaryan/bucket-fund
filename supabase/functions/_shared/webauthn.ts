@@ -13,25 +13,46 @@ export {
 } from 'npm:@simplewebauthn/server@13'
 export { isoBase64URL, isoUint8Array } from 'npm:@simplewebauthn/server@13/helpers'
 
-/** Relying-party id (the registrable domain). Defaults to localhost for dev. */
-export function rpID(): string {
-  return Deno.env.get('WEBAUTHN_RP_ID') ?? 'localhost'
+export const RP_NAME = 'Bucket My Money'
+
+// Hosts we trust as relying parties. The prod apex (so a passkey spans apex +
+// www) and local dev. Extra comma-separated hosts may be added via env for
+// preview/staging without a code change.
+const DEFAULT_RP_HOSTS = ['localhost', '127.0.0.1', 'bucketmymoney.com']
+
+function allowedHosts(): string[] {
+  const extra = (Deno.env.get('WEBAUTHN_RP_HOSTS') ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  return [...DEFAULT_RP_HOSTS, ...extra]
 }
 
-export function rpName(): string {
-  return Deno.env.get('WEBAUTHN_RP_NAME') ?? 'Bucket My Money'
-}
+export type RelyingParty = { rpID: string; origin: string }
 
-/** Exact allowed origins. Verified on every assertion. Comma-separated env. */
-export function expectedOrigins(): string[] {
-  const raw = Deno.env.get('WEBAUTHN_ORIGINS')
-  if (raw) {
-    return raw
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
+/**
+ * Derive the relying party from the request's Origin header instead of static
+ * env, so the same code works on localhost and prod with no per-environment
+ * config. The Origin is browser-controlled (not page-forgeable) and validated
+ * against an allowlist; the assertion's own origin/rpID are re-checked by
+ * @simplewebauthn against what we return here.
+ */
+export function relyingParty(req: Request): RelyingParty | null {
+  const origin = req.headers.get('origin')
+  if (!origin) return null
+  let host: string
+  try {
+    host = new URL(origin).hostname
+  } catch {
+    return null
   }
-  return ['http://localhost:5173', 'http://127.0.0.1:5173']
+  const hosts = allowedHosts()
+  const allowed = hosts.some((h) => host === h || host.endsWith(`.${h}`))
+  if (!allowed) return null
+  // Use the registrable apex as the RP ID so a passkey works across apex + www;
+  // localhost stays localhost.
+  const apex = hosts.find((h) => host === h || host.endsWith(`.${h}`)) ?? host
+  return { rpID: apex, origin }
 }
 
 const CHALLENGE_TTL_MS = 5 * 60 * 1000
