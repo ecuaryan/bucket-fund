@@ -15,19 +15,21 @@ export type MemberSession = {
 /**
  * Mint a Supabase session for a member WITHOUT their password.
  *   * PIN-only members (internal email): rotate the internal password, then
- *     sign in with it.
+ *     sign in with it. (Kept over magic-link OTP on purpose: the password
+ *     endpoint isn't subject to email-subsystem rate limits, which matters for
+ *     frequent PIN sign-ins at scale.)
  *   * Admin (real email): never rotate the email password -- issue a session
  *     via a magic-link OTP instead.
+ * The caller passes the member's auth email (read alongside the member row via
+ * member_session_lookup), so this no longer makes a separate getUserById hop.
  * Throws on any failure; callers map to a generic "Login failed".
  */
 export async function issueSessionForMember(
   admin: SupabaseClient,
   userId: string,
+  email: string,
 ): Promise<MemberSession> {
-  const { data: authUser, error: userLookupError } =
-    await admin.auth.admin.getUserById(userId)
-  const email = authUser?.user?.email
-  if (userLookupError || !email) {
+  if (!email) {
     throw new Error('user lookup failed')
   }
 

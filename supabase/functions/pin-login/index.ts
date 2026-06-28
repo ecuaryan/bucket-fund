@@ -35,14 +35,12 @@ Deno.serve(async (req: Request) => {
   }
 
   const admin = serviceClient()
-  const { data: member, error: memberError } = await admin
-    .from('family_members')
-    .select(
-      'id, family_id, user_id, role, pin_hash, pin_locked, pin_failed_attempts',
-    )
-    .eq('id', memberId)
-    .eq('family_id', familyId)
-    .maybeSingle()
+  // One DB call returns the member row AND the auth email, so issuing the
+  // session below no longer needs a separate getUserById round trip.
+  const { data: member, error: memberError } = await admin.rpc(
+    'member_session_lookup',
+    { p_family_id: familyId, p_member_id: memberId },
+  )
 
   if (memberError) {
     console.error('pin-login member lookup', memberError)
@@ -95,7 +93,7 @@ Deno.serve(async (req: Request) => {
 
   let session
   try {
-    session = await issueSessionForMember(admin, member.user_id)
+    session = await issueSessionForMember(admin, member.user_id, member.auth_email)
   } catch (err) {
     console.error('pin-login session', err)
     return jsonResponse({ error: 'Login failed' }, 500)

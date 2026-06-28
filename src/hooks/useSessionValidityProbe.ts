@@ -22,7 +22,14 @@ export function useSessionValidityProbe(): void {
   const auth = useAuth()
   const location = useLocation()
   const probeGeneration = useRef(0)
-  const lastNavProbeAt = useRef(0)
+  // null until the first authed navigation establishes the baseline. A 0 seed
+  // would clear the cooldown on that first navigation (RequireAuth mounts this
+  // right after sign-in) and fire a refreshSession against a token that was just
+  // minted — a wasted Auth round trip racing the first data load on every login.
+  // The cooldown still elapses for genuine later in-app navigation, and the
+  // focus/visibility probe below is untouched, so a session revoked while idle
+  // is still caught.
+  const lastNavProbeAt = useRef<number | null>(null)
   const visibilityProbeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   )
@@ -47,6 +54,12 @@ export function useSessionValidityProbe(): void {
     if (auth.isPasswordRecovery) return
 
     const now = Date.now()
+    if (lastNavProbeAt.current === null) {
+      // First authed navigation: just record the baseline. The session was just
+      // loaded/minted, so it does not need an immediate refresh probe.
+      lastNavProbeAt.current = now
+      return
+    }
     if (!shouldRunNavSessionProbe(lastNavProbeAt.current, now)) return
     lastNavProbeAt.current = now
 

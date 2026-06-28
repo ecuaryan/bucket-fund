@@ -28,7 +28,14 @@ import { isAppBackgroundExpired } from '@/lib/backgroundSignOut'
 import {
   clearBackgroundPrivacyState,
 } from '@/lib/backgroundSessionCleanup'
-import { clearAllBucketsPageCaches } from '@/lib/bucketsPageCache'
+import {
+  clearAllBucketsPageCaches,
+  writeBucketsPageCache,
+} from '@/lib/bucketsPageCache'
+import {
+  fetchHomeBootstrap,
+  type BucketsPageData,
+} from '@/lib/bucketsPageLoad'
 import { canReuseLoadedMember } from '@/lib/authSessionReuse'
 import { classifyMemberFetch, type MemberFetchOutcome } from '@/lib/memberFetch'
 import { getSignInPreference } from '@/lib/signInPreference'
@@ -118,6 +125,39 @@ async function fetchMemberOutcome(
   }
 }
 
+type MemberBootstrap = {
+  outcome: MemberFetchOutcome<FamilyMember>
+  /** Home payload to warm the buckets cache, or null when unavailable. */
+  home: BucketsPageData | null
+}
+
+/**
+ * Load the membership row that gates the app. When the enriched home RPC is
+ * deployed (migration 71+) this returns the buckets/accounts/breakdown payload
+ * in the SAME round trip, so the first screen paints without a second fetch.
+ * Falls back to the lightweight member-only lookup when the RPC isn't there yet.
+ * Member classification (found / absent / error) is identical either way.
+ */
+async function fetchMemberBootstrap(userId: string): Promise<MemberBootstrap> {
+  try {
+    const bootstrap = await withTimeout(
+      Promise.resolve(fetchHomeBootstrap()),
+      MEMBER_FETCH_TIMEOUT_MS,
+      'Member lookup timed out',
+    )
+    if (bootstrap) {
+      return { outcome: bootstrap.memberOutcome, home: bootstrap.page }
+    }
+  } catch (err) {
+    // A real RPC/network failure (or timeout) is transient — surface error so we
+    // never mistake it for "removed from household".
+    console.error('home bootstrap failed for user', userId, err)
+    return { outcome: { status: 'error' }, home: null }
+  }
+  // RPC not deployed yet: fall back to the direct member-only lookup.
+  return { outcome: await fetchMemberOutcome(userId), home: null }
+}
+
 function AuthSessionEffects() {
   useBackgroundSignOut()
   return null
@@ -139,6 +179,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     stateRef.current = state
   }, [state])
 
+  // Access token whose member row is currently being fetched. `signInWithSession`
+  // applies a session two ways at once: `setSession` emits SIGNED_IN (→
+  // `applySession` via the onAuthStateChange listener) and then it `await`s
+  // `applySession` itself. Both would query `family_members` for the same user.
+  // We record the in-flight token here so the second, identical apply skips the
+  // duplicate round trip. A synchronous ref (not React state) is used so the
+  // guard is visible across the two interleaved calls regardless of render
+  // timing. Cleared on sign-out and once the fetch settles, so a new token (or a
+  // retry after a transient error) is never blocked.
+  const memberFetchTokenRef = useRef<string | null>(null)
+
   const applySession = useCallback(async (session: Session | null) => {
     // Sync JWT for Realtime; do not block sign-in on this — a wedged
     // websocket can hang `setAuth` and leave the app on "Loading…". Swallow
@@ -146,6 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // not surface as an unhandled promise rejection.
     void supabase.realtime.setAuth(session?.access_token ?? null).catch(() => {})
     if (!session) {
+      memberFetchTokenRef.current = null
       clearPasswordRecoveryFlow()
       clearBackgroundPrivacyState()
       clearAllBucketsPageCaches()
@@ -188,6 +240,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    // A concurrent apply for this exact token is already loading the member
+    // (setSession's SIGNED_IN listener + the explicit apply in
+    // signInWithSession). Skip the duplicate query and let the first finish.
+    if (memberFetchTokenRef.current === session.access_token) {
+      return
+    }
+    memberFetchTokenRef.current = session.access_token
+
     setState({
       status: 'signedIn',
       session,
@@ -196,7 +256,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       memberError: false,
     })
 
-    const outcome = await fetchMemberOutcome(session.user.id)
+    const { outcome, home } = await fetchMemberBootstrap(session.user.id)
+
+    if (memberFetchTokenRef.current === session.access_token) {
+      memberFetchTokenRef.current = null
+    }
 
     if (outcome.status === 'error') {
       // A failed lookup (network, expired token, RLS hiccup) is NOT proof the
@@ -233,6 +297,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         memberError: false,
       })
       return
+    }
+
+    // Warm the buckets cache from the bootstrap payload BEFORE flipping
+    // memberLoading off — RequireAuth then mounts BucketsPage, which paints
+    // straight from this cache instead of waiting on another round trip. On a
+    // cold start (sessionStorage wiped on app kill) this is the only thing that
+    // makes the first screen instant.
+    if (home) {
+      writeBucketsPageCache(outcome.member.family_id, outcome.member.id, {
+        buckets: home.buckets,
+        accounts: home.accounts,
+        breakdown: home.breakdown,
+        balanceUsesFallback: home.usedFallback,
+        householdAdminName: home.householdAdminName,
+      })
     }
 
     setState({
