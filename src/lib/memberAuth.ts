@@ -1,6 +1,7 @@
 import { resolveSupabasePublishableKey } from '@/lib/supabaseKeys'
 import { notifyHouseholdRosterChanged } from '@/lib/householdRosterRefresh'
 import { getFreshAccessToken, refreshAccessToken } from '@/lib/sessionToken'
+import { perfTime } from '@/lib/perfTiming'
 import { supabase, supabaseUrl } from '@/lib/supabase'
 import { withTimeout } from '@/lib/timeout'
 
@@ -115,9 +116,11 @@ async function postFunction<T>(
 }
 
 export async function validateJoinCode(code: string): Promise<ValidateJoinResult> {
-  return postFunction<ValidateJoinResult>('validate-join-code', {
-    code: code.trim(),
-  })
+  return perfTime('roster (validate-join-code)', () =>
+    postFunction<ValidateJoinResult>('validate-join-code', {
+      code: code.trim(),
+    }),
+  )
 }
 
 export type PinSessionTokens = {
@@ -131,7 +134,9 @@ export async function exchangePinForSession(input: {
   memberId: string
   pin: string
 }): Promise<PinSessionTokens> {
-  return postFunction<PinSessionTokens>('pin-login', input)
+  return perfTime('pin-login', () =>
+    postFunction<PinSessionTokens>('pin-login', input),
+  )
 }
 
 export async function removeMember(memberId: string): Promise<void> {
