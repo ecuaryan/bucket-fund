@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { LoadErrorPanel } from '@/components/ui/LoadErrorPanel'
 import { formatLoadErrorMessage, withAuthLockRetry } from '@/lib/authLockError'
 import { supabase } from '@/lib/supabase'
@@ -26,13 +26,13 @@ import {
   ADMIN_REMOVE_MANUAL_SOURCE_INTRO,
   ADMIN_UNLINK_INSTITUTION_CONFIRM,
   adminLinkedAccountsMemberGate,
-  adminMoneySourceGroupExpandLabel,
   adminRemoveManualSourceSheetTitle,
   adminUnlinkInstitutionSheetIntro,
   adminUnlinkInstitutionSheetTitle,
   manualSourceAddedSuccess,
   manualSourceRemovedSuccess,
   manualSourceUpdatedSuccess,
+  VIEW_RECENT_BANK_ACTIVITY,
 } from '@/lib/brand'
 import { toast } from '@/lib/toast'
 import {
@@ -115,9 +115,6 @@ export default function AdminPage() {
     | null
   >(null)
   const addSourceMenuRef = useRef<HTMLDivElement | null>(null)
-  const [expandedGroupKeys, setExpandedGroupKeys] = useState<Set<string>>(
-    () => new Set(),
-  )
   const [linkBankConfirmOpen, setLinkBankConfirmOpen] = useState(false)
   const [removeManualTarget, setRemoveManualTarget] = useState<{
     id: string
@@ -151,15 +148,6 @@ export default function AdminPage() {
     },
     [setSearchParams],
   )
-
-  function toggleGroupExpanded(groupKey: string) {
-    setExpandedGroupKeys((prev) => {
-      const next = new Set(prev)
-      if (next.has(groupKey)) next.delete(groupKey)
-      else next.add(groupKey)
-      return next
-    })
-  }
 
   useEffect(() => {
     if (!addSourceOpen) return
@@ -531,60 +519,25 @@ export default function AdminPage() {
           </div>
         ) : (
           <ul className="space-y-3">
-            {groups.map((group) => {
-              const expanded = expandedGroupKeys.has(group.groupKey)
-              const accountsPanelId = `admin-group-${group.groupKey}-accounts`
-              return (
+            {groups.map((group) => (
               <li
                 key={group.groupKey}
                 className="overflow-hidden rounded-2xl bg-zinc-900 ring-1 ring-zinc-800"
               >
-                <header
-                  className={`flex items-center justify-between gap-3 px-4 py-3 ${
-                    expanded ? 'border-b border-zinc-800' : ''
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleGroupExpanded(group.groupKey)}
-                    aria-expanded={expanded}
-                    aria-controls={accountsPanelId}
-                    aria-label={adminMoneySourceGroupExpandLabel(
-                      expanded,
-                      group.accounts.length,
-                    )}
-                    className="flex min-w-0 flex-1 items-center gap-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                      className={
-                        'h-4 w-4 shrink-0 text-zinc-400 motion-safe:transition-transform motion-safe:duration-200 ' +
-                        (expanded ? 'rotate-180' : '')
-                      }
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-zinc-300">
-                        {group.isManual
-                          ? ADMIN_MANUAL_GROUP_TITLE
-                          : (group.institutionName ?? 'Unknown institution')}
-                      </p>
-                      <p className="text-xs text-zinc-400">
-                        {group.accounts.length} account
-                        {group.accounts.length === 1 ? '' : 's'} ·{' '}
-                        {formatMoney(group.totalBalance)} · last refreshed{' '}
-                        {formatLastSynced(group.lastSyncedAt)}
-                      </p>
-                    </div>
-                  </button>
+                <header className="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-zinc-300">
+                      {group.isManual
+                        ? ADMIN_MANUAL_GROUP_TITLE
+                        : (group.institutionName ?? 'Unknown institution')}
+                    </p>
+                    <p className="text-xs text-zinc-400">
+                      {group.accounts.length} account
+                      {group.accounts.length === 1 ? '' : 's'} ·{' '}
+                      {formatMoney(group.totalBalance)} · last refreshed{' '}
+                      {formatLastSynced(group.lastSyncedAt)}
+                    </p>
+                  </div>
                   {group.enrollmentIds.length > 0 && (
                     <div className="flex shrink-0 items-center gap-2">
                       <RefreshIconButton
@@ -637,11 +590,7 @@ export default function AdminPage() {
                     </div>
                   )}
                 </header>
-                {expanded ? (
-                <ul
-                  id={accountsPanelId}
-                  className="divide-y divide-zinc-800"
-                >
+                <ul className="divide-y divide-zinc-800">
                   {group.accounts.map((a) => (
                     <li
                       key={a.id}
@@ -708,11 +657,20 @@ export default function AdminPage() {
                     </li>
                   ))}
                 </ul>
-                ) : null}
               </li>
-            )})}
+            ))}
           </ul>
         )}
+        {!loadError && accounts !== null && groups.some((g) => !g.isManual) ? (
+          <div className="mt-3">
+            <Link
+              to="/?tab=account"
+              className="text-xs font-semibold text-emerald-400 transition hover:text-emerald-300"
+            >
+              {VIEW_RECENT_BANK_ACTIVITY} →
+            </Link>
+          </div>
+        ) : null}
       </section>
       </BusyOverlay>
       </div>

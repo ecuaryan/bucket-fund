@@ -183,8 +183,8 @@ export const KIDS_VIRTUAL_SECTION_TITLE = 'No linked account'
 
 export const KIDS_LINKED_SECTION_TITLE = 'Linked accounts'
 
-/** Footer link from the Kids linked-accounts section to the Buckets Bank tab. */
-export const KIDS_LINKED_VIEW_ACTIVITY = 'View recent bank activity'
+/** Footer link to the Buckets Bank tab — used from the Kids and Admin pages. */
+export const VIEW_RECENT_BANK_ACTIVITY = 'View recent bank activity'
 
 export const KIDS_LINKED_SECTION_BODY =
   'Money moves at the bank. Assign or change accounts in Admin → Household.'
@@ -406,15 +406,6 @@ export const BANK_ACTIVITY_SCOPE = 'Last 2 weeks · up to 50 transactions'
 export const BANK_ACTIVITY_RETRY = 'Try again'
 export const BANK_ACTIVITY_EMPTY = 'No bank activity in the last 2 weeks.'
 export const BANK_ACTIVITY_PENDING = 'Pending'
-
-/** Accessible label for expand/collapse on a money-source group header. */
-export function adminMoneySourceGroupExpandLabel(
-  expanded: boolean,
-  accountCount: number,
-): string {
-  const n = accountCount === 1 ? '1 account' : `${accountCount} accounts`
-  return expanded ? `Collapse ${n}` : `Expand ${n}`
-}
 
 export const ADMIN_LINK_BANK_CONFIRM_SHEET_TITLE = 'Link a new bank?'
 

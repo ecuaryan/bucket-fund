@@ -18,7 +18,7 @@ import {
   kidsTakeSuccessToast,
   KIDS_LINKED_ONLY_BODY,
   KIDS_LINKED_SECTION_TITLE,
-  KIDS_LINKED_VIEW_ACTIVITY,
+  VIEW_RECENT_BANK_ACTIVITY,
   KIDS_PAGE_INTRO,
   KIDS_PAGE_TITLE,
   KIDS_VIRTUAL_SECTION_TITLE,
@@ -263,7 +263,7 @@ export default function KidsPage() {
               to="/?tab=account"
               className="text-xs font-semibold text-emerald-400 transition hover:text-emerald-300"
             >
-              {KIDS_LINKED_VIEW_ACTIVITY} →
+              {VIEW_RECENT_BANK_ACTIVITY} →
             </Link>
           </div>
         </section>
