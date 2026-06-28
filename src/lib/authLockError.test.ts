@@ -19,6 +19,27 @@ describe('isAuthLockContentionError', () => {
     ).toBe(true)
   })
 
+  it("detects Chromium's lock-broken steal message (DOMException form)", () => {
+    expect(
+      isAuthLockContentionError(
+        new DOMException(
+          "Lock broken by another request with the 'steal' option.",
+          'AbortError',
+        ),
+      ),
+    ).toBe(true)
+  })
+
+  it("detects Chromium's lock-broken steal message (stringified form)", () => {
+    // When the error reaches us as a plain string there's no `name` field to
+    // inspect, so the message itself must be enough to recognize it.
+    expect(
+      isAuthLockContentionError(
+        "AbortError: Lock broken by another request with the 'steal' option.",
+      ),
+    ).toBe(true)
+  })
+
   it('detects lock acquisition timeouts', () => {
     expect(
       isAuthLockContentionError(
@@ -69,6 +90,14 @@ describe('formatLoadErrorMessage', () => {
   it('rewrites lock contention strings', () => {
     expect(
       formatLoadErrorMessage('AbortError: Lock was stolen by another request'),
+    ).toBe(authLockContentionMessage())
+  })
+
+  it('rewrites the lock-broken steal message instead of showing it raw', () => {
+    expect(
+      formatLoadErrorMessage(
+        "AbortError: Lock broken by another request with the 'steal' option.",
+      ),
     ).toBe(authLockContentionMessage())
   })
 

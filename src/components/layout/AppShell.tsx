@@ -11,11 +11,25 @@ import {
 } from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
 import { useScrollToTopOnPathname } from '@/hooks/useScrollToTopOnPathname'
-import { useGiveRecipients } from '@/hooks/useGiveRecipients'
+import {
+  GiveRecipientsProvider,
+  useGiveRecipients,
+} from '@/hooks/GiveRecipientsProvider'
 import { NAV_CENTER_MAIN_PB, APP_CHROME_Z_INDEX } from '@/components/layout/navLayout'
 import { buildNavTabs } from '@/components/layout/navTabs'
 
 export default function AppShell() {
+  // Provider hoists the give-recipient roster so the nav here and the History
+  // give/take filter share one fetch + Realtime subscription instead of each
+  // hook instance loading its own copy.
+  return (
+    <GiveRecipientsProvider>
+      <AppShellLayout />
+    </GiveRecipientsProvider>
+  )
+}
+
+function AppShellLayout() {
   useScrollToTopOnPathname()
   const auth = useAuth()
   const [signingOut, setSigningOut] = useState(false)
