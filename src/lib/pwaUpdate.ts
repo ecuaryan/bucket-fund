@@ -24,6 +24,45 @@ import { registerSW } from 'virtual:pwa-register'
 /** How long the app must stay hidden before a waiting update is applied. */
 export const SUSTAINED_HIDDEN_MS = 5_000
 
+// --- Optional UI surface for a waiting update ----------------------------
+// The automatic flow below applies updates silently once the app is
+// backgrounded. We also expose the "a new version is waiting" state as a tiny
+// external store so the UI can offer a manual "Update now" — for anyone who
+// happens to look at the version number before the background apply kicks in.
+// Most users never see it; it's a safety valve against staleness, not a prompt.
+
+let updateReady = false
+let applyWaitingUpdate: ((reload: boolean) => Promise<void>) | null = null
+const updateListeners = new Set<() => void>()
+
+function setUpdateReady(value: boolean): void {
+  if (updateReady === value) return
+  updateReady = value
+  for (const listener of updateListeners) listener()
+}
+
+/** Subscribe to changes in whether an update is waiting (for useSyncExternalStore). */
+export function subscribeAppUpdateReady(callback: () => void): () => void {
+  updateListeners.add(callback)
+  return () => updateListeners.delete(callback)
+}
+
+/** Snapshot of whether a new version is downloaded and waiting to activate. */
+export function getAppUpdateReady(): boolean {
+  return updateReady
+}
+
+/**
+ * Force-apply a waiting update immediately, reloading the app. Safe to call from
+ * a user gesture (the "Update now" affordance): a user-initiated reload is
+ * expected, so — unlike the automatic path — we don't wait for backgrounding.
+ * No-op when nothing is waiting.
+ */
+export function applyAppUpdateNow(): void {
+  if (!updateReady || !applyWaitingUpdate) return
+  void applyWaitingUpdate(true)
+}
+
 /** Ask the browser to look for a new service worker when the app is reopened. */
 export function registerUpdateChecks(
   registration: ServiceWorkerRegistration | undefined,
@@ -39,18 +78,22 @@ export function registerUpdateChecks(
 export function setupPwaUpdates(): void {
   let pendingUpdate = false
   let hiddenTimer: ReturnType<typeof setTimeout> | null = null
+  setUpdateReady(false)
 
   const updateSW = registerSW({
     immediate: true,
     onNeedRefresh() {
-      // A new version is downloaded and waiting — apply it once safely hidden.
+      // A new version is downloaded and waiting — apply it once safely hidden,
+      // and let the UI offer a manual "Update now" in the meantime.
       pendingUpdate = true
+      setUpdateReady(true)
       scheduleApplyWhileHidden()
     },
     onRegisteredSW(_swUrl, registration) {
       registerUpdateChecks(registration)
     },
   })
+  applyWaitingUpdate = updateSW
 
   function applyNow() {
     hiddenTimer = null
