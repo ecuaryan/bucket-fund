@@ -139,6 +139,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     stateRef.current = state
   }, [state])
 
+  // Access token whose member row is currently being fetched. `signInWithSession`
+  // applies a session two ways at once: `setSession` emits SIGNED_IN (→
+  // `applySession` via the onAuthStateChange listener) and then it `await`s
+  // `applySession` itself. Both would query `family_members` for the same user.
+  // We record the in-flight token here so the second, identical apply skips the
+  // duplicate round trip. A synchronous ref (not React state) is used so the
+  // guard is visible across the two interleaved calls regardless of render
+  // timing. Cleared on sign-out and once the fetch settles, so a new token (or a
+  // retry after a transient error) is never blocked.
+  const memberFetchTokenRef = useRef<string | null>(null)
+
   const applySession = useCallback(async (session: Session | null) => {
     // Sync JWT for Realtime; do not block sign-in on this — a wedged
     // websocket can hang `setAuth` and leave the app on "Loading…". Swallow
@@ -146,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // not surface as an unhandled promise rejection.
     void supabase.realtime.setAuth(session?.access_token ?? null).catch(() => {})
     if (!session) {
+      memberFetchTokenRef.current = null
       clearPasswordRecoveryFlow()
       clearBackgroundPrivacyState()
       clearAllBucketsPageCaches()
@@ -188,6 +200,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    // A concurrent apply for this exact token is already loading the member
+    // (setSession's SIGNED_IN listener + the explicit apply in
+    // signInWithSession). Skip the duplicate query and let the first finish.
+    if (memberFetchTokenRef.current === session.access_token) {
+      return
+    }
+    memberFetchTokenRef.current = session.access_token
+
     setState({
       status: 'signedIn',
       session,
@@ -197,6 +217,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     const outcome = await fetchMemberOutcome(session.user.id)
+
+    if (memberFetchTokenRef.current === session.access_token) {
+      memberFetchTokenRef.current = null
+    }
 
     if (outcome.status === 'error') {
       // A failed lookup (network, expired token, RLS hiccup) is NOT proof the
