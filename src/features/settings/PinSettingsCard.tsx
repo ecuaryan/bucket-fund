@@ -92,7 +92,7 @@ export default function PinSettingsCard() {
       </h2>
       <p className="mt-1 text-xs text-zinc-500">
         {hasPin
-          ? 'Your 4-digit PIN signs you in on this household’s devices. Changing it signs you out on your other devices.'
+          ? 'Your 4-digit PIN signs you in on this household’s shared devices. Changing it signs you out on your other devices.'
           : 'Set a 4-digit PIN so you can sign in on this household’s shared devices without your email and password.'}
       </p>
       <button

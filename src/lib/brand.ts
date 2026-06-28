@@ -478,7 +478,7 @@ export const SETTINGS_PAGE_TITLE = 'Settings'
 export const ADMIN_ACCOUNT_TITLE = 'Admin sign-in'
 
 export const ADMIN_ACCOUNT_INTRO =
-  'Email and password for Admin—not household PINs.'
+  'Your email and password for signing in as Admin—not household PINs.'
 
 export const ADMIN_ACCOUNT_SEND_RESET = 'Email me a reset link'
 
