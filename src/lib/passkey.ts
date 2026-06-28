@@ -4,7 +4,6 @@ import {
 } from '@simplewebauthn/browser'
 import { isMissingDbFunctionError } from '@/lib/availableBalance'
 import { getFreshAccessToken } from '@/lib/sessionToken'
-import { perfTime } from '@/lib/perfTiming'
 import { resolveSupabasePublishableKey } from '@/lib/supabaseKeys'
 import { supabase, supabaseUrl } from '@/lib/supabase'
 
@@ -95,17 +94,15 @@ export async function fetchLoginMethods(input: {
   memberId: string
 }): Promise<LoginMethods | null> {
   try {
-    // Reads only — RPC layer (~100ms) instead of the ~500ms webauthn-has-passkey
-    // Edge Function. Same anon existence flags, no session involved.
-    const data = await perfTime('login methods (rpc)', async () => {
-      const { data, error } = await supabase.rpc('member_login_methods', {
-        p_family_id: input.familyId,
-        p_member_id: input.memberId,
-      })
-      if (error) throw new Error(error.message)
-      return (data ?? {}) as { exists?: boolean; hasPin?: boolean }
+    // Reads only — RPC layer instead of the webauthn-has-passkey Edge Function.
+    // Same anon existence flags, no session involved.
+    const { data, error } = await supabase.rpc('member_login_methods', {
+      p_family_id: input.familyId,
+      p_member_id: input.memberId,
     })
-    return { hasPasskey: Boolean(data.exists), hasPin: Boolean(data.hasPin) }
+    if (error) throw new Error(error.message)
+    const flags = (data ?? {}) as { exists?: boolean; hasPin?: boolean }
+    return { hasPasskey: Boolean(flags.exists), hasPin: Boolean(flags.hasPin) }
   } catch {
     return null
   }
@@ -121,24 +118,26 @@ export async function loginWithPasskey(input: {
   familyId: string
   memberId: string
 }): Promise<PasskeySessionTokens> {
-  // Reads creds + writes the single-use challenge — RPC layer (~100ms) instead
-  // of the ~1.3s webauthn-login-options Edge Function, so the Face ID / Touch ID
-  // prompt appears sooner. rpId is derived server-side from the request Origin,
-  // matching what webauthn-login-verify (still edge) re-checks.
-  const options = await perfTime('webauthn-login-options (rpc)', async () => {
-    const { data, error } = await supabase.rpc('login_webauthn_options', {
-      p_family_id: input.familyId,
-      p_member_id: input.memberId,
-    })
-    if (error) {
-      // RPC not deployed yet (deploy window) or rolled back — fall back to the
-      // Edge Function so biometric keeps working regardless of deploy order.
-      if (isMissingDbFunctionError(error.message)) {
-        return postFunction<Record<string, unknown>>('webauthn-login-options', input)
-      }
-      throw new Error(error.message)
+  // Reads creds + writes the single-use challenge on the RPC layer instead of
+  // the webauthn-login-options Edge Function, so the Face ID / Touch ID prompt
+  // appears sooner. rpId is derived server-side from the request Origin, matching
+  // what webauthn-login-verify (still edge) re-checks. Falls back to the Edge
+  // Function if the RPC isn't deployed (deploy window / rollback).
+  const { data: optionsData, error: optionsError } = await supabase.rpc(
+    'login_webauthn_options',
+    { p_family_id: input.familyId, p_member_id: input.memberId },
+  )
+  let options: Record<string, unknown>
+  if (optionsError) {
+    if (!isMissingDbFunctionError(optionsError.message)) {
+      throw new Error(optionsError.message)
     }
-    const opts = data as
+    options = await postFunction<Record<string, unknown>>(
+      'webauthn-login-options',
+      input,
+    )
+  } else {
+    const opts = optionsData as
       | (Record<string, unknown> & { error?: string; noPasskey?: boolean })
       | null
     if (!opts || opts.error) {
@@ -148,18 +147,14 @@ export async function loginWithPasskey(input: {
       if (opts?.noPasskey) err.noPasskey = true
       throw err
     }
-    return opts
+    options = opts
+  }
+  // @ts-expect-error options is a PublicKeyCredentialRequestOptionsJSON
+  const asseResp = await startAuthentication({ optionsJSON: options })
+  const data = await postFunction<PasskeySessionTokens>('webauthn-login-verify', {
+    ...input,
+    response: asseResp,
   })
-  const asseResp = await perfTime('biometric prompt (device)', () =>
-    // @ts-expect-error options is a PublicKeyCredentialRequestOptionsJSON
-    startAuthentication({ optionsJSON: options }),
-  )
-  const data = await perfTime('webauthn-login-verify', () =>
-    postFunction<PasskeySessionTokens>('webauthn-login-verify', {
-      ...input,
-      response: asseResp,
-    }),
-  )
   return { access_token: data.access_token, refresh_token: data.refresh_token }
 }
 
