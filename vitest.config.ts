@@ -8,7 +8,11 @@ export default mergeConfig(
   defineConfig({
     test: {
       environment: 'happy-dom',
-      include: ['src/**/*.test.ts', 'scripts/**/*.test.ts'],
+      include: [
+        'src/**/*.test.ts',
+        'src/**/*.test.tsx',
+        'scripts/**/*.test.ts',
+      ],
     },
     resolve: {
       alias: {
