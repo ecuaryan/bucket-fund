@@ -32,6 +32,11 @@ export function isAuthLockContentionError(error: unknown): boolean {
   const lower = msg.toLowerCase()
   if (
     lower.includes('lock was stolen') ||
+    // Chromium's literal message when a Web Lock is taken with the 'steal'
+    // option: "Lock broken by another request with the 'steal' option." This
+    // can surface as a stringified "AbortError: ..." (no name field to read),
+    // so match the message itself rather than relying on the AbortError branch.
+    lower.includes('lock broken') ||
     lower.includes('lock acquisition timed out') ||
     lower.includes('another request stole')
   ) {
