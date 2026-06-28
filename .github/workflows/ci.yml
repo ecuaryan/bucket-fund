@@ -68,6 +68,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # `npm ci` validates the dependency tree but not the project's own version
+      # field, so a bump to package.json without `npm install --package-lock-only`
+      # would otherwise slip through (see CONTRIBUTING § Bump version).
+      - name: Check lockfile version in sync
+        run: |
+          PKG=$(node -p "require('./package.json').version")
+          LOCK_ROOT=$(node -p "require('./package-lock.json').version")
+          LOCK_PKG=$(node -p "require('./package-lock.json').packages[''].version")
+          if [ "$PKG" != "$LOCK_ROOT" ] || [ "$PKG" != "$LOCK_PKG" ]; then
+            echo "::error::package-lock.json version ($LOCK_ROOT/$LOCK_PKG) out of sync with package.json ($PKG). Run: npm install --package-lock-only"
+            exit 1
+          fi
+          echo "Lockfile version in sync: $PKG"
+
       - name: Lint
         run: npm run lint
 

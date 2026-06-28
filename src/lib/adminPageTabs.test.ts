@@ -12,9 +12,12 @@ describe('parseAdminPageTab', () => {
     expect(parseAdminPageTab('other')).toBe('money-sources')
   })
 
-  it('parses household and account', () => {
+  it('parses household', () => {
     expect(parseAdminPageTab('household')).toBe('household')
-    expect(parseAdminPageTab('account')).toBe('account')
+  })
+
+  it('falls back to money-sources for the removed account tab', () => {
+    expect(parseAdminPageTab('account')).toBe('money-sources')
   })
 })
 
