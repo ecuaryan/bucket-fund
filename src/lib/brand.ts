@@ -407,6 +407,15 @@ export const BANK_ACTIVITY_RETRY = 'Try again'
 export const BANK_ACTIVITY_EMPTY = 'No bank activity in the last 2 weeks.'
 export const BANK_ACTIVITY_PENDING = 'Pending'
 
+/** Accessible label for expand/collapse on a money-source group header. */
+export function adminMoneySourceGroupExpandLabel(
+  expanded: boolean,
+  accountCount: number,
+): string {
+  const n = accountCount === 1 ? '1 account' : `${accountCount} accounts`
+  return expanded ? `Collapse ${n}` : `Expand ${n}`
+}
+
 export const ADMIN_LINK_BANK_CONFIRM_SHEET_TITLE = 'Link a new bank?'
 
 export const ADMIN_LINK_BANK_CONFIRM_SHEET_INTRO =
