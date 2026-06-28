@@ -458,10 +458,10 @@ export default function FamilyLoginPage() {
               ref={pinInputRef}
               // Don't steal focus when biometric is offered — keep the keyboard
               // down so the print reads first. (Auto-focusing here wouldn't help:
-              // iOS won't open the keyboard from a programmatic focus without a
-              // user gesture, so it'd just place a cursor with no keyboard. A
-              // PIN-only member taps their avatar, which focuses in that gesture
-              // and opens the keyboard.)
+              // mobile browsers, Android and iOS alike, won't raise the on-screen
+              // keyboard from a programmatic focus without a user gesture, so it'd
+              // just place a cursor with no keyboard. A PIN-only member taps their
+              // avatar, which focuses in that gesture and opens the keyboard.)
               autoFocus={!biometricSlot}
               aria-label="4-digit PIN"
               value={pin}
