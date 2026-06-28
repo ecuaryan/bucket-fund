@@ -25,8 +25,26 @@ export const PWA_SCREENSHOT_BUCKETS = [
   { name: '🚗 Transportation', amount: 200 },
 ] as const
 
-/** Matches `giveMoney` in the pwa-screenshots seed — affects Float before rebalance capture. */
-export const PWA_SCREENSHOT_GIVE_AMOUNT = 40
+/** Kids with no linked bank account — funded from Float via Give, shown in the
+ *  "No linked account" section. */
+export const PWA_SCREENSHOT_VIRTUAL_KIDS = [
+  { name: 'Sam', allowance: 40 },
+  { name: 'Mia', allowance: 25 },
+] as const
+
+/** Kids whose money lives in a linked bank account — shown in the "Linked
+ *  accounts" section. Teller accounts are owner-scoped, so they do not touch
+ *  the shared Float. */
+export const PWA_SCREENSHOT_LINKED_KIDS = [
+  { name: 'Ava', accountLabel: 'Ava checking', accountType: 'checking', balance: 320 },
+  { name: 'Noah', accountLabel: 'Noah savings', accountType: 'savings', balance: 1280 },
+] as const
+
+/** Total given to virtual kids — affects Float before rebalance capture. */
+export const PWA_SCREENSHOT_GIVE_AMOUNT = PWA_SCREENSHOT_VIRTUAL_KIDS.reduce(
+  (sum, kid) => sum + kid.allowance,
+  0,
+)
 
 /** Playwright device viewport — sizes must match manifest `sizes` and PNG pixels. */
 export const PWA_SCREENSHOT_VIEWPORT = { width: 412, height: 915 } as const
