@@ -244,11 +244,15 @@ export default function LoginPage() {
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => void unlockWithBiometric()}
+            // Tap target that launches the OS Face ID / Touch ID prompt — not an
+            // in-app sensor. Suppress the mobile long-press callout so it reads
+            // as "tap me", with a press animation for tap feedback.
+            onContextMenu={(e) => e.preventDefault()}
             disabled={biometricBusy}
             aria-label="Unlock with Face ID or Touch ID"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-emerald-400 transition hover:bg-emerald-500/10 hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 disabled:opacity-50"
+            className="flex h-8 w-8 cursor-pointer touch-manipulation select-none items-center justify-center rounded-full text-emerald-400 transition [-webkit-touch-callout:none] hover:bg-emerald-500/10 hover:text-emerald-300 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 disabled:opacity-50"
           >
-            <FingerprintIcon className="h-6 w-6" />
+            <FingerprintIcon className="pointer-events-none h-6 w-6" />
           </button>
         )}
       </div>
