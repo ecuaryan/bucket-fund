@@ -50,7 +50,6 @@ import {
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
 import RefreshIcon from '@/components/ui/RefreshIcon'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
-import AdminAccountSection from '@/features/admin/AdminAccountSection'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
 import MembersSection from '@/features/admin/MembersSection'
 import AppVersionFooter from '@/components/AppVersionFooter'
@@ -138,13 +137,9 @@ export default function AdminPage() {
   const [householdPanelMounted, setHouseholdPanelMounted] = useState(
     () => parseAdminPageTab(searchParams.get('tab')) === 'household',
   )
-  const [accountPanelMounted, setAccountPanelMounted] = useState(
-    () => parseAdminPageTab(searchParams.get('tab')) === 'account',
-  )
 
   useEffect(() => {
     if (activeTab === 'household') setHouseholdPanelMounted(true)
-    if (activeTab === 'account') setAccountPanelMounted(true)
   }, [activeTab])
 
   const onAdminPageTabChange = useCallback(
@@ -742,15 +737,6 @@ export default function AdminPage() {
             <FamilyJoinSection />
           </div>
         ) : null}
-      </div>
-
-      <div
-        role="tabpanel"
-        id="segmented-panel-account"
-        aria-labelledby="segmented-tab-account"
-        hidden={activeTab !== 'account'}
-      >
-        {accountPanelMounted ? <AdminAccountSection /> : null}
       </div>
 
       <ManualSourceDialog

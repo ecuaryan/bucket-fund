@@ -56,7 +56,7 @@ UI labels: **Admin**, **Shared**, **Kid** (`memberRoles.ts`). DB/API values rema
 - Funds kids via Send; sees all family sends and shared-pool history
 - Views family-level transaction history
 - On the **shared balance** with Shared-role members (same spending money in Buckets)
-- **Admin screen:** join code, household members, linked accounts, and **admin sign-in** (email display + password reset via email link — admin-only)
+- **Admin screen:** join code, household members, and linked accounts (admin-only). The **admin sign-in** card (email display + password reset via email link) lives on the **Settings screen** alongside PIN and biometric, and shows only to the email account owner.
 
 **Account owner** (subset of Admin)
 - The person who signed up with email and password (`bootstrap_family` at signup)
@@ -301,7 +301,7 @@ History view hardening in `00000000000057_transactions_client_security_invoker.s
   users do not spawn extra families). The `handle_new_user` trigger defaults the
   member display name to the **email local-part** (e.g. `ryan`) and the family
   name to `<email>'s Family`; neither is prompted for at signup. The admin keeps
-  a **real email** on `auth.users` (shown on Admin → admin sign-in; password
+  a **real email** on `auth.users` (shown on Settings → Admin sign-in; password
   reset via the same forgot-password email flow as login).
 - **Member display names:** admin-managed. Names must be **unique within a
   family** (case-insensitive) so PIN sign-in, Send, and the admin roster stay
@@ -612,7 +612,8 @@ bucket-my-money/
 │   │   ├── buckets/        # Buckets tab (/) — route `/`, bucket list, move flow, CRUD
 │   │   ├── sends/          # Send money flow (SendPage + send_money RPC)
 │   │   ├── history/        # Transaction history
-│   │   └── admin/          # Join code, members, linked accounts, admin sign-in account
+│   │   ├── admin/          # Join code, members, linked accounts
+│   │   └── settings/       # PIN, biometric, and admin sign-in account cards
 │   ├── lib/
 │   │   ├── supabase.ts     # Supabase client
 │   │   ├── auth.tsx        # Auth context + Realtime JWT sync

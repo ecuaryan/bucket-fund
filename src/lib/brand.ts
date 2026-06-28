@@ -1227,7 +1227,6 @@ export const ADMIN_MANUAL_GROUP_TITLE = 'Manual sources'
 export const ADMIN_MONEY_SOURCES_SECTION_TITLE = 'Money sources'
 
 export const ADMIN_PAGE_TAB_HOUSEHOLD_LABEL = 'Household'
-export const ADMIN_PAGE_TAB_ACCOUNT_LABEL = 'Account'
 export const ADMIN_PAGE_TABS_ARIA_LABEL = 'Admin page sections'
 export const ADMIN_ADD_MONEY_SOURCE_ACTION = 'Add money source'
 export const ADMIN_ADD_SOURCE_LINK_OPTION = 'Link a bank'
