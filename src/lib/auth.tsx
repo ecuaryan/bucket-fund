@@ -28,7 +28,14 @@ import { isAppBackgroundExpired } from '@/lib/backgroundSignOut'
 import {
   clearBackgroundPrivacyState,
 } from '@/lib/backgroundSessionCleanup'
-import { clearAllBucketsPageCaches } from '@/lib/bucketsPageCache'
+import {
+  clearAllBucketsPageCaches,
+  writeBucketsPageCache,
+} from '@/lib/bucketsPageCache'
+import {
+  fetchHomeBootstrap,
+  type BucketsPageData,
+} from '@/lib/bucketsPageLoad'
 import { canReuseLoadedMember } from '@/lib/authSessionReuse'
 import { classifyMemberFetch, type MemberFetchOutcome } from '@/lib/memberFetch'
 import { getSignInPreference } from '@/lib/signInPreference'
@@ -116,6 +123,39 @@ async function fetchMemberOutcome(
     console.error('family_member lookup failed for user', userId, err)
     return { status: 'error' }
   }
+}
+
+type MemberBootstrap = {
+  outcome: MemberFetchOutcome<FamilyMember>
+  /** Home payload to warm the buckets cache, or null when unavailable. */
+  home: BucketsPageData | null
+}
+
+/**
+ * Load the membership row that gates the app. When the enriched home RPC is
+ * deployed (migration 71+) this returns the buckets/accounts/breakdown payload
+ * in the SAME round trip, so the first screen paints without a second fetch.
+ * Falls back to the lightweight member-only lookup when the RPC isn't there yet.
+ * Member classification (found / absent / error) is identical either way.
+ */
+async function fetchMemberBootstrap(userId: string): Promise<MemberBootstrap> {
+  try {
+    const bootstrap = await withTimeout(
+      Promise.resolve(fetchHomeBootstrap()),
+      MEMBER_FETCH_TIMEOUT_MS,
+      'Member lookup timed out',
+    )
+    if (bootstrap) {
+      return { outcome: bootstrap.memberOutcome, home: bootstrap.page }
+    }
+  } catch (err) {
+    // A real RPC/network failure (or timeout) is transient — surface error so we
+    // never mistake it for "removed from household".
+    console.error('home bootstrap failed for user', userId, err)
+    return { outcome: { status: 'error' }, home: null }
+  }
+  // RPC not deployed yet: fall back to the direct member-only lookup.
+  return { outcome: await fetchMemberOutcome(userId), home: null }
 }
 
 function AuthSessionEffects() {
@@ -216,7 +256,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       memberError: false,
     })
 
-    const outcome = await fetchMemberOutcome(session.user.id)
+    const { outcome, home } = await fetchMemberBootstrap(session.user.id)
 
     if (memberFetchTokenRef.current === session.access_token) {
       memberFetchTokenRef.current = null
@@ -257,6 +297,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         memberError: false,
       })
       return
+    }
+
+    // Warm the buckets cache from the bootstrap payload BEFORE flipping
+    // memberLoading off — RequireAuth then mounts BucketsPage, which paints
+    // straight from this cache instead of waiting on another round trip. On a
+    // cold start (sessionStorage wiped on app kill) this is the only thing that
+    // makes the first screen instant.
+    if (home) {
+      writeBucketsPageCache(outcome.member.family_id, outcome.member.id, {
+        buckets: home.buckets,
+        accounts: home.accounts,
+        breakdown: home.breakdown,
+        balanceUsesFallback: home.usedFallback,
+        householdAdminName: home.householdAdminName,
+      })
     }
 
     setState({
