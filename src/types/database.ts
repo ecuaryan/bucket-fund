@@ -953,6 +953,11 @@ export type Database = {
       get_float_balance: { Args: never; Returns: number }
       get_home_balance_breakdown: { Args: never; Returns: Json }
       get_home_page_data: { Args: never; Returns: Json }
+      login_roster: { Args: { p_code: string }; Returns: Json }
+      member_login_methods: {
+        Args: { p_family_id: string; p_member_id: string }
+        Returns: Json
+      }
       give_money: {
         Args: { p_amount: number; p_note?: string; p_to_member_id: string }
         Returns: string

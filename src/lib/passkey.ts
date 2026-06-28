@@ -5,7 +5,7 @@ import {
 import { getFreshAccessToken } from '@/lib/sessionToken'
 import { perfTime } from '@/lib/perfTiming'
 import { resolveSupabasePublishableKey } from '@/lib/supabaseKeys'
-import { supabaseUrl } from '@/lib/supabase'
+import { supabase, supabaseUrl } from '@/lib/supabase'
 
 const publishableKey = resolveSupabasePublishableKey(import.meta.env)
 
@@ -94,12 +94,16 @@ export async function fetchLoginMethods(input: {
   memberId: string
 }): Promise<LoginMethods | null> {
   try {
-    const data = await perfTime('webauthn-has-passkey', () =>
-      postFunction<{ exists?: boolean; hasPin?: boolean }>(
-        'webauthn-has-passkey',
-        input,
-      ),
-    )
+    // Reads only — RPC layer (~100ms) instead of the ~500ms webauthn-has-passkey
+    // Edge Function. Same anon existence flags, no session involved.
+    const data = await perfTime('login methods (rpc)', async () => {
+      const { data, error } = await supabase.rpc('member_login_methods', {
+        p_family_id: input.familyId,
+        p_member_id: input.memberId,
+      })
+      if (error) throw new Error(error.message)
+      return (data ?? {}) as { exists?: boolean; hasPin?: boolean }
+    })
     return { hasPasskey: Boolean(data.exists), hasPin: Boolean(data.hasPin) }
   } catch {
     return null
