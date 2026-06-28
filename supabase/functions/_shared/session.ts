@@ -3,8 +3,34 @@
 // exact same way.
 
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2'
-import { publishableKey } from './keys.ts'
+import { publishableKey, secretKey } from './keys.ts'
 import { isPinOnlyAuthEmail } from './pin.ts'
+
+/**
+ * A stable, secret password for a PIN-only member's internal auth user, derived
+ * (HMAC-SHA256) from the service key + user id. It's never shown to anyone and
+ * is only derivable by something that already holds the root secret — so it adds
+ * no exposure, but lets us mint a session with ONE GoTrue call (sign-in) instead
+ * of two (rotate + sign-in). If the key ever rotates, the next login simply
+ * re-sets it via the lazy fallback below.
+ */
+async function derivePinPassword(userId: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secretKey()),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const sig = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    new TextEncoder().encode(`pin-pw:v1:${userId}`),
+  )
+  return Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
 
 export type MemberSession = {
   access_token: string
@@ -39,17 +65,20 @@ export async function issueSessionForMember(
   let sessionData: Awaited<ReturnType<typeof anon.auth.signInWithPassword>>
 
   if (isPinOnlyAuthEmail(email)) {
-    const newPassword = crypto.randomUUID() + crypto.randomUUID()
-    const { error: updateError } = await admin.auth.admin.updateUserById(userId, {
-      password: newPassword,
-    })
-    if (updateError) {
-      throw new Error('password rotate failed')
+    // Common case: one GoTrue call. The internal password is the stable derived
+    // value, so we can sign in directly. Lazy heal on failure (first login since
+    // this shipped, or a rotated key): set it once, then retry.
+    const password = await derivePinPassword(userId)
+    sessionData = await anon.auth.signInWithPassword({ email, password })
+    if (sessionData.error) {
+      const { error: updateError } = await admin.auth.admin.updateUserById(userId, {
+        password,
+      })
+      if (updateError) {
+        throw new Error('password set failed')
+      }
+      sessionData = await anon.auth.signInWithPassword({ email, password })
     }
-    sessionData = await anon.auth.signInWithPassword({
-      email,
-      password: newPassword,
-    })
   } else {
     const { data: linkData, error: linkError } =
       await admin.auth.admin.generateLink({ type: 'magiclink', email })

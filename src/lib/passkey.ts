@@ -120,9 +120,28 @@ export async function loginWithPasskey(input: {
   familyId: string
   memberId: string
 }): Promise<PasskeySessionTokens> {
-  const options = await perfTime('webauthn-login-options', () =>
-    postFunction<Record<string, unknown>>('webauthn-login-options', input),
-  )
+  // Reads creds + writes the single-use challenge — RPC layer (~100ms) instead
+  // of the ~1.3s webauthn-login-options Edge Function, so the Face ID / Touch ID
+  // prompt appears sooner. rpId is derived server-side from the request Origin,
+  // matching what webauthn-login-verify (still edge) re-checks.
+  const options = await perfTime('webauthn-login-options (rpc)', async () => {
+    const { data, error } = await supabase.rpc('login_webauthn_options', {
+      p_family_id: input.familyId,
+      p_member_id: input.memberId,
+    })
+    if (error) throw new Error(error.message)
+    const opts = data as
+      | (Record<string, unknown> & { error?: string; noPasskey?: boolean })
+      | null
+    if (!opts || opts.error) {
+      const err = new Error(
+        opts?.error ?? 'Could not start biometric sign-in',
+      ) as PasskeyError
+      if (opts?.noPasskey) err.noPasskey = true
+      throw err
+    }
+    return opts
+  })
   const asseResp = await perfTime('biometric prompt (device)', () =>
     // @ts-expect-error options is a PublicKeyCredentialRequestOptionsJSON
     startAuthentication({ optionsJSON: options }),
