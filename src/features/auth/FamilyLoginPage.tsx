@@ -439,10 +439,16 @@ export default function FamilyLoginPage() {
                   <button
                     type="button"
                     onClick={() => void runBiometric(selected.id)}
+                    // It's a tap target that launches the OS Face ID / Touch ID
+                    // prompt — not an in-app sensor. Suppress the mobile
+                    // long-press callout/selection so holding it does nothing and
+                    // the print reads as "tap me", and give a crisp press
+                    // animation so a tap feels registered.
+                    onContextMenu={(e) => e.preventDefault()}
                     aria-label="Unlock with Face ID or Touch ID"
-                    className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/40 transition hover:bg-emerald-500/20 hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+                    className="flex h-16 w-16 cursor-pointer touch-manipulation select-none items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/40 transition [-webkit-touch-callout:none] hover:bg-emerald-500/20 hover:text-emerald-300 active:scale-95 active:bg-emerald-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
                   >
-                    <FingerprintIcon className="h-8 w-8" />
+                    <FingerprintIcon className="pointer-events-none h-8 w-8" />
                   </button>
                   <p className="text-xs text-zinc-500">Tap to unlock</p>
                 </>
