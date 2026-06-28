@@ -7,8 +7,11 @@ vi.mock('virtual:pwa-register', () => ({
 }))
 
 import {
+  applyAppUpdateNow,
+  getAppUpdateReady,
   registerUpdateChecks,
   setupPwaUpdates,
+  subscribeAppUpdateReady,
   SUSTAINED_HIDDEN_MS,
 } from './pwaUpdate'
 
@@ -92,5 +95,39 @@ describe('setupPwaUpdates', () => {
     // Even well past the threshold, the cancelled apply never fires.
     vi.advanceTimersByTime(SUSTAINED_HIDDEN_MS * 2)
     expect(updateSW).not.toHaveBeenCalled()
+  })
+
+  it('exposes the waiting-update state and notifies subscribers', () => {
+    const { fireNeedRefresh } = mockRegisterSW()
+    const onChange = vi.fn()
+
+    setVisibility('visible')
+    setupPwaUpdates()
+    const unsubscribe = subscribeAppUpdateReady(onChange)
+
+    expect(getAppUpdateReady()).toBe(false)
+
+    fireNeedRefresh()
+    expect(getAppUpdateReady()).toBe(true)
+    expect(onChange).toHaveBeenCalledTimes(1)
+
+    unsubscribe()
+  })
+
+  it('applyAppUpdateNow reloads immediately while the app is foregrounded', () => {
+    const { updateSW, fireNeedRefresh } = mockRegisterSW()
+
+    setVisibility('visible')
+    setupPwaUpdates()
+
+    // Nothing waiting yet — manual apply is a no-op.
+    applyAppUpdateNow()
+    expect(updateSW).not.toHaveBeenCalled()
+
+    // Once an update is waiting, a user tap applies it without backgrounding.
+    fireNeedRefresh()
+    applyAppUpdateNow()
+    expect(updateSW).toHaveBeenCalledWith(true)
+    expect(updateSW).toHaveBeenCalledTimes(1)
   })
 })

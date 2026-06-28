@@ -475,6 +475,12 @@ export const HIDE_AMOUNTS_PEEK_POPOVER_LABEL =
 
 export const SETTINGS_PAGE_TITLE = 'Settings'
 
+// Optional nudge under the version number when a new build is already waiting.
+// The app still updates itself in the background — this just lets anyone who
+// happens to look force it sooner.
+export const APP_UPDATE_NOW_LABEL = 'Update now'
+export const APP_UPDATE_APPLYING_LABEL = 'Updating…'
+
 export const ADMIN_ACCOUNT_TITLE = 'Admin sign-in'
 
 export const ADMIN_ACCOUNT_INTRO =
