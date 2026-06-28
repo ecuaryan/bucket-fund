@@ -456,7 +456,9 @@ export default function FamilyLoginPage() {
           {hasPinForSelected && (
             <PinInput
               ref={pinInputRef}
-              autoFocus={!biometricSlot}
+              // Focus the PIN field by default so typing needs no extra tap; the
+              // fingerprint above is still tappable for biometric.
+              autoFocus
               aria-label="4-digit PIN"
               value={pin}
               onChange={onPinChange}
