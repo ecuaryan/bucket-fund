@@ -716,7 +716,7 @@ export default function AdminPage() {
           </ul>
         )}
         {!loadError && accounts !== null && groups.some((g) => !g.isManual) ? (
-          <div className="border-t border-zinc-800 px-4 py-3">
+          <div className="mt-3 rounded-2xl bg-zinc-900 px-4 py-3 ring-1 ring-zinc-800">
             <Link
               to="/?tab=account"
               className="text-xs font-semibold text-emerald-400 transition hover:text-emerald-300"
