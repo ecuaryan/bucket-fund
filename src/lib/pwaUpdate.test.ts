@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, afterEach } from 'vitest'
+import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest'
 
 // registerSW comes from a Vite virtual module; capture the options it's given.
 const registerSW = vi.fn()
@@ -6,7 +6,11 @@ vi.mock('virtual:pwa-register', () => ({
   registerSW: (opts: unknown) => registerSW(opts),
 }))
 
-import { registerUpdateChecks, setupPwaUpdates } from './pwaUpdate'
+import {
+  registerUpdateChecks,
+  setupPwaUpdates,
+  SUSTAINED_HIDDEN_MS,
+} from './pwaUpdate'
 
 function setVisibility(value: DocumentVisibilityState) {
   Object.defineProperty(document, 'visibilityState', {
@@ -14,6 +18,17 @@ function setVisibility(value: DocumentVisibilityState) {
     value,
   })
   document.dispatchEvent(new Event('visibilitychange'))
+}
+
+/** Wire up registerSW and return a trigger for its onNeedRefresh + the updateSW mock. */
+function mockRegisterSW() {
+  const updateSW = vi.fn().mockResolvedValue(undefined)
+  let onNeedRefresh = () => {}
+  registerSW.mockImplementation((opts: { onNeedRefresh?: () => void }) => {
+    onNeedRefresh = opts.onNeedRefresh ?? (() => {})
+    return updateSW
+  })
+  return { updateSW, fireNeedRefresh: () => onNeedRefresh() }
 }
 
 afterEach(() => {
@@ -35,27 +50,47 @@ describe('registerUpdateChecks', () => {
 })
 
 describe('setupPwaUpdates', () => {
-  it('applies a pending update only once the app is backgrounded', () => {
-    const updateSW = vi.fn().mockResolvedValue(undefined)
-    let onNeedRefresh = () => {}
-    registerSW.mockImplementation((opts: { onNeedRefresh?: () => void }) => {
-      onNeedRefresh = opts.onNeedRefresh ?? (() => {})
-      return updateSW
-    })
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('applies a pending update only after the app stays backgrounded', () => {
+    const { updateSW, fireNeedRefresh } = mockRegisterSW()
 
     setVisibility('visible')
     setupPwaUpdates()
 
     // A new version is ready while the app is in the foreground — do not reload.
-    onNeedRefresh()
+    fireNeedRefresh()
     expect(updateSW).not.toHaveBeenCalled()
 
-    // It applies (reloads) when the tab goes to the background.
+    // Going hidden starts the timer but does not reload immediately.
     setVisibility('hidden')
-    expect(updateSW).toHaveBeenCalledWith(true)
+    expect(updateSW).not.toHaveBeenCalled()
 
-    // And only once.
-    setVisibility('hidden')
+    // It applies (reloads) once the app has stayed hidden long enough.
+    vi.advanceTimersByTime(SUSTAINED_HIDDEN_MS)
+    expect(updateSW).toHaveBeenCalledWith(true)
     expect(updateSW).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not reload on a brief hide (keyboard/biometric during sign-in)', () => {
+    const { updateSW, fireNeedRefresh } = mockRegisterSW()
+
+    setVisibility('visible')
+    setupPwaUpdates()
+    fireNeedRefresh()
+
+    // The keyboard/biometric prompt briefly hides the app, then it returns.
+    setVisibility('hidden')
+    vi.advanceTimersByTime(SUSTAINED_HIDDEN_MS - 1)
+    setVisibility('visible')
+
+    // Even well past the threshold, the cancelled apply never fires.
+    vi.advanceTimersByTime(SUSTAINED_HIDDEN_MS * 2)
+    expect(updateSW).not.toHaveBeenCalled()
   })
 })
