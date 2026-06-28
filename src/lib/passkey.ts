@@ -3,6 +3,7 @@ import {
   startRegistration,
 } from '@simplewebauthn/browser'
 import { getFreshAccessToken } from '@/lib/sessionToken'
+import { perfTime } from '@/lib/perfTiming'
 import { resolveSupabasePublishableKey } from '@/lib/supabaseKeys'
 import { supabaseUrl } from '@/lib/supabase'
 
@@ -93,9 +94,11 @@ export async function fetchLoginMethods(input: {
   memberId: string
 }): Promise<LoginMethods | null> {
   try {
-    const data = await postFunction<{ exists?: boolean; hasPin?: boolean }>(
-      'webauthn-has-passkey',
-      input,
+    const data = await perfTime('webauthn-has-passkey', () =>
+      postFunction<{ exists?: boolean; hasPin?: boolean }>(
+        'webauthn-has-passkey',
+        input,
+      ),
     )
     return { hasPasskey: Boolean(data.exists), hasPin: Boolean(data.hasPin) }
   } catch {
@@ -113,16 +116,19 @@ export async function loginWithPasskey(input: {
   familyId: string
   memberId: string
 }): Promise<PasskeySessionTokens> {
-  const options = await postFunction<Record<string, unknown>>(
-    'webauthn-login-options',
-    input,
+  const options = await perfTime('webauthn-login-options', () =>
+    postFunction<Record<string, unknown>>('webauthn-login-options', input),
   )
-  // @ts-expect-error options is a PublicKeyCredentialRequestOptionsJSON
-  const asseResp = await startAuthentication({ optionsJSON: options })
-  const data = await postFunction<PasskeySessionTokens>('webauthn-login-verify', {
-    ...input,
-    response: asseResp,
-  })
+  const asseResp = await perfTime('biometric prompt (device)', () =>
+    // @ts-expect-error options is a PublicKeyCredentialRequestOptionsJSON
+    startAuthentication({ optionsJSON: options }),
+  )
+  const data = await perfTime('webauthn-login-verify', () =>
+    postFunction<PasskeySessionTokens>('webauthn-login-verify', {
+      ...input,
+      response: asseResp,
+    }),
+  )
   return { access_token: data.access_token, refresh_token: data.refresh_token }
 }
 
