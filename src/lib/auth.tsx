@@ -105,7 +105,11 @@ async function fetchMemberOutcome(
       Promise.resolve(
         supabase
           .from('family_members')
-          .select('*')
+          // Explicit non-secret columns — pin_hash is no longer client-readable,
+          // so select('*') would be denied (see migration 75).
+          .select(
+            'id, family_id, user_id, name, role, avatar_url, created_at, is_account_owner, pin_failed_attempts, pin_locked, pin_set_at',
+          )
           .eq('user_id', userId)
           .maybeSingle(),
       ),
@@ -116,7 +120,8 @@ async function fetchMemberOutcome(
     if (error) {
       console.error('Failed to load family_member for user', userId, error)
     }
-    return classifyMemberFetch(data, error)
+    // pin_hash is intentionally not selected; the client never reads it.
+    return classifyMemberFetch(data as FamilyMember | null, error)
   } catch (err) {
     // Timeout (or any unexpected rejection) is a transient failure, not proof
     // of removal — surface error so we never show the orphan screen here.
