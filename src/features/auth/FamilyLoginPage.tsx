@@ -456,9 +456,13 @@ export default function FamilyLoginPage() {
           {hasPinForSelected && (
             <PinInput
               ref={pinInputRef}
-              // Focus the PIN field by default so typing needs no extra tap; the
-              // fingerprint above is still tappable for biometric.
-              autoFocus
+              // Don't steal focus when biometric is offered — keep the keyboard
+              // down so the print reads first. (Auto-focusing here wouldn't help:
+              // mobile browsers, Android and iOS alike, won't raise the on-screen
+              // keyboard from a programmatic focus without a user gesture, so it'd
+              // just place a cursor with no keyboard. A PIN-only member taps their
+              // avatar, which focuses in that gesture and opens the keyboard.)
+              autoFocus={!biometricSlot}
               aria-label="4-digit PIN"
               value={pin}
               onChange={onPinChange}
