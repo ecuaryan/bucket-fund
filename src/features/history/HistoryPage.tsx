@@ -215,11 +215,12 @@ export default function HistoryPage() {
           .select('id, name, display_order, created_at')
           .order('display_order', { ascending: true })
           .order('created_at', { ascending: true })
-        if (error) return // non-fatal; picker just stays empty
-        setBuckets(data ?? [])
+        // Non-fatal: settle to a (possibly empty) list either way so the filter
+        // resolves out of its skeleton and just renders without bucket options.
+        setBuckets(error ? [] : (data ?? []))
       })
     } catch {
-      // non-fatal; picker just stays empty
+      setBuckets([])
     }
   }, [])
 
@@ -365,13 +366,21 @@ export default function HistoryPage() {
         </p>
       </header>
 
-      <FilterBar
-        buckets={buckets ?? []}
-        filter={filter}
-        activeBucketName={filteredBucketName}
-        showGiveFilter={showGiveFilter}
-        onChange={setFilter}
-      />
+      {/* Keep the filter as a skeleton until its options are settled, so it
+          never renders as a usable-but-narrow "All transactions" that then pops
+          wider when the deferred buckets (and give option) arrive. Ready means
+          buckets have loaded and the give roster has resolved. */}
+      {buckets !== null && giveReady ? (
+        <FilterBar
+          buckets={buckets}
+          filter={filter}
+          activeBucketName={filteredBucketName}
+          showGiveFilter={showGiveFilter}
+          onChange={setFilter}
+        />
+      ) : (
+        <FilterBarSkeleton />
+      )}
 
       {rows === null ? (
         <HistoryPageSkeleton />
@@ -459,6 +468,19 @@ function HistoryRowShell({
         </div>
       </div>
     </li>
+  )
+}
+
+function FilterBarSkeleton() {
+  return (
+    <div
+      className="flex flex-wrap items-center gap-2"
+      aria-busy="true"
+      aria-label="Loading filters"
+    >
+      <span className="text-sm font-medium text-zinc-300">Filter</span>
+      <div className="h-8 w-40 animate-pulse rounded-lg bg-zinc-800 ring-1 ring-inset ring-zinc-700" />
+    </div>
   )
 }
 
