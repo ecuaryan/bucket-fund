@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { LoadErrorPanel } from '@/components/ui/LoadErrorPanel'
-import { LoadingStatus } from '@/components/ui/LoadingStatus'
+import KidsPageSkeleton from '@/components/KidsPageSkeleton'
 import FundKidSheet from '@/features/kids/FundKidSheet'
 import ReturnKidSheet from '@/features/kids/ReturnKidSheet'
 import { LinkedKidRow, VirtualKidRow } from '@/features/kids/KidMoneyRow'
@@ -189,7 +189,7 @@ export default function KidsPage() {
     model === null ||
     available === null
   ) {
-    return <LoadingStatus className="py-8" />
+    return <KidsPageSkeleton />
   }
 
   if (children.length === 0) {

@@ -31,7 +31,7 @@ import {
 } from '@/lib/brand'
 import { LoadErrorPanel } from '@/components/ui/LoadErrorPanel'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { LoadingStatus } from '@/components/ui/LoadingStatus'
+import HistoryPageSkeleton from '@/components/HistoryPageSkeleton'
 import { ClearableInput } from '@/components/ui/ClearableInput'
 import { FieldLabel } from '@/components/ui/FieldLabel'
 import { Sheet } from '@/components/ui/Sheet'
@@ -366,7 +366,7 @@ export default function HistoryPage() {
       />
 
       {rows === null ? (
-        <LoadingStatus className="py-8" />
+        <HistoryPageSkeleton />
       ) : rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-zinc-700 p-6 text-center">
           <p className="text-sm font-medium text-zinc-300">
