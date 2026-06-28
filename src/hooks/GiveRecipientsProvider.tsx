@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
 import { useAuth } from '@/lib/auth'
 import { subscribeHouseholdRosterRefresh } from '@/lib/householdRosterRefresh'
 import {
@@ -12,7 +20,23 @@ import { fetchLinkedChildMemberIds } from '@/lib/give'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 
-export function useGiveRecipients() {
+export type GiveRecipientsValue = {
+  recipients: GiveRecipientMember[]
+  giveReady: boolean
+  showGiveNav: boolean
+  showKidsNav: boolean
+  childCount: number
+  kids: Array<{ id: string; name: string }>
+}
+
+const GiveRecipientsContext = createContext<GiveRecipientsValue | null>(null)
+
+// The give-recipient roster drives both the bottom nav (AppShell) and the
+// History give/take filter. Loading it once in a provider — rather than letting
+// each consumer's hook fetch its own copy — halves the family_members + linked
+// children queries (and the Realtime subscription) on every page that needs it,
+// which also trims the auth-lock contention burst on load.
+function useGiveRecipientsState(): GiveRecipientsValue {
   const auth = useAuth()
   const member = auth.status === 'signedIn' ? auth.member : null
   const accessToken =
@@ -100,8 +124,7 @@ export function useGiveRecipients() {
   const callerIsLinkedChild =
     member != null && isLinkedChild(member.id, member.role, linkedChildIds)
   const showKidsNav =
-    giveReady &&
-    shouldShowKidsNav(member?.role ?? '', childCount)
+    giveReady && shouldShowKidsNav(member?.role ?? '', childCount)
   const showGiveNav =
     giveReady &&
     !showKidsNav &&
@@ -111,12 +134,35 @@ export function useGiveRecipients() {
       recipientCount: recipients.length,
     })
 
-  return {
-    recipients,
-    giveReady,
-    showGiveNav,
-    showKidsNav,
-    childCount,
-    kids,
+  return useMemo(
+    () => ({
+      recipients,
+      giveReady,
+      showGiveNav,
+      showKidsNav,
+      childCount,
+      kids,
+    }),
+    [recipients, giveReady, showGiveNav, showKidsNav, childCount, kids],
+  )
+}
+
+export function GiveRecipientsProvider({ children }: { children: ReactNode }) {
+  const value = useGiveRecipientsState()
+  return (
+    <GiveRecipientsContext.Provider value={value}>
+      {children}
+    </GiveRecipientsContext.Provider>
+  )
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function useGiveRecipients(): GiveRecipientsValue {
+  const value = useContext(GiveRecipientsContext)
+  if (!value) {
+    throw new Error(
+      'useGiveRecipients must be used within a GiveRecipientsProvider',
+    )
   }
+  return value
 }

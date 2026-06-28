@@ -51,7 +51,7 @@ export function isAuthLockContentionError(error: unknown): boolean {
 }
 
 export function authLockContentionMessage(): string {
-  return 'The app was busy refreshing your session. Try again.'
+  return 'This is usually a brief hiccup. Try again.'
 }
 
 /** User-facing copy for page/section load failures. */

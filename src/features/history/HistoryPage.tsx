@@ -12,7 +12,7 @@ import { flushSync } from 'react-dom'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
-import { useGiveRecipients } from '@/hooks/useGiveRecipients'
+import { useGiveRecipients } from '@/hooks/GiveRecipientsProvider'
 import { useAuth } from '@/lib/auth'
 import {
   HISTORY_EMPTY_BODY,
@@ -275,10 +275,18 @@ export default function HistoryPage() {
     }
   }, [refreshHead])
 
+  // The bucket picker isn't needed for first paint of the transaction list, so
+  // defer it until the initial page has loaded — that keeps it out of the
+  // mount-time burst of auth-lock-acquiring queries (which is what triggers the
+  // Web Lock "steal" contention). Exception: when a bucket filter is already
+  // active we need the names right away so the filter chip doesn't flash a
+  // "Deleted bucket" placeholder.
+  const needsBucketsImmediately = filter.kind === 'bucket'
   useEffect(() => {
-    if (!familyId) return
+    if (!familyId || buckets !== null) return
+    if (!needsBucketsImmediately && rows === null) return
     void loadBuckets()
-  }, [familyId, loadBuckets])
+  }, [familyId, buckets, needsBucketsImmediately, rows, loadBuckets])
 
   useEffect(() => {
     if (filter.kind !== 'give' || !giveReady || showGiveFilter) return
