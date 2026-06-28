@@ -419,10 +419,10 @@ export default function FamilyLoginPage() {
     const hasPinForSelected = selected.hasPin
     const subtitle = hasPinForSelected
       ? printReady
-        ? 'Tap the print, or enter your PIN'
+        ? 'Use Face ID / Touch ID, or enter your PIN'
         : 'Enter your 4-digit PIN'
       : biometricSlot
-        ? 'Tap to unlock with Face ID / Touch ID'
+        ? 'Unlock with Face ID / Touch ID'
         : 'Ask your admin to set your PIN'
     return (
       <AuthShell title={selected.name} subtitle={subtitle}>
@@ -433,28 +433,26 @@ export default function FamilyLoginPage() {
           {...{ [APP_FORM_DATA_ATTR]: 'family-pin' }}
         >
           {biometricSlot && (
-            <div className="flex flex-col items-center gap-1.5 pb-1">
+            <div className="flex flex-col items-center pb-1">
               {printReady ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => void runBiometric(selected.id)}
-                    // It's a tap target that launches the OS Face ID / Touch ID
-                    // prompt — not an in-app sensor. Suppress the mobile
-                    // long-press callout/selection so holding it does nothing and
-                    // the print reads as "tap me", and give a crisp press
-                    // animation so a tap feels registered.
-                    onContextMenu={(e) => e.preventDefault()}
-                    aria-label="Unlock with Face ID or Touch ID"
-                    className="flex h-16 w-16 cursor-pointer touch-manipulation select-none items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/40 transition [-webkit-touch-callout:none] hover:bg-emerald-500/20 hover:text-emerald-300 active:scale-95 active:bg-emerald-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
-                  >
-                    <FingerprintIcon className="pointer-events-none h-8 w-8" />
-                  </button>
-                  <p className="text-xs text-zinc-500">Tap to unlock</p>
-                </>
+                // A labeled button, not a bare fingerprint in a circle: the round
+                // "sensor" look invited a press-and-hold (as if it scanned in
+                // app), when a single tap is what launches the OS Face ID /
+                // Touch ID prompt. The pill shape + label reads unmistakably as a
+                // tap target; the fingerprint stays as the recognizable cue.
+                <button
+                  type="button"
+                  onClick={() => void runBiometric(selected.id)}
+                  onContextMenu={(e) => e.preventDefault()}
+                  aria-label="Unlock with Face ID or Touch ID"
+                  className="flex w-full cursor-pointer touch-manipulation select-none items-center justify-center gap-2.5 rounded-xl bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-300 ring-1 ring-emerald-500/40 transition [-webkit-touch-callout:none] hover:bg-emerald-500/20 hover:text-emerald-200 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+                >
+                  <FingerprintIcon className="pointer-events-none h-5 w-5" />
+                  Unlock with Face ID / Touch ID
+                </button>
               ) : (
-                <span className="flex h-16 w-16 items-center justify-center">
-                  <LoadingSpinner className="h-7 w-7" />
+                <span className="flex h-12 items-center justify-center">
+                  <LoadingSpinner className="h-6 w-6" />
                 </span>
               )}
             </div>
