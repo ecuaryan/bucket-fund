@@ -9,10 +9,8 @@ import { ToastProvider } from '@/components/ui/ToastProvider'
 import { migrateLegacyStorageKeys } from '@/lib/localStorageMigrate'
 import { registerBackgroundPrivacyShield } from '@/lib/backgroundPrivacyShield'
 import { setupPwaUpdates } from '@/lib/pwaUpdate'
-import { syncPerfFlagFromUrl } from '@/lib/perfTiming'
 import './index.css'
 
-syncPerfFlagFromUrl()
 migrateLegacyStorageKeys()
 registerBackgroundPrivacyShield()
 setupPwaUpdates()

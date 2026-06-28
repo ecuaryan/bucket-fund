@@ -39,7 +39,6 @@ import {
 import { canReuseLoadedMember } from '@/lib/authSessionReuse'
 import { classifyMemberFetch, type MemberFetchOutcome } from '@/lib/memberFetch'
 import { getSignInPreference } from '@/lib/signInPreference'
-import { perfTime } from '@/lib/perfTiming'
 import { supabase } from '@/lib/supabase'
 import { withTimeout } from '@/lib/timeout'
 import type { Database } from '@/types/database'
@@ -141,12 +140,10 @@ type MemberBootstrap = {
  */
 async function fetchMemberBootstrap(userId: string): Promise<MemberBootstrap> {
   try {
-    const bootstrap = await perfTime('home bootstrap (get_home_page_data)', () =>
-      withTimeout(
-        Promise.resolve(fetchHomeBootstrap()),
-        MEMBER_FETCH_TIMEOUT_MS,
-        'Member lookup timed out',
-      ),
+    const bootstrap = await withTimeout(
+      Promise.resolve(fetchHomeBootstrap()),
+      MEMBER_FETCH_TIMEOUT_MS,
+      'Member lookup timed out',
     )
     if (bootstrap) {
       return { outcome: bootstrap.memberOutcome, home: bootstrap.page }
@@ -392,23 +389,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (tokens: { access_token: string; refresh_token: string }) => {
       clearLocalAuthSession()
       try {
-        await perfTime('signOut (local)', () =>
-          withTimeout(
-            supabase.auth.signOut({ scope: 'local' }),
-            5_000,
-            'Sign-out timed out',
-          ),
+        await withTimeout(
+          supabase.auth.signOut({ scope: 'local' }),
+          5_000,
+          'Sign-out timed out',
         )
       } catch {
         // Best effort — stale refresh may already be cleared.
       }
 
-      const { data, error } = await perfTime('setSession (getUser)', () =>
-        withTimeout(
-          supabase.auth.setSession(tokens),
-          20_000,
-          `Sign-in timed out. Close other ${APP_NAME} tabs and try again.`,
-        ),
+      const { data, error } = await withTimeout(
+        supabase.auth.setSession(tokens),
+        20_000,
+        `Sign-in timed out. Close other ${APP_NAME} tabs and try again.`,
       )
       if (error) throw error
       if (!data.session) {

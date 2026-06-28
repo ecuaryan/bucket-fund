@@ -1,7 +1,6 @@
 import { resolveSupabasePublishableKey } from '@/lib/supabaseKeys'
 import { notifyHouseholdRosterChanged } from '@/lib/householdRosterRefresh'
 import { getFreshAccessToken, refreshAccessToken } from '@/lib/sessionToken'
-import { perfTime } from '@/lib/perfTiming'
 import { supabase, supabaseUrl } from '@/lib/supabase'
 import { withTimeout } from '@/lib/timeout'
 
@@ -116,18 +115,16 @@ async function postFunction<T>(
 }
 
 export async function validateJoinCode(code: string): Promise<ValidateJoinResult> {
-  // Reads only — runs on the always-on RPC layer (~100ms) instead of the
-  // ~500ms validate-join-code Edge Function. Same data, same anon exposure.
-  return perfTime('roster (login_roster rpc)', async () => {
-    const { data, error } = await supabase.rpc('login_roster', {
-      p_code: code.trim().toUpperCase(),
-    })
-    if (error) throw new Error(error.message)
-    // NULL means no family matched — keep the exact message isStaleJoinCodeError
-    // looks for so a rotated/removed code still clears the device link.
-    if (!data) throw new Error('Invalid join code')
-    return data as unknown as ValidateJoinResult
+  // Reads only — runs on the always-on RPC layer instead of the
+  // validate-join-code Edge Function. Same data, same anon exposure.
+  const { data, error } = await supabase.rpc('login_roster', {
+    p_code: code.trim().toUpperCase(),
   })
+  if (error) throw new Error(error.message)
+  // NULL means no family matched — keep the exact message isStaleJoinCodeError
+  // looks for so a rotated/removed code still clears the device link.
+  if (!data) throw new Error('Invalid join code')
+  return data as unknown as ValidateJoinResult
 }
 
 export type PinSessionTokens = {
@@ -141,9 +138,7 @@ export async function exchangePinForSession(input: {
   memberId: string
   pin: string
 }): Promise<PinSessionTokens> {
-  return perfTime('pin-login', () =>
-    postFunction<PinSessionTokens>('pin-login', input),
-  )
+  return postFunction<PinSessionTokens>('pin-login', input)
 }
 
 export async function removeMember(memberId: string): Promise<void> {
