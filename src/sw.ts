@@ -72,8 +72,13 @@ registerRoute(
   }),
 )
 
-self.addEventListener('install', () => {
-  self.skipWaiting()
+// Do NOT skipWaiting on install. A new version installs and waits so it never
+// reloads a foreground tab mid-login; the app activates it only when backgrounded
+// (see setupPwaUpdates) by posting SKIP_WAITING.
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
 })
 
 self.addEventListener('activate', (event) => {

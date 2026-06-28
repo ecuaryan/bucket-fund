@@ -35,7 +35,9 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
-      registerType: 'autoUpdate',
+      // 'prompt' (not 'autoUpdate') so we control when the new worker activates
+      // — applied when the app is backgrounded, never as a foreground reload.
+      registerType: 'prompt',
       injectRegister: null,
       includeAssets: [
         'favicon-16.png',
