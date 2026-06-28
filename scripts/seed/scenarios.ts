@@ -5,11 +5,12 @@ import {
   PWA_SCREENSHOT_BUCKETS,
   PWA_SCREENSHOT_MANUAL_SOURCE,
   PWA_SCREENSHOT_SCENARIO_ID,
-  PWA_SCREENSHOT_GIVE_AMOUNT,
+  PWA_SCREENSHOT_VIRTUAL_KIDS,
+  PWA_SCREENSHOT_LINKED_KIDS,
 } from './pwaScreenshots'
 import {
   PWA_DEMO_GIF_ADMIN_DISPLAY_NAME,
-  PWA_DEMO_GIF_MANUAL_SOURCE,
+  PWA_DEMO_GIF_BANK_SOURCE,
   PWA_DEMO_GIF_SCENARIO_ID,
 } from './pwaDemoGifs'
 import {
@@ -173,12 +174,13 @@ async function seedPwaGifs(id: ScenarioId): Promise<SeedResult> {
     seedAdminEmail(id),
     { displayName: PWA_DEMO_GIF_ADMIN_DISPLAY_NAME },
   )
-  const adminClient = await userClient(admin.adminEmail, admin.adminPassword)
-  await addManualSource(
-    adminClient,
-    PWA_DEMO_GIF_MANUAL_SOURCE.label,
-    PWA_DEMO_GIF_MANUAL_SOURCE.amount,
-  )
+  await addSeedTellerAccounts(admin.familyId, [
+    {
+      label: PWA_DEMO_GIF_BANK_SOURCE.label,
+      accountType: PWA_DEMO_GIF_BANK_SOURCE.accountType,
+      balance: PWA_DEMO_GIF_BANK_SOURCE.balance,
+    },
+  ])
   const joinCode = await getJoinCode(admin.familyId)
   return {
     scenario: id,
@@ -186,7 +188,7 @@ async function seedPwaGifs(id: ScenarioId): Promise<SeedResult> {
     admin,
     joinCode,
     notes: [
-      '$5,000 manual source, no buckets — run npm run pwa:gifs after sign-in.',
+      '$5,000 linked bank source, no buckets — shows the Bank tab. Run npm run pwa:gifs after sign-in.',
       `Sign in at /login as ${admin.adminEmail}.`,
     ],
   }
@@ -481,7 +483,16 @@ async function seedPwaScreenshots(id: ScenarioId): Promise<SeedResult> {
     seedAdminEmail(id),
     { displayName: PWA_SCREENSHOT_ADMIN_DISPLAY_NAME },
   )
-  const sam = await addSeedMember(admin.familyId, 'child', 'Sam', id)
+  const virtualKids = await Promise.all(
+    PWA_SCREENSHOT_VIRTUAL_KIDS.map((kid) =>
+      addSeedMember(admin.familyId, 'child', kid.name, id),
+    ),
+  )
+  const linkedKids = await Promise.all(
+    PWA_SCREENSHOT_LINKED_KIDS.map((kid) =>
+      addSeedMember(admin.familyId, 'child', kid.name, id),
+    ),
+  )
 
   const adminClient = await userClient(admin.adminEmail, admin.adminPassword)
   await addManualSource(
@@ -501,11 +512,23 @@ async function seedPwaScreenshots(id: ScenarioId): Promise<SeedResult> {
     })
   }
 
-  await giveMoney(adminClient, {
-    toMemberId: sam.memberId,
-    amount: PWA_SCREENSHOT_GIVE_AMOUNT,
-    note: 'Allowance',
-  })
+  for (let i = 0; i < PWA_SCREENSHOT_VIRTUAL_KIDS.length; i++) {
+    await giveMoney(adminClient, {
+      toMemberId: virtualKids[i]!.memberId,
+      amount: PWA_SCREENSHOT_VIRTUAL_KIDS[i]!.allowance,
+      note: 'Allowance',
+    })
+  }
+
+  await addSeedTellerAccounts(
+    admin.familyId,
+    PWA_SCREENSHOT_LINKED_KIDS.map((kid, i) => ({
+      label: kid.accountLabel,
+      accountType: kid.accountType,
+      balance: kid.balance,
+      ownerMemberId: linkedKids[i]!.memberId,
+    })),
+  )
 
   const joinCode = await getJoinCode(admin.familyId)
   return {
@@ -513,9 +536,10 @@ async function seedPwaScreenshots(id: ScenarioId): Promise<SeedResult> {
     familyName: 'Seed · PWA screenshots',
     admin,
     joinCode,
-    members: [sam],
+    members: [...virtualKids, ...linkedKids],
     notes: [
       'Buckets tab shows emoji labels and green Float — onboarding coach is complete.',
+      'Kids tab has both "No linked account" and "Linked accounts" sections populated.',
       'Kids and History tabs have sample activity for install screenshots.',
       `Sign in at /login as ${admin.adminEmail}, then run npm run pwa:screenshots.`,
     ],

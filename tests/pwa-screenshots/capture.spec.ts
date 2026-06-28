@@ -1,12 +1,19 @@
 import { mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
-import { NAV_BUCKETS_LABEL, FLOAT_NEGATIVE_HINT } from '../../src/lib/brand'
+import {
+  NAV_BUCKETS_LABEL,
+  FLOAT_NEGATIVE_HINT,
+  KIDS_VIRTUAL_SECTION_TITLE,
+  KIDS_LINKED_SECTION_TITLE,
+} from '../../src/lib/brand'
 import { applyPwaScreenshotRebalance } from '../../scripts/seed/pwaScreenshotRebalance'
 import { seedAdminEmail } from '../../scripts/seed/constants'
 import {
   PWA_SCREENSHOT_BUCKETS,
   PWA_SCREENSHOT_SCENARIO_ID,
+  PWA_SCREENSHOT_VIRTUAL_KIDS,
+  PWA_SCREENSHOT_LINKED_KIDS,
 } from '../../scripts/seed/pwaScreenshots'
 import {
   signInPwaScreenshotAdmin,
@@ -41,8 +48,20 @@ test('capture PWA install screenshots', async ({ page }) => {
   await expect(page).toHaveURL('/kids')
   await waitForNavSettled(page, 'Kids')
   await page.getByRole('heading', { name: 'Kids', exact: true }).waitFor()
-  await page.getByRole('region', { name: 'Virtual kids' }).waitFor()
-  await page.getByRole('listitem').filter({ hasText: 'Sam' }).waitFor()
+  const virtualSection = page.getByRole('region', {
+    name: KIDS_VIRTUAL_SECTION_TITLE,
+  })
+  await virtualSection.waitFor()
+  for (const kid of PWA_SCREENSHOT_VIRTUAL_KIDS) {
+    await virtualSection.getByText(kid.name, { exact: true }).waitFor()
+  }
+  const linkedSection = page.getByRole('region', {
+    name: KIDS_LINKED_SECTION_TITLE,
+  })
+  await linkedSection.waitFor()
+  for (const kid of PWA_SCREENSHOT_LINKED_KIDS) {
+    await linkedSection.getByText(kid.name, { exact: true }).waitFor()
+  }
   await page.screenshot({ path: join(outputDir, 'kids.png') })
 
   await applyPwaScreenshotRebalance(adminEmail)
