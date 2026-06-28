@@ -954,6 +954,10 @@ export type Database = {
       get_home_balance_breakdown: { Args: never; Returns: Json }
       get_home_page_data: { Args: never; Returns: Json }
       login_roster: { Args: { p_code: string }; Returns: Json }
+      login_webauthn_options: {
+        Args: { p_family_id: string; p_member_id: string }
+        Returns: Json
+      }
       member_login_methods: {
         Args: { p_family_id: string; p_member_id: string }
         Returns: Json
