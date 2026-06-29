@@ -85,16 +85,22 @@ If you're the kind of person who has ever looked at their bank account two days 
   number). Prefer “Add a money source” over “link a bank” when both paths apply.
 - DB role `member` → UI **Shared**; `child` → **Kid**; `admin` → **Admin**.
   See `src/lib/memberRoles.ts` and Admin strings in `brand.ts`.
-- **Shared balance** is the collective money pool (admin + Shared role). Say
-  “people on the shared balance” or “shared balance” in copy—not “adults” or
-  “partners”—when describing who shares household buckets and Unbucketed.
+- **Household balance** (`HOUSEHOLD_BALANCE_LABEL` in `brand.ts`) is the
+  collective money pool the admin + Shared role co-own (the `member` role is
+  still UI **Shared**—that’s the person; the pool they share is the **Household
+  balance**). Say “household balance”—not “shared balance,” “adults,” or
+  “partners”—in **adult/Shared-facing** copy about who shares household buckets
+  and Unbucketed. Keep it out of **kid-facing** copy (see below); it’s a pool
+  concept a kid doesn’t need.
 - Say **household admin** (not “your admin”) when a non-admin needs the person
   who manages Admin. Use **Unbucketed** (`FLOAT_LABEL` in `brand.ts`)
-  in the Buckets tab, Move money, History, and related Send copy; **Household**
-  in Admin assignment dropdowns (`HOUSEHOLD_LABEL`, not “pool” in user copy).
-  Matches SQL/RPC: `float`, `member_float()`, etc.
-- Kid-facing copy: **shared balance** or **household admin**, not “parent,”
-  unless you mean a specific person.
+  in the Buckets tab, Move money, History, and related Give copy; **Household
+  balance** in Admin assignment dropdowns (`HOUSEHOLD_BALANCE_LABEL`, not “pool”
+  in user copy). Matches SQL/RPC: `float`, `member_float()`, etc.
+- Kid-facing copy: keep it plain and concrete. Describe money arriving as
+  “when someone gives you money” (the Give flow on the Kids tab), and name the
+  **household admin** (their name when known)—not “shared balance,” “parent,”
+  or “adults,” unless you mean a specific person.
 - **Toasts:** ephemeral success/error feedback uses the global toast, fixed below
   the top safe area on every screen (same position signed-in and auth). Keep copy
   short for auto-dismiss (7s); longer text stays in sheets or requires manual
