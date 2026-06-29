@@ -11,19 +11,19 @@
 Bucket My Money is a progressive web app for organizing cash into **buckets**
 — so you know what's actually available, not just what your bank shows. Use it
 solo or with a shared household: connect read-only bank accounts, set money aside
-from **Float**, and see where your money is at a glance. When the bank balance
+from **Unbucketed**, and see where your money is at a glance. When the bank balance
 moves, pick which bucket covers it.
 
 ## Demo
 
 Your bank shows one balance. Buckets show where that money actually is —
-create a few, set money aside from **Float**, and put them in the order that
+create a few, set money aside from **Unbucketed**, and put them in the order that
 fits your life.
 
 <p align="center">
   <img
     src="public/demos/organize-money.gif"
-    alt="Buckets tab — create emoji buckets, set money aside from Float, drag Rent up"
+    alt="Buckets tab — create emoji buckets, set money aside from Unbucketed, drag Rent up"
     width="280"
   />
 </p>
@@ -34,8 +34,8 @@ Installable progressive web app with phone-sized UI — Buckets, History, and Ki
 Regenerate after significant UI changes ([docs/MAINTENANCE.md § PWA assets](./docs/MAINTENANCE.md#regenerating-readme--pwa-assets)).
 
 <p align="center">
-  <img src="public/screenshots/buckets.png" alt="Buckets tab — Float, emoji buckets, and Auto-organize tabs" width="49%" />
-  <img src="public/screenshots/buckets-rebalance.png" alt="Buckets tab — negative Float rebalance signal" width="49%" />
+  <img src="public/screenshots/buckets.png" alt="Buckets tab — Unbucketed, emoji buckets, and Auto-bucket tabs" width="49%" />
+  <img src="public/screenshots/buckets-rebalance.png" alt="Buckets tab — negative Unbucketed rebalance signal" width="49%" />
 </p>
 <p align="center">
   <img src="public/screenshots/history.png" alt="History tab — bucket moves and sends" width="49%" />
@@ -44,14 +44,14 @@ Regenerate after significant UI changes ([docs/MAINTENANCE.md § PWA assets](./d
 
 ## What it does
 
-- **Float + buckets** — cash not yet labeled lives in **Float**; buckets are money
-  you've set aside. The invariant is enforced in Postgres (`move_money`, `send_money`).
+- **Unbucketed + buckets** — cash not yet in a bucket lives in **Unbucketed**; buckets
+  are money you've set aside. The invariant is enforced in Postgres (`move_money`, `send_money`).
 - **Household roles** — admin, shared member, and kid views with RLS tenant isolation
   and PIN login for members.
-- **Move and send money** — set aside from Float, cover spends, send to kids; History
+- **Move and send money** — set aside from Unbucketed, cover spends, send to kids; History
   with pagination and notes.
 - **Read-only bank link** — Teller Connect, webhooks, manual money sources for onboarding.
-- **Auto-organize** — scheduled or on-demand rules to set aside into buckets (`pg_cron` on hosted).
+- **Auto-bucket** — scheduled or on-demand rules to set aside into buckets (`pg_cron` on hosted).
 - **PWA** — offline fallback, service worker, install screenshots; session-scoped auth.
 - **Tests** — Vitest unit tests, database RLS/RPC tests, Playwright smoke e2e; CI on every PR.
 
@@ -120,8 +120,8 @@ Full command list, seed scenarios, PWA asset regen, and security checklists:
 | Document | Contents |
 | -------- | -------- |
 | [CONTEXT.md](./CONTEXT.md) | Product brief, balance model, schema, security |
-| [docs/BRAND.md](./docs/BRAND.md) | Voice, Float terminology, product narrative |
-| [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md) | Auto-organize feature and cron |
+| [docs/BRAND.md](./docs/BRAND.md) | Voice, Unbucketed terminology, product narrative |
+| [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md) | Auto-bucket feature and cron |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | Branch/PR workflow, CI, deploy sequence |
 | [AGENTS.md](./AGENTS.md) | Entry point for AI coding agents |
 | [docs/MAINTENANCE.md](./docs/MAINTENANCE.md) | Dev commands, seeds, TODOs, Teller/prod ops |

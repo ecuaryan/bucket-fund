@@ -36,12 +36,11 @@ import {
   BUCKETS_DB_UPDATE_PENDING_BODY,
   bucketsMemberNoBucketsHint,
   FLOAT_HERO_SUBTITLE,
-  FLOAT_NEGATIVE_HINT,
+  floatOverbucketedHint,
   FLOAT_LABEL,
 } from '@/lib/brand'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import OnboardingCoachCard from '@/features/buckets/OnboardingCoachCard'
-import FloatInfoSheet from '@/features/buckets/FloatInfoSheet'
 import FloatHero from '@/features/buckets/FloatHero'
 import SuggestedBucketChips from '@/features/buckets/SuggestedBucketChips'
 import { Sheet } from '@/components/ui/Sheet'
@@ -161,9 +160,8 @@ export default function BucketsPage() {
     boolean | null
   >(null)
   const [autoOrganizePanelMounted, setAutoOrganizePanelMounted] = useState(
-    () => searchParams.get('tab') === 'auto-organize',
+    () => searchParams.get('tab') === 'auto-bucket',
   )
-  const [floatInfoOpen, setFloatInfoOpen] = useState(false)
   const [coachDismissed, setCoachDismissed] = useState(true)
   const [movePreferredIntent, setMovePreferredIntent] = useState<
     MoveMoneyIntent | undefined
@@ -399,7 +397,7 @@ export default function BucketsPage() {
     // accounts to resolve lets a deep link (e.g. from the Kids page) land on
     // the Bank tab instead of bouncing to Buckets.
     const tabUnavailable =
-      (urlTab === 'auto-organize' && !showAutoOrganizeTab) ||
+      (urlTab === 'auto-bucket' && !showAutoOrganizeTab) ||
       (urlTab === 'account' && accounts !== null && !showAccountTab)
     if (tabUnavailable) {
       setSearchParams(
@@ -418,7 +416,7 @@ export default function BucketsPage() {
   ])
 
   useEffect(() => {
-    if (activeTab === 'auto-organize') {
+    if (activeTab === 'auto-bucket') {
       setAutoOrganizePanelMounted(true)
     }
   }, [activeTab])
@@ -727,7 +725,7 @@ export default function BucketsPage() {
     showAddSourceCard || showCoach
       ? null
       : float < 0
-        ? FLOAT_NEGATIVE_HINT
+        ? floatOverbucketedHint(formatMoney(Math.abs(float)))
         : cashSubtext
           ? null
           : isChild
@@ -738,10 +736,7 @@ export default function BucketsPage() {
     <>
       <BusyOverlay
         busy={
-          syncing &&
-          moveBucketId === null &&
-          !manualSourceOpen &&
-          !floatInfoOpen
+          syncing && moveBucketId === null && !manualSourceOpen
         }
         label="Updating…"
       >
@@ -818,7 +813,6 @@ export default function BucketsPage() {
           floatColorClass={floatColor}
           cashSubtext={cashSubtext}
           hint={floatHint}
-          onInfoClick={() => setFloatInfoOpen(true)}
           bankSyncedLabel={bankSyncedLabel}
           canRefresh={canRefreshBalances}
           syncing={syncing}
@@ -953,7 +947,7 @@ export default function BucketsPage() {
           role="tabpanel"
           id="segmented-panel-auto-organize"
           aria-labelledby="segmented-tab-auto-organize"
-          hidden={activeTab !== 'auto-organize'}
+          hidden={activeTab !== 'auto-bucket'}
         >
           <AutoOrganizeSection
             embedded
@@ -1012,12 +1006,6 @@ export default function BucketsPage() {
             setSyncing(false)
           }
         }}
-      />
-
-      <FloatInfoSheet
-        open={floatInfoOpen}
-        isChild={isChild}
-        onClose={() => setFloatInfoOpen(false)}
       />
 
       {deleteTarget ? (

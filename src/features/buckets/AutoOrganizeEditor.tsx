@@ -638,7 +638,7 @@ export default function AutoOrganizeEditor({
       onClose()
       await Promise.resolve(onSaved())
     } catch (e) {
-      setError(formatErrorMessage(e, 'Could not save auto-organize.'))
+      setError(formatErrorMessage(e, 'Could not save Auto-bucket.'))
     } finally {
       setSubmitting(false)
     }

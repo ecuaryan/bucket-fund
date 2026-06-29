@@ -115,12 +115,12 @@ export function listScenarios(): { id: SeedTarget; description: string }[] {
     {
       id: PWA_SCREENSHOT_SCENARIO_ID,
       description:
-        'Emoji buckets, green Float — sign in and run npm run pwa:screenshots for install UI PNGs',
+        'Emoji buckets, green Unbucketed — sign in and run npm run pwa:screenshots for install UI PNGs',
     },
     {
       id: PWA_DEMO_GIF_SCENARIO_ID,
       description:
-        'Cash in Float, no buckets — sign in and run npm run pwa:gifs for README demo GIF',
+        'Cash in Unbucketed, no buckets — sign in and run npm run pwa:gifs for README demo GIF',
     },
   ]
 }
@@ -538,7 +538,7 @@ async function seedPwaScreenshots(id: ScenarioId): Promise<SeedResult> {
     joinCode,
     members: [...virtualKids, ...linkedKids],
     notes: [
-      'Buckets tab shows emoji labels and green Float — onboarding coach is complete.',
+      'Buckets tab shows emoji labels and green Unbucketed — onboarding coach is complete.',
       'Kids tab has both "No linked account" and "Linked accounts" sections populated.',
       'Kids and History tabs have sample activity for install screenshots.',
       `Sign in at /login as ${admin.adminEmail}, then run npm run pwa:screenshots.`,

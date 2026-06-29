@@ -280,7 +280,7 @@ describe('sweep-then-fill editor notes', () => {
       false,
       'save-off-1',
     )
-    expect(notes.get('groceries')).toContain('top-up or auto-organize')
+    expect(notes.get('groceries')).toContain('top-up or Auto-bucket')
   })
 
   it('hides sweep-then-fill note when overlap is manual-only', () => {

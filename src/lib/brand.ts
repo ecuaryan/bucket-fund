@@ -25,12 +25,17 @@ export const LOGIN_TAGLINE_PAYOFF = 'See where your money actually is.'
 /**
  * User-facing name for the per-balance pool that is not assigned to any bucket.
  * Paychecks land here; bills and card charges pull from here; bucket money
- * returns here when you cover a purchase.
- * Matches SQL/RPC/TS: `float`, `member_float()`, etc.
+ * returns here when you cover a purchase. Reads as a proper-noun place
+ * ("returns to Unbucketed"); use {@link FLOAT_LABEL_LOWER} + a noun
+ * ("unbucketed cash") for adjective phrasing, and avoid the possessive
+ * "your Unbucketed".
+ *
+ * UI label only. Code, SQL, and RPCs keep `float` (`member_float()`,
+ * `float` JSON key, `float_balance_*` columns) — see docs/BRAND.md.
  */
-export const FLOAT_LABEL = 'Float'
+export const FLOAT_LABEL = 'Unbucketed'
 
-/** Lowercase form for mid-sentence copy (derived so the word swaps in one place). */
+/** Lowercase form for adjective copy, e.g. "unbucketed cash" (swaps in one place). */
 export const FLOAT_LABEL_LOWER = FLOAT_LABEL.toLowerCase()
 
 /** Default label beside the shared loading spinner (pages, overlays, auth). */
@@ -168,9 +173,9 @@ export const ADMIN_HOUSEHOLD_ROLES_HELP_TOGGLE = 'About household roles'
 
 /** Shown under the add-member role picker for the selected role. */
 export const ADMIN_ROLE_CONTEXT_ADMIN =
-  'Full household control—banks, members, and auto-organize. Shares buckets and float with Shared members.'
+  `Full household control—banks, members, and Auto-bucket. Shares buckets and ${FLOAT_LABEL_LOWER} cash with Shared members.`
 
-export const ADMIN_ROLE_CONTEXT_SHARED = `Shares household buckets and ${FLOAT_LABEL_LOWER}, and can see bank activity. Give to kids on the Kids tab.`
+export const ADMIN_ROLE_CONTEXT_SHARED = `Shares household buckets and ${FLOAT_LABEL_LOWER} cash, and can see bank activity. Give to kids on the Kids tab.`
 
 // --- Kids tab (adults) ---
 
@@ -207,7 +212,7 @@ export function kidsGiveSheetTitle(kidName: string): string {
 }
 
 export function kidsGiveSheetIntro(availableLabel: string): string {
-  return `You have ${availableLabel} available from shared ${FLOAT_LABEL_LOWER}.`
+  return `You have ${availableLabel} available from shared ${FLOAT_LABEL_LOWER} cash.`
 }
 
 export function kidsGiveOverdraftMessage(availableLabel: string): string {
@@ -238,7 +243,7 @@ export function kidsTakeSheetIntro(
   kidName: string,
   availableLabel: string,
 ): string {
-  return `${kidName} has ${availableLabel} available to take back to shared ${FLOAT_LABEL_LOWER}.`
+  return `${kidName} has ${availableLabel} available to take back to shared ${FLOAT_LABEL_LOWER} cash.`
 }
 
 export function kidsTakeOverdraftMessage(availableLabel: string): string {
@@ -258,7 +263,7 @@ export const KIDS_TAKE_SUBMITTING = 'Taking…'
 export const KIDS_TAKE_FAILED = 'Take failed. Try again.'
 
 export function kidsTakeSuccessToast(amountLabel: string, kidName: string): string {
-  return `Took ${amountLabel} from ${kidName} back to shared ${FLOAT_LABEL_LOWER}.`
+  return `Took ${amountLabel} from ${kidName} back to shared ${FLOAT_LABEL_LOWER} cash.`
 }
 
 export const KIDS_EMPTY_VIRTUAL_BODY =
@@ -273,7 +278,7 @@ export function kidsEmptyVirtualBody(
 }
 
 export const ADMIN_ROLE_CONTEXT_KID =
-  'Own buckets—not shared float. Give on the Kids tab, or assign a linked account below.'
+  'Own buckets—not the shared balance. Give on the Kids tab, or assign a linked account below.'
 
 /** Shared family pool label for linked-account assignment (not the Household admin tab). */
 export const SHARED_BALANCE_LABEL = 'Shared balance'
@@ -516,13 +521,13 @@ export const ADMIN_REMOVE_KID_EFFECT_BUCKETS =
   `Their personal buckets are removed. No cash is lost—that money stays in your household and shows as ${FLOAT_LABEL_LOWER} in Buckets.`
 
 export const ADMIN_REMOVE_KID_EFFECT_ACCOUNTS =
-  `Any bank accounts assigned to them become household accounts and count toward ${FLOAT_LABEL_LOWER}.`
+  `Any bank accounts assigned to them become household accounts and count toward ${FLOAT_LABEL}.`
 
 export const ADMIN_REMOVE_SHARED_EFFECT_LOGIN =
   'Their PIN and sign-in are deleted.'
 
 export const ADMIN_REMOVE_ADMIN_EFFECT_ACCESS =
-  'They lose admin access—banks, members, and auto-organize settings.'
+  'They lose admin access—banks, members, and Auto-bucket settings.'
 
 export const ADMIN_REMOVE_ADMIN_EFFECT_LOGIN =
   'Their PIN and sign-in are deleted.'
@@ -587,14 +592,14 @@ export const BUCKETS_DELETE_BUCKET_WHAT_HAPPENS = 'What happens'
 export function bucketsDeleteBucketEffectFloat(
   formattedAmount: string,
 ): string {
-  return `${formattedAmount} returns to ${FLOAT_LABEL_LOWER}. Cash is not lost.`
+  return `${formattedAmount} returns to ${FLOAT_LABEL}. Cash is not lost.`
 }
 
 export const BUCKETS_DELETE_BUCKET_EFFECT_LABEL =
   'The bucket label is removed—you can’t move money to it anymore.'
 
 export const BUCKETS_DELETE_BUCKET_EFFECT_HISTORY =
-  'The return to Float and past moves stay in History with this bucket’s name.'
+  `The return to ${FLOAT_LABEL} and past moves stay in History with this bucket’s name.`
 
 export function bucketsDeleteBucketConfirm(name: string): string {
   return `Delete ${name}`
@@ -622,7 +627,7 @@ export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK =
   'Deleting will still remove this bucket from any schedules it appears on.'
 
 export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK_MANUAL =
-  'Deleting will still remove this bucket from any auto-organize rules it appears on.'
+  'Deleting will still remove this bucket from any Auto-bucket rules it appears on.'
 
 export function bucketsDeleteBucketAutoOrganizeIntro(allManualOnly: boolean): string {
   return allManualOnly
@@ -677,84 +682,38 @@ export function bucketsKidFloatHint(
   return `When someone on the shared balance gives you money, move it into buckets—or ask ${householdAdminLabel(adminName)} to link your bank account.`
 }
 
-export function bucketsFloatInfoAriaLabel(): string {
-  return `What is ${FLOAT_LABEL_LOWER}?`
-}
-
-export function bucketsFloatInfoSheetTitle(): string {
-  return `About ${FLOAT_LABEL_LOWER}`
-}
-
-/** Subtitle under the Float amount when the breakdown panel is hidden. */
+/** Subtitle under the Unbucketed amount when the breakdown panel is hidden. */
 export const FLOAT_HERO_SUBTITLE = 'Left over after buckets'
 
-/** One-line hint when Float is negative. */
-export const FLOAT_NEGATIVE_HINT = 'Your buckets total more than your cash.'
+/**
+ * One-line hint when Unbucketed is negative (over-bucketed). The hero keeps
+ * showing the red negative number — this line names what it means so the
+ * viewer faces the trade-off. Prefer {@link floatOverbucketedHint} when the
+ * over amount is available.
+ */
+export const FLOAT_NEGATIVE_HINT = "You've bucketed more than you have."
 
-/** Float hero: linked-balance refresh control when no prior sync time exists. */
+/**
+ * Over-bucketed hint with the exact amount you're short, e.g.
+ * "You've bucketed $200 more than you have." Pair with the red negative hero
+ * number; `overAmountLabel` is the formatted absolute gap.
+ */
+export function floatOverbucketedHint(overAmountLabel: string): string {
+  return `You've bucketed ${overAmountLabel} more than you have.`
+}
+
+/** Unbucketed hero: linked-balance refresh control when no prior sync time exists. */
 export const FLOAT_REFRESH_BALANCES_LABEL = 'Refresh balances'
 
 export function floatRefreshedLabel(relativeTime: string): string {
   return `Refreshed ${relativeTime}`
 }
 
-/** Guidance bullets for the Float info sheet on the Buckets tab. */
-export function bucketsFloatInfoPoints(isChild: boolean): readonly string[] {
-  if (isChild) {
-    return [
-      `Money not in your buckets yet — that's your ${FLOAT_LABEL_LOWER}.`,
-      `Buckets only change when you move money.`,
-      `Move between your ${FLOAT_LABEL_LOWER} and your buckets to organize your money.`,
-    ] as const
-  }
-  // Bank refresh updates Float only, not buckets. When Schedule ships, extend
-  // bullet 2 (e.g. "when you move money or when auto-organize runs on days you choose").
-  return [
-    `Paydays, bills, and card payments update your ${FLOAT_LABEL_LOWER} when balances refresh — not your buckets.`,
-    `Buckets only change when you move money in the app.`,
-  ] as const
-}
-
-export type FloatStatusGuide = {
-  tone: 'green' | 'red'
-  label: string
-  body: string
-}
-
-/** Green/red Float meanings — rendered with matching colors in the info sheet. */
-export function bucketsFloatStatusGuide(isChild: boolean): readonly FloatStatusGuide[] {
-  if (isChild) {
-    return [
-      {
-        tone: 'green',
-        label: 'Green',
-        body: `Your cash covers what's in your buckets.`,
-      },
-      {
-        tone: 'red',
-        label: 'Red',
-        body: `Buckets total more than your cash.`,
-      },
-    ] as const
-  }
-  return [
-    {
-      tone: 'green',
-      label: 'Green',
-      body: `Your cash covers your buckets — nothing over-allocated.`,
-    },
-    {
-      tone: 'red',
-      label: 'Red',
-      body: `Buckets total more than your cash.`,
-    },
-  ] as const
-}
-
-// --- Auto-organize (Buckets tab) ---
+// --- Auto-bucket (Buckets tab) ---
+// UI label is "Auto-bucket"; schema/RPCs keep `auto_organize*` (see docs).
 
 /** Buckets tab section header. Schema: `auto_organizes`. */
-export const AUTO_ORGANIZE_SECTION_TITLE = 'Auto-organize'
+export const AUTO_ORGANIZE_SECTION_TITLE = 'Auto-bucket'
 
 export const BUCKETS_PAGE_TABS_ARIA_LABEL = 'Buckets page sections'
 /** Tab label for the bank account activity view (adults see all family
@@ -762,9 +721,9 @@ export const BUCKETS_PAGE_TABS_ARIA_LABEL = 'Buckets page sections'
  * clashing with the in-app History feed. */
 export const BUCKETS_PAGE_TAB_ACCOUNT_LABEL = 'Bank'
 
-export const AUTO_ORGANIZE_LOAD_ERROR_TITLE = 'Could not load auto-organize'
+export const AUTO_ORGANIZE_LOAD_ERROR_TITLE = 'Could not load Auto-bucket'
 
-export const AUTO_ORGANIZE_LOADING_ARIA_LABEL = 'Loading auto-organize'
+export const AUTO_ORGANIZE_LOADING_ARIA_LABEL = 'Loading Auto-bucket'
 
 /** One line under the section header (admin + Shared). */
 export const AUTO_ORGANIZE_GUARDRAIL =
@@ -779,7 +738,7 @@ export const AUTO_ORGANIZE_EMPTY_BODY =
 
 export type AutoOrganizeKind = 'organize' | 'top_up' | 'save_off'
 
-export const AUTO_ORGANIZE_KIND_ORGANIZE_LABEL = 'Auto-organize'
+export const AUTO_ORGANIZE_KIND_ORGANIZE_LABEL = 'Auto-bucket'
 
 export const AUTO_ORGANIZE_KIND_TOPUP_LABEL = 'Auto top-up'
 
@@ -849,7 +808,7 @@ export const AUTO_ORGANIZE_SAVEOFF_KEEP_ZERO_ROW_HINT =
   'Sweeps the full balance each run.'
 
 export const AUTO_ORGANIZE_SAVEOFF_DESTINATION_HINT =
-  'Your Float or another bucket — wherever the extra should go.'
+  'Unbucketed or another bucket — wherever the extra should go.'
 
 export const AUTO_ORGANIZE_RUN_NOW_NOTHING_TO_MOVE = AUTO_ORGANIZE_NOTHING_TO_MOVE_NOW_LABEL
 
@@ -857,7 +816,7 @@ export const AUTO_ORGANIZE_SWEEP_THEN_FILL_TOPUP_NOTE =
   'This bucket is also in a save-off rule. Excess is swept before top-ups on the same day.'
 
 export const AUTO_ORGANIZE_SWEEP_THEN_FILL_SAVEOFF_NOTE =
-  'This bucket is also in a top-up or auto-organize rule. Save-offs run before refills on the same day.'
+  'This bucket is also in a top-up or Auto-bucket rule. Save-offs run before refills on the same day.'
 
 /** @deprecated use AUTO_ORGANIZE_SWEEP_THEN_FILL_TOPUP_NOTE or AUTO_ORGANIZE_SWEEP_THEN_FILL_SAVEOFF_NOTE */
 export const AUTO_ORGANIZE_SWEEP_THEN_FILL_NOTE =
@@ -1023,7 +982,7 @@ export function autoOrganizeDeleteSheetTitle(displayName: string): string {
 }
 
 export const AUTO_ORGANIZE_DELETE_SHEET_BODY =
-  'This stops future auto-organize runs. Past moves stay in History.'
+  'This stops future Auto-bucket runs. Past moves stay in History.'
 
 export const AUTO_ORGANIZE_DELETE_SHEET_BODY_MANUAL =
   'This removes the rule. Past moves stay in History.'
@@ -1143,10 +1102,10 @@ export const AUTO_ORGANIZE_DISCARD_CONFIRM = 'Discard'
 export const AUTO_ORGANIZE_DISCARD_CANCEL = 'Keep editing'
 
 export const AUTO_ORGANIZE_SET_ASIDE_FLOAT_CONFIRM_TITLE =
-  'Set aside more than Float?'
+  'Set aside more than Unbucketed?'
 
 export function autoOrganizeSetAsideFloatConfirmBody(amountLabel: string): string {
-  return `This set-aside of ${amountLabel} is more than your current ${FLOAT_LABEL}. Your ${FLOAT_LABEL} will go negative until your money sources reflect more cash or you move money back.`
+  return `This set-aside of ${amountLabel} is more than you have unbucketed. ${FLOAT_LABEL} will go negative until your money sources reflect more cash or you move money back.`
 }
 
 export function autoOrganizeRunNowConfirmTitle(name: string): string {
@@ -1196,12 +1155,12 @@ export function onboardingCoachStepBody(
   switch (step) {
     case 'addSource':
       return isAdmin
-        ? `Add a money source so your ${FLOAT_LABEL_LOWER} reflects what you have to organize.`
-        : `Ask ${householdAdminLabel(adminName)} to add a money source so your ${FLOAT_LABEL_LOWER} reflects reality.`
+        ? `Add a money source so your ${FLOAT_LABEL_LOWER} cash reflects what you have to organize.`
+        : `Ask ${householdAdminLabel(adminName)} to add a money source so your ${FLOAT_LABEL_LOWER} cash reflects reality.`
     case 'createBucket':
       return 'Create buckets for the jobs your money has — rent, groceries, vacation, whatever matters.'
     case 'setAside':
-      return `Move money from your ${FLOAT_LABEL_LOWER} into a bucket to set it aside.`
+      return `Move money from your ${FLOAT_LABEL_LOWER} cash into a bucket to set it aside.`
   }
 }
 
@@ -1256,7 +1215,7 @@ export const GIVE_ADD_SOURCE_ADMIN_BODY =
 export function bucketsLinkBankMemberBody(
   adminName: string | null | undefined,
 ): string {
-  return `No bank accounts are linked yet. Ask ${householdAdminLabel(adminName)} to connect a bank account so balances can refresh and your float stays current.`
+  return `No bank accounts are linked yet. Ask ${householdAdminLabel(adminName)} to connect a bank account so balances can refresh and your ${FLOAT_LABEL_LOWER} cash stays current.`
 }
 
 export function giveLinkBankMemberBody(
@@ -1280,7 +1239,7 @@ export const GIVE_SHARED_BALANCE_NO_ACCOUNTS_BODY =
   'Give uses cash from the household balance in Buckets. Link a bank account in Admin first so we know how much you can give.'
 
 export const GIVE_KID_INTRO =
-  `Give your ${FLOAT_LABEL_LOWER} to another household member.`
+  `Give your ${FLOAT_LABEL_LOWER} cash to another household member.`
 
 export const GIVE_LINKED_KID_TITLE = 'Your money is in your bank account'
 
@@ -1316,7 +1275,7 @@ export const HISTORY_EMPTY_BUCKET_BODY =
   'Move money in or out of this bucket and it will appear here.'
 
 export const HISTORY_EMPTY_BODY =
-  `Move money between buckets and ${FLOAT_LABEL_LOWER} in Buckets—it will appear here.`
+  `Move money between buckets and ${FLOAT_LABEL} in Buckets—it will appear here.`
 
 export const HISTORY_EMPTY_SENDS_BODY =
   'Give money to a kid—or take it back—and it will appear here.'

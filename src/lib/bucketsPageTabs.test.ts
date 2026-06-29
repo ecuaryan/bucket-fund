@@ -17,7 +17,7 @@ describe('parseBucketsPageTab', () => {
   })
 
   it('parses auto-organize', () => {
-    expect(parseBucketsPageTab('auto-organize')).toBe('auto-organize')
+    expect(parseBucketsPageTab('auto-bucket')).toBe('auto-bucket')
   })
 
   it('parses account', () => {
@@ -28,14 +28,14 @@ describe('parseBucketsPageTab', () => {
 describe('resolveBucketsPageTab', () => {
   it('falls back to buckets when auto-organize tab is unavailable', () => {
     expect(
-      resolveBucketsPageTab('auto-organize', { autoOrganize: false, account: false }),
+      resolveBucketsPageTab('auto-bucket', { autoOrganize: false, account: false }),
     ).toBe('buckets')
   })
 
   it('keeps auto-organize when available', () => {
     expect(
-      resolveBucketsPageTab('auto-organize', { autoOrganize: true, account: false }),
-    ).toBe('auto-organize')
+      resolveBucketsPageTab('auto-bucket', { autoOrganize: true, account: false }),
+    ).toBe('auto-bucket')
   })
 
   it('falls back to buckets when account tab is unavailable', () => {
@@ -61,7 +61,7 @@ describe('bucketsPageTabOptions', () => {
     const opts = bucketsPageTabOptions({ showAutoOrganize: true, showAccount: true })
     expect(opts.map((o) => o.value)).toEqual([
       'buckets',
-      'auto-organize',
+      'auto-bucket',
       'account',
     ])
   })
@@ -104,13 +104,13 @@ describe('isAutoOrganizeTabAvailabilityPending', () => {
 describe('applyBucketsPageTabToSearchParams', () => {
   it('sets tab without dropping unrelated params', () => {
     const prev = new URLSearchParams('foo=bar')
-    const next = applyBucketsPageTabToSearchParams(prev, 'auto-organize')
+    const next = applyBucketsPageTabToSearchParams(prev, 'auto-bucket')
     expect(next.get('foo')).toBe('bar')
-    expect(next.get('tab')).toBe('auto-organize')
+    expect(next.get('tab')).toBe('auto-bucket')
   })
 
   it('removes tab param for buckets default', () => {
-    const prev = new URLSearchParams('tab=auto-organize&foo=bar')
+    const prev = new URLSearchParams('tab=auto-bucket&foo=bar')
     const next = applyBucketsPageTabToSearchParams(prev, 'buckets')
     expect(next.get('tab')).toBeNull()
     expect(next.get('foo')).toBe('bar')
@@ -124,8 +124,8 @@ describe('applyBucketsPageTabToSearchParams', () => {
   })
 
   it('does not mutate the input params', () => {
-    const prev = new URLSearchParams('tab=auto-organize')
+    const prev = new URLSearchParams('tab=auto-bucket')
     applyBucketsPageTabToSearchParams(prev, 'buckets')
-    expect(prev.get('tab')).toBe('auto-organize')
+    expect(prev.get('tab')).toBe('auto-bucket')
   })
 })

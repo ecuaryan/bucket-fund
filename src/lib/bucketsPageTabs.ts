@@ -4,7 +4,7 @@ import {
   NAV_BUCKETS_LABEL,
 } from '@/lib/brand'
 
-export type BucketsPageTab = 'buckets' | 'auto-organize' | 'account'
+export type BucketsPageTab = 'buckets' | 'auto-bucket' | 'account'
 
 export const BUCKETS_PAGE_TAB_PARAM = 'tab'
 
@@ -15,7 +15,7 @@ const BUCKETS_TAB_OPTION: BucketsPageTabOption = {
   label: NAV_BUCKETS_LABEL,
 }
 const AUTO_ORGANIZE_TAB_OPTION: BucketsPageTabOption = {
-  value: 'auto-organize',
+  value: 'auto-bucket',
   label: AUTO_ORGANIZE_SECTION_TITLE,
 }
 const ACCOUNT_TAB_OPTION: BucketsPageTabOption = {
@@ -41,7 +41,7 @@ export function bucketsPageTabOptions(opts: {
 export function parseBucketsPageTab(
   raw: string | null | undefined,
 ): BucketsPageTab {
-  if (raw === 'auto-organize') return 'auto-organize'
+  if (raw === 'auto-bucket') return 'auto-bucket'
   if (raw === 'account') return 'account'
   return 'buckets'
 }
@@ -52,7 +52,7 @@ export function resolveBucketsPageTab(
   available: { autoOrganize: boolean; account: boolean },
 ): BucketsPageTab {
   const parsed = parseBucketsPageTab(raw)
-  if (parsed === 'auto-organize' && !available.autoOrganize) return 'buckets'
+  if (parsed === 'auto-bucket' && !available.autoOrganize) return 'buckets'
   if (parsed === 'account' && !available.account) return 'buckets'
   return parsed
 }

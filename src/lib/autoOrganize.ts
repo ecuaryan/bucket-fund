@@ -32,7 +32,7 @@ export type AutoOrganizeInput = {
   paused: boolean
   cadence: AutoOrganizeCadence
   lines: AutoOrganizeLineInput[]
-  /** save_off only: null = sweep to Float */
+  /** save_off only: null = sweep to Unbucketed */
   destinationBucketId: string | null
   /** null = household pool rule; a member id = that kid's own rule. Set on create only. */
   ownerMemberId: string | null

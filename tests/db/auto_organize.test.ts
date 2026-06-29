@@ -559,7 +559,7 @@ describe('auto_organize', () => {
       .limit(1)
       .single()
     expect(txError).toBeNull()
-    expect(tx?.note).toBe('Auto-organize · Once a month · 1st')
+    expect(tx?.note).toBe('Auto-bucket · Once a month · 1st')
   })
 
   it('top_up fills to target and skips buckets already at target', async () => {
@@ -1009,7 +1009,7 @@ describe('auto_organize', () => {
       .eq('auto_organize_run_id', runId)
     expect(txError).toBeNull()
     expect(txs).toHaveLength(1)
-    expect(txs![0].note).toBe('Auto-organize · Manual only')
+    expect(txs![0].note).toBe('Auto-bucket · Manual only')
   })
 
   it('child creates and runs their own auto-organize over their own buckets', async () => {

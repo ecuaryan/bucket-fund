@@ -565,7 +565,7 @@ export default function AutoOrganizeSection({
       const data = await fetchAutoOrganizes()
       setRows(data)
     } catch (e) {
-      setLoadError(formatErrorMessage(e, 'Could not load auto-organize.'))
+      setLoadError(formatErrorMessage(e, 'Could not load Auto-bucket.'))
     }
   }, [])
 

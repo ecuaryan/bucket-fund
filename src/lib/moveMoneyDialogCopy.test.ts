@@ -48,7 +48,7 @@ describe('detectMoveMoneyIntent', () => {
 describe('moveMoneyDialogTitle', () => {
   it('uses contextual titles', () => {
     expect(moveMoneyDialogTitle('setAside')).toBe('Set aside')
-    expect(moveMoneyDialogTitle('cover')).toBe('Use from bucket')
+    expect(moveMoneyDialogTitle('cover')).toBe('Unbucket')
     expect(moveMoneyDialogTitle('move')).toBe('Move money')
   })
 })
@@ -63,6 +63,6 @@ describe('moveMoneyDialogSubmitLabel', () => {
   it('formats cover submit label', () => {
     expect(
       moveMoneyDialogSubmitLabel('cover', '$50.00', 'Gasoline'),
-    ).toBe('Use $50.00 from Gasoline')
+    ).toBe('Unbucket $50.00 from Gasoline')
   })
 })
