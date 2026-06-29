@@ -11,8 +11,6 @@ import {
   ADMIN_ADD_SOURCE_MANUAL_OPTION,
   ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL,
   ADMIN_LINKED_ACCOUNTS_INTRO,
-  ADMIN_LINKED_ACCOUNTS_REFRESH_HINT_PREFIX,
-  ADMIN_LINKED_ACCOUNTS_REFRESH_HINT_SUFFIX,
   ADMIN_MONEY_SOURCES_INTRO,
   ADMIN_MANUAL_GROUP_TITLE,
   ADMIN_MONEY_SOURCES_SECTION_TITLE,
@@ -49,7 +47,6 @@ import {
   useTellerConnect,
 } from '@/lib/teller'
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
-import RefreshIcon from '@/components/ui/RefreshIcon'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
 import MembersSection from '@/features/admin/MembersSection'
@@ -454,19 +451,6 @@ export default function AdminPage() {
             <p className="mt-1 text-xs text-zinc-400">
               {ADMIN_MONEY_SOURCES_INTRO}
             </p>
-            {hasLinkedBanks && (
-              <p className="mt-1 text-xs text-zinc-400">
-                {ADMIN_LINKED_ACCOUNTS_INTRO}{' '}
-                {ADMIN_LINKED_ACCOUNTS_REFRESH_HINT_PREFIX}
-                <span
-                  className="mx-0.5 inline-flex align-text-bottom"
-                  aria-hidden="true"
-                >
-                  <RefreshIcon className="h-3 w-3" />
-                </span>
-                {ADMIN_LINKED_ACCOUNTS_REFRESH_HINT_SUFFIX}
-              </p>
-            )}
           </div>
           <div ref={addSourceMenuRef} className="relative shrink-0">
             <button
@@ -504,6 +488,12 @@ export default function AdminPage() {
             ) : null}
           </div>
         </div>
+
+        {hasLinkedBanks && (
+          <p className="mb-3 text-xs text-zinc-400">
+            {ADMIN_LINKED_ACCOUNTS_INTRO}
+          </p>
+        )}
 
         {enrollmentLoadError && (
           <p className="mb-3 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-200 ring-1 ring-amber-500/30">
