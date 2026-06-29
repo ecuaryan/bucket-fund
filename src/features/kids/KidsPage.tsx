@@ -25,6 +25,9 @@ import {
 } from '@/lib/brand'
 import { fetchHouseholdAdminName } from '@/lib/householdAdmin'
 import { subscribeHouseholdRosterRefresh } from '@/lib/householdRosterRefresh'
+import { formatRelativeTime } from '@/lib/relativeTime'
+import { refreshBalances } from '@/lib/teller'
+import RefreshIconButton from '@/components/ui/RefreshIconButton'
 import { buildKidsPageModel, type VirtualKidRow as VirtualKidRowData } from '@/lib/kidsPageModel'
 import { fetchLinkedChildMemberIds } from '@/lib/give'
 import { toast } from '@/lib/toast'
@@ -60,6 +63,8 @@ export default function KidsPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [fundKid, setFundKid] = useState<VirtualKidRowData | null>(null)
   const [returnKid, setReturnKid] = useState<VirtualKidRowData | null>(null)
+  const [syncing, setSyncing] = useState(false)
+  const [refreshError, setRefreshError] = useState<string | null>(null)
 
   const isAdult =
     member?.role === 'admin' || member?.role === 'member'
@@ -153,6 +158,9 @@ export default function KidsPage() {
   }, [children, accounts, linkedChildIds, balanceBreakdown])
 
   const available = balanceBreakdown?.float ?? null
+  const bankSyncedLabel = balanceBreakdown
+    ? formatRelativeTime(balanceBreakdown.bankLastSyncedAt)
+    : null
   const linkedOnly = Boolean(
     model && model.virtualKids.length === 0 && model.linkedKids.length > 0,
   )
@@ -165,6 +173,19 @@ export default function KidsPage() {
   function handleTakeSuccess(kid: VirtualKidRowData, amount: number) {
     toast.success(kidsTakeSuccessToast(formatMoney(amount), kid.name))
     void loadData()
+  }
+
+  async function handleRefreshBalances() {
+    setRefreshError(null)
+    setSyncing(true)
+    try {
+      await refreshBalances()
+      await loadData()
+    } catch (e) {
+      setRefreshError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setSyncing(false)
+    }
   }
 
   if (!isAdult) {
@@ -242,12 +263,25 @@ export default function KidsPage() {
           aria-label={KIDS_LINKED_SECTION_TITLE}
         >
           <div className="border-b border-zinc-800 px-4 py-3">
-            <h2 className="text-sm font-semibold text-zinc-300">
-              {KIDS_LINKED_SECTION_TITLE}
-            </h2>
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="text-sm font-semibold text-zinc-300">
+                {KIDS_LINKED_SECTION_TITLE}
+              </h2>
+              <RefreshIconButton
+                busy={syncing}
+                onClick={() => void handleRefreshBalances()}
+                className="-mt-0.5 text-zinc-400 hover:text-zinc-200"
+              />
+            </div>
             <p className="mt-1 text-xs text-zinc-500">
               {kidsLinkedSectionBody(isAdmin, householdAdminName)}
+              {bankSyncedLabel ? ` · Synced ${bankSyncedLabel}` : ''}
             </p>
+            {refreshError ? (
+              <p className="mt-1.5 text-[11px] text-red-300/80">
+                {refreshError}
+              </p>
+            ) : null}
           </div>
           <ul className="divide-y divide-zinc-800">
             {model.linkedKids.map((kid) => (
