@@ -196,8 +196,8 @@ in `move_money` means the Unbucketed pool.
 | Buckets tab: no linked accounts | `bucketsLinkBankMemberBody()` |
 | Buckets tab: member empty buckets | `bucketsMemberNoBucketsHint()` |
 | Buckets tab: kid Unbucketed hint | `bucketsKidFloatHint()` |
-| Buckets tab: Unbucketed info sheet | `bucketsFloatInfoPoints()`, `bucketsFloatInfoSheetTitle()` |
 | Unbucketed label (all UI) | `FLOAT_LABEL`, `FLOAT_LABEL_LOWER` |
+| Unbucketed over-bucketed hint | `floatOverbucketedHint()`, `FLOAT_NEGATIVE_HINT` |
 | Unbucketed hero subtitle | `FLOAT_HERO_SUBTITLE` |
 | Onboarding coach | `ONBOARDING_COACH_*`, `onboardingCoachStepBody()` |
 | Move money intents | `moveMoneyDialogCopy.ts` |

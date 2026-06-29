@@ -682,14 +682,6 @@ export function bucketsKidFloatHint(
   return `When someone on the shared balance gives you money, move it into buckets—or ask ${householdAdminLabel(adminName)} to link your bank account.`
 }
 
-export function bucketsFloatInfoAriaLabel(): string {
-  return `What is ${FLOAT_LABEL}?`
-}
-
-export function bucketsFloatInfoSheetTitle(): string {
-  return `About ${FLOAT_LABEL}`
-}
-
 /** Subtitle under the Unbucketed amount when the breakdown panel is hidden. */
 export const FLOAT_HERO_SUBTITLE = 'Left over after buckets'
 
@@ -715,59 +707,6 @@ export const FLOAT_REFRESH_BALANCES_LABEL = 'Refresh balances'
 
 export function floatRefreshedLabel(relativeTime: string): string {
   return `Refreshed ${relativeTime}`
-}
-
-/** Guidance bullets for the Unbucketed info sheet on the Buckets tab. */
-export function bucketsFloatInfoPoints(isChild: boolean): readonly string[] {
-  if (isChild) {
-    return [
-      `Money not in your buckets yet — that's ${FLOAT_LABEL_LOWER}.`,
-      `Buckets only change when you move money.`,
-      `Move between ${FLOAT_LABEL} and your buckets to organize your money.`,
-    ] as const
-  }
-  // Bank refresh updates Unbucketed only, not buckets. When Schedule ships,
-  // extend bullet 2 (e.g. "when you move money or when auto-organize runs").
-  return [
-    `Paydays, bills, and card payments update ${FLOAT_LABEL} when balances refresh — not your buckets.`,
-    `Buckets only change when you move money in the app.`,
-  ] as const
-}
-
-export type FloatStatusGuide = {
-  tone: 'green' | 'red'
-  label: string
-  body: string
-}
-
-/** Green/red Unbucketed meanings — rendered with matching colors in the info sheet. */
-export function bucketsFloatStatusGuide(isChild: boolean): readonly FloatStatusGuide[] {
-  if (isChild) {
-    return [
-      {
-        tone: 'green',
-        label: 'Green',
-        body: `Your cash covers what's in your buckets.`,
-      },
-      {
-        tone: 'red',
-        label: 'Red',
-        body: `Buckets total more than your cash.`,
-      },
-    ] as const
-  }
-  return [
-    {
-      tone: 'green',
-      label: 'Green',
-      body: `Your cash covers your buckets — nothing over-allocated.`,
-    },
-    {
-      tone: 'red',
-      label: 'Red',
-      body: `Buckets total more than your cash.`,
-    },
-  ] as const
 }
 
 // --- Auto-bucket (Buckets tab) ---

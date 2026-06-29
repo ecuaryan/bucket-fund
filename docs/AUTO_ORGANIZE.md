@@ -442,10 +442,6 @@ Auto-bucket rules cannot Run now until **Resume**.
 Active Auto-bucket lines → subtle icon or “+$X in Auto-bucket” on bucket row (both roles
 see hints on shared buckets).
 
-When added, extend `bucketsFloatInfoPoints` bullet 2 for automatic organization
-(e.g. buckets change when you move money **or when Auto-bucket runs on days you
-choose**).
-
 ---
 
 ## History
