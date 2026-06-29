@@ -107,14 +107,15 @@ If you're the kind of person who has ever looked at their bank account two days 
   match member-removal patterns (intro, bullets, Cancel + action).
 - **Bank refresh vs buckets:** linked-account balance updates change **Float only**
   — bucket amounts stay put until someone **moves money** or an **auto-organize** run
-  fires (admin-configured; see [AUTO_ORGANIZE.md](./AUTO_ORGANIZE.md)). In-app copy must not
+  fires (admin-configured for the household, kid-configured for a kid's own scope;
+  see [AUTO_ORGANIZE.md](./AUTO_ORGANIZE.md)). In-app copy must not
   imply the app moves money at the bank; say *refresh*, *update*, or *when your
   bank balance changes* for Float. Info sheet bullets stay short (three max for
   adults). Do not say *sync* for bank balances — use **refresh** (see above).
 - **Set aside (manual):** moving Float → bucket may make Float **negative**.
   **Bucket → anything** still cannot exceed the bucket balance. Applies to all roles;
   **`send_money`** keeps the insufficient-Float guard. When a manual **Set aside**
-  (or admin **Run now**) would cross Float from **≥ 0 to negative**, confirm with a
+  (or a **Run now**) would cross Float from **≥ 0 to negative**, confirm with a
   consequential `Sheet` first; skip confirm if Float is already red; automatic
   auto-organize runs skip confirm.
 - **Auto-organize:** feature name **Auto-organize** — subtitle *Organize your money

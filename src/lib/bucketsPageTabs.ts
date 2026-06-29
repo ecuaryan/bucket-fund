@@ -25,8 +25,8 @@ const ACCOUNT_TAB_OPTION: BucketsPageTabOption = {
 
 /**
  * Build the visible tab list. "Buckets" is always first; the optional tabs are
- * appended only when available. In practice a role sees at most one optional
- * tab (adults: auto-organize; a linked child: account), but both are supported.
+ * appended only when available. Adults and kids can both see auto-organize now;
+ * a linked child may see auto-organize and account together — both are supported.
  */
 export function bucketsPageTabOptions(opts: {
   showAutoOrganize: boolean
@@ -59,18 +59,18 @@ export function resolveBucketsPageTab(
 
 export function shouldShowAutoOrganizeTab(
   canSeeAutoOrganize: boolean,
-  isAdmin: boolean,
+  isAuthor: boolean,
   autoOrganizeTabAvailable: boolean | null,
 ): boolean {
-  return canSeeAutoOrganize && (isAdmin || autoOrganizeTabAvailable === true)
+  return canSeeAutoOrganize && (isAuthor || autoOrganizeTabAvailable === true)
 }
 
 export function isAutoOrganizeTabAvailabilityPending(
   canSeeAutoOrganize: boolean,
-  isAdmin: boolean,
+  isAuthor: boolean,
   autoOrganizeTabAvailable: boolean | null,
 ): boolean {
-  return canSeeAutoOrganize && !isAdmin && autoOrganizeTabAvailable === null
+  return canSeeAutoOrganize && !isAuthor && autoOrganizeTabAvailable === null
 }
 
 /** Merge tab into existing search params without dropping unrelated keys. */

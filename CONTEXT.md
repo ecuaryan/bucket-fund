@@ -81,6 +81,7 @@ UI labels: **Admin**, **Shared**, **Kid** (`memberRoles.ts`). DB/API values rema
 - Scoped entirely to their own buckets and balance
 - Cannot see family pool buckets or balances
 - Can create and manage (rename, delete, reorder) **their own** buckets — people on the shared balance never see these in the Buckets tab
+- Can set up and run **their own auto-organizes** (organize / top-up / save-off, scheduled or Run now) over their own buckets and Float — invisible to admins and shared members, same as their buckets
 - Sends to people on the shared balance (returns money to the pool) or other kids; sees
   only sends they participate in
 
@@ -421,20 +422,22 @@ Implementation: `HideAmountsPeekFab`, `hideAmountsPeekLogic.ts`, peek state in
 
 ### Auto-organize (shipped — v1)
 
-**Auto-organize** — automatically organize money from shared Float into household
-buckets on calendar days the user chooses (default **3 AM local**). Admin configures,
-pauses, **Run now**, and edits; Shared sees auto-organizes read-only on the Buckets
-tab; server runs due auto-organizes via **pg_cron → `run_due_auto_organizes`**. Schema:
-`auto_organizes` / `auto_organize_*` (migrations `00000000000048`–`50`). Full spec:
-[docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md).
+**Auto-organize** — automatically organize money from Float into buckets on calendar days the
+user chooses (default **3 AM local**). Admin configures the **household pool** (Shared sees it
+read-only); each **kid self-serves their own** auto-organizes over their own buckets and Float —
+invisible to admins and shared members, same as kids' own buckets, and identical for linked and
+virtual kids. Create, pause, **Run now**, edit; server runs due rules via
+**pg_cron → `run_due_auto_organizes`**. Schema: `auto_organizes` / `auto_organize_*`
+(migrations `00000000000048`–`50`; kinds `58`; kid scope via `owner_member_id` in `76`). Full
+spec: [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md).
 
 **Run policy (v1):** at most one **scheduled** run per auto-organize per local day;
 **Run now** may execute multiple times the same day; a manual run on a due day blocks
 cron that day. **Paused** blocks both scheduled and manual runs until **Resume**.
 
-Deferred after v1: kid **auto-organizes**, scheduled **Send to a kid**
-(`send_money` via auto-organize `send` kind), bucket-row “+$X in auto-organize” hints,
-editor review step before save, local seed scenario.
+Kid **auto-organizes** shipped (migration `76`, `owner_member_id` scope). Deferred after v1:
+scheduled **Send to a kid** (`send_money` via auto-organize `send` kind), bucket-row
+“+$X in auto-organize” hints, editor review step before save, local seed scenario.
 
 ---
 

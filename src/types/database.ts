@@ -211,6 +211,7 @@ export type Database = {
           interval_count: number | null
           interval_unit: string | null
           name: string | null
+          owner_member_id: string | null
           paused: boolean
           start_date: string | null
           updated_at: string
@@ -227,6 +228,7 @@ export type Database = {
           interval_count?: number | null
           interval_unit?: string | null
           name?: string | null
+          owner_member_id?: string | null
           paused?: boolean
           start_date?: string | null
           updated_at?: string
@@ -243,6 +245,7 @@ export type Database = {
           interval_count?: number | null
           interval_unit?: string | null
           name?: string | null
+          owner_member_id?: string | null
           paused?: boolean
           start_date?: string | null
           updated_at?: string
@@ -267,6 +270,13 @@ export type Database = {
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auto_organizes_owner_member_id_fkey"
+            columns: ["owner_member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
             referencedColumns: ["id"]
           },
         ]

@@ -11,6 +11,10 @@ household buckets on calendar days the user chooses.
 pg_cron scheduler, History **Scheduled** label.  
 **Auto top-up / save-off:** **Shipped** — migration `00000000000058`, three `auto_organize_kind`
 values, kind chooser on Add.  
+**Kid self-serve:** **Shipped** — migration `00000000000076`, `auto_organizes.owner_member_id`
+(null = household pool, a member id = that kid's private rule). Kids author auto-organizes over
+their **own** buckets and Float; the rules are invisible to admins and shared members. Works the
+same for linked and virtual kids.  
 **Related:** [CONTEXT.md](../CONTEXT.md), [docs/BRAND.md](./BRAND.md), `src/lib/brand.ts`.
 
 ---
@@ -65,16 +69,15 @@ different label for one manual move, not the feature name.
 
 ### Out (defer; schema may leave hooks)
 
-- Kid **auto-organizes** (manual kid moves already exist).
 - Scheduled **Send to a kid** (`send_money` via auto-organize `send` kind; virtual kids only).
 - History filters / search (individual rows + Scheduled label is enough for v1).
 - Skip-next-run (pause is sufficient).
 - End-by-date — runs until paused or deleted (“when I cancel”).
 - “Configured by [name]” on cards (neutral copy is fine).
 
-Future: `owner_member_id` on `auto_organizes` (null = household), scheduled **Send to a kid**
-(`send_money` via a future kind). v1+ rows use **`auto_organize_kind`**: `organize` | `top_up` |
-`save_off`.
+**Kid self-serve auto-organizes are now shipped** (migration `00000000000076`) — see the
+status block and [Roles](#roles). Future: scheduled **Send to a kid** (`send_money` via a future
+kind). Rows use **`auto_organize_kind`**: `organize` | `top_up` | `save_off`.
 
 ---
 
@@ -107,12 +110,20 @@ schedule only.
 
 | Capability | Admin | Shared (`member`) | Kid |
 | --- | --- | --- | --- |
-| View household auto-organizes | ✓ | ✓ read-only | — |
-| Create / edit / pause / delete | ✓ | — | — |
-| Run now | ✓ | — | — |
-| Automatic execution | server | — | — |
+| View household auto-organizes | ✓ | ✓ read-only | — (hidden) |
+| Create / edit / pause / delete household | ✓ | — | — |
+| Run now (household) | ✓ | — | — |
+| View / create / edit / pause / delete / Run now **own** | — | — | ✓ (own scope) |
+| Automatic execution | server | — | server |
 
-RLS and RPCs must enforce this — not UI-only.
+A **kid owns** auto-organizes scoped to their own buckets and Float
+(`auto_organizes.owner_member_id = kid`). Those rows are invisible to admins and shared
+members — exactly like a kid's own buckets. Admins/members manage only **household** rules
+(`owner_member_id is null`); kids never touch the household pool.
+
+RLS and RPCs must enforce this — not UI-only. Scoping lives in migration
+`00000000000076`: line/destination buckets must match the rule's owner, the Float member and
+History actor resolve to the owner, and adult policies are restricted to `owner_member_id is null`.
 
 ---
 
@@ -304,7 +315,8 @@ Indexes / constraints:
 - **Manual (Run now):** no daily cap — multiple runs on the same local day are allowed (confirm sheet shows last-run context when the rule has run before).
 - `(family_id)` on `auto_organizes` and `auto_organize_runs` for RLS.
 
-Optional later: `owner_member_id uuid null` on `auto_organizes` for kid scope.
+**`owner_member_id uuid null`** on `auto_organizes` (migration `00000000000076`) — null = household
+pool, a member id = that kid's private scope. Indexed; cascades on member delete.
 
 ---
 
@@ -398,6 +410,15 @@ when paused. No Edit / Pause / Run now.
 Same cards + section **Add** CTA, **Edit**, **Pause / Resume** (scheduled rules only), **Run now** (disabled
 when paused, with status copy explaining why).
 
+### Kid (own scope)
+
+A kid gets the **same authoring surface as an admin** — Add / Edit / Pause / Run now — but only
+over **their own** auto-organizes, buckets, and Float. The tab shows for a kid even when empty
+(so they can create their first rule). Wiring: `BucketsPage` treats **admin or child** as an
+author (`isAutoOrganizeAuthor`), passes `isChild` to `AutoOrganizeSection`, which derives
+`canAuthor` and a `scopeOwnerId` (the kid's id) used to filter the editor/picker buckets and order
+lines. Adults never see a kid's rules (RLS).
+
 ### Auto-organize editor (Sheet)
 
 1. Name (optional)
@@ -459,7 +480,7 @@ Manual bucket moves without a stored note show **Set aside** / **Use from bucket
 
 | Layer | Coverage |
 | --- | --- |
-| `tests/db/auto_organize.test.ts` | Happy manual run, cron idempotency, RLS read (member/child), member write denial, manual run denied for member/child, scheduled trigger denied for authenticated users, invalid bucket line, multiple manual runs/day, one scheduled run/day, manual run blocks cron same day, **top_up fill-to-target** (+ history note), **save_off to bucket and Float** (+ history note), **same-day sweep-before-fill order**, manual-only cron skip, zero-move run when all lines at target |
+| `tests/db/auto_organize.test.ts` | Happy manual run, cron idempotency, RLS read (member/child), member write denial, manual run denied for member/child of household rules, scheduled trigger denied for authenticated users, invalid bucket line, multiple manual runs/day, one scheduled run/day, manual run blocks cron same day, **top_up fill-to-target** (+ history note), **save_off to bucket and Float** (+ history note), **same-day sweep-before-fill order**, manual-only cron skip, zero-move run when all lines at target, **kid self-serve** (create + run own rule, virtual + linked), **kid save_off to own Float**, **kid rule invisible to admin/member**, **cross-kid run denial**, **non-owned-bucket line rejected**, **cron runs a kid rule attributed to the kid** |
 | `src/lib/autoOrganize.test.ts` | Per-line move math, totals, active lines, save-off preview consistency |
 | `src/lib/autoOrganizeCadence.test.ts` | Cadence matching, next-run labels, editor schedule summaries, run-now last-run context |
 | `src/lib/historyTransactionNote.test.ts` | History note enrichment and manual-move defaults |
