@@ -528,7 +528,12 @@ export default function AutoOrganizeSection({
   // target (null = family pool, the kid's id = the kid's own buckets).
   const canAuthor = isAdmin || isChild
   const scopeOwnerId = isChild ? memberId : null
-  const scopeBuckets = buckets.filter((b) => b.owner_member_id === scopeOwnerId)
+  // Memoized so the editor receives a referentially stable `buckets` prop —
+  // an unstable array would otherwise churn its memo deps on every re-render.
+  const scopeBuckets = useMemo(
+    () => buckets.filter((b) => b.owner_member_id === scopeOwnerId),
+    [buckets, scopeOwnerId],
+  )
   const bucketNamesById = useMemo(
     () => new Map(buckets.map((b) => [b.id, b.name])),
     [buckets],
