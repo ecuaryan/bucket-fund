@@ -526,6 +526,16 @@ export default function AdminPage() {
             {groups.map((group) => {
               const expanded = !collapsedGroupKeys.has(group.groupKey)
               const accountsPanelId = `admin-group-${group.groupKey}-accounts`
+              // Keep the Reconnect button mounted while enrollment metadata
+              // loads so its space is reserved, then fade it in once we know
+              // the link is reconnectable — snapping it in grabs attention.
+              const reconnectReady = Boolean(group.tellerConnectEnrollmentId)
+              const reconnectBusy =
+                !teller.ready ||
+                teller.linking ||
+                unlinkingKey === group.groupKey ||
+                reconnectingKey === group.groupKey ||
+                refreshingKey === group.groupKey
               return (
               <li
                 key={group.groupKey}
@@ -590,22 +600,19 @@ export default function AdminPage() {
                         onClick={() => void onRefresh(group)}
                         className="text-zinc-400 hover:text-zinc-200"
                       />
-                      {(group.tellerConnectEnrollmentId || !enrollmentsLoaded) && (
+                      {(reconnectReady || !enrollmentsLoaded) && (
                         <button
                           type="button"
                           onClick={() => onReconnect(group)}
-                          disabled={
-                            !group.tellerConnectEnrollmentId ||
-                            !teller.ready ||
-                            teller.linking ||
-                            unlinkingKey === group.groupKey ||
-                            reconnectingKey === group.groupKey ||
-                            refreshingKey === group.groupKey
-                          }
-                          aria-hidden={!group.tellerConnectEnrollmentId}
-                          tabIndex={group.tellerConnectEnrollmentId ? 0 : -1}
-                          className={`rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 ${
-                            group.tellerConnectEnrollmentId ? '' : 'invisible'
+                          disabled={!reconnectReady || reconnectBusy}
+                          aria-hidden={!reconnectReady}
+                          tabIndex={reconnectReady ? 0 : -1}
+                          className={`rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition duration-300 motion-reduce:transition-none hover:bg-zinc-700 disabled:cursor-not-allowed ${
+                            !reconnectReady
+                              ? 'pointer-events-none opacity-0'
+                              : reconnectBusy
+                                ? 'opacity-50'
+                                : 'opacity-100'
                           }`}
                         >
                           {reconnectingKey === group.groupKey
