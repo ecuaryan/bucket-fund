@@ -3,11 +3,14 @@ import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import {
   NAV_BUCKETS_LABEL,
-  FLOAT_NEGATIVE_HINT,
+  floatOverbucketedHint,
   KIDS_VIRTUAL_SECTION_TITLE,
   KIDS_LINKED_SECTION_TITLE,
 } from '../../src/lib/brand'
-import { applyPwaScreenshotRebalance } from '../../scripts/seed/pwaScreenshotRebalance'
+import {
+  applyPwaScreenshotRebalance,
+  PWA_SCREENSHOT_REBALANCE_TARGET_FLOAT,
+} from '../../scripts/seed/pwaScreenshotRebalance'
 import { seedAdminEmail } from '../../scripts/seed/constants'
 import {
   PWA_SCREENSHOT_BUCKETS,
@@ -68,6 +71,7 @@ test('capture PWA install screenshots', async ({ page }) => {
   await page.goto('/')
   await waitForNavSettled(page, NAV_BUCKETS_LABEL)
   await expect(bucketsTab).toHaveAttribute('aria-selected', 'true')
-  await page.getByText(FLOAT_NEGATIVE_HINT).waitFor()
+  const overAmountLabel = `$${Math.abs(PWA_SCREENSHOT_REBALANCE_TARGET_FLOAT).toLocaleString('en-US')}`
+  await page.getByText(floatOverbucketedHint(overAmountLabel)).waitFor()
   await page.screenshot({ path: join(outputDir, 'buckets-rebalance.png') })
 })
