@@ -56,7 +56,7 @@ switch — no reset needed.
 | `all` | (every row below) | All families at once — credential table printed at end |
 | `solo` | `solo@bmm.dev` | Empty app, good for first-run UX |
 | `household` | `household@bmm.dev` | Admin + shared member + kid, $1k cash, buckets, send |
-| `rebalance` | `rebalance@bmm.dev` | $200 cash, $450 allocated (negative Float) |
+| `rebalance` | `rebalance@bmm.dev` | $200 cash, $450 allocated (negative Unbucketed) |
 | `pin-household` | `pin-household@bmm.dev` | Like `household`, PIN **0000** on Alex and Sam |
 | `linked-kid` | `linked-kid@bmm.dev` | Kid with assigned manual account — Send blocked |
 | `admin-no-pin` | `admin-no-pin@bmm.dev` | Admin only, no PIN — green PIN setup CTA |
@@ -65,8 +65,8 @@ switch — no reset needed.
 | `history` | `history@bmm.dev` | ~40 moves and sends — History volume |
 | `shared-only` | `shared-only@bmm.dev` | Shared member (PIN **0000**), no kid |
 | `golden` | `golden@bmm.dev` | R + S + 5 kids (PIN **0000**), 6 linked bank accounts ($25k each; K and A assigned), 30 emoji buckets ($100 each), J/T/Z with $10k each |
-| `pwa-screenshots` | `pwa-screenshots@bmm.dev` | Emoji buckets, green Float — PWA install screenshot source |
-| `pwa-gifs` | `pwa-gifs@bmm.dev` | $5k Float, no buckets — README demo GIF source |
+| `pwa-screenshots` | `pwa-screenshots@bmm.dev` | Emoji buckets, green Unbucketed — PWA install screenshot source |
+| `pwa-gifs` | `pwa-gifs@bmm.dev` | $5k Unbucketed, no buckets — README demo GIF source |
 
 CI does **not** run seeds — database tests create their own fixtures.
 
@@ -150,7 +150,7 @@ npx supabase unlink
 - [x] **CI/CD:** after green CI on `main`, `deploy-supabase.yml` runs `db push` + `functions deploy`
 - [ ] Optional: notification when **Deploy Supabase** fails on `main`
 
-**Auto-organize backend:** migrations `48`–`61` enable **pg_cron** on hosted Supabase.
+**Auto-bucket backend:** migrations `48`–`61` enable **pg_cron** on hosted Supabase.
 See [AUTO_ORGANIZE.md § Scheduler](./AUTO_ORGANIZE.md#scheduler-cost--scale).
 
 ### Before connecting real Teller data

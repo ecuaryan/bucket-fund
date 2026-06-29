@@ -161,7 +161,7 @@ export default function BucketsPage() {
     boolean | null
   >(null)
   const [autoOrganizePanelMounted, setAutoOrganizePanelMounted] = useState(
-    () => searchParams.get('tab') === 'auto-organize',
+    () => searchParams.get('tab') === 'auto-bucket',
   )
   const [floatInfoOpen, setFloatInfoOpen] = useState(false)
   const [coachDismissed, setCoachDismissed] = useState(true)
@@ -399,7 +399,7 @@ export default function BucketsPage() {
     // accounts to resolve lets a deep link (e.g. from the Kids page) land on
     // the Bank tab instead of bouncing to Buckets.
     const tabUnavailable =
-      (urlTab === 'auto-organize' && !showAutoOrganizeTab) ||
+      (urlTab === 'auto-bucket' && !showAutoOrganizeTab) ||
       (urlTab === 'account' && accounts !== null && !showAccountTab)
     if (tabUnavailable) {
       setSearchParams(
@@ -418,7 +418,7 @@ export default function BucketsPage() {
   ])
 
   useEffect(() => {
-    if (activeTab === 'auto-organize') {
+    if (activeTab === 'auto-bucket') {
       setAutoOrganizePanelMounted(true)
     }
   }, [activeTab])
@@ -953,7 +953,7 @@ export default function BucketsPage() {
           role="tabpanel"
           id="segmented-panel-auto-organize"
           aria-labelledby="segmented-tab-auto-organize"
-          hidden={activeTab !== 'auto-organize'}
+          hidden={activeTab !== 'auto-bucket'}
         >
           <AutoOrganizeSection
             embedded

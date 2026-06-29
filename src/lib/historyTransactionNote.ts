@@ -13,6 +13,9 @@ export type HistoryTransactionNoteRow = {
 }
 
 const AUTO_ORGANIZE_NOTE_PREFIXES = [
+  'Auto-bucket · ',
+  // Legacy prefix written by runs before the Auto-bucket rename — still
+  // recognized so old History notes aren't double-enriched.
   'Auto-organize · ',
   'Auto top-up · ',
   'Auto save-off · ',
@@ -37,7 +40,7 @@ export function historyTransactionNoteDisplay(
     const kind = row.auto_organize_kind as AutoOrganizeKind
     if (stored && isAutoOrganizeHistoryNote(stored)) return stored
     if (stored) return autoOrganizeHistoryNote(kind, stored)
-    return autoOrganizeHistoryNote(kind, 'Auto-organize')
+    return autoOrganizeHistoryNote(kind, 'Auto-bucket')
   }
 
   // A manual move with no note shows no note line — the card already says

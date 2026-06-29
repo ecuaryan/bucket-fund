@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { historyTransactionNoteDisplay } from '@/lib/historyTransactionNote'
 
 describe('historyTransactionNoteDisplay', () => {
-  it('enriches legacy auto-organize notes with kind prefix', () => {
+  it('enriches Auto-bucket notes with kind prefix', () => {
     expect(
       historyTransactionNoteDisplay({
         type: 'bucket_move',
@@ -12,7 +12,7 @@ describe('historyTransactionNoteDisplay', () => {
         auto_organize_run_id: 'run-1',
         auto_organize_kind: 'organize',
       }),
-    ).toBe('Auto-organize · Payday')
+    ).toBe('Auto-bucket · Payday')
   })
 
   it('passes through notes that already include kind prefix', () => {

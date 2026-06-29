@@ -34,7 +34,7 @@ Installable progressive web app with phone-sized UI — Buckets, History, and Ki
 Regenerate after significant UI changes ([docs/MAINTENANCE.md § PWA assets](./docs/MAINTENANCE.md#regenerating-readme--pwa-assets)).
 
 <p align="center">
-  <img src="public/screenshots/buckets.png" alt="Buckets tab — Unbucketed, emoji buckets, and Auto-organize tabs" width="49%" />
+  <img src="public/screenshots/buckets.png" alt="Buckets tab — Unbucketed, emoji buckets, and Auto-bucket tabs" width="49%" />
   <img src="public/screenshots/buckets-rebalance.png" alt="Buckets tab — negative Unbucketed rebalance signal" width="49%" />
 </p>
 <p align="center">
@@ -51,7 +51,7 @@ Regenerate after significant UI changes ([docs/MAINTENANCE.md § PWA assets](./d
 - **Move and send money** — set aside from Unbucketed, cover spends, send to kids; History
   with pagination and notes.
 - **Read-only bank link** — Teller Connect, webhooks, manual money sources for onboarding.
-- **Auto-organize** — scheduled or on-demand rules to set aside into buckets (`pg_cron` on hosted).
+- **Auto-bucket** — scheduled or on-demand rules to set aside into buckets (`pg_cron` on hosted).
 - **PWA** — offline fallback, service worker, install screenshots; session-scoped auth.
 - **Tests** — Vitest unit tests, database RLS/RPC tests, Playwright smoke e2e; CI on every PR.
 
@@ -121,7 +121,7 @@ Full command list, seed scenarios, PWA asset regen, and security checklists:
 | -------- | -------- |
 | [CONTEXT.md](./CONTEXT.md) | Product brief, balance model, schema, security |
 | [docs/BRAND.md](./docs/BRAND.md) | Voice, Unbucketed terminology, product narrative |
-| [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md) | Auto-organize feature and cron |
+| [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md) | Auto-bucket feature and cron |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | Branch/PR workflow, CI, deploy sequence |
 | [AGENTS.md](./AGENTS.md) | Entry point for AI coding agents |
 | [docs/MAINTENANCE.md](./docs/MAINTENANCE.md) | Dev commands, seeds, TODOs, Teller/prod ops |

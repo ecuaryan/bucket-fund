@@ -25,7 +25,7 @@ export function moveMoneyDialogTitle(intent: MoveMoneyIntent): string {
     case 'setAside':
       return 'Set aside'
     case 'cover':
-      return 'Use from bucket'
+      return 'Unbucket'
     default:
       return 'Move money'
   }
@@ -41,7 +41,7 @@ export function moveMoneyDialogSubmitLabel(
       case 'setAside':
         return 'Set aside'
       case 'cover':
-        return 'Use'
+        return 'Unbucket'
       default:
         return 'Move'
     }
@@ -50,7 +50,7 @@ export function moveMoneyDialogSubmitLabel(
     case 'setAside':
       return `Set aside ${amountFormatted} in ${destinationLabel}`
     case 'cover':
-      return `Use ${amountFormatted} from ${destinationLabel}`
+      return `Unbucket ${amountFormatted} from ${destinationLabel}`
     default:
       return `Move ${amountFormatted} to ${destinationLabel}`
   }
@@ -61,7 +61,7 @@ export function moveMoneyDialogSubmittingLabel(intent: MoveMoneyIntent): string 
     case 'setAside':
       return 'Setting aside…'
     case 'cover':
-      return 'Updating…'
+      return 'Unbucketing…'
     default:
       return 'Moving…'
   }

@@ -64,7 +64,7 @@ test.describe('Kids tab', () => {
       .click()
     await expect(takeSheet).not.toBeVisible()
     await expect(
-      page.getByText(`Took $5 from Sam back to shared float.`),
+      page.getByText(`Took $5 from Sam back to shared unbucketed cash.`),
     ).toBeVisible()
     await expect(samRow).toContainText('$5')
 

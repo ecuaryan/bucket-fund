@@ -106,7 +106,7 @@ If you're the kind of person who has ever looked at their bank account two days 
   Never `window.confirm` (unreliable in embedded browsers). Copy in `brand.ts`;
   match member-removal patterns (intro, bullets, Cancel + action).
 - **Bank refresh vs buckets:** linked-account balance updates change **Unbucketed only**
-  — bucket amounts stay put until someone **moves money** or an **auto-organize** run
+  — bucket amounts stay put until someone **moves money** or an **Auto-bucket** run
   fires (admin-configured for the household, kid-configured for a kid's own scope;
   see [AUTO_ORGANIZE.md](./AUTO_ORGANIZE.md)). In-app copy must not
   imply the app moves money at the bank; say *refresh*, *update*, or *when your
@@ -117,14 +117,15 @@ If you're the kind of person who has ever looked at their bank account two days 
   **`send_money`** keeps the insufficient-`float` guard. When a manual **Set aside**
   (or a **Run now**) would cross Unbucketed from **≥ 0 to negative**, confirm with a
   consequential `Sheet` first; skip confirm if Unbucketed is already red; automatic
-  auto-organize runs skip confirm.
-- **Auto-organize:** feature name **Auto-organize** — subtitle *Organize your money
+  Auto-bucket runs skip confirm.
+- **Auto-bucket:** feature name **Auto-bucket** — subtitle *Organize your money
   into buckets on the days you choose.* Guardrail: *You choose when and how much —
   money moves into buckets automatically.* Not “scheduled set-aside,” “organize Unbucketed,” or
-  “automation.” Header **Auto-organize**; section CTA **Add**; History
+  “automation.” Header **Auto-bucket**; section CTA **Add**; History
   **Scheduled**. Manual dialog keeps **Set aside** (production). Constants:
   `AUTO_ORGANIZE_*`, `HISTORY_SCHEDULED_MOVE_LABEL` in `brand.ts`. Schema:
   `auto_organizes`, `auto_organize_*` (see [AUTO_ORGANIZE.md](./AUTO_ORGANIZE.md)).
+  UI says **Auto-bucket**; schema keeps `auto_organize*`.
   User-configured automatic organization ≠ auto-rebalance when the bank moves.
 
 ## Display name

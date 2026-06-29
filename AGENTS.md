@@ -19,7 +19,7 @@ Entry point for AI coding agents (and humans) working in this repo.
 4. **[README.md](./README.md)** — overview, demo, stack, local dev quick start.
 5. **[docs/MAINTENANCE.md](./docs/MAINTENANCE.md)** — full dev commands, seed
    scenarios, PWA asset regen, security TODOs (Teller + production database).
-6. **[docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md)** — **Auto-organize** feature:
+6. **[docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md)** — **Auto-bucket** feature:
    cadence, `auto_organize_*` schema/RPCs, cron, roles, History.
 7. **[docs/BRAND.md](./docs/BRAND.md)** — product voice, Unbucketed terminology,
    and the full **Product narrative** (word-for-word). User-facing strings live in
@@ -56,7 +56,7 @@ Entry point for AI coding agents (and humans) working in this repo.
   see CONTEXT.md § Data Integrity. Do not add a second user-facing alarm for
   normal bank-vs-bucket drift.
 - **Product ↔ code naming:** Use one vocabulary for features — UI labels in
-  `brand.ts` and schema/RPC names should mean the same thing (e.g. **Auto-organize**
+  `brand.ts` and schema/RPC names should mean the same thing (e.g. **Auto-bucket**
   → `auto_organize_*`); do not introduce parallel backend aliases. See
   [docs/AUTO_ORGANIZE.md § Naming](./docs/AUTO_ORGANIZE.md#naming).
 - **Money writes only via RPCs.** `move_money` and `send_money`; extend
@@ -100,7 +100,7 @@ Entry point for AI coding agents (and humans) working in this repo.
 | App shell, nav, layouts         | `src/components/layout/`              |
 | Auth flows (login, PIN, biometric) | `src/features/auth/`               |
 | Buckets list + move flow        | `src/features/buckets/` |
-| Auto-organize | `src/features/buckets/` + `src/lib/autoOrganize.ts`, `autoOrganizeCadence.ts`; [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md) |
+| Auto-bucket | `src/features/buckets/` + `src/lib/autoOrganize.ts`, `autoOrganizeCadence.ts`; [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md) |
 | Send money flow                 | `src/features/sends/` |
 | Hide amounts + Peek FAB         | `HideAmountsProvider`, `HideAmountsPeekFab` (fixed), `HideAmountsPeekSheetAnchor` in `Sheet`, `hideAmountsPeekLogic.ts` |
 | Transaction history             | `src/features/history/`               |

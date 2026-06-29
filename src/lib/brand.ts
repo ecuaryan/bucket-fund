@@ -173,7 +173,7 @@ export const ADMIN_HOUSEHOLD_ROLES_HELP_TOGGLE = 'About household roles'
 
 /** Shown under the add-member role picker for the selected role. */
 export const ADMIN_ROLE_CONTEXT_ADMIN =
-  `Full household control—banks, members, and auto-organize. Shares buckets and ${FLOAT_LABEL_LOWER} cash with Shared members.`
+  `Full household control—banks, members, and Auto-bucket. Shares buckets and ${FLOAT_LABEL_LOWER} cash with Shared members.`
 
 export const ADMIN_ROLE_CONTEXT_SHARED = `Shares household buckets and ${FLOAT_LABEL_LOWER} cash, and can see bank activity. Give to kids on the Kids tab.`
 
@@ -527,7 +527,7 @@ export const ADMIN_REMOVE_SHARED_EFFECT_LOGIN =
   'Their PIN and sign-in are deleted.'
 
 export const ADMIN_REMOVE_ADMIN_EFFECT_ACCESS =
-  'They lose admin access—banks, members, and auto-organize settings.'
+  'They lose admin access—banks, members, and Auto-bucket settings.'
 
 export const ADMIN_REMOVE_ADMIN_EFFECT_LOGIN =
   'Their PIN and sign-in are deleted.'
@@ -627,7 +627,7 @@ export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK =
   'Deleting will still remove this bucket from any schedules it appears on.'
 
 export const BUCKETS_DELETE_BUCKET_AUTO_ORGANIZE_LOAD_FALLBACK_MANUAL =
-  'Deleting will still remove this bucket from any auto-organize rules it appears on.'
+  'Deleting will still remove this bucket from any Auto-bucket rules it appears on.'
 
 export function bucketsDeleteBucketAutoOrganizeIntro(allManualOnly: boolean): string {
   return allManualOnly
@@ -770,10 +770,11 @@ export function bucketsFloatStatusGuide(isChild: boolean): readonly FloatStatusG
   ] as const
 }
 
-// --- Auto-organize (Buckets tab) ---
+// --- Auto-bucket (Buckets tab) ---
+// UI label is "Auto-bucket"; schema/RPCs keep `auto_organize*` (see docs).
 
 /** Buckets tab section header. Schema: `auto_organizes`. */
-export const AUTO_ORGANIZE_SECTION_TITLE = 'Auto-organize'
+export const AUTO_ORGANIZE_SECTION_TITLE = 'Auto-bucket'
 
 export const BUCKETS_PAGE_TABS_ARIA_LABEL = 'Buckets page sections'
 /** Tab label for the bank account activity view (adults see all family
@@ -781,9 +782,9 @@ export const BUCKETS_PAGE_TABS_ARIA_LABEL = 'Buckets page sections'
  * clashing with the in-app History feed. */
 export const BUCKETS_PAGE_TAB_ACCOUNT_LABEL = 'Bank'
 
-export const AUTO_ORGANIZE_LOAD_ERROR_TITLE = 'Could not load auto-organize'
+export const AUTO_ORGANIZE_LOAD_ERROR_TITLE = 'Could not load Auto-bucket'
 
-export const AUTO_ORGANIZE_LOADING_ARIA_LABEL = 'Loading auto-organize'
+export const AUTO_ORGANIZE_LOADING_ARIA_LABEL = 'Loading Auto-bucket'
 
 /** One line under the section header (admin + Shared). */
 export const AUTO_ORGANIZE_GUARDRAIL =
@@ -798,7 +799,7 @@ export const AUTO_ORGANIZE_EMPTY_BODY =
 
 export type AutoOrganizeKind = 'organize' | 'top_up' | 'save_off'
 
-export const AUTO_ORGANIZE_KIND_ORGANIZE_LABEL = 'Auto-organize'
+export const AUTO_ORGANIZE_KIND_ORGANIZE_LABEL = 'Auto-bucket'
 
 export const AUTO_ORGANIZE_KIND_TOPUP_LABEL = 'Auto top-up'
 
@@ -876,7 +877,7 @@ export const AUTO_ORGANIZE_SWEEP_THEN_FILL_TOPUP_NOTE =
   'This bucket is also in a save-off rule. Excess is swept before top-ups on the same day.'
 
 export const AUTO_ORGANIZE_SWEEP_THEN_FILL_SAVEOFF_NOTE =
-  'This bucket is also in a top-up or auto-organize rule. Save-offs run before refills on the same day.'
+  'This bucket is also in a top-up or Auto-bucket rule. Save-offs run before refills on the same day.'
 
 /** @deprecated use AUTO_ORGANIZE_SWEEP_THEN_FILL_TOPUP_NOTE or AUTO_ORGANIZE_SWEEP_THEN_FILL_SAVEOFF_NOTE */
 export const AUTO_ORGANIZE_SWEEP_THEN_FILL_NOTE =
@@ -1042,7 +1043,7 @@ export function autoOrganizeDeleteSheetTitle(displayName: string): string {
 }
 
 export const AUTO_ORGANIZE_DELETE_SHEET_BODY =
-  'This stops future auto-organize runs. Past moves stay in History.'
+  'This stops future Auto-bucket runs. Past moves stay in History.'
 
 export const AUTO_ORGANIZE_DELETE_SHEET_BODY_MANUAL =
   'This removes the rule. Past moves stay in History.'
