@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Sheet } from '@/components/ui/Sheet'
 import { FieldLabel } from '@/components/ui/FieldLabel'
 import { ClearableInput } from '@/components/ui/ClearableInput'
@@ -264,30 +264,55 @@ export default function AutoOrganizeEditor({
   const [error, setError] = useState<string | null>(null)
   const [discardOpen, setDiscardOpen] = useState(false)
 
+  // Latest props for the initializer, read via refs so a data refresh (Realtime
+  // reload, balance sync, returning from the background) does NOT re-run the
+  // init effect and wipe in-progress input. We only (re)initialize when the form
+  // opens or the edit target changes — see the effect's dependency array below.
+  const bucketsRef = useRef(buckets)
+  const initialRef = useRef(initial)
+  const householdTimezoneRef = useRef(householdTimezone)
+  const allAutoOrganizesRef = useRef(allAutoOrganizes)
+
+  // Keep the initializer's source props current without making them deps of the
+  // init effect. Declared before that effect so it runs first in the same commit.
+  useEffect(() => {
+    bucketsRef.current = buckets
+    initialRef.current = initial
+    householdTimezoneRef.current = householdTimezone
+    allAutoOrganizesRef.current = allAutoOrganizes
+  }, [buckets, initial, householdTimezone, allAutoOrganizes])
+
+  // Stable identity of the edit target: a specific rule id, or null for "create".
+  const initialId = initial?.id ?? null
+
   useEffect(() => {
     if (!open) {
       setDiscardOpen(false)
       return
     }
 
+    const initialSnap = initialRef.current
+    const bucketsSnap = bucketsRef.current
+    const householdTz = householdTimezoneRef.current
+    const hasHouseholdSchedule =
+      allAutoOrganizesRef.current.length > 0 || initialSnap != null
+
     let cancelled = false
 
     void (async () => {
       const stored =
-        initial?.familyTimezone ??
-        householdTimezone ??
+        initialSnap?.familyTimezone ??
+        householdTz ??
         (await fetchFamilyTimezone())
-      const hasHouseholdSchedule =
-        allAutoOrganizes.length > 0 || initial != null
       const nextTimezone = resolveFamilyTimezone(stored, {
         treatUtcAsUnset: !hasHouseholdSchedule,
       })
       if (cancelled) return
 
       const effectiveKindForInit: AutoOrganizeKind =
-        (initial?.auto_organize_kind as AutoOrganizeKind | undefined) ?? kind
+        (initialSnap?.auto_organize_kind as AutoOrganizeKind | undefined) ?? kind
       const nextCadence = normalizeMonthlyCadence(
-        cadenceFromInitial(initial, effectiveKindForInit, nextTimezone),
+        cadenceFromInitial(initialSnap, effectiveKindForInit, nextTimezone),
       )
       const schedule = monthlyScheduleFromDays(nextCadence.daysOfMonth)
       const nextPreset =
@@ -295,10 +320,10 @@ export default function AutoOrganizeEditor({
         nextCadence.daysOfMonth?.length === 2
           ? twiceMonthlyPresetFromDays(nextCadence.daysOfMonth)
           : schedule.preset
-      const nextName = initial?.name ?? ''
-      const nextBuckets = bucketDraftsFromBuckets(buckets, initial?.lines)
+      const nextName = initialSnap?.name ?? ''
+      const nextBuckets = bucketDraftsFromBuckets(bucketsSnap, initialSnap?.lines)
       const nextDest =
-        initial?.destination_bucket_id ??
+        initialSnap?.destination_bucket_id ??
         (kind === 'save_off' ? null : null)
 
       setFamilyTimezone(nextTimezone)
@@ -328,7 +353,7 @@ export default function AutoOrganizeEditor({
     return () => {
       cancelled = true
     }
-  }, [open, initial, buckets, householdTimezone, kind, allAutoOrganizes.length])
+  }, [open, initialId, kind])
 
   const effectiveKind: AutoOrganizeKind =
     (initial?.auto_organize_kind as AutoOrganizeKind | undefined) ?? kind
