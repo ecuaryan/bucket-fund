@@ -278,13 +278,11 @@ export function kidsEmptyVirtualBody(
 }
 
 export const ADMIN_ROLE_CONTEXT_KID =
-  'Own buckets—not the shared balance. Give on the Kids tab, or assign a linked account below.'
+  'Own buckets—not the household balance. Give on the Kids tab, or assign a linked account below.'
 
-/** Shared family pool label for linked-account assignment (not the Household admin tab). */
-export const SHARED_BALANCE_LABEL = 'Shared balance'
-
-/** @deprecated Use {@link SHARED_BALANCE_LABEL} for account assignment UI. */
-export const HOUSEHOLD_LABEL = SHARED_BALANCE_LABEL
+/** The household's collective money pool (admin + Shared role), used as the
+ *  linked-account assignment owner vs a specific kid. Not the Admin "Household" tab. */
+export const HOUSEHOLD_BALANCE_LABEL = 'Household balance'
 
 /** Shown in the expanded roles reference, not under the add form. */
 export const ADMIN_ROLE_PIN_RESET_NOTE =
@@ -679,7 +677,7 @@ export const BUCKETS_REORDER_POPOVER_LABEL =
 export function bucketsKidFloatHint(
   adminName: string | null | undefined,
 ): string {
-  return `When someone on the shared balance gives you money, move it into buckets—or ask ${householdAdminLabel(adminName)} to link your bank account.`
+  return `When someone gives you money, move it into buckets—or ask ${householdAdminLabel(adminName)} to link your bank account.`
 }
 
 /** Subtitle under the Unbucketed amount when the breakdown panel is hidden. */
@@ -1123,7 +1121,7 @@ export const BUCKETS_LINK_BANK_ADMIN_BODY =
 
 export const BUCKETS_LINK_BANK_ADMIN_ACTION = 'Link in Admin'
 
-export const BUCKETS_EMPTY_TITLE = 'Give your money a job'
+export const BUCKETS_EMPTY_TITLE = 'Organize your money into buckets'
 
 export const BUCKETS_EMPTY_BODY = 'Create your first bucket below.'
 
