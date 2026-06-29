@@ -385,16 +385,11 @@ export function householdAdminLabel(
 
 /** Always-shown lead for the Money sources section (covers banks + manual). */
 export const ADMIN_MONEY_SOURCES_INTRO =
-  'Link a bank or enter an amount by hand—both count toward the money you organize. Edit manual amounts anytime.'
+  'Link a bank or enter an amount by hand—both count toward the money you organize.'
 
-/** Bank-specific guidance, shown only once at least one bank is linked. */
+/** Read-only trust line, shown only once at least one bank is linked. The
+ *  refresh and unlink actions are self-evident from the per-bank buttons. */
 export const ADMIN_LINKED_ACCOUNTS_INTRO = `Linked banks are read-only—${BANK_READ_ONLY_ASSURANCE}.`
-
-export const ADMIN_LINKED_ACCOUNTS_REFRESH_HINT_PREFIX = 'Tap '
-
-/** Follows the inline refresh icon in Admin linked-accounts intro. */
-export const ADMIN_LINKED_ACCOUNTS_REFRESH_HINT_SUFFIX =
-  ' to refresh balances. To change which accounts are linked, Unlink and link again.'
 
 export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
   'Balances count toward the money you can organize into buckets.'
