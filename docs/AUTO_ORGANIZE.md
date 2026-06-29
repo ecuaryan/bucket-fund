@@ -410,6 +410,15 @@ when paused. No Edit / Pause / Run now.
 Same cards + section **Add** CTA, **Edit**, **Pause / Resume** (scheduled rules only), **Run now** (disabled
 when paused, with status copy explaining why).
 
+### Kid (own scope)
+
+A kid gets the **same authoring surface as an admin** — Add / Edit / Pause / Run now — but only
+over **their own** auto-organizes, buckets, and Float. The tab shows for a kid even when empty
+(so they can create their first rule). Wiring: `BucketsPage` treats **admin or child** as an
+author (`isAutoOrganizeAuthor`), passes `isChild` to `AutoOrganizeSection`, which derives
+`canAuthor` and a `scopeOwnerId` (the kid's id) used to filter the editor/picker buckets and order
+lines. Adults never see a kid's rules (RLS).
+
 ### Auto-organize editor (Sheet)
 
 1. Name (optional)
@@ -471,7 +480,7 @@ Manual bucket moves without a stored note show **Set aside** / **Use from bucket
 
 | Layer | Coverage |
 | --- | --- |
-| `tests/db/auto_organize.test.ts` | Happy manual run, cron idempotency, RLS read (member/child), member write denial, manual run denied for member/child, scheduled trigger denied for authenticated users, invalid bucket line, multiple manual runs/day, one scheduled run/day, manual run blocks cron same day, **top_up fill-to-target** (+ history note), **save_off to bucket and Float** (+ history note), **same-day sweep-before-fill order**, manual-only cron skip, zero-move run when all lines at target |
+| `tests/db/auto_organize.test.ts` | Happy manual run, cron idempotency, RLS read (member/child), member write denial, manual run denied for member/child of household rules, scheduled trigger denied for authenticated users, invalid bucket line, multiple manual runs/day, one scheduled run/day, manual run blocks cron same day, **top_up fill-to-target** (+ history note), **save_off to bucket and Float** (+ history note), **same-day sweep-before-fill order**, manual-only cron skip, zero-move run when all lines at target, **kid self-serve** (create + run own rule, virtual + linked), **kid save_off to own Float**, **kid rule invisible to admin/member**, **cross-kid run denial**, **non-owned-bucket line rejected**, **cron runs a kid rule attributed to the kid** |
 | `src/lib/autoOrganize.test.ts` | Per-line move math, totals, active lines, save-off preview consistency |
 | `src/lib/autoOrganizeCadence.test.ts` | Cadence matching, next-run labels, editor schedule summaries, run-now last-run context |
 | `src/lib/historyTransactionNote.test.ts` | History note enrichment and manual-move defaults |
