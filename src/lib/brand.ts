@@ -390,11 +390,11 @@ export const ADMIN_MONEY_SOURCES_INTRO =
 /** Bank-specific guidance, shown only once at least one bank is linked. */
 export const ADMIN_LINKED_ACCOUNTS_INTRO = `Linked banks are read-only—${BANK_READ_ONLY_ASSURANCE}.`
 
-export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_PREFIX = 'Reconnect a broken link or '
+export const ADMIN_LINKED_ACCOUNTS_REFRESH_HINT_PREFIX = 'Tap '
 
 /** Follows the inline refresh icon in Admin linked-accounts intro. */
-export const ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_SUFFIX =
-  ' to refresh balances. To change which accounts you share, Unlink and link again.'
+export const ADMIN_LINKED_ACCOUNTS_REFRESH_HINT_SUFFIX =
+  ' to refresh balances. To change which accounts are linked, Unlink and link again.'
 
 export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
   'Balances count toward the money you can organize into buckets.'

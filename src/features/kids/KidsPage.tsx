@@ -294,7 +294,7 @@ export default function KidsPage() {
           </ul>
           <div className="border-t border-zinc-800 px-4 py-3">
             <Link
-              to="/?tab=account"
+              to="/?tab=bank"
               className="text-xs font-semibold text-emerald-400 transition hover:text-emerald-300"
             >
               {VIEW_RECENT_BANK_ACTIVITY} →
