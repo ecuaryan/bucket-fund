@@ -259,6 +259,67 @@ describe('RLS: transaction history visibility', () => {
     expect(error).toBeNull()
     expect(data).toMatchObject({ id: txId, type: 'give' })
   })
+
+  it('member does not see a child bucket_move after the child deletes the bucket', async () => {
+    // Regression: from_bucket_id / to_bucket_id are ON DELETE SET NULL, so a kid
+    // move's bucket FKs go null when the bucket is deleted. The member branch must
+    // still hide it via from_member_id, not rely on the (now null) bucket columns.
+    const family = await createAdminFamily('tx-member-deleted-child-bucket')
+    const member = await addMember(family.familyId, 'member', 'Jamie')
+    const child = await addMember(family.familyId, 'child', 'Alex')
+    const svc = serviceClient()
+    const childBucketId = await insertBucket(
+      svc,
+      family.familyId,
+      'Alex spending',
+      child.memberId,
+    )
+
+    const childClient = await userClient(child.email, child.password)
+    // Kid set-aside into their own bucket (Float -> bucket is allowed for all roles).
+    const moveTxId = await moveMoney(childClient, {
+      fromBucketId: null,
+      toBucketId: childBucketId,
+      amount: 8,
+    })
+
+    const { error: delError } = await childClient.rpc('delete_bucket', {
+      p_bucket_id: childBucketId,
+    })
+    expect(delError).toBeNull()
+
+    // The move now has both bucket FKs null, but from_member_id is still the kid.
+    const { data: tx } = await svc
+      .from('transactions')
+      .select('from_bucket_id, to_bucket_id, from_member_id')
+      .eq('id', moveTxId)
+      .single()
+    expect(tx?.to_bucket_id).toBeNull()
+    expect(tx?.from_member_id).toBe(child.memberId)
+
+    // Member must NOT see it (the leak), matching the admin (control)…
+    const memberClient = await userClient(member.email, member.password)
+    const { data: memberRows, error: memberErr } = await memberClient
+      .from(TRANSACTIONS_CLIENT)
+      .select('id')
+      .eq('id', moveTxId)
+    expect(memberErr).toBeNull()
+    expect(memberRows).toEqual([])
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const { data: adminRows } = await admin
+      .from(TRANSACTIONS_CLIENT)
+      .select('id')
+      .eq('id', moveTxId)
+    expect(adminRows).toEqual([])
+
+    // …while the kid still sees their own move in History.
+    const { data: childRows } = await childClient
+      .from(TRANSACTIONS_CLIENT)
+      .select('id')
+      .eq('id', moveTxId)
+    expect(childRows?.map((r) => r.id)).toEqual([moveTxId])
+  })
 })
 
 describe('update_transaction_note', () => {
