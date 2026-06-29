@@ -36,7 +36,7 @@ import {
   BUCKETS_DB_UPDATE_PENDING_BODY,
   bucketsMemberNoBucketsHint,
   FLOAT_HERO_SUBTITLE,
-  FLOAT_NEGATIVE_HINT,
+  floatOverbucketedHint,
   FLOAT_LABEL,
 } from '@/lib/brand'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
@@ -727,7 +727,7 @@ export default function BucketsPage() {
     showAddSourceCard || showCoach
       ? null
       : float < 0
-        ? FLOAT_NEGATIVE_HINT
+        ? floatOverbucketedHint(formatMoney(Math.abs(float)))
         : cashSubtext
           ? null
           : isChild

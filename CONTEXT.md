@@ -12,27 +12,27 @@ This document contains the full product brief, technical stack, architecture dec
 **Registrar / DNS:** Cloudflare → Vercel (A + CNAME). Supabase Auth Site URL and
 Teller allowed origins should use `https://bucketmymoney.com`.
 
-Bucket My Money is a **bank-agnostic virtual bucket budgeting PWA** for **you alone or a shared household**. It sits on top of real bank accounts (read via Teller API) and helps you **organize** your cash into buckets for an at-a-glance view: label what is reserved, see your **Float** (cash not in buckets — the running balance paydays and bills flow through), and when the bank balance moves, decide which bucket covers it (negative Float → move money from buckets on purpose). Brand voice and naming notes live in [docs/BRAND.md](./docs/BRAND.md); user-facing strings in `src/lib/brand.ts` (`FLOAT_LABEL` is `'Float'`, `APP_TAGLINE`, login copy). Full product narrative (word-for-word): [docs/BRAND.md § Product narrative](./docs/BRAND.md#product-narrative).
+Bucket My Money is a **bank-agnostic virtual bucket budgeting PWA** for **you alone or a shared household**. It sits on top of real bank accounts (read via Teller API) and helps you **organize** your cash into buckets for an at-a-glance view: label what is reserved, see **Unbucketed** (cash not in buckets — the running balance paydays and bills flow through), and when the bank balance moves, decide which bucket covers it (negative Unbucketed → move money from buckets on purpose). Brand voice and naming notes live in [docs/BRAND.md](./docs/BRAND.md); user-facing strings in `src/lib/brand.ts` (`FLOAT_LABEL` is `'Unbucketed'`, `APP_TAGLINE`, login copy). Full product narrative (word-for-word): [docs/BRAND.md § Product narrative](./docs/BRAND.md#product-narrative).
 
 The primary use case is: **open app → move money from one bucket to another → done. Target: 4 taps from a cold open.**
 
 ### Product philosophy
 
-**Organize first.** The core job is **bucket budgeting**: label cash, see **Float**, move money between buckets in a few taps. That invariant (`total cash = buckets + Float` across the household) must stay rock solid. **Household features** (roles, linked kid accounts, Send to kids without a linked account) support multi-person use but are secondary — they must not add ledger layers that compete with bank truth or complicate the Buckets tab.
+**Organize first.** The core job is **bucket budgeting**: label cash, see **Unbucketed**, move money between buckets in a few taps. That invariant (`total cash = buckets + Unbucketed` across the household) must stay rock solid. **Household features** (roles, linked kid accounts, Send to kids without a linked account) support multi-person use but are secondary — they must not add ledger layers that compete with bank truth or complicate the Buckets tab.
 
-**Intentional friction, minimal automation.** When you overspend, you should come in and consciously face the trade-off — moving money from a bucket back into your **Float** — rather than having the app auto-fix or auto-rebalance. The at-a-glance view surfaces reality so you decide; balance refresh is user-initiated, not background polling. This is a clarity tool, not a transaction tracker: one small move when you spend keeps your Float honest.
+**Intentional friction, minimal automation.** When you overspend, you should come in and consciously face the trade-off — moving money from a bucket back into **Unbucketed** — rather than having the app auto-fix or auto-rebalance. The at-a-glance view surfaces reality so you decide; balance refresh is user-initiated, not background polling. This is a clarity tool, not a transaction tracker: one small move when you spend keeps Unbucketed honest.
 
 ### Product stage
 
 **Now:** The builder’s family is the first user group — real daily use, discover
 issues in the wild, iterate on UX and sync. Integrity for budgeting gaps is
-**red negative Float** in the Buckets tab (bank cash moved; bucket labels did not —
-rebalance by moving money between buckets and Float).
+**red negative Unbucketed** in the Buckets tab (bank cash moved; bucket labels did not —
+rebalance by moving money between buckets and Unbucketed).
 
 **Later (if this becomes a paid product):** Harden operator-side ledger checks
 (automated SQL or cron, logging, optional admin-only alerts) to catch
 implementation bugs before support tickets — **not** a second user-facing alarm
-for the same situation as negative spending money. See [Data Integrity](#data-integrity).
+for the same situation as negative unbucketed cash. See [Data Integrity](#data-integrity).
 
 ---
 
@@ -81,7 +81,7 @@ UI labels: **Admin**, **Shared**, **Kid** (`memberRoles.ts`). DB/API values rema
 - Scoped entirely to their own buckets and balance
 - Cannot see family pool buckets or balances
 - Can create and manage (rename, delete, reorder) **their own** buckets — people on the shared balance never see these in the Buckets tab
-- Can set up and run **their own auto-organizes** (organize / top-up / save-off, scheduled or Run now) over their own buckets and Float — invisible to admins and shared members, same as their buckets
+- Can set up and run **their own auto-organizes** (organize / top-up / save-off, scheduled or Run now) over their own buckets and Unbucketed — invisible to admins and shared members, same as their buckets
 - Sends to people on the shared balance (returns money to the pool) or other kids; sees
   only sends they participate in
 
@@ -122,7 +122,7 @@ UI labels: **Admin**, **Shared**, **Kid** (`memberRoles.ts`). DB/API values rema
 
 ### Balance Model
 
-**Naming:** Users see **Float** (`FLOAT_LABEL` in `brand.ts`) — everyday
+**Naming:** Users see **Unbucketed** (`FLOAT_LABEL` in `brand.ts`) — everyday
 cash not in buckets. Code, SQL, RPC JSON, and DB columns use **`float`**
 (same pool; `NULL` bucket id in `move_money`). See [docs/BRAND.md § Naming](./docs/BRAND.md#naming-display-vs-code).
 
@@ -131,24 +131,24 @@ cash not in buckets. Code, SQL, RPC JSON, and DB columns use **`float`**
 
 Every dollar lives in exactly one place — either in a named bucket or in someone's spending-money balance.
 
-Float is **derived** from linked cash, bucket allocations, sends, and role
+Unbucketed is **derived** from linked cash, bucket allocations, sends, and role
 rules (`member_float` in SQL). When real bank cash drops but buckets
-do not (e.g. a credit card payment clears), spending money goes **negative and red**
+do not (e.g. a credit card payment clears), Unbucketed goes **negative and red**
 — that is the intended “something needs rebalancing” signal, not a separate
 system-error banner.
 
 **Shared balance (admin + Shared role in the Buckets tab):**
-- **Float** (derived via `member_float()` in SQL) is one number for both: family cash minus
+- **Unbucketed** (derived via `member_float()` in SQL) is one number for both: family cash minus
   shared-balance bucket allocations minus each kid's total funded balance
   (their linked cash plus net sends). How a kid splits that between their
   own buckets and their own spending money does not change the shared-balance number.
 - **Buckets breakdown (admin + Shared):** one card shows the math — linked cash,
   allocated to buckets, then one line per kid with funds (not a single wrapped total).
 - Shared-balance ↔ shared-balance sends are not allowed — they would not move the pool anyway.
-- Float ≥ 0 → green; negative → red — move money from bucket(s) into spending money until the pool matches your intent (every spend should come from somewhere).
+- Unbucketed ≥ 0 → green; negative → red — move money from bucket(s) into Unbucketed until the pool matches your intent (every spend should come from somewhere).
 
 **Kid:**
-- Float = their cash accounts + net sends − their bucket allocations
+- Unbucketed = their cash accounts + net sends − their bucket allocations
 - Virtual-only kids (no linked accounts) are funded entirely by sends from the shared balance
 - **Buckets / Send breakdown:** total balance (linked cash + net sends), in your buckets,
   then spending money — without exposing other members’ balances
@@ -159,13 +159,13 @@ system-error banner.
 
 **When a bank transaction hits via Teller webhook:**
 - Real balance updates automatically
-- Float adjusts with it
+- Unbucketed adjusts with it
 - Buckets are untouched until the user deliberately moves money
 - Every dollar spent has to come from somewhere — user decides which bucket absorbs it
 
-**Set aside (manual):** All roles may move Float → bucket even when Float would go
+**Set aside (manual):** All roles may move Unbucketed → bucket even when Unbucketed would go
 red. **Bucket → anything** still requires enough in the source bucket. **`send_money`**
-unchanged. Manual **Set aside** that crosses Float from ≥ 0 to negative uses a confirm
+unchanged. Manual **Set aside** that crosses Unbucketed from ≥ 0 to negative uses a confirm
 sheet; automatic **auto-organize** runs do not. See [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md).
 
 ---
@@ -215,7 +215,7 @@ sheet; automatic **auto-organize** runs do not. See [docs/AUTO_ORGANIZE.md](./do
 - Each entry shows: amount, counterparty or bucket name, timestamp, optional note.
 - **Bucket names are snapshotted** on each `bucket_move` (`from_bucket_name` /
   `to_bucket_name`), so history stays accurate after a bucket is renamed or
-  deleted instead of collapsing to "Float → Float" (uses `FLOAT_LABEL`).
+  deleted instead of collapsing to "Unbucketed → Unbucketed" (uses `FLOAT_LABEL`).
 - **Member names are snapshotted** on each `send` (`from_member_name` /
   `to_member_name`), so History keeps "Alex" after a kid is removed (member ids
   null via `ON DELETE SET NULL`, same pattern as buckets).
@@ -230,7 +230,7 @@ sheet; automatic **auto-organize** runs do not. See [docs/AUTO_ORGANIZE.md](./do
 
 ### Buckets tab
 - Bucket list with allocated amounts per bucket (shared balance: shared set, per-person sort order)
-- **Float card** when at least one money source exists: green if ≥ 0, red if < 0
+- **Unbucketed card** when at least one money source exists: green if ≥ 0, red if < 0
   (red = rebalance signal — cash dropped but bucket labels did not). Info icon opens guidance sheet.
 - **No money sources (shared balance):** “Add a money source” CTA instead of the spending money card —
   admin can enter an amount manually from the Buckets tab or link a bank in Admin; Shared-role
@@ -422,9 +422,9 @@ Implementation: `HideAmountsPeekFab`, `hideAmountsPeekLogic.ts`, peek state in
 
 ### Auto-organize (shipped — v1)
 
-**Auto-organize** — automatically organize money from Float into buckets on calendar days the
+**Auto-organize** — automatically organize money from Unbucketed into buckets on calendar days the
 user chooses (default **3 AM local**). Admin configures the **household pool** (Shared sees it
-read-only); each **kid self-serves their own** auto-organizes over their own buckets and Float —
+read-only); each **kid self-serves their own** auto-organizes over their own buckets and Unbucketed —
 invisible to admins and shared members, same as kids' own buckets, and identical for linked and
 virtual kids. Create, pause, **Run now**, edit; server runs due rules via
 **pg_cron → `run_due_auto_organizes`**. Schema: `auto_organizes` / `auto_organize_*`

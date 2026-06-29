@@ -40,7 +40,7 @@ type Props = {
   buckets: Bucket[]
   float: number
   /** Bucket the user tapped to open the dialog. Usually pre-fills as
-   *  From; if that bucket or Float is $0, the empty side defaults
+   *  From; if that bucket or Unbucketed is $0, the empty side defaults
    *  to To so funding an empty bucket is one less swap. */
   initialBucketId: string
   /** Override intent for coach flows (e.g. force set-aside). */

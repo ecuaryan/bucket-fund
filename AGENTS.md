@@ -21,7 +21,7 @@ Entry point for AI coding agents (and humans) working in this repo.
    scenarios, PWA asset regen, security TODOs (Teller + production database).
 6. **[docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md)** — **Auto-organize** feature:
    cadence, `auto_organize_*` schema/RPCs, cron, roles, History.
-7. **[docs/BRAND.md](./docs/BRAND.md)** — product voice, Float terminology,
+7. **[docs/BRAND.md](./docs/BRAND.md)** — product voice, Unbucketed terminology,
    and the full **Product narrative** (word-for-word). User-facing strings live in
    `src/lib/brand.ts`.
 
@@ -48,9 +48,9 @@ Entry point for AI coding agents (and humans) working in this repo.
   at the top of
   [supabase/migrations/00000000000000_initial_schema.sql](./supabase/migrations/00000000000000_initial_schema.sql).
 - **The ledger identity is the contract.** Cash (linked banks + manual money sources) = allocations +
-  float, derived in SQL (`member_float()`).
-  **User-facing label:** **Float** (`FLOAT_LABEL` in `src/lib/brand.ts`).
-  **User signal for “rebalance”:** negative red Float in the Buckets tab — not a
+  the unbucketed pool, derived in SQL (`member_float()` — code keeps `float`).
+  **User-facing label:** **Unbucketed** (`FLOAT_LABEL` in `src/lib/brand.ts`).
+  **User signal for “rebalance”:** negative red Unbucketed in the Buckets tab — not a
   separate integrity banner. **Operator ledger checks** (automated family-wide
   verification, `check-invariant`) are deferred until a possible paid SaaS;
   see CONTEXT.md § Data Integrity. Do not add a second user-facing alarm for
