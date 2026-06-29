@@ -272,10 +272,10 @@ end;
 $$;
 
 revoke all on function public._auto_organize_sweep_line(
-  uuid, uuid, uuid, numeric, text, uuid, uuid, uuid
+  uuid, uuid, uuid, uuid, numeric, text, uuid, uuid, uuid
 ) from public;
 grant execute on function public._auto_organize_sweep_line(
-  uuid, uuid, uuid, numeric, text, uuid, uuid, uuid
+  uuid, uuid, uuid, uuid, numeric, text, uuid, uuid, uuid
 ) to service_role;
 
 -- ---------------------------------------------------------------------
