@@ -8,6 +8,7 @@ import {
   moveMoney,
   serviceClient,
   userClient,
+  type Db,
 } from './fixtures'
 
 async function insertAutoOrganize(
@@ -45,6 +46,59 @@ async function insertAutoOrganize(
   if (aoError) throw aoError
 
   const { error: linesError } = await svc.from('auto_organize_lines').insert(
+    args.lines.map((line) => ({
+      auto_organize_id: ao.id,
+      bucket_id: line.bucketId,
+      amount: line.amount,
+      sort_order: line.sortOrder,
+    })),
+  )
+  if (linesError) throw linesError
+
+  return ao.id
+}
+
+/**
+ * Insert a kid-owned auto-organize through the child's OWN client (exercises the
+ * child RLS insert policies, not the service-role bypass). owner_member_id is the
+ * child, so the rule targets the kid's own buckets and Float.
+ */
+async function insertChildAutoOrganize(
+  client: Db,
+  args: {
+    familyId: string
+    childMemberId: string
+    name?: string
+    autoOrganizeKind?: 'organize' | 'top_up' | 'save_off'
+    destinationBucketId?: string | null
+    autoOrganizeType: 'interval' | 'monthly' | 'manual'
+    startDate?: string
+    intervalCount?: number
+    intervalUnit?: 'week' | 'month'
+    daysOfMonth?: number[]
+    lines: { bucketId: string; amount: number; sortOrder: number }[]
+  },
+): Promise<string> {
+  const { data: ao, error: aoError } = await client
+    .from('auto_organizes')
+    .insert({
+      family_id: args.familyId,
+      owner_member_id: args.childMemberId,
+      name: args.name ?? 'My plan',
+      created_by_member_id: args.childMemberId,
+      auto_organize_kind: args.autoOrganizeKind ?? 'organize',
+      destination_bucket_id: args.destinationBucketId ?? null,
+      auto_organize_type: args.autoOrganizeType,
+      start_date: args.startDate ?? null,
+      interval_count: args.intervalCount ?? null,
+      interval_unit: args.intervalUnit ?? null,
+      days_of_month: args.daysOfMonth ?? null,
+    })
+    .select('id')
+    .single()
+  if (aoError) throw aoError
+
+  const { error: linesError } = await client.from('auto_organize_lines').insert(
     args.lines.map((line) => ({
       auto_organize_id: ao.id,
       bucket_id: line.bucketId,
@@ -956,5 +1010,289 @@ describe('auto_organize', () => {
     expect(txError).toBeNull()
     expect(txs).toHaveLength(1)
     expect(txs![0].note).toBe('Auto-organize · Manual only')
+  })
+
+  it('child creates and runs their own auto-organize over their own buckets', async () => {
+    const family = await createAdminFamily('ao-kid-self')
+    const child = await addMember(family.familyId, 'child', 'Robin')
+    const svc = serviceClient()
+    const kidBucket = await insertBucket(
+      svc,
+      family.familyId,
+      'Save',
+      child.memberId,
+    )
+    const childClient = await userClient(child.email, child.password)
+
+    const aoId = await insertChildAutoOrganize(childClient, {
+      familyId: family.familyId,
+      childMemberId: child.memberId,
+      autoOrganizeType: 'manual',
+      lines: [{ bucketId: kidBucket, amount: 15, sortOrder: 0 }],
+    })
+
+    const { error } = await childClient.rpc('run_auto_organize', {
+      p_auto_organize_id: aoId,
+      p_trigger: 'manual',
+      p_triggered_by_member_id: child.memberId,
+      p_run_on: '2026-06-01',
+    })
+    expect(error).toBeNull()
+    expect(await getBucketAllocation(svc, kidBucket)).toBe(15)
+    // Virtual kid had no money; Float → bucket is allowed and goes red.
+    expect(await getFloatBalance(childClient)).toBe(-15)
+
+    // The move is attributed to the kid so it lands in their own History.
+    const { data: tx, error: txError } = await svc
+      .from('transactions')
+      .select('from_member_id')
+      .eq('to_bucket_id', kidBucket)
+      .single()
+    expect(txError).toBeNull()
+    expect(tx?.from_member_id).toBe(child.memberId)
+  })
+
+  it('child auto-organize works for a linked kid (Float = linked cash − allocations)', async () => {
+    const family = await createAdminFamily('ao-kid-linked')
+    const child = await addMember(family.familyId, 'child', 'Sky')
+    const svc = serviceClient()
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: child.memberId,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 500,
+      source: 'teller',
+    })
+    const kidBucket = await insertBucket(
+      svc,
+      family.familyId,
+      'Phone',
+      child.memberId,
+    )
+    const childClient = await userClient(child.email, child.password)
+
+    const aoId = await insertChildAutoOrganize(childClient, {
+      familyId: family.familyId,
+      childMemberId: child.memberId,
+      autoOrganizeType: 'manual',
+      lines: [{ bucketId: kidBucket, amount: 120, sortOrder: 0 }],
+    })
+
+    const { error } = await childClient.rpc('run_auto_organize', {
+      p_auto_organize_id: aoId,
+      p_trigger: 'manual',
+      p_triggered_by_member_id: child.memberId,
+      p_run_on: '2026-06-01',
+    })
+    expect(error).toBeNull()
+    expect(await getBucketAllocation(svc, kidBucket)).toBe(120)
+    expect(await getFloatBalance(childClient)).toBe(380)
+  })
+
+  it('child save_off sweeps their own bucket back to their own Float', async () => {
+    const family = await createAdminFamily('ao-kid-saveoff')
+    const child = await addMember(family.familyId, 'child', 'Indi')
+    const svc = serviceClient()
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: child.memberId,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 200,
+      source: 'teller',
+    })
+    const kidBucket = await insertBucket(
+      svc,
+      family.familyId,
+      'Spend',
+      child.memberId,
+      80,
+    )
+    const childClient = await userClient(child.email, child.password)
+
+    const aoId = await insertChildAutoOrganize(childClient, {
+      familyId: family.familyId,
+      childMemberId: child.memberId,
+      autoOrganizeKind: 'save_off',
+      destinationBucketId: null,
+      autoOrganizeType: 'manual',
+      lines: [{ bucketId: kidBucket, amount: 30, sortOrder: 0 }],
+    })
+
+    const { error } = await childClient.rpc('run_auto_organize', {
+      p_auto_organize_id: aoId,
+      p_trigger: 'manual',
+      p_triggered_by_member_id: child.memberId,
+      p_run_on: '2026-06-01',
+    })
+    expect(error).toBeNull()
+    // Keep 30, sweep the other 50 back to Float.
+    expect(await getBucketAllocation(svc, kidBucket)).toBe(30)
+    // Float = 200 linked − 30 still allocated = 170.
+    expect(await getFloatBalance(childClient)).toBe(170)
+  })
+
+  it('a child auto-organize is invisible to admins and shared members', async () => {
+    const family = await createAdminFamily('ao-kid-invisible')
+    const member = await addMember(family.familyId, 'member', 'Jamie')
+    const child = await addMember(family.familyId, 'child', 'Sam')
+    const svc = serviceClient()
+    const kidBucket = await insertBucket(
+      svc,
+      family.familyId,
+      'Kid plan',
+      child.memberId,
+    )
+    const childClient = await userClient(child.email, child.password)
+    const aoId = await insertChildAutoOrganize(childClient, {
+      familyId: family.familyId,
+      childMemberId: child.memberId,
+      autoOrganizeType: 'monthly',
+      daysOfMonth: [1],
+      lines: [{ bucketId: kidBucket, amount: 5, sortOrder: 0 }],
+    })
+
+    // Owner sees their own rule and lines.
+    const { data: ownRows } = await childClient
+      .from('auto_organizes')
+      .select('id')
+    expect(ownRows).toHaveLength(1)
+    const { data: ownLines } = await childClient
+      .from('auto_organize_lines')
+      .select('id')
+      .eq('auto_organize_id', aoId)
+    expect(ownLines).toHaveLength(1)
+
+    // Admin and shared member only see household (owner null) rules — none here.
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const { data: adminRows } = await admin.from('auto_organizes').select('id')
+    expect(adminRows ?? []).toHaveLength(0)
+    const { data: adminLines } = await admin
+      .from('auto_organize_lines')
+      .select('id')
+      .eq('auto_organize_id', aoId)
+    expect(adminLines ?? []).toHaveLength(0)
+
+    const memberClient = await userClient(member.email, member.password)
+    const { data: memberRows } = await memberClient
+      .from('auto_organizes')
+      .select('id')
+    expect(memberRows ?? []).toHaveLength(0)
+  })
+
+  it('a child cannot run another child auto-organize', async () => {
+    const family = await createAdminFamily('ao-kid-cross')
+    const owner = await addMember(family.familyId, 'child', 'Owner')
+    const other = await addMember(family.familyId, 'child', 'Other')
+    const svc = serviceClient()
+    const ownerBucket = await insertBucket(
+      svc,
+      family.familyId,
+      'Owner save',
+      owner.memberId,
+    )
+    const ownerClient = await userClient(owner.email, owner.password)
+    const aoId = await insertChildAutoOrganize(ownerClient, {
+      familyId: family.familyId,
+      childMemberId: owner.memberId,
+      autoOrganizeType: 'manual',
+      lines: [{ bucketId: ownerBucket, amount: 5, sortOrder: 0 }],
+    })
+
+    const otherClient = await userClient(other.email, other.password)
+    const { error } = await otherClient.rpc('run_auto_organize', {
+      p_auto_organize_id: aoId,
+      p_trigger: 'manual',
+      p_triggered_by_member_id: other.memberId,
+      p_run_on: '2026-06-01',
+    })
+    expect(error).not.toBeNull()
+    expect(error?.message).toMatch(/not your auto-organize/i)
+    // No move happened.
+    expect(await getBucketAllocation(svc, ownerBucket)).toBe(0)
+  })
+
+  it('a child auto-organize run rejects a line targeting a non-owned bucket', async () => {
+    const family = await createAdminFamily('ao-kid-foreign-bucket')
+    const child = await addMember(family.familyId, 'child', 'Reese')
+    const svc = serviceClient()
+    const poolBucket = await insertBucket(svc, family.familyId, 'Pool', null)
+    const childClient = await userClient(child.email, child.password)
+
+    // RLS allows inserting the rule + line (parent is owned by the kid); the
+    // run-time owner check is what blocks moving into a bucket the kid doesn't own.
+    const aoId = await insertChildAutoOrganize(childClient, {
+      familyId: family.familyId,
+      childMemberId: child.memberId,
+      autoOrganizeType: 'manual',
+      lines: [{ bucketId: poolBucket, amount: 10, sortOrder: 0 }],
+    })
+
+    const { error } = await childClient.rpc('run_auto_organize', {
+      p_auto_organize_id: aoId,
+      p_trigger: 'manual',
+      p_triggered_by_member_id: child.memberId,
+      p_run_on: '2026-06-01',
+    })
+    expect(error).not.toBeNull()
+    expect(error?.message).toMatch(/invalid bucket line/i)
+    expect(await getBucketAllocation(svc, poolBucket)).toBe(0)
+  })
+
+  it('cron runs a child scheduled auto-organize attributed to the kid', async () => {
+    const family = await createAdminFamily('ao-kid-cron')
+    const child = await addMember(family.familyId, 'child', 'Quinn')
+    const svc = serviceClient()
+    await svc
+      .from('families')
+      .update({ timezone: 'UTC', auto_organize_run_hour: 0 })
+      .eq('id', family.familyId)
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: child.memberId,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 300,
+      source: 'teller',
+    })
+    const kidBucket = await insertBucket(
+      svc,
+      family.familyId,
+      'Allowance',
+      child.memberId,
+    )
+    // Service insert with an explicit owner mirrors a kid-created scheduled rule.
+    const aoId = await insertAutoOrganize(svc, {
+      familyId: family.familyId,
+      createdByMemberId: child.memberId,
+      autoOrganizeType: 'monthly',
+      daysOfMonth: [11],
+      lines: [{ bucketId: kidBucket, amount: 40, sortOrder: 0 }],
+    })
+    await svc
+      .from('auto_organizes')
+      .update({ owner_member_id: child.memberId })
+      .eq('id', aoId)
+
+    const asOf = '2026-06-11T04:00:00.000Z'
+    const { data: count, error } = await svc.rpc('run_due_auto_organizes', {
+      p_as_of: asOf,
+    })
+    expect(error).toBeNull()
+    expect(count).toBe(1)
+    expect(await getBucketAllocation(svc, kidBucket)).toBe(40)
+
+    const childClient = await userClient(child.email, child.password)
+    expect(await getFloatBalance(childClient)).toBe(260)
+
+    const { data: tx, error: txError } = await svc
+      .from('transactions')
+      .select('from_member_id, auto_organize_run_id')
+      .eq('to_bucket_id', kidBucket)
+      .single()
+    expect(txError).toBeNull()
+    expect(tx?.from_member_id).toBe(child.memberId)
+    expect(tx?.auto_organize_run_id).toBeTruthy()
   })
 })

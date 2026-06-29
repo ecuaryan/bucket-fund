@@ -34,6 +34,8 @@ export type AutoOrganizeInput = {
   lines: AutoOrganizeLineInput[]
   /** save_off only: null = sweep to Float */
   destinationBucketId: string | null
+  /** null = household pool rule; a member id = that kid's own rule. Set on create only. */
+  ownerMemberId: string | null
   familyTimezone: string
 }
 
@@ -170,16 +172,21 @@ export function activeAutoOrganizeLines(
   )
 }
 
-/** Match Buckets tab order (family-pool buckets only). */
+/**
+ * Match Buckets tab order within a scope. `scopeOwnerId` is the auto-organize
+ * owner: null for a household rule (family-pool buckets), a member id for a
+ * kid's own rule (that kid's buckets).
+ */
 export function orderAutoOrganizeLinesByBuckets<
   T extends { bucket_id: string; amount: string | number },
 >(
   lines: readonly T[],
   buckets: ReadonlyArray<{ id: string; owner_member_id: string | null }>,
+  scopeOwnerId: string | null = null,
 ): T[] {
   const order = new Map(
     buckets
-      .filter((bucket) => bucket.owner_member_id === null)
+      .filter((bucket) => bucket.owner_member_id === scopeOwnerId)
       .map((bucket, index) => [bucket.id, index]),
   )
   return [...lines].sort(
@@ -373,6 +380,7 @@ export async function saveAutoOrganize(
       .insert({
         ...payload,
         family_id: family.id,
+        owner_member_id: input.ownerMemberId,
         created_by_member_id: createdByMemberId,
       })
       .select('id')

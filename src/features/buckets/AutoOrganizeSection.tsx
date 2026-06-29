@@ -76,6 +76,8 @@ type Bucket = Pick<
 
 type Props = {
   isAdmin: boolean
+  /** A child viewer authors their OWN auto-organizes over their own buckets. */
+  isChild: boolean
   memberId: string
   familyId: string
   accessToken: string | null
@@ -94,7 +96,9 @@ type AutoOrganizeCardProps = {
   bucketNamesById: ReadonlyMap<string, string>
   bucketBalanceById: ReadonlyMap<string, number>
   formatMoney: (amount: number) => string
-  isAdmin: boolean
+  canAuthor: boolean
+  /** Owner scope for line ordering: null = household pool, member id = a kid's own. */
+  scopeOwnerId: string | null
   busyId: string | null
   onEdit: () => void
   onRunNow: () => void
@@ -199,7 +203,8 @@ function AutoOrganizeCard({
   bucketNamesById,
   bucketBalanceById,
   formatMoney,
-  isAdmin,
+  canAuthor,
+  scopeOwnerId,
   busyId,
   onEdit,
   onRunNow,
@@ -213,8 +218,8 @@ function AutoOrganizeCard({
     [kind, row.lines, bucketBalanceById],
   )
   const displayLines = useMemo(
-    () => orderAutoOrganizeLinesByBuckets(row.lines, buckets),
-    [row.lines, buckets],
+    () => orderAutoOrganizeLinesByBuckets(row.lines, buckets, scopeOwnerId),
+    [row.lines, buckets, scopeOwnerId],
   )
   const isManual = row.auto_organize_type === 'manual'
   const kindSubtitle = autoOrganizeKindSubtitle(kind, isManual)
@@ -279,7 +284,7 @@ function AutoOrganizeCard({
                 id={pausedStatusId}
                 className="mt-1.5 text-xs font-medium text-amber-200/90"
               >
-                {autoOrganizePausedStatus(!isAdmin)}
+                {autoOrganizePausedStatus(!canAuthor)}
               </p>
               <p className="mt-1 text-xs text-zinc-500">{row.nextRunLabel}</p>
               {lastRunContext ? (
@@ -455,7 +460,7 @@ function AutoOrganizeCard({
           </div>
         </div>
       ) : null}
-      {isAdmin ? (
+      {canAuthor ? (
         <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
@@ -507,6 +512,7 @@ function AutoOrganizeCard({
 
 export default function AutoOrganizeSection({
   isAdmin,
+  isChild,
   memberId,
   familyId,
   accessToken,
@@ -517,7 +523,12 @@ export default function AutoOrganizeSection({
   embedded = false,
 }: Props) {
   const { formatMoney } = useHideAmounts()
-  const poolBuckets = buckets.filter((b) => b.owner_member_id === null)
+  // An admin authors the household pool; a kid authors their own scope. A
+  // shared member is read-only. scopeOwnerId selects which buckets a rule can
+  // target (null = family pool, the kid's id = the kid's own buckets).
+  const canAuthor = isAdmin || isChild
+  const scopeOwnerId = isChild ? memberId : null
+  const scopeBuckets = buckets.filter((b) => b.owner_member_id === scopeOwnerId)
   const bucketNamesById = useMemo(
     () => new Map(buckets.map((b) => [b.id, b.name])),
     [buckets],
@@ -639,12 +650,16 @@ export default function AutoOrganizeSection({
     () =>
       runConfirm
         ? activeAutoOrganizeLines(
-            orderAutoOrganizeLinesByBuckets(runConfirm.lines, buckets),
+            orderAutoOrganizeLinesByBuckets(
+              runConfirm.lines,
+              buckets,
+              scopeOwnerId,
+            ),
             runConfirmKind,
             bucketBalanceById,
           )
         : [],
-    [runConfirm, buckets, runConfirmKind, bucketBalanceById],
+    [runConfirm, buckets, runConfirmKind, bucketBalanceById, scopeOwnerId],
   )
 
   const runConfirmComputed = useMemo(() => {
@@ -760,8 +775,9 @@ export default function AutoOrganizeSection({
   }
 
   // Shared members are read-only — no empty-state CTA, so hide the section entirely
-  // until an admin has created at least one auto-organize.
-  if (!isAdmin && (rows === null || rows.length === 0)) {
+  // until an admin has created at least one auto-organize. Authors (admin or a
+  // kid managing their own scope) always see it, including the empty-state CTA.
+  if (!canAuthor && (rows === null || rows.length === 0)) {
     return null
   }
 
@@ -789,17 +805,17 @@ export default function AutoOrganizeSection({
             {AUTO_ORGANIZE_GUARDRAIL}
           </p>
         </div>
-        {isAdmin && rows && !empty ? (
+        {canAuthor && rows && !empty ? (
           <div className="flex shrink-0 flex-col items-end gap-1">
             <button
               type="button"
-              disabled={poolBuckets.length === 0}
+              disabled={scopeBuckets.length === 0}
               onClick={openAddFlow}
               className={addButtonClassName}
             >
               {AUTO_ORGANIZE_ADD_LABEL}
             </button>
-            {poolBuckets.length === 0 ? (
+            {scopeBuckets.length === 0 ? (
               <p className="text-right text-xs text-zinc-500">
                 {AUTO_ORGANIZE_ADD_REQUIRES_BUCKETS_HINT}
               </p>
@@ -816,17 +832,17 @@ export default function AutoOrganizeSection({
         />
       ) : null}
 
-      {empty && isAdmin && !loadError ? (
+      {empty && canAuthor && !loadError ? (
         <div className="rounded-2xl border border-dashed border-zinc-700 px-4 py-5 text-center">
           <p className="text-sm text-zinc-300">{AUTO_ORGANIZE_EMPTY_BODY}</p>
-          {poolBuckets.length === 0 ? (
+          {scopeBuckets.length === 0 ? (
             <p className="mt-2 text-xs text-zinc-500">
               {AUTO_ORGANIZE_ADD_REQUIRES_BUCKETS_HINT}
             </p>
           ) : null}
           <button
             type="button"
-            disabled={poolBuckets.length === 0}
+            disabled={scopeBuckets.length === 0}
             onClick={openAddFlow}
             className={`mt-3 inline-flex ${addButtonClassName}`}
           >
@@ -845,7 +861,8 @@ export default function AutoOrganizeSection({
           bucketNamesById={bucketNamesById}
           bucketBalanceById={bucketBalanceById}
           formatMoney={formatMoney}
-          isAdmin={isAdmin}
+          canAuthor={canAuthor}
+          scopeOwnerId={scopeOwnerId}
           busyId={busyId}
           onEdit={() => {
             setEditing(row)
@@ -868,9 +885,10 @@ export default function AutoOrganizeSection({
         open={editorOpen}
         kind={editorKind}
         initial={editing}
-        buckets={poolBuckets}
+        buckets={scopeBuckets}
         allAutoOrganizes={rows ?? []}
         memberId={memberId}
+        ownerMemberId={scopeOwnerId}
         householdTimezone={rows?.[0]?.familyTimezone ?? null}
         onClose={() => setEditorOpen(false)}
         onSaved={async () => {

@@ -186,10 +186,15 @@ export default function BucketsPage() {
 
   const isAdmin = member?.role === 'admin'
   const isChild = member?.role === 'child'
-  const canSeeAutoOrganize = !isChild
+  // Everyone can see Auto-organize now: admins author the household pool, kids
+  // author their own scope, shared members see the household read-only.
+  const canSeeAutoOrganize = true
+  // Authors always get the tab (incl. the empty-state CTA to create their
+  // first rule); a read-only shared member only sees it once rules exist.
+  const isAutoOrganizeAuthor = isAdmin || isChild
   const showAutoOrganizeTab = shouldShowAutoOrganizeTab(
     canSeeAutoOrganize,
-    isAdmin,
+    isAutoOrganizeAuthor,
     autoOrganizeTabAvailable,
   )
   // Linked bank accounts visible to the viewer. RLS already scopes `accounts`
@@ -260,24 +265,29 @@ export default function BucketsPage() {
       setAutoOrganizeTabAvailable(null)
       return
     }
-    if (isAdmin) return
+    if (isAutoOrganizeAuthor) return
     try {
       const rows = await fetchAutoOrganizes()
       setAutoOrganizeTabAvailable(rows.length > 0)
     } catch {
       setAutoOrganizeTabAvailable(false)
     }
-  }, [canSeeAutoOrganize, familyId, isAdmin])
+  }, [canSeeAutoOrganize, familyId, isAutoOrganizeAuthor])
 
   const debouncedLoadData = useCallback(() => {
     clearTimeout(realtimeReloadTimer.current)
     realtimeReloadTimer.current = setTimeout(() => {
       void loadData()
-      if (canSeeAutoOrganize && !isAdmin) {
+      if (canSeeAutoOrganize && !isAutoOrganizeAuthor) {
         void refreshAutoOrganizeTabAvailability()
       }
     }, 300)
-  }, [loadData, canSeeAutoOrganize, isAdmin, refreshAutoOrganizeTabAvailability])
+  }, [
+    loadData,
+    canSeeAutoOrganize,
+    isAutoOrganizeAuthor,
+    refreshAutoOrganizeTabAvailability,
+  ])
 
   useEffect(() => {
     loadGeneration.current += 1
@@ -368,7 +378,7 @@ export default function BucketsPage() {
       setAutoOrganizeTabAvailable(null)
       return
     }
-    if (isAdmin) {
+    if (isAutoOrganizeAuthor) {
       setAutoOrganizeTabAvailable(true)
       return
     }
@@ -376,13 +386,13 @@ export default function BucketsPage() {
   }, [
     canSeeAutoOrganize,
     familyId,
-    isAdmin,
+    isAutoOrganizeAuthor,
     autoOrganizeRefreshToken,
     refreshAutoOrganizeTabAvailability,
   ])
 
   useEffect(() => {
-    if (!isAdmin && autoOrganizeTabAvailable === null) return
+    if (!isAutoOrganizeAuthor && autoOrganizeTabAvailable === null) return
     const urlTab = parseBucketsPageTab(searchParams.get('tab'))
     // Don't strip ?tab=account while accounts are still loading — the Bank tab
     // only looks unavailable because the data hasn't arrived yet. Waiting for
@@ -400,7 +410,7 @@ export default function BucketsPage() {
   }, [
     accounts,
     autoOrganizeTabAvailable,
-    isAdmin,
+    isAutoOrganizeAuthor,
     searchParams,
     setSearchParams,
     showAutoOrganizeTab,
@@ -532,7 +542,7 @@ export default function BucketsPage() {
       setDeleteAutoOrganizeRefs(null)
       setDeleteAutoOrganizeRefsLoadError(null)
 
-      if (canSeeAutoOrganize && isAdmin) {
+      if (canSeeAutoOrganize && isAutoOrganizeAuthor) {
         try {
           const refs = await fetchAutoOrganizesUsingBucket(b.id)
           if (refs.length > 0) {
@@ -648,7 +658,7 @@ export default function BucketsPage() {
     auth.status === 'signedIn' && auth.memberLoading
   const tabAvailabilityPending = isAutoOrganizeTabAvailabilityPending(
     canSeeAutoOrganize,
-    isAdmin,
+    isAutoOrganizeAuthor,
     autoOrganizeTabAvailable,
   )
   if (
@@ -948,6 +958,7 @@ export default function BucketsPage() {
           <AutoOrganizeSection
             embedded
             isAdmin={isAdmin}
+            isChild={isChild}
             memberId={memberId}
             familyId={familyId}
             accessToken={accessToken}
@@ -955,7 +966,7 @@ export default function BucketsPage() {
             float={float}
             onChanged={() => {
               void loadData()
-              if (!isAdmin) {
+              if (!isAutoOrganizeAuthor) {
                 void refreshAutoOrganizeTabAvailability()
               }
             }}

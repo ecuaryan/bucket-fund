@@ -104,6 +104,8 @@ type Props = {
   /** For sweep-then-fill overlap notes when editing. */
   allAutoOrganizes?: AutoOrganizeWithDetails[]
   memberId: string
+  /** null = household pool rule; a member id = a kid's own rule (set on create). */
+  ownerMemberId?: string | null
   /** Household IANA timezone when known (from loaded auto-organize rows). */
   householdTimezone?: string | null
   onClose: () => void
@@ -230,6 +232,7 @@ export default function AutoOrganizeEditor({
   buckets,
   allAutoOrganizes = [],
   memberId,
+  ownerMemberId = null,
   householdTimezone = null,
   onClose,
   onSaved,
@@ -598,6 +601,7 @@ export default function AutoOrganizeEditor({
       lines: parsedBuckets.map(({ bucketId, amount }) => ({ bucketId, amount })),
       destinationBucketId:
         effectiveKind === 'save_off' ? destinationBucketId : null,
+      ownerMemberId: initial?.owner_member_id ?? ownerMemberId,
       familyTimezone,
     }
 

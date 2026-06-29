@@ -11,6 +11,10 @@ household buckets on calendar days the user chooses.
 pg_cron scheduler, History **Scheduled** label.  
 **Auto top-up / save-off:** **Shipped** — migration `00000000000058`, three `auto_organize_kind`
 values, kind chooser on Add.  
+**Kid self-serve:** **Shipped** — migration `00000000000076`, `auto_organizes.owner_member_id`
+(null = household pool, a member id = that kid's private rule). Kids author auto-organizes over
+their **own** buckets and Float; the rules are invisible to admins and shared members. Works the
+same for linked and virtual kids.  
 **Related:** [CONTEXT.md](../CONTEXT.md), [docs/BRAND.md](./BRAND.md), `src/lib/brand.ts`.
 
 ---
@@ -65,16 +69,15 @@ different label for one manual move, not the feature name.
 
 ### Out (defer; schema may leave hooks)
 
-- Kid **auto-organizes** (manual kid moves already exist).
 - Scheduled **Send to a kid** (`send_money` via auto-organize `send` kind; virtual kids only).
 - History filters / search (individual rows + Scheduled label is enough for v1).
 - Skip-next-run (pause is sufficient).
 - End-by-date — runs until paused or deleted (“when I cancel”).
 - “Configured by [name]” on cards (neutral copy is fine).
 
-Future: `owner_member_id` on `auto_organizes` (null = household), scheduled **Send to a kid**
-(`send_money` via a future kind). v1+ rows use **`auto_organize_kind`**: `organize` | `top_up` |
-`save_off`.
+**Kid self-serve auto-organizes are now shipped** (migration `00000000000076`) — see the
+status block and [Roles](#roles). Future: scheduled **Send to a kid** (`send_money` via a future
+kind). Rows use **`auto_organize_kind`**: `organize` | `top_up` | `save_off`.
 
 ---
 
@@ -107,12 +110,20 @@ schedule only.
 
 | Capability | Admin | Shared (`member`) | Kid |
 | --- | --- | --- | --- |
-| View household auto-organizes | ✓ | ✓ read-only | — |
-| Create / edit / pause / delete | ✓ | — | — |
-| Run now | ✓ | — | — |
-| Automatic execution | server | — | — |
+| View household auto-organizes | ✓ | ✓ read-only | — (hidden) |
+| Create / edit / pause / delete household | ✓ | — | — |
+| Run now (household) | ✓ | — | — |
+| View / create / edit / pause / delete / Run now **own** | — | — | ✓ (own scope) |
+| Automatic execution | server | — | server |
 
-RLS and RPCs must enforce this — not UI-only.
+A **kid owns** auto-organizes scoped to their own buckets and Float
+(`auto_organizes.owner_member_id = kid`). Those rows are invisible to admins and shared
+members — exactly like a kid's own buckets. Admins/members manage only **household** rules
+(`owner_member_id is null`); kids never touch the household pool.
+
+RLS and RPCs must enforce this — not UI-only. Scoping lives in migration
+`00000000000076`: line/destination buckets must match the rule's owner, the Float member and
+History actor resolve to the owner, and adult policies are restricted to `owner_member_id is null`.
 
 ---
 
@@ -304,7 +315,8 @@ Indexes / constraints:
 - **Manual (Run now):** no daily cap — multiple runs on the same local day are allowed (confirm sheet shows last-run context when the rule has run before).
 - `(family_id)` on `auto_organizes` and `auto_organize_runs` for RLS.
 
-Optional later: `owner_member_id uuid null` on `auto_organizes` for kid scope.
+**`owner_member_id uuid null`** on `auto_organizes` (migration `00000000000076`) — null = household
+pool, a member id = that kid's private scope. Indexed; cascades on member delete.
 
 ---
 
