@@ -61,7 +61,7 @@ export async function renameBucket(
 
 /**
  * Delete a bucket atomically via `delete_bucket` (auto-organize cleanup,
- * optional bucket→Float reclaim via `move_money`, then bucket row).
+ * optional bucket→Unbucketed reclaim via `move_money`, then bucket row).
  * Funded buckets log a History row before delete; empty buckets do not.
  * Other historical `transactions` referencing this bucket keep their rows;
  * FKs are `on delete set null`.

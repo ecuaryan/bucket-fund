@@ -157,7 +157,7 @@ export function formatFloatSummary(
   return `${summary.label}: ${formatMoney(summary.amount)}`
 }
 
-/** Flat Float hero subtext — cash context only (no allocations or kids). */
+/** Flat Unbucketed hero subtext — cash context only (no allocations or kids). */
 export function formatFloatCashSubtext(
   breakdown: BucketsBalanceBreakdown,
   opts: BuildOpts,

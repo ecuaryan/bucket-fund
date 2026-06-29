@@ -1,6 +1,6 @@
 type Props = {
   onClick: () => void
-  /** Accessible name, e.g. "What is float?" */
+  /** Accessible name, e.g. "What is Unbucketed?" */
   label: string
   className?: string
 }

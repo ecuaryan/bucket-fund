@@ -19,7 +19,7 @@ export type ChildSetAsideLine = {
   memberId: string
   name: string
   amount: number
-  /** Recallable Float for virtual kids (adult breakdown only). */
+  /** Recallable Unbucketed for virtual kids (adult breakdown only). */
   availableFloat?: number
 }
 
