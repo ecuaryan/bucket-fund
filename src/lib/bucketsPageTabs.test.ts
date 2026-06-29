@@ -20,8 +20,8 @@ describe('parseBucketsPageTab', () => {
     expect(parseBucketsPageTab('auto-bucket')).toBe('auto-bucket')
   })
 
-  it('parses account', () => {
-    expect(parseBucketsPageTab('account')).toBe('account')
+  it('parses bank', () => {
+    expect(parseBucketsPageTab('bank')).toBe('bank')
   })
 })
 
@@ -38,16 +38,16 @@ describe('resolveBucketsPageTab', () => {
     ).toBe('auto-bucket')
   })
 
-  it('falls back to buckets when account tab is unavailable', () => {
+  it('falls back to buckets when bank tab is unavailable', () => {
     expect(
-      resolveBucketsPageTab('account', { autoOrganize: false, account: false }),
+      resolveBucketsPageTab('bank', { autoOrganize: false, account: false }),
     ).toBe('buckets')
   })
 
-  it('keeps account when available', () => {
+  it('keeps bank when available', () => {
     expect(
-      resolveBucketsPageTab('account', { autoOrganize: false, account: true }),
-    ).toBe('account')
+      resolveBucketsPageTab('bank', { autoOrganize: false, account: true }),
+    ).toBe('bank')
   })
 })
 
@@ -57,18 +57,18 @@ describe('bucketsPageTabOptions', () => {
     expect(opts.map((o) => o.value)).toEqual(['buckets'])
   })
 
-  it('appends optional tabs in order: buckets, auto-organize, account', () => {
+  it('appends optional tabs in order: buckets, auto-bucket, bank', () => {
     const opts = bucketsPageTabOptions({ showAutoOrganize: true, showAccount: true })
     expect(opts.map((o) => o.value)).toEqual([
       'buckets',
       'auto-bucket',
-      'account',
+      'bank',
     ])
   })
 
-  it('includes only the account tab for a linked child', () => {
+  it('includes only the bank tab for a linked child', () => {
     const opts = bucketsPageTabOptions({ showAutoOrganize: false, showAccount: true })
-    expect(opts.map((o) => o.value)).toEqual(['buckets', 'account'])
+    expect(opts.map((o) => o.value)).toEqual(['buckets', 'bank'])
   })
 })
 
@@ -116,10 +116,10 @@ describe('applyBucketsPageTabToSearchParams', () => {
     expect(next.get('foo')).toBe('bar')
   })
 
-  it('sets the account tab param', () => {
+  it('sets the bank tab param', () => {
     const prev = new URLSearchParams('foo=bar')
-    const next = applyBucketsPageTabToSearchParams(prev, 'account')
-    expect(next.get('tab')).toBe('account')
+    const next = applyBucketsPageTabToSearchParams(prev, 'bank')
+    expect(next.get('tab')).toBe('bank')
     expect(next.get('foo')).toBe('bar')
   })
 

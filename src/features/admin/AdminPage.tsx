@@ -11,8 +11,8 @@ import {
   ADMIN_ADD_SOURCE_MANUAL_OPTION,
   ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL,
   ADMIN_LINKED_ACCOUNTS_INTRO,
-  ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_PREFIX,
-  ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_SUFFIX,
+  ADMIN_LINKED_ACCOUNTS_REFRESH_HINT_PREFIX,
+  ADMIN_LINKED_ACCOUNTS_REFRESH_HINT_SUFFIX,
   ADMIN_MONEY_SOURCES_INTRO,
   ADMIN_MANUAL_GROUP_TITLE,
   ADMIN_MONEY_SOURCES_SECTION_TITLE,
@@ -457,14 +457,14 @@ export default function AdminPage() {
             {hasLinkedBanks && (
               <p className="mt-1 text-xs text-zinc-400">
                 {ADMIN_LINKED_ACCOUNTS_INTRO}{' '}
-                {ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_PREFIX}
+                {ADMIN_LINKED_ACCOUNTS_REFRESH_HINT_PREFIX}
                 <span
                   className="mx-0.5 inline-flex align-text-bottom"
                   aria-hidden="true"
                 >
                   <RefreshIcon className="h-3 w-3" />
                 </span>
-                {ADMIN_LINKED_ACCOUNTS_RECONNECT_HINT_SUFFIX}
+                {ADMIN_LINKED_ACCOUNTS_REFRESH_HINT_SUFFIX}
               </p>
             )}
           </div>
@@ -718,7 +718,7 @@ export default function AdminPage() {
         {!loadError && accounts !== null && groups.some((g) => !g.isManual) ? (
           <div className="mt-3 rounded-2xl bg-zinc-900 px-4 py-3 ring-1 ring-zinc-800">
             <Link
-              to="/?tab=account"
+              to="/?tab=bank"
               className="text-xs font-semibold text-emerald-400 transition hover:text-emerald-300"
             >
               {VIEW_RECENT_BANK_ACTIVITY} →

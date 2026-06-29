@@ -392,13 +392,13 @@ export default function BucketsPage() {
   useEffect(() => {
     if (!isAutoOrganizeAuthor && autoOrganizeTabAvailable === null) return
     const urlTab = parseBucketsPageTab(searchParams.get('tab'))
-    // Don't strip ?tab=account while accounts are still loading — the Bank tab
+    // Don't strip ?tab=bank while accounts are still loading — the Bank tab
     // only looks unavailable because the data hasn't arrived yet. Waiting for
     // accounts to resolve lets a deep link (e.g. from the Kids page) land on
     // the Bank tab instead of bouncing to Buckets.
     const tabUnavailable =
       (urlTab === 'auto-bucket' && !showAutoOrganizeTab) ||
-      (urlTab === 'account' && accounts !== null && !showAccountTab)
+      (urlTab === 'bank' && accounts !== null && !showAccountTab)
     if (tabUnavailable) {
       setSearchParams(
         (prev) => applyBucketsPageTabToSearchParams(prev, 'buckets'),
@@ -974,13 +974,13 @@ export default function BucketsPage() {
           role="tabpanel"
           id="segmented-panel-account"
           aria-labelledby="segmented-tab-account"
-          hidden={activeTab !== 'account'}
+          hidden={activeTab !== 'bank'}
         >
           <section aria-label={BUCKETS_PAGE_TAB_ACCOUNT_LABEL}>
             <BankAccountsTab
               accounts={bankAccounts}
               viewerMemberId={memberId}
-              active={activeTab === 'account'}
+              active={activeTab === 'bank'}
             />
           </section>
         </div>
