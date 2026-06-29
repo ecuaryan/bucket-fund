@@ -38,17 +38,17 @@ Regenerate after significant UI changes ([docs/MAINTENANCE.md § PWA assets](./d
   <img src="public/screenshots/buckets-rebalance.png" alt="Buckets tab — negative Unbucketed rebalance signal" width="49%" />
 </p>
 <p align="center">
-  <img src="public/screenshots/history.png" alt="History tab — bucket moves and sends" width="49%" />
+  <img src="public/screenshots/history.png" alt="History tab — bucket moves and gives" width="49%" />
   <img src="public/screenshots/kids.png" alt="Kids tab — virtual kid balances with Give" width="49%" />
 </p>
 
 ## What it does
 
 - **Unbucketed + buckets** — cash not yet in a bucket lives in **Unbucketed**; buckets
-  are money you've set aside. The invariant is enforced in Postgres (`move_money`, `send_money`).
+  are money you've set aside. The invariant is enforced in Postgres (`move_money`, `give_money`).
 - **Household roles** — admin, shared member, and kid views with RLS tenant isolation
   and PIN login for members.
-- **Move and send money** — set aside from Unbucketed, cover spends, send to kids; History
+- **Move and give money** — set aside from Unbucketed, cover spends, give to kids; History
   with pagination and notes.
 - **Read-only bank link** — Teller Connect, webhooks, manual money sources for onboarding.
 - **Auto-bucket** — scheduled or on-demand rules to set aside into buckets (`pg_cron` on hosted).
@@ -71,7 +71,7 @@ Product truth and balance model: [CONTEXT.md](./CONTEXT.md).
 ```
 src/
   components/{ui,layout}/   reusable primitives + app shell
-  features/                 auth, buckets, sends, history, admin
+  features/                 auth, buckets, give, kids, history, admin
   lib/                      supabase, auth, buckets, accounts
   hooks/                    shared React hooks
   types/                    DB types (supabase gen types)
@@ -81,7 +81,7 @@ public/
   screenshots/              install UI assets
   demos/                    README demo GIF
 supabase/
-  migrations/               SQL migrations (00000000000000 … 00000000000061)
+  migrations/               SQL migrations (00000000000000 … 00000000000078)
   functions/                Deno Edge Functions
 ```
 
