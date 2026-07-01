@@ -111,6 +111,11 @@ html {
     align-items: center;
     justify-content: flex-start;
     overflow: hidden;
+    /* Compensate when iOS shifts the visual viewport to reveal a focused field
+       (it does this inconsistently on focus), so the sheet stays in the visible
+       area instead of clipping. 0 in the common case where iOS overlays the
+       keyboard without shifting. Paired with the panel height cap below. */
+    transform: translateY(var(--visual-vv-top, 0px));
     padding-top: max(1rem, env(safe-area-inset-top, 0px));
     padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   }
@@ -122,12 +127,14 @@ html {
   .sheet-panel {
     opacity: 0;
     transform: translateY(-12px);
+    /* Cap to the real visible height (visualViewport), always — not gated on a
+       keyboard-open class, which iOS 26 leaves unset because it *resizes* the
+       layout viewport instead of exposing a keyboard inset. Keeps the panel
+       within the visible area above the keyboard so a focused field doesn't
+       fall behind it and iOS doesn't shift the whole sheet out of view. */
     max-height: min(
       85dvh,
-      calc(
-        100dvh - 2rem - env(safe-area-inset-top, 0px) -
-          env(safe-area-inset-bottom, 0px)
-      )
+      calc(var(--visual-vh, 100dvh) - 2rem - env(safe-area-inset-top, 0px))
     );
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -135,15 +142,6 @@ html {
     transition:
       transform 250ms cubic-bezier(0.16, 1, 0.3, 1),
       opacity 200ms ease;
-  }
-
-  html.keyboard-open .sheet-panel {
-    max-height: min(
-      calc(100dvh - 2rem - var(--keyboard-inset, 0px)),
-      85dvh
-    );
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
   }
 
   .sheet-panel-open {
