@@ -8,6 +8,8 @@ import {
 describe('sheetScrollLock', () => {
   afterEach(() => {
     document.body.style.overflow = ''
+    document.body.style.position = ''
+    document.body.style.top = ''
     resetSheetScrollLockForTests()
   })
 
@@ -17,6 +19,13 @@ describe('sheetScrollLock', () => {
     expect(document.body.style.overflow).toBe('hidden')
     releaseSheetScrollLock()
     expect(document.body.style.overflow).toBe('')
+  })
+
+  it('pins body with position:fixed and unpins on release', () => {
+    acquireSheetScrollLock()
+    expect(document.body.style.position).toBe('fixed')
+    releaseSheetScrollLock()
+    expect(document.body.style.position).toBe('')
   })
 
   it('stays locked while nested sheets are open', () => {
