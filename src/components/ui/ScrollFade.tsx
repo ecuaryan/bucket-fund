@@ -61,7 +61,7 @@ export function ScrollFade({
       <div
         ref={scrollRef}
         className={[
-          'min-h-0 overflow-y-auto overscroll-contain',
+          'min-h-0 overflow-y-auto overflow-x-clip overscroll-contain',
           scrollClassName,
           edges.top
             ? 'shadow-[inset_0_8px_6px_-6px_rgba(0,0,0,0.28)]'
