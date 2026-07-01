@@ -129,26 +129,46 @@ async function postFunction<T>(
   return data
 }
 
+/**
+ * The roster read is a safe, idempotent lookup, and a dropped request on mobile
+ * is usually a momentary blip (backgrounded tab, spotty signal). Retry a few
+ * times with short backoff so a transient failure self-heals before the user
+ * ever sees an error. Only network failures retry — an invalid/stale code or any
+ * other domain error fails fast so feedback stays immediate.
+ */
+const JOIN_ROSTER_MAX_ATTEMPTS = 3
+const JOIN_ROSTER_RETRY_BASE_MS = 400
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 export async function validateJoinCode(code: string): Promise<ValidateJoinResult> {
-  // Reads only — runs on the always-on RPC layer instead of the
-  // validate-join-code Edge Function. Same data, same anon exposure.
-  const { data, error } = await supabase.rpc('login_roster', {
-    p_code: code.trim().toUpperCase(),
-  })
-  if (error) {
+  const p_code = code.trim().toUpperCase()
+  for (let attempt = 1; ; attempt++) {
+    // Reads only — runs on the always-on RPC layer instead of the
+    // validate-join-code Edge Function. Same data, same anon exposure.
+    const { data, error } = await supabase.rpc('login_roster', { p_code })
+    if (!error) {
+      // NULL means no family matched — keep the exact message
+      // isStaleJoinCodeError looks for so a rotated/removed code still clears
+      // the device link.
+      if (!data) throw new Error('Invalid join code')
+      return data as unknown as ValidateJoinResult
+    }
     // supabase-js reports a dropped request as a PostgrestError whose message is
-    // the stringified fetch failure ("TypeError: Failed to fetch"). Translate it
-    // to the same friendly copy the Edge Function path uses so the roster screen
-    // shows "Could not reach the server" instead of raw browser text.
+    // the stringified fetch failure ("TypeError: Failed to fetch").
     if (isNetworkFailureMessage(error.message)) {
+      if (attempt < JOIN_ROSTER_MAX_ATTEMPTS) {
+        await delay(JOIN_ROSTER_RETRY_BASE_MS * attempt)
+        continue
+      }
+      // Out of retries — show the friendly copy the Edge Function path uses
+      // instead of leaking raw browser text.
       throw new Error(networkFailureMessage(false))
     }
     throw new Error(error.message)
   }
-  // NULL means no family matched — keep the exact message isStaleJoinCodeError
-  // looks for so a rotated/removed code still clears the device link.
-  if (!data) throw new Error('Invalid join code')
-  return data as unknown as ValidateJoinResult
 }
 
 export type PinSessionTokens = {
