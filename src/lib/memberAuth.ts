@@ -24,6 +24,25 @@ export type ValidateJoinResult = {
   members: JoinMember[]
 }
 
+/**
+ * A dropped/blocked request surfaces as the browser's raw "TypeError: Failed to
+ * fetch" (or a "network" error). Detect it from a message string so both the
+ * Edge Function path (Error instances) and the supabase-js RPC path (a
+ * PostgrestError whose message is the stringified fetch failure) can share the
+ * same friendly copy instead of leaking the raw browser text to users.
+ */
+function isNetworkFailureMessage(message: string): boolean {
+  const msg = message.toLowerCase()
+  return msg.includes('failed to fetch') || msg.includes('network')
+}
+
+function networkFailureMessage(authenticated: boolean): string {
+  const hint = authenticated
+    ? ' If you were idle a long time, sign out and sign in again, then retry.'
+    : ''
+  return `Could not reach the server. Check your connection.${hint}`
+}
+
 function mapPostFunctionNetworkError(
   err: unknown,
   name: string,
@@ -31,12 +50,8 @@ function mapPostFunctionNetworkError(
 ): Error {
   if (err instanceof Error) {
     if (err.message.includes('timed out')) return err
-    const msg = err.message.toLowerCase()
-    if (msg === 'failed to fetch' || msg.includes('network')) {
-      const hint = authenticated
-        ? ' If you were idle a long time, sign out and sign in again, then retry.'
-        : ''
-      return new Error(`Could not reach the server. Check your connection.${hint}`)
+    if (isNetworkFailureMessage(err.message)) {
+      return new Error(networkFailureMessage(authenticated))
     }
   }
   return err instanceof Error ? err : new Error(`${name} failed`)
@@ -120,7 +135,16 @@ export async function validateJoinCode(code: string): Promise<ValidateJoinResult
   const { data, error } = await supabase.rpc('login_roster', {
     p_code: code.trim().toUpperCase(),
   })
-  if (error) throw new Error(error.message)
+  if (error) {
+    // supabase-js reports a dropped request as a PostgrestError whose message is
+    // the stringified fetch failure ("TypeError: Failed to fetch"). Translate it
+    // to the same friendly copy the Edge Function path uses so the roster screen
+    // shows "Could not reach the server" instead of raw browser text.
+    if (isNetworkFailureMessage(error.message)) {
+      throw new Error(networkFailureMessage(false))
+    }
+    throw new Error(error.message)
+  }
   // NULL means no family matched — keep the exact message isStaleJoinCodeError
   // looks for so a rotated/removed code still clears the device link.
   if (!data) throw new Error('Invalid join code')
