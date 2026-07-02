@@ -449,24 +449,19 @@ scheduled **Give to a kid** (`give_money` via a future Auto-bucket `give` kind),
   table, in-app admin integrity banner) — family beta first; add if this ships
   as a paid multi-tenant product
 
-### Credit cards & linked liabilities (defer — think on this later)
+### Credit cards & linked liabilities (decided — not yet implemented)
 
-**TODO:** Teller can return **credit** accounts as well as cash (checking,
-savings, etc.). Today we **only count cash subtypes** toward real balance and
-Unbucketed (`src/lib/accounts.ts` — credit cards are ignored in the Buckets tab; they
-may still be stored in `accounts` if enrolled). Decide later:
+**Decision (2026-07): integrate credit cards as liabilities.** Card balances
+will subtract from the household balance so the ledger identity becomes
+**cash − credit card balances = bucket allocations + Unbucketed**. Cards only
+(no loans/mortgages), household-scoped (never assigned to a kid), manual card
+balances supported alongside Teller-linked ones, and one consequential confirm
+sheet at link time — then truth, even when it turns Unbucketed deep red.
+Full design and staged plan: [docs/CREDIT_CARDS.md](./docs/CREDIT_CARDS.md).
 
-- **Exclude entirely** — do not persist or display credit/loan accounts at
-  all during Teller enroll (simplest mental model: buckets = cash only).
-- **Integrate as liabilities** — show them separately and adjust Unbucketed,
-  e.g. treat credit card balance as debt that **reduces** effective unbucketed cash
-  (or available-to-allocate) so the family pool reflects “cash minus what you
-  owe on cards.”
-- **Display-only** — sync and show card balances for awareness but never fold
-  them into the allocation invariant.
-
-Until decided, keep current behavior: **cash accounts only** in unbucketed-cash
-math; do not change the invariant without an explicit product decision.
+Until it ships, current behavior stands: **cash accounts only** in
+unbucketed-cash math (`src/lib/accounts.ts`, `is_cash_account_type` in SQL);
+credit accounts may be stored in `accounts` if enrolled but are ignored.
 
 ---
 
