@@ -121,6 +121,15 @@ export function latestCashSyncAt(accounts: Account[]): string | null {
 
 export type ManualAccountKind = 'cash' | 'card'
 
+/** PostgREST error when the DB lags the frontend (migration not applied). */
+function isMissingRpcSignatureError(message: string): boolean {
+  const lower = message.toLowerCase()
+  return (
+    lower.includes('could not find the function') ||
+    lower.includes('schema cache')
+  )
+}
+
 export async function addManualAccount(
   amount: number,
   label: string,
@@ -131,8 +140,22 @@ export async function addManualAccount(
     p_label: label,
     p_kind: kind,
   })
-  if (error) throw error
-  return data as string
+  if (!error) return data as string
+  // Migration 79 adds p_kind. If the hosted DB lags the frontend, keep the
+  // onboarding cash flow working via the legacy 2-arg signature; manual
+  // cards genuinely need the migration, so let that error surface.
+  if (kind === 'cash' && isMissingRpcSignatureError(error.message)) {
+    const { data: legacy, error: legacyError } = await supabase.rpc(
+      'add_manual_account',
+      { p_amount: amount, p_label: label } as {
+        p_amount: number
+        p_label: string
+      },
+    )
+    if (legacyError) throw legacyError
+    return legacy as string
+  }
+  throw error
 }
 
 export async function updateManualAccount(

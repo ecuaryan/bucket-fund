@@ -44,7 +44,8 @@ export default function FundKidSheet({
   const amount = parseFloat(amountStr)
   const amountValid = Number.isFinite(amount) && amount > 0
   const overdraft = amountValid && amount > available
-  const availableLabel = formatMoney(available)
+  // Cards can pull the pool negative — never phrase "give up to −$400".
+  const availableLabel = formatMoney(Math.max(0, available))
   const overdraftMessage = overdraft
     ? kidsGiveOverdraftMessage(availableLabel)
     : null

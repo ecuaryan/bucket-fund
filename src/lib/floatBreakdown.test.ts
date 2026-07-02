@@ -283,7 +283,7 @@ describe('formatFloatCashSubtext', () => {
       },
       fmt,
     )
-    expect(text).toBe('$3000.00 linked · $2000.00 manual − $1200.00 on cards')
+    expect(text).toBe('$3000.00 linked · $2000.00 manual · $1200.00 owed on cards')
   })
 
   it('appends the card clause to a single-source summary', () => {
@@ -298,7 +298,7 @@ describe('formatFloatCashSubtext', () => {
       },
       fmt,
     )
-    expect(text).toBe('$5000.00 across 2 money sources − $850.00 on cards')
+    expect(text).toBe('$5000.00 across 2 money sources · $850.00 owed on cards')
   })
 
   it('formats child linked account subtext', () => {

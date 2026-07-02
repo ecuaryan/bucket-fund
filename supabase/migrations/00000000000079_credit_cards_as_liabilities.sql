@@ -22,21 +22,32 @@
 -- intentionally untouched.
 -- =====================================================================
 
--- 1. Classification, beside is_cash_account_type.
+-- 1. Classification, beside is_cash_account_type. Pure comparison, but it
+--    gets the same lockdown treatment migration 56 gave its sibling.
 create or replace function public.is_credit_card_account_type(p_type text)
 returns boolean
 language sql
 immutable
+set search_path = public
 as $$
   select lower(coalesce(p_type, '')) = 'credit_card';
 $$;
 
+revoke all on function public.is_credit_card_account_type(text) from public;
+revoke all on function public.is_credit_card_account_type(text) from authenticated;
+grant execute on function public.is_credit_card_account_type(text) to service_role;
+
 -- 2. Cards stay on the household balance — reject child assignment at
 --    the database layer (the UI also hides cards from the kid picker,
 --    but RLS-layer truth is the contract; see AGENTS.md).
+--    SECURITY DEFINER: the check must see family_members regardless of
+--    the invoking role's RLS visibility, and authenticated callers have
+--    no execute grant on is_credit_card_account_type.
 create or replace function public.accounts_reject_child_card_owner()
 returns trigger
 language plpgsql
+security definer
+set search_path = public
 as $$
 begin
   if new.owner_member_id is not null
@@ -53,6 +64,19 @@ begin
   return new;
 end;
 $$;
+
+revoke all on function public.accounts_reject_child_card_owner() from public;
+revoke all on function public.accounts_reject_child_card_owner() from authenticated;
+
+-- Legacy cleanup BEFORE the trigger exists: the old kid-assignment picker
+-- did not exclude cards, so a card may already be assigned to a child.
+-- Cards are household-level now — return any such row to the family pool.
+update public.accounts a
+   set owner_member_id = null
+ where public.is_credit_card_account_type(a.account_type)
+   and a.owner_member_id in (
+     select fm.id from public.family_members fm where fm.role = 'child'
+   );
 
 drop trigger if exists accounts_no_child_card_owner on public.accounts;
 create trigger accounts_no_child_card_owner
@@ -196,11 +220,15 @@ begin
   v_float := public.member_float(v_member_id);
   v_has_linked_bank := public.member_has_linked_account(v_member_id);
 
+  -- Cards refresh like cash — a card-only family still gets a sync time.
   select max(a.last_synced_at)
     into v_bank_synced
     from public.accounts a
    where a.family_id = v_family_id
-     and public.is_cash_account_type(a.account_type);
+     and (
+       public.is_cash_account_type(a.account_type)
+       or public.is_credit_card_account_type(a.account_type)
+     );
 
   if v_role in ('admin', 'member') then
     select coalesce(sum(a.current_balance), 0)

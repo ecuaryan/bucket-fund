@@ -43,7 +43,7 @@ export const LOADING_STATUS_LABEL = 'Loading…'
 
 /** Install / share sheet blurb (may echo the tagline). */
 export const PWA_DESCRIPTION =
-  'Bucket budgeting on your real bank balance. Solo or with your household.'
+  'Bucket budgeting on what you really have—cash minus card balances. Solo or with your household.'
 
 /** Primary PWA icon (192×192) — also used in auth UI. */
 export const PWA_ICON_192 = '/icons/icon-192.png' as const
@@ -383,13 +383,13 @@ export function householdAdminLabel(
   return trimmed || HOUSEHOLD_ADMIN_PHRASE
 }
 
-/** Always-shown lead for the Money sources section (covers banks + manual). */
+/** Always-shown lead for the Money sources section (banks + manual + cards). */
 export const ADMIN_MONEY_SOURCES_INTRO =
-  'Link a bank or enter an amount by hand—both count toward the money you organize.'
+  'Link a bank, enter an amount by hand, or add a credit card. Cash counts toward the money you organize; card balances count against it.'
 
 /** Read-only trust line, shown only once at least one bank is linked. The
  *  refresh and unlink actions are self-evident from the per-bank buttons. */
-export const ADMIN_LINKED_ACCOUNTS_INTRO = `Linked banks are read-only—${BANK_READ_ONLY_ASSURANCE}.`
+export const ADMIN_LINKED_ACCOUNTS_INTRO = `Linked banks are read-only—${BANK_READ_ONLY_ASSURANCE}. Card balances count against your household balance—link the account that pays the card so payments net out.`
 
 export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
   'Balances count toward the money you can organize into buckets.'
@@ -441,7 +441,7 @@ export function adminUnlinkInstitutionSheetIntro(
   const label = institutionName ?? 'This bank'
   const accounts =
     accountCount === 1 ? '1 account' : `${accountCount} accounts`
-  return `${label} and ${accounts} will be removed from Bucket My Money. Balances will no longer count toward Buckets.`
+  return `${label} and ${accounts} will be removed from Bucket My Money. Balances will no longer be part of Buckets.`
 }
 
 export const ADMIN_UNLINK_INSTITUTION_CONFIRM = 'Unlink bank'
@@ -452,6 +452,11 @@ export function adminRemoveManualSourceSheetTitle(label: string): string {
 
 export const ADMIN_REMOVE_MANUAL_SOURCE_INTRO =
   'This manual amount will be removed from your money sources. Linked banks are not affected.'
+
+/** Removing a manual card makes the number go UP — name that consequence. */
+export function adminRemoveManualCardIntro(balanceLabel: string): string {
+  return `This card's balance will stop counting against your household balance—${FLOAT_LABEL} goes up by ${balanceLabel}. Linked banks are not affected.`
+}
 
 export const ADMIN_REMOVE_MANUAL_SOURCE_CONFIRM = 'Remove'
 
@@ -707,9 +712,9 @@ export function floatShortWithCardsHint(overAmountLabel: string): string {
   return `Buckets and cards total ${overAmountLabel} more than your cash.`
 }
 
-/** Hero subtext clause appended after the cash summary, e.g. "− $1,200 on cards". */
+/** Hero subtext clause appended after the cash summary, e.g. "· $1,200 owed on cards". */
 export function floatCardsSubtextClause(cardDebtLabel: string): string {
-  return `− ${cardDebtLabel} on cards`
+  return `· ${cardDebtLabel} owed on cards`
 }
 
 /** Unbucketed hero: linked-balance refresh control when no prior sync time exists. */
@@ -1229,7 +1234,7 @@ export const ADMIN_CARD_COUNTS_AGAINST_NOTE =
 export const LINKED_CARDS_NOTICE_TITLE = 'Credit card linked'
 export const LINKED_CARDS_NOTICE_TITLE_PLURAL = 'Credit cards linked'
 export function linkedCardsNoticeBody(cardDebtLabel: string): string {
-  return `Card balances count against your household balance, so ${FLOAT_LABEL} just went down by ${cardDebtLabel}. Money you spend on a card works like money spent from the bank—cover it from a bucket.`
+  return `A card balance is money you owe, so ${FLOAT_LABEL} just went down by ${cardDebtLabel}. Card spending works like bank spending—pick the bucket that covers it.`
 }
 export const LINKED_CARDS_NOTICE_CONFIRM = 'Got it'
 

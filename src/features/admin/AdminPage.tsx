@@ -18,10 +18,7 @@ import {
   ADMIN_CARD_COUNTS_AGAINST_NOTE,
   ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL,
   ADMIN_LINKED_ACCOUNTS_INTRO,
-  LINKED_CARDS_NOTICE_CONFIRM,
-  LINKED_CARDS_NOTICE_TITLE,
-  LINKED_CARDS_NOTICE_TITLE_PLURAL,
-  linkedCardsNoticeBody,
+  adminRemoveManualCardIntro,
   ADMIN_MONEY_SOURCES_INTRO,
   ADMIN_MANUAL_GROUP_TITLE,
   ADMIN_MONEY_SOURCES_SECTION_TITLE,
@@ -59,6 +56,8 @@ import {
   useTellerConnect,
 } from '@/lib/teller'
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
+import CardsNoticeSheet from '@/features/accounts/CardsNoticeSheet'
+import { writeCardsNoticeSeen } from '@/lib/cardsNoticeStorage'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
 import MembersSection from '@/features/admin/MembersSection'
@@ -144,6 +143,8 @@ export default function AdminPage() {
   const [removeManualTarget, setRemoveManualTarget] = useState<{
     id: string
     label: string
+    kind: ManualAccountKind
+    balance: number
   } | null>(null)
   const [removingManual, setRemovingManual] = useState(false)
   const [removeManualError, setRemoveManualError] = useState<string | null>(null)
@@ -293,19 +294,21 @@ export default function AdminPage() {
       toast.success(`${verb} ${count} account${count === 1 ? '' : 's'}.`)
     }
     // Cards count against the household balance the moment they land —
-    // name the drop instead of letting the hero quietly change. Reconnects
-    // skip the notice: those cards were already in the equation.
-    if (verb === 'Linked') {
-      const cards = result.accounts
-        .filter((a) => isCreditCardAccount(a))
-        .map((a) => ({
-          name: a.account_name ?? a.institution_name ?? 'Credit card',
-          balance: Number(a.current_balance),
-        }))
-      const totalDebt = cards.reduce((sum, c) => sum + c.balance, 0)
-      if (totalDebt > 0) {
-        setLinkedCardsNotice({ cards, totalDebt })
-      }
+    // name the drop instead of letting the hero quietly change. Only cards
+    // that are NEW to the family (not already in the pre-link account list)
+    // count: a re-link or reconnect of already-tracked cards changed nothing.
+    const priorIds = new Set((accounts ?? []).map((a) => a.id))
+    const cards = result.accounts
+      .filter((a) => isCreditCardAccount(a) && !priorIds.has(a.id))
+      .map((a) => ({
+        name: a.account_name ?? a.institution_name ?? 'Credit card',
+        balance: Number(a.current_balance),
+      }))
+    const totalDebt = cards.reduce((sum, c) => sum + c.balance, 0)
+    if (totalDebt > 0) {
+      setLinkedCardsNotice({ cards, totalDebt })
+      // One acknowledgment is enough — don't re-notify on the Buckets tab.
+      if (member) writeCardsNoticeSeen(member.id)
     }
     setAccountsSyncing(true)
     void Promise.all([loadAccounts(), loadEnrollments()]).finally(() =>
@@ -370,9 +373,14 @@ export default function AdminPage() {
     }
   }
 
-  function requestRemoveManualSource(accountId: string, label: string) {
+  function requestRemoveManualSource(account: Account) {
     setRemoveManualError(null)
-    setRemoveManualTarget({ id: accountId, label })
+    setRemoveManualTarget({
+      id: account.id,
+      label: account.account_name ?? 'this source',
+      kind: isCreditCardAccount(account) ? 'card' : 'cash',
+      balance: Number(account.current_balance),
+    })
   }
 
   async function confirmRemoveManualSource() {
@@ -747,12 +755,7 @@ export default function AdminPage() {
                             </button>
                             <button
                               type="button"
-                              onClick={() =>
-                                requestRemoveManualSource(
-                                  a.id,
-                                  a.account_name ?? 'this source',
-                                )
-                              }
+                              onClick={() => requestRemoveManualSource(a)}
                               className="rounded-lg border border-red-500/30 px-2 py-1 text-xs font-semibold text-red-300"
                             >
                               Remove
@@ -846,68 +849,12 @@ export default function AdminPage() {
         }}
       />
 
-      <Sheet
+      <CardsNoticeSheet
         open={linkedCardsNotice !== null}
+        cards={linkedCardsNotice?.cards ?? []}
+        totalDebt={linkedCardsNotice?.totalDebt ?? 0}
         onClose={() => setLinkedCardsNotice(null)}
-        aria-label={
-          linkedCardsNotice && linkedCardsNotice.cards.length > 1
-            ? LINKED_CARDS_NOTICE_TITLE_PLURAL
-            : LINKED_CARDS_NOTICE_TITLE
-        }
-      >
-        {linkedCardsNotice ? (
-          <>
-            <header className="mb-4 flex items-baseline justify-between">
-              <h2 className="text-lg font-semibold text-zinc-300">
-                {linkedCardsNotice.cards.length > 1
-                  ? LINKED_CARDS_NOTICE_TITLE_PLURAL
-                  : LINKED_CARDS_NOTICE_TITLE}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setLinkedCardsNotice(null)}
-                className="rounded p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300"
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </header>
-
-            <div className="space-y-4">
-              <ul className="space-y-1.5 rounded-xl bg-zinc-950 p-3 ring-1 ring-inset ring-zinc-700">
-                {linkedCardsNotice.cards.map((card) => (
-                  <li
-                    key={`${card.name}-${card.balance}`}
-                    className="flex items-baseline justify-between gap-3 text-sm"
-                  >
-                    <span className="min-w-0 truncate text-zinc-300">
-                      {card.name}
-                    </span>
-                    <span className="shrink-0 tabular-nums text-rose-300">
-                      {formatMoney(card.balance)}{' '}
-                      <span className="text-xs text-rose-300/70">
-                        {ACCOUNT_CARD_OWED_SUFFIX}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <p className="text-sm text-zinc-400">
-                {linkedCardsNoticeBody(
-                  formatMoney(linkedCardsNotice.totalDebt),
-                )}
-              </p>
-              <button
-                type="button"
-                onClick={() => setLinkedCardsNotice(null)}
-                className="w-full rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
-              >
-                {LINKED_CARDS_NOTICE_CONFIRM}
-              </button>
-            </div>
-          </>
-        ) : null}
-      </Sheet>
+      />
 
       <Sheet
         open={linkBankConfirmOpen}
@@ -994,7 +941,11 @@ export default function AdminPage() {
 
           <div className="space-y-4">
             <p className="text-sm text-zinc-400">
-              {ADMIN_REMOVE_MANUAL_SOURCE_INTRO}
+              {removeManualTarget.kind === 'card'
+                ? adminRemoveManualCardIntro(
+                    formatMoney(removeManualTarget.balance),
+                  )
+                : ADMIN_REMOVE_MANUAL_SOURCE_INTRO}
             </p>
 
             {removeManualError ? (

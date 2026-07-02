@@ -97,7 +97,7 @@ export function buildFloatLines(
     })
   }
 
-  if (breakdown.cardDebt !== 0) {
+  if (breakdown.cardDebt > 0) {
     lines.push({
       key: 'card-debt',
       label: BREAKDOWN_CARD_DEBT_LABEL,

@@ -123,14 +123,23 @@ describe('adminLinkedAccounts', () => {
   it('sorts accounts within a group by balance then name', () => {
     expect(
       compareAccountsByBalanceThenName(
-        { id: 'b', current_balance: 10, account_name: 'Zebra' },
-        { id: 'a', current_balance: 100, account_name: 'Alpha' },
+        { id: 'b', current_balance: 10, account_name: 'Zebra', account_type: 'checking' },
+        { id: 'a', current_balance: 100, account_name: 'Alpha', account_type: 'checking' },
       ),
     ).toBeGreaterThan(0)
     expect(
       compareAccountsByBalanceThenName(
-        { id: 'a', current_balance: 50, account_name: 'Beta' },
-        { id: 'b', current_balance: 50, account_name: 'Alpha' },
+        { id: 'a', current_balance: 50, account_name: 'Beta', account_type: 'checking' },
+        { id: 'b', current_balance: 50, account_name: 'Alpha', account_type: 'checking' },
+      ),
+    ).toBeGreaterThan(0)
+  })
+
+  it('sorts cards below cash — owed money is not the biggest asset', () => {
+    expect(
+      compareAccountsByBalanceThenName(
+        { id: 'card', current_balance: 1200, account_name: 'Freedom', account_type: 'credit_card' },
+        { id: 'cash', current_balance: 800, account_name: 'Checking', account_type: 'checking' },
       ),
     ).toBeGreaterThan(0)
   })

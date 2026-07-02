@@ -99,7 +99,10 @@ History snapshots (they record Unbucketed, which is simply net now).
   document it and note it in the linked-accounts intro copy; no blocking.
   We show the truth across what's linked.
 - **Refunds/credits** can produce a negative card balance (bank owes you);
-  that adds to Unbucketed under the same equation — correct, no special case.
+  that adds to Unbucketed under the same equation — correct, no special case
+  for linked cards. **Manual cards clamp at $0** (the RPC rejects negative
+  amounts and the form can't enter them) — enter 0 if the bank owes you;
+  simplicity over a rarely-used negative-entry UI.
 
 ## Staged plan (shipped as one PR)
 

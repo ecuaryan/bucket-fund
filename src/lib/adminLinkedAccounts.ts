@@ -28,15 +28,22 @@ type AccountSortRow = {
   id: string
   current_balance: number | string
   account_name: string | null
+  account_type: string | null
 }
 
-/** Balance high → low, then account name A–Z, then id for stability. */
+/** A card's balance is owed — it subtracts from the group total and sorts last. */
+function signedBalance(account: AccountSortRow): number {
+  const balance = Number(account.current_balance)
+  return isCreditCardAccountType(account.account_type) ? -balance : balance
+}
+
+/** Signed balance high → low (cards last), then account name A–Z, then id. */
 export function compareAccountsByBalanceThenName(
   a: AccountSortRow,
   b: AccountSortRow,
 ): number {
-  const balA = Number(a.current_balance)
-  const balB = Number(b.current_balance)
+  const balA = signedBalance(a)
+  const balB = signedBalance(b)
   if (balB !== balA) return balB - balA
   const byName = (a.account_name ?? '').localeCompare(b.account_name ?? '', undefined, {
     sensitivity: 'base',
@@ -47,12 +54,6 @@ export function compareAccountsByBalanceThenName(
 
 function sortAccountsByBalanceThenName<T extends AccountSortRow>(accounts: T[]): T[] {
   return [...accounts].sort(compareAccountsByBalanceThenName)
-}
-
-/** A card's balance is owed — it subtracts from the group total. */
-function signedBalance(account: Account): number {
-  const balance = Number(account.current_balance)
-  return isCreditCardAccountType(account.account_type) ? -balance : balance
 }
 
 function compareInstitutionGroups(
