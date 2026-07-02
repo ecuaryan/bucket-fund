@@ -1,3 +1,4 @@
+import { isCashAccountType, isCreditCardAccountType } from '@/lib/accountTypes'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database'
 
@@ -36,22 +37,11 @@ export async function assignAccountOwner(
   if (error) throw error
 }
 
-// Account subtypes Teller returns. Anything in this set is treated as
-// real, allocatable cash on hand. Everything else (credit cards,
-// loans, investments, etc.) is excluded from the float pool —
-// you can't allocate borrowed money or unrealised stock gains into a
-// "groceries" bucket.
-//
-// Reference: https://teller.io/docs/api/account
-export const CASH_ACCOUNT_SUBTYPES = new Set<string>([
-  'checking',
-  'savings',
-  'money_market',
-  'certificate_of_deposit',
-  'cash_management',
-  'treasury',
-  'manual',
-])
+export {
+  CASH_ACCOUNT_SUBTYPES,
+  isCashAccountType,
+  isCreditCardAccountType,
+} from '@/lib/accountTypes'
 
 export function isManualAccount(a: Pick<Account, 'source'>): boolean {
   return a.source === 'manual'
@@ -88,13 +78,28 @@ export function bankAccountOwnerTag(
 }
 
 export function isCashAccount(a: Pick<Account, 'account_type'>): boolean {
-  if (!a.account_type) return false
-  return CASH_ACCOUNT_SUBTYPES.has(a.account_type.toLowerCase())
+  return isCashAccountType(a.account_type)
+}
+
+/**
+ * Credit cards count AGAINST the household balance:
+ * cash − card balances = buckets + Unbucketed (docs/CREDIT_CARDS.md).
+ * Mirrors Postgres `is_credit_card_account_type`. `current_balance` on a
+ * card row is the amount owed (positive = debt).
+ */
+export function isCreditCardAccount(a: Pick<Account, 'account_type'>): boolean {
+  return isCreditCardAccountType(a.account_type)
 }
 
 export function sumCashBalance(accounts: Account[]): number {
   return accounts
     .filter(isCashAccount)
+    .reduce((sum, a) => sum + Number(a.current_balance), 0)
+}
+
+export function sumCardDebt(accounts: Account[]): number {
+  return accounts
+    .filter(isCreditCardAccount)
     .reduce((sum, a) => sum + Number(a.current_balance), 0)
 }
 
@@ -114,13 +119,17 @@ export function latestCashSyncAt(accounts: Account[]): string | null {
   return latest
 }
 
+export type ManualAccountKind = 'cash' | 'card'
+
 export async function addManualAccount(
   amount: number,
   label: string,
+  kind: ManualAccountKind = 'cash',
 ): Promise<string> {
   const { data, error } = await supabase.rpc('add_manual_account', {
     p_amount: amount,
     p_label: label,
+    p_kind: kind,
   })
   if (error) throw error
   return data as string

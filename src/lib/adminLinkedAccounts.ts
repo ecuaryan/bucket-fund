@@ -1,3 +1,4 @@
+import { isCreditCardAccountType } from '@/lib/accountTypes'
 import type { Database } from '@/types/database'
 import type { TellerEnrollmentMeta } from '@/lib/teller'
 
@@ -7,6 +8,7 @@ export type InstitutionGroup = {
   groupKey: string
   institutionName: string | null
   accounts: Account[]
+  /** Cash minus card balances — a card's balance counts as owed, not held. */
   totalBalance: number
   lastSyncedAt: string | null
   /** Internal enrollment id used for Reconnect / busy state. */
@@ -45,6 +47,12 @@ export function compareAccountsByBalanceThenName(
 
 function sortAccountsByBalanceThenName<T extends AccountSortRow>(accounts: T[]): T[] {
   return [...accounts].sort(compareAccountsByBalanceThenName)
+}
+
+/** A card's balance is owed — it subtracts from the group total. */
+function signedBalance(account: Account): number {
+  const balance = Number(account.current_balance)
+  return isCreditCardAccountType(account.account_type) ? -balance : balance
 }
 
 function compareInstitutionGroups(
@@ -131,7 +139,7 @@ export function groupAccountsByInstitution(
     let lastSyncedAt: string | null = null
     let totalBalance = 0
     for (const account of sorted) {
-      totalBalance += Number(account.current_balance)
+      totalBalance += signedBalance(account)
       if (
         account.last_synced_at &&
         (!lastSyncedAt || account.last_synced_at > lastSyncedAt)
@@ -158,7 +166,7 @@ export function groupAccountsByInstitution(
     let lastSyncedAt: string | null = null
     let totalBalance = 0
     for (const account of sorted) {
-      totalBalance += Number(account.current_balance)
+      totalBalance += signedBalance(account)
       if (
         account.last_synced_at &&
         (!lastSyncedAt || account.last_synced_at > lastSyncedAt)
@@ -185,7 +193,7 @@ export function groupAccountsByInstitution(
       institutionName: 'Unlinked',
       accounts: sortAccountsByBalanceThenName(tellerOrphans),
       totalBalance: tellerOrphans.reduce(
-        (sum, a) => sum + Number(a.current_balance),
+        (sum, a) => sum + signedBalance(a),
         0,
       ),
       lastSyncedAt: null,

@@ -678,6 +678,9 @@ export function bucketsKidFloatHint(
 /** Subtitle under the Unbucketed amount when the breakdown panel is hidden. */
 export const FLOAT_HERO_SUBTITLE = 'Left over after buckets'
 
+/** Hero subtitle when the household has credit-card balances in the mix. */
+export const FLOAT_HERO_SUBTITLE_WITH_CARDS = 'Left over after buckets and cards'
+
 /**
  * One-line hint when Unbucketed is negative (over-bucketed). The hero keeps
  * showing the red negative number — this line names what it means so the
@@ -693,6 +696,20 @@ export const FLOAT_NEGATIVE_HINT = "You've bucketed more than you have."
  */
 export function floatOverbucketedHint(overAmountLabel: string): string {
   return `You've bucketed ${overAmountLabel} more than you have.`
+}
+
+/**
+ * Negative-Unbucketed hint when card balances are part of the equation
+ * (cash − cards = buckets + Unbucketed): red then means spending — cash or
+ * card — not yet covered by a bucket, not only over-bucketing.
+ */
+export function floatShortWithCardsHint(overAmountLabel: string): string {
+  return `Buckets and cards total ${overAmountLabel} more than your cash.`
+}
+
+/** Hero subtext clause appended after the cash summary, e.g. "− $1,200 on cards". */
+export function floatCardsSubtextClause(cardDebtLabel: string): string {
+  return `− ${cardDebtLabel} on cards`
 }
 
 /** Unbucketed hero: linked-balance refresh control when no prior sync time exists. */
@@ -1181,6 +1198,17 @@ export const MANUAL_SOURCE_DEFAULT_LABEL = 'Cash on hand'
 /** Prefill for new manual sources so admins can tap Add and try buckets immediately. */
 export const MANUAL_SOURCE_SUGGESTED_AMOUNT = 1000
 
+// Manual credit cards: self-reported balances for cards the app can't
+// link. Debt is entered as what's owed and counts AGAINST the household
+// balance (docs/CREDIT_CARDS.md).
+export const MANUAL_CARD_DIALOG_TITLE = 'Add a credit card'
+export const MANUAL_CARD_EDIT_DIALOG_TITLE = 'Edit credit card'
+export const MANUAL_CARD_DIALOG_BODY =
+  'Enter what you currently owe on the card. It counts against your household balance—update it whenever the balance changes.'
+export const MANUAL_CARD_LABEL_PLACEHOLDER = 'Credit card'
+export const MANUAL_CARD_DEFAULT_LABEL = 'Credit card'
+export const MANUAL_CARD_AMOUNT_LABEL = 'Balance owed'
+
 export const ADMIN_MANUAL_GROUP_TITLE = 'Manual sources'
 export const ADMIN_MONEY_SOURCES_SECTION_TITLE = 'Money sources'
 
@@ -1189,10 +1217,26 @@ export const ADMIN_PAGE_TABS_ARIA_LABEL = 'Admin page sections'
 export const ADMIN_ADD_MONEY_SOURCE_ACTION = 'Add money source'
 export const ADMIN_ADD_SOURCE_LINK_OPTION = 'Link a bank'
 export const ADMIN_ADD_SOURCE_MANUAL_OPTION = 'Enter an amount manually'
+export const ADMIN_ADD_SOURCE_CARD_OPTION = 'Add a credit card'
+
+/** Per-row note on card accounts in Admin and the Bank tab. */
+export const ACCOUNT_CARD_OWED_SUFFIX = 'owed'
+export const ADMIN_CARD_COUNTS_AGAINST_NOTE =
+  'Counts against your household balance'
+
+// Post-link notice when a Teller enrollment shared credit cards: the
+// balance drop already happened (truth first) — this sheet names it.
+export const LINKED_CARDS_NOTICE_TITLE = 'Credit card linked'
+export const LINKED_CARDS_NOTICE_TITLE_PLURAL = 'Credit cards linked'
+export function linkedCardsNoticeBody(cardDebtLabel: string): string {
+  return `Card balances count against your household balance, so ${FLOAT_LABEL} just went down by ${cardDebtLabel}. Money you spend on a card works like money spent from the bank—cover it from a bucket.`
+}
+export const LINKED_CARDS_NOTICE_CONFIRM = 'Got it'
 
 export const BREAKDOWN_CASH_LABEL = 'Cash'
 export const BREAKDOWN_LINKED_CASH_LABEL = 'Linked cash'
 export const BREAKDOWN_MANUAL_CASH_LABEL = 'Manual cash'
+export const BREAKDOWN_CARD_DEBT_LABEL = 'Credit cards'
 
 /** Collapsed float breakdown toggle, e.g. "$1,234.56 across 14 money sources". */
 export function floatSourcesCountText(count: number): string | undefined {

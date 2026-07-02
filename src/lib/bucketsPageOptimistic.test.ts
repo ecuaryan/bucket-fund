@@ -23,6 +23,7 @@ const breakdown = (over: Partial<BucketsBalanceBreakdown> = {}): BucketsBalanceB
   totalCash: 200,
   bankCash: 200,
   manualCash: 0,
+  cardDebt: 0,
   bucketAllocated: 100,
   childrenSetAside: 0,
   children: [],

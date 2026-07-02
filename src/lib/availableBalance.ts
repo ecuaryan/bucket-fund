@@ -1,4 +1,4 @@
-import { latestCashSyncAt, sumCashBalance } from '@/lib/accounts'
+import { latestCashSyncAt, sumCardDebt, sumCashBalance } from '@/lib/accounts'
 import { withAuthLockRetry } from '@/lib/authLockError'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database'
@@ -28,6 +28,8 @@ export type BucketsBalanceBreakdown = {
   totalCash: number
   bankCash: number
   manualCash: number
+  /** Family credit-card balances (positive = owed); 0 for child viewers. */
+  cardDebt: number
   bucketAllocated: number
   childrenSetAside: number
   children: ChildSetAsideLine[]
@@ -89,6 +91,8 @@ export function parseBreakdownRow(data: Json): BucketsBalanceBreakdown | null {
     totalCash,
     bankCash,
     manualCash,
+    // Absent until migration 79 is applied — treat as no card debt.
+    cardDebt: row.card_debt !== undefined ? num('card_debt') : 0,
     bucketAllocated: num('bucket_allocated'),
     childrenSetAside: num('children_set_aside'),
     children,
@@ -109,7 +113,7 @@ export function computeClientFloat(
     (sum, b) => sum + Number(b.allocated_amount),
     0,
   )
-  return sumCashBalance(accounts) - allocated
+  return sumCashBalance(accounts) - sumCardDebt(accounts) - allocated
 }
 
 function sumCashBySource(
@@ -126,15 +130,17 @@ function clientBreakdownFallback(
   const totalCash = sumCashBalance(accounts)
   const bankCash = sumCashBySource(accounts, 'teller')
   const manualCash = sumCashBySource(accounts, 'manual')
+  const cardDebt = sumCardDebt(accounts)
   const bucketAllocated = buckets.reduce(
     (sum, b) => sum + Number(b.allocated_amount),
     0,
   )
   return {
-    float: totalCash - bucketAllocated,
+    float: totalCash - cardDebt - bucketAllocated,
     totalCash,
     bankCash,
     manualCash,
+    cardDebt,
     bucketAllocated,
     childrenSetAside: 0,
     children: [],

@@ -36,7 +36,9 @@ import {
   BUCKETS_DB_UPDATE_PENDING_BODY,
   bucketsMemberNoBucketsHint,
   FLOAT_HERO_SUBTITLE,
+  FLOAT_HERO_SUBTITLE_WITH_CARDS,
   floatOverbucketedHint,
+  floatShortWithCardsHint,
   FLOAT_LABEL,
 } from '@/lib/brand'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
@@ -725,12 +727,16 @@ export default function BucketsPage() {
     showAddSourceCard || showCoach
       ? null
       : float < 0
-        ? floatOverbucketedHint(formatMoney(Math.abs(float)))
+        ? balanceBreakdown.cardDebt > 0
+          ? floatShortWithCardsHint(formatMoney(Math.abs(float)))
+          : floatOverbucketedHint(formatMoney(Math.abs(float)))
         : cashSubtext
           ? null
           : isChild
             ? bucketsKidFloatHint(householdAdminName)
-            : FLOAT_HERO_SUBTITLE
+            : balanceBreakdown.cardDebt > 0
+              ? FLOAT_HERO_SUBTITLE_WITH_CARDS
+              : FLOAT_HERO_SUBTITLE
 
   return (
     <>

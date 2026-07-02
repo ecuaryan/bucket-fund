@@ -155,4 +155,74 @@ describe('adminLinkedAccounts', () => {
     expect(groups[0]?.isManual).toBe(true)
     expect(groups[0]?.enrollmentIds).toEqual([])
   })
+
+  it('nets credit-card balances against the group total', () => {
+    const base = {
+      family_id: 'fam',
+      owner_member_id: null,
+      source: 'teller' as const,
+      teller_enrollment_id: 'enr-1',
+      institution_name: 'Chase',
+      last_synced_at: null,
+      created_at: '2026-05-30T09:00:00Z',
+    }
+    const groups = groupAccountsByInstitution(
+      [
+        {
+          ...base,
+          id: 'a1',
+          teller_account_id: 'acc1',
+          account_name: 'Checking',
+          account_type: 'checking',
+          current_balance: 3000,
+        },
+        {
+          ...base,
+          id: 'a2',
+          teller_account_id: 'acc2',
+          account_name: 'Freedom card',
+          account_type: 'credit_card',
+          current_balance: 1200,
+        },
+      ] as Account[],
+      new Map(),
+    )
+    expect(groups).toHaveLength(1)
+    expect(groups[0]?.totalBalance).toBe(1800)
+  })
+
+  it('nets manual card debt against the manual group total', () => {
+    const base = {
+      family_id: 'fam',
+      owner_member_id: null,
+      source: 'manual' as const,
+      teller_account_id: null,
+      teller_enrollment_id: null,
+      last_synced_at: null,
+      created_at: '2026-05-30T09:00:00Z',
+    }
+    const groups = groupAccountsByInstitution(
+      [
+        {
+          ...base,
+          id: 'm1',
+          institution_name: 'Cash on hand',
+          account_name: 'Cash on hand',
+          account_type: 'manual',
+          current_balance: 500,
+        },
+        {
+          ...base,
+          id: 'm2',
+          institution_name: 'Store card',
+          account_name: 'Store card',
+          account_type: 'credit_card',
+          current_balance: 200,
+        },
+      ] as Account[],
+      new Map(),
+    )
+    expect(groups).toHaveLength(1)
+    expect(groups[0]?.totalBalance).toBe(300)
+  })
 })
