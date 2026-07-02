@@ -210,4 +210,30 @@ describe('float RPC security', () => {
 
     expect(hidden).toEqual([])
   })
+
+  it('bank_last_synced_at ignores manual sources — an edit is not a refresh', async () => {
+    const family = await createAdminFamily('sm-manual-not-refresh')
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+
+    // Manual rows stamp last_synced_at, but that means "when the admin last
+    // set the amount" — the hero's refresh label must not pick it up.
+    await admin.rpc('add_manual_account', { p_amount: 500, p_label: 'Cash' })
+    const manualOnly = (await admin.rpc('get_home_balance_breakdown'))
+      .data as Record<string, unknown>
+    expect(manualOnly.bank_last_synced_at).toBeNull()
+
+    // A synced Teller account is a real refresh time.
+    const svc = serviceClient()
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 1000,
+      last_synced_at: new Date().toISOString(),
+    })
+    const withBank = (await admin.rpc('get_home_balance_breakdown'))
+      .data as Record<string, unknown>
+    expect(withBank.bank_last_synced_at).not.toBeNull()
+  })
 })
