@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Sheet } from '@/components/ui/Sheet'
-import { ScrollFade } from '@/components/ui/ScrollFade'
 import { LoadErrorPanel } from '@/components/ui/LoadErrorPanel'
 import {
   AUTO_ORGANIZE_ADD_LABEL,
@@ -905,7 +904,6 @@ export default function AutoOrganizeSection({
       <Sheet
         open={runConfirm !== null}
         onClose={() => setRunConfirm(null)}
-        fillViewport
         aria-label={
           runConfirm
             ? autoOrganizeRunNowConfirmTitle(rowDisplayName(runConfirm))
@@ -913,8 +911,8 @@ export default function AutoOrganizeSection({
         }
       >
         {runConfirm ? (
-          <div className="relative flex max-h-full min-h-0 flex-1 flex-col overflow-hidden">
-            <header className="mb-4 flex shrink-0 items-baseline justify-between">
+          <div>
+            <header className="mb-4 flex items-baseline justify-between">
               <h2 className="text-lg font-semibold text-zinc-300">
                 {autoOrganizeRunNowConfirmTitle(rowDisplayName(runConfirm))}
               </h2>
@@ -929,8 +927,7 @@ export default function AutoOrganizeSection({
               </button>
             </header>
 
-            <ScrollFade scrollClassName="p-1">
-              <div className="space-y-4">
+            <div className="space-y-4">
                 <p className="text-sm text-zinc-300">
                   {autoOrganizeRunNowConfirmBodyForKind(
                     runConfirmKind,
@@ -979,10 +976,9 @@ export default function AutoOrganizeSection({
                     </ul>
                   </div>
                 </div>
-              </div>
-            </ScrollFade>
+            </div>
 
-            <div className="shrink-0 space-y-3 border-t border-zinc-800 pt-3">
+            <div className="mt-4 space-y-3 border-t border-zinc-800 pt-3">
               <div className="rounded-xl bg-zinc-950 px-3 py-2 ring-1 ring-inset ring-zinc-700">
                 <div className="flex items-baseline justify-between gap-3">
                   <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">

@@ -89,9 +89,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 : 'bg-red-950/88 text-red-50 ring-red-400/60')
             }
           >
-            <p className="min-w-0 flex-1 font-medium leading-snug">
-              {item.message}
-            </p>
+            <div className="min-w-0 flex-1">
+              <p className="font-medium leading-snug">{item.message}</p>
+              {item.detail?.map((line) => (
+                <p
+                  key={line}
+                  className="mt-1 text-xs tabular-nums leading-snug opacity-85"
+                >
+                  {line}
+                </p>
+              ))}
+            </div>
             <button
               type="button"
               onClick={dismiss}

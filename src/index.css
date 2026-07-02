@@ -149,17 +149,6 @@ html {
     transform: translateY(0);
   }
 
-  .sheet-panel-fill {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  html.keyboard-open .sheet-panel-fill {
-    overflow: hidden;
-  }
-
   @media (min-width: 640px) {
     .sheet-backdrop {
       justify-content: center;

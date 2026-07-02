@@ -14,11 +14,6 @@ type Props = {
   children: ReactNode
   /** Backdrop tap closes by default; form sheets with lots of input often disable this. */
   closeOnBackdropClick?: boolean
-  /**
-   * Tall forms: panel is a flex column with one scroll region inside children.
-   * Avoids nested scroll with the default panel overflow.
-   */
-  fillViewport?: boolean
 }
 
 /**
@@ -31,7 +26,6 @@ export function Sheet({
   'aria-label': ariaLabel,
   children,
   closeOnBackdropClick = true,
-  fillViewport = false,
 }: Props) {
   const [present, setPresent] = useState(open)
   const [shown, setShown] = useState(false)
@@ -84,7 +78,6 @@ export function Sheet({
       <div
         className={
           'sheet-panel w-full max-w-md rounded-2xl bg-zinc-900 p-5 shadow-2xl ring-1 ring-zinc-800 ' +
-          (fillViewport ? 'sheet-panel-fill ' : '') +
           (shown ? 'sheet-panel-open' : '')
         }
         onClick={(e) => e.stopPropagation()}

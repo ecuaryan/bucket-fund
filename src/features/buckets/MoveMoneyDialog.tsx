@@ -20,8 +20,10 @@ import {
   moveMoneyDialogSubmitLabel,
   moveMoneyDialogSubmittingLabel,
   moveMoneyDialogTitle,
+  moveMoneySuccessToast,
   type MoveMoneyIntent,
 } from '@/lib/moveMoneyDialogCopy'
+import { toast } from '@/lib/toast'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
 import { sanitizeAmountInput } from '@/lib/amountInput'
@@ -162,6 +164,16 @@ export default function MoveMoneyDialog({
         amount,
         note: note.trim() || null,
       })
+      if (fromEndpoint && toEndpoint) {
+        const confirmation = moveMoneySuccessToast({
+          intent,
+          amount,
+          from: fromEndpoint,
+          to: toEndpoint,
+          formatMoney,
+        })
+        toast.success(confirmation.message, confirmation.detail)
+      }
       setFloatConfirmOpen(false)
       onClose()
       await Promise.resolve(

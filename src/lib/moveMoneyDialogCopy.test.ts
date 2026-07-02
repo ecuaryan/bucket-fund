@@ -4,6 +4,7 @@ import {
   detectMoveMoneyIntent,
   moveMoneyDialogSubmitLabel,
   moveMoneyDialogTitle,
+  moveMoneySuccessToast,
 } from '@/lib/moveMoneyDialogCopy'
 
 describe('detectMoveMoneyIntent', () => {
@@ -64,5 +65,73 @@ describe('moveMoneyDialogSubmitLabel', () => {
     expect(
       moveMoneyDialogSubmitLabel('cover', '$50.00', 'Gasoline'),
     ).toBe('Unbucket $50.00 from Gasoline')
+  })
+})
+
+describe('moveMoneySuccessToast', () => {
+  const formatMoney = (amount: number) =>
+    `$${amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`
+
+  it('confirms a set aside with both balance trails', () => {
+    expect(
+      moveMoneySuccessToast({
+        intent: 'setAside',
+        amount: 50,
+        from: { label: 'Unbucketed', balance: 300 },
+        to: { label: 'Groceries', balance: 120 },
+        formatMoney,
+      }),
+    ).toEqual({
+      message: 'Set aside $50.00 in Groceries.',
+      detail: [
+        'Unbucketed: $300.00 → $250.00',
+        'Groceries: $120.00 → $170.00',
+      ],
+    })
+  })
+
+  it('confirms a cover naming the source bucket', () => {
+    expect(
+      moveMoneySuccessToast({
+        intent: 'cover',
+        amount: 25,
+        from: { label: 'Gasoline', balance: 80 },
+        to: { label: 'Unbucketed', balance: 10 },
+        formatMoney,
+      }),
+    ).toEqual({
+      message: 'Unbucketed $25.00 from Gasoline.',
+      detail: ['Gasoline: $80.00 → $55.00', 'Unbucketed: $10.00 → $35.00'],
+    })
+  })
+
+  it('confirms a bucket shuffle', () => {
+    expect(
+      moveMoneySuccessToast({
+        intent: 'move',
+        amount: 1000,
+        from: { label: 'Vacation', balance: 2500 },
+        to: { label: 'Car repair', balance: 0 },
+        formatMoney,
+      }),
+    ).toEqual({
+      message: 'Moved $1,000.00 to Car repair.',
+      detail: [
+        'Vacation: $2,500.00 → $1,500.00',
+        'Car repair: $0.00 → $1,000.00',
+      ],
+    })
+  })
+
+  it('skips the trail for a side with no known balance', () => {
+    expect(
+      moveMoneySuccessToast({
+        intent: 'move',
+        amount: 5,
+        from: { label: 'Vacation', balance: null },
+        to: { label: 'Fun', balance: 20 },
+        formatMoney,
+      }).detail,
+    ).toEqual(['Fun: $20.00 → $25.00'])
   })
 })
