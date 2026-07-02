@@ -175,8 +175,8 @@ export default function BucketsPage() {
   )
   const [coachDismissed, setCoachDismissed] = useState(true)
   // One-time "cards count against your number" acknowledgment for adults
-  // whose linked card debt entered the equation without a link event
-  // (e.g. the ledger change shipped after their card was already linked).
+  // who didn't do the linking themselves (the Admin post-link sheet only
+  // shows to the admin who linked the card).
   const [cardsNoticeOpen, setCardsNoticeOpen] = useState(false)
   const [movePreferredIntent, setMovePreferredIntent] = useState<
     MoveMoneyIntent | undefined
@@ -200,9 +200,9 @@ export default function BucketsPage() {
   const isAdmin = member?.role === 'admin'
   const isChild = member?.role === 'child'
 
-  // Card debt in the equation must never appear silently: if this adult has
-  // never acknowledged the cards notice (post-link in Admin marks it too),
-  // name the drop the first time the breakdown shows card debt.
+  // Card debt must never appear in the number silently. The Admin post-link
+  // sheet only reaches the adult who did the linking — this covers every
+  // other adult in the household (and marks the same per-member flag).
   useEffect(() => {
     if (!memberId || isChild) return
     if (!balanceBreakdown || balanceBreakdown.cardDebt <= 0) return

@@ -14,9 +14,10 @@ export const APP_SHORT_NAME = 'Buckets' as const
 /** Stable hook for e2e and form tests (`data-bucketmymoney-form`). */
 export const APP_FORM_DATA_ATTR = 'data-bucketmymoney-form' as const
 
-/** Primary promise after setup (meta, PWA, post–ah-ha surfaces). */
+/** Primary promise after setup (meta, PWA, post–ah-ha surfaces).
+ *  "Balance" not "bank balance": a card swipe moves the number too. */
 export const APP_TAGLINE =
-  'Bank balance moved? Pick which bucket covers it.'
+  'Balance moved? Pick which bucket covers it.'
 
 /** Login screen — value before bank link or first bucket view. */
 export const LOGIN_TAGLINE_LEAD = 'Your bank balance is lying to you.'

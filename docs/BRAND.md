@@ -28,7 +28,8 @@ The payoff:
 - **Works alone or together** — one person with buckets, or a household sharing
   Unbucketed and optional member PINs.
 
-**Canonical tagline (`APP_TAGLINE`):** *Bank balance moved? Pick which bucket covers it.*
+**Canonical tagline (`APP_TAGLINE`):** *Balance moved? Pick which bucket covers it.*
+(“Balance,” not “bank balance” — a card swipe moves the number too.)
 
 ## Product narrative
 
