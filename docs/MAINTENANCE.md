@@ -215,4 +215,3 @@ Full matrix: <https://teller.io/docs/guides/sandbox>
 ## Deferred and follow-ups
 
 - Operator ledger monitoring (`check-invariant`) — deferred until possible paid SaaS; see CONTEXT.md § Data Integrity
-- **Credit cards as liabilities:** decided, staged plan in [docs/CREDIT_CARDS.md](./CREDIT_CARDS.md) — not yet implemented

@@ -57,6 +57,8 @@ When you spend money, decide which bucket covers it — then move that amount ba
 
 That's it. That single habit is what makes the system work. You swiped your card at the gas station — open the app, move money from your Gasoline bucket back to Unbucketed. Now Unbucketed reflects reality. When that charge hits your credit card and eventually clears your bank account, Unbucketed is ready for it.
 
+Credit cards are part of the same truth. A linked card's balance counts against Unbucketed — money you owe was never really yours to bucket. So a card swipe shows up on its own as the balance syncs, and the habit is the same one: pick the bucket that covers it. When you pay the statement, cash and card debt fall together and Unbucketed doesn't move — you already accounted for that spending when it happened.
+
 If Unbucketed is green, you're living within your means. If it's red, your buckets have more in them than your actual bank balance supports — and you have a decision to make. Which bucket are you pulling from to get back to zero? That's the honest conversation the app forces you to have with yourself.
 
 ### What this isn't
@@ -204,7 +206,12 @@ in `move_money` means the Unbucketed pool.
 | Buckets tab: kid Unbucketed hint | `bucketsKidFloatHint()` |
 | Unbucketed label (all UI) | `FLOAT_LABEL`, `FLOAT_LABEL_LOWER` |
 | Unbucketed over-bucketed hint | `floatOverbucketedHint()`, `FLOAT_NEGATIVE_HINT` |
-| Unbucketed hero subtitle | `FLOAT_HERO_SUBTITLE` |
+| Unbucketed short-with-cards hint | `floatShortWithCardsHint()` |
+| Unbucketed hero subtitle | `FLOAT_HERO_SUBTITLE`, `FLOAT_HERO_SUBTITLE_WITH_CARDS` |
+| Hero cards subtext clause | `floatCardsSubtextClause()` |
+| Credit-card surfaces (Admin/Bank) | `ACCOUNT_CARD_OWED_SUFFIX`, `ADMIN_CARD_COUNTS_AGAINST_NOTE`, `BREAKDOWN_CARD_DEBT_LABEL` |
+| Card linked notice | `LINKED_CARDS_NOTICE_*`, `linkedCardsNoticeBody()` |
+| Manual credit card forms | `MANUAL_CARD_*`, `ADMIN_ADD_SOURCE_CARD_OPTION` |
 | Onboarding coach | `ONBOARDING_COACH_*`, `onboardingCoachStepBody()` |
 | Move money intents | `moveMoneyDialogCopy.ts` |
 | Product narrative (full text) | [Product narrative](#product-narrative) in this doc |

@@ -45,7 +45,9 @@ Regenerate after significant UI changes ([docs/MAINTENANCE.md § PWA assets](./d
 ## What it does
 
 - **Unbucketed + buckets** — cash not yet in a bucket lives in **Unbucketed**; buckets
-  are money you've set aside. The invariant is enforced in Postgres (`move_money`, `give_money`).
+  are money you've set aside. Credit card balances count against Unbucketed, so the
+  number is what you really have. The invariant is enforced in Postgres
+  (`move_money`, `give_money`, `member_float`).
 - **Household roles** — admin, shared member, and kid views with RLS tenant isolation
   and PIN login for members.
 - **Move and give money** — set aside from Unbucketed, cover spends, give to kids; History
