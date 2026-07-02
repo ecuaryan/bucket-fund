@@ -237,7 +237,7 @@ the site already updated.
 | ----- | ------ |
 | CI still running on `main` | Wait — Deploy Supabase has not started |
 | CI failed | Fix and merge a follow-up; Deploy Supabase will not run |
-| **Deploy Supabase** failed | Open that workflow run on GitHub; fix secrets or `db push` errors |
+| **Deploy Supabase** failed | A `Deploy Supabase failed on main` issue is opened automatically with the run link; fix secrets or `db push` errors |
 | Deploy succeeded | Confirm migration in Supabase → **Database → Migrations** |
 
 One-time GitHub **production** environment secrets: [docs/MAINTENANCE.md § Production Supabase deploy](./docs/MAINTENANCE.md#production-supabase-deploy-one-time-secrets).
