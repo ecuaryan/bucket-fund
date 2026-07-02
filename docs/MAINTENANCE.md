@@ -73,7 +73,7 @@ CI does **not** run seeds — database tests create their own fixtures.
 ## Regenerating README / PWA assets
 
 **When to refresh:** After any **significant UI/UX change** to Buckets, History,
-Send, Admin, or the app shell — update **both** the install screenshots and the
+Kids, Admin, or the app shell — update **both** the install screenshots and the
 README demo GIF in the same PR (or immediately after) so GitHub, the PWA install
 sheet, and portfolio viewers stay in sync with the product.
 
@@ -181,11 +181,14 @@ The app prefers `VITE_SUPABASE_PUBLISHABLE_KEY` when set. See
 
 ### Production database
 
-Before the first non-builder family signs up:
+One-time, before the first non-builder family signs up:
 
-- [ ] **Keep prod unlinked on dev machines** — routine work is local Docker only
 - [ ] **Enable PITR** (Supabase → Database) once real data would hurt to lose
-- [ ] **Bulk data changes:** local Docker only; hosted changes via dashboard SQL Editor yourself
+
+Standing rules (never "done"):
+
+- **Keep prod unlinked on dev machines** — routine work is local Docker only
+- **Bulk data changes:** local Docker only; hosted changes via dashboard SQL Editor yourself
 
 See `.cursor/rules/production-database.mdc` and [CONTEXT.md § Production database](../CONTEXT.md).
 
@@ -211,6 +214,5 @@ Full matrix: <https://teller.io/docs/guides/sandbox>
 
 ## Deferred and follow-ups
 
-- WebAuthn biometric fast path
 - Operator ledger monitoring (`check-invariant`) — deferred until possible paid SaaS; see CONTEXT.md § Data Integrity
 - **Credit cards:** exclude vs integrate as liabilities — see CONTEXT.md
