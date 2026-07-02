@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Sheet } from '@/components/ui/Sheet'
 import { FieldLabel } from '@/components/ui/FieldLabel'
 import { ClearableInput } from '@/components/ui/ClearableInput'
-import { ScrollFade } from '@/components/ui/ScrollFade'
 import {
   AUTO_ORGANIZE_BUCKETS_HINT,
   AUTO_ORGANIZE_DISCARD_BODY,
@@ -645,14 +644,9 @@ export default function AutoOrganizeEditor({
   }
 
   return (
-    <Sheet
-      open={open}
-      onClose={requestClose}
-      fillViewport
-      aria-label={title}
-    >
-      <div className="relative flex max-h-full min-h-0 flex-1 flex-col overflow-hidden">
-        <header className="mb-4 flex shrink-0 items-baseline justify-between">
+    <>
+      <Sheet open={open} onClose={requestClose} aria-label={title}>
+        <header className="mb-4 flex items-baseline justify-between">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold text-zinc-300">{title}</h2>
             <p className="mt-0.5 text-xs text-zinc-500">
@@ -670,8 +664,7 @@ export default function AutoOrganizeEditor({
           </button>
         </header>
 
-        <ScrollFade scrollClassName="p-1">
-          <div className="space-y-4">
+        <div className="space-y-4">
             <label className="block">
               <FieldLabel optional>Name</FieldLabel>
             <ClearableInput
@@ -964,10 +957,9 @@ export default function AutoOrganizeEditor({
               </p>
             </label>
           ) : null}
-          </div>
-        </ScrollFade>
+        </div>
 
-        <div className="shrink-0 space-y-2 border-t border-zinc-800 px-1 pt-3">
+        <div className="mt-4 space-y-2 border-t border-zinc-800 pt-3">
           <div className="rounded-xl bg-zinc-950 px-3 py-2 ring-1 ring-inset ring-zinc-700">
             <div className="flex items-baseline justify-between gap-3">
               <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">
@@ -1034,47 +1026,36 @@ export default function AutoOrganizeEditor({
             </button>
           </div>
         </div>
-      </div>
+      </Sheet>
 
-      {discardOpen ? (
-        <div
-          className="absolute inset-0 flex items-end rounded-2xl bg-zinc-950/90 p-5 sm:items-center sm:justify-center"
-          role="alertdialog"
-          aria-labelledby="auto-organize-discard-title"
-          aria-describedby="auto-organize-discard-body"
-        >
-          <div className="w-full rounded-xl bg-zinc-900 p-4 ring-1 ring-zinc-700">
-            <h3
-              id="auto-organize-discard-title"
-              className="text-base font-semibold text-zinc-100"
-            >
-              {AUTO_ORGANIZE_DISCARD_TITLE}
-            </h3>
-            <p
-              id="auto-organize-discard-body"
-              className="mt-2 text-sm text-zinc-400"
-            >
-              {AUTO_ORGANIZE_DISCARD_BODY}
-            </p>
-            <div className="mt-4 flex gap-2">
-              <button
-                type="button"
-                onClick={() => setDiscardOpen(false)}
-                className="flex-1 rounded-lg border border-zinc-600 px-4 py-2 text-sm font-semibold text-zinc-200"
-              >
-                {AUTO_ORGANIZE_DISCARD_CANCEL}
-              </button>
-              <button
-                type="button"
-                onClick={confirmDiscard}
-                className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500"
-              >
-                {AUTO_ORGANIZE_DISCARD_CONFIRM}
-              </button>
-            </div>
-          </div>
+      <Sheet
+        open={discardOpen}
+        onClose={() => setDiscardOpen(false)}
+        aria-label={AUTO_ORGANIZE_DISCARD_TITLE}
+      >
+        <h3 className="text-base font-semibold text-zinc-100">
+          {AUTO_ORGANIZE_DISCARD_TITLE}
+        </h3>
+        <p className="mt-2 text-sm text-zinc-400">
+          {AUTO_ORGANIZE_DISCARD_BODY}
+        </p>
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setDiscardOpen(false)}
+            className="flex-1 rounded-lg border border-zinc-600 px-4 py-2 text-sm font-semibold text-zinc-200"
+          >
+            {AUTO_ORGANIZE_DISCARD_CANCEL}
+          </button>
+          <button
+            type="button"
+            onClick={confirmDiscard}
+            className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500"
+          >
+            {AUTO_ORGANIZE_DISCARD_CONFIRM}
+          </button>
         </div>
-      ) : null}
-    </Sheet>
+      </Sheet>
+    </>
   )
 }

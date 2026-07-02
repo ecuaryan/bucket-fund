@@ -56,6 +56,54 @@ export function moveMoneyDialogSubmitLabel(
   }
 }
 
+type MoveMoneyToastEndpoint = {
+  label: string
+  /** Balance before the move; null when unknown (side gets no trail line). */
+  balance: number | null
+}
+
+/**
+ * Success confirmation after a move lands: what happened, plus the same
+ * before → after balance trails History shows, so users don't have to open
+ * History to double-check.
+ */
+export function moveMoneySuccessToast(args: {
+  intent: MoveMoneyIntent
+  amount: number
+  from: MoveMoneyToastEndpoint
+  to: MoveMoneyToastEndpoint
+  formatMoney: (amount: number) => string
+}): { message: string; detail: string[] } {
+  const { intent, amount, from, to, formatMoney } = args
+  const amountFormatted = formatMoney(amount)
+
+  let message: string
+  switch (intent) {
+    case 'setAside':
+      message = `Set aside ${amountFormatted} in ${to.label}.`
+      break
+    case 'cover':
+      message = `Unbucketed ${amountFormatted} from ${from.label}.`
+      break
+    default:
+      message = `Moved ${amountFormatted} to ${to.label}.`
+  }
+
+  const detail: string[] = []
+  if (from.balance !== null) {
+    detail.push(
+      `${from.label}: ${formatMoney(from.balance)} → ${formatMoney(from.balance - amount)}`,
+    )
+  }
+  if (to.balance !== null) {
+    detail.push(
+      `${to.label}: ${formatMoney(to.balance)} → ${formatMoney(to.balance + amount)}`,
+    )
+  }
+
+  return { message, detail }
+}
+
 export function moveMoneyDialogSubmittingLabel(intent: MoveMoneyIntent): string {
   switch (intent) {
     case 'setAside':

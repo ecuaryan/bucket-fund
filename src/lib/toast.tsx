@@ -5,6 +5,8 @@ type ToastType = 'success' | 'error'
 export type ToastPayload = {
   type: ToastType
   message: string
+  /** Optional glanceable lines under the message (e.g. balance trails). */
+  detail?: string[]
   dismiss: 'auto' | 'manual'
 }
 
@@ -17,10 +19,15 @@ export function registerToastPublisher(
 }
 
 export const toast = {
-  success(message: string) {
+  /**
+   * Detail lines are tabular glance data (balance trails), not prose — the
+   * auto/manual dismiss decision considers only the headline message.
+   */
+  success(message: string, detail?: string[]) {
     publishToast?.({
       type: 'success',
       message,
+      detail,
       dismiss: toastDismissMode('success', message),
     })
   },
