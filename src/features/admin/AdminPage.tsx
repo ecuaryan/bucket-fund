@@ -5,6 +5,7 @@ import { formatLoadErrorMessage, withAuthLockRetry } from '@/lib/authLockError'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import {
+  accountTypeLabel,
   deleteManualAccount,
   isCreditCardAccount,
   type ManualAccountKind,
@@ -57,7 +58,6 @@ import {
 } from '@/lib/teller'
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
 import CardsNoticeSheet from '@/features/accounts/CardsNoticeSheet'
-import { writeCardsNoticeSeen } from '@/lib/cardsNoticeStorage'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
 import MembersSection from '@/features/admin/MembersSection'
@@ -307,8 +307,6 @@ export default function AdminPage() {
     const totalDebt = cards.reduce((sum, c) => sum + c.balance, 0)
     if (totalDebt > 0) {
       setLinkedCardsNotice({ cards, totalDebt })
-      // One acknowledgment is enough — don't re-notify on the Buckets tab.
-      if (member) writeCardsNoticeSeen(member.id)
     }
     setAccountsSyncing(true)
     void Promise.all([loadAccounts(), loadEnrollments()]).finally(() =>
@@ -515,16 +513,6 @@ export default function AdminPage() {
               <div className="absolute right-0 z-10 mt-1 w-max min-w-[12rem] overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-lg">
                 <button
                   type="button"
-                  className="block w-full whitespace-nowrap px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
-                  onClick={() => {
-                    setAddSourceOpen(false)
-                    setManualDialog({ mode: 'create', kind: 'cash' })
-                  }}
-                >
-                  {ADMIN_ADD_SOURCE_MANUAL_OPTION}
-                </button>
-                <button
-                  type="button"
                   disabled={!teller.ready || teller.linking}
                   className="block w-full whitespace-nowrap px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
                   onClick={() => {
@@ -533,6 +521,16 @@ export default function AdminPage() {
                   }}
                 >
                   {teller.linking ? 'Linking…' : ADMIN_ADD_SOURCE_LINK_OPTION}
+                </button>
+                <button
+                  type="button"
+                  className="block w-full whitespace-nowrap px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                  onClick={() => {
+                    setAddSourceOpen(false)
+                    setManualDialog({ mode: 'create', kind: 'cash' })
+                  }}
+                >
+                  {ADMIN_ADD_SOURCE_MANUAL_OPTION}
                 </button>
                 <button
                   type="button"
@@ -721,9 +719,13 @@ export default function AdminPage() {
                         <p className="truncate text-sm text-zinc-300">
                           {a.account_name ?? 'Account'}
                         </p>
-                        <p className="text-xs text-zinc-400">
-                          {a.account_type ?? '—'}
-                        </p>
+                        {/* Manual rows: the label IS the description — a raw
+                            "manual"/"credit_card" type line adds nothing. */}
+                        {!group.isManual ? (
+                          <p className="text-xs text-zinc-400">
+                            {accountTypeLabel(a.account_type)}
+                          </p>
+                        ) : null}
                         {isCreditCardAccount(a) ? (
                           <p className="text-xs text-rose-300/80">
                             {ADMIN_CARD_COUNTS_AGAINST_NOTE}

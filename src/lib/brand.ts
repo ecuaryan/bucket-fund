@@ -386,7 +386,7 @@ export function householdAdminLabel(
 
 /** Always-shown lead for the Money sources section (banks + manual + cards). */
 export const ADMIN_MONEY_SOURCES_INTRO =
-  'Link a bank, enter an amount by hand, or add a credit card. Cash counts toward the money you organize; card balances count against it.'
+  'Link a bank or card—or enter amounts by hand to try things out. Cash counts toward the money you organize; card balances count against it.'
 
 /** Read-only trust line, shown only once at least one bank is linked. The
  *  refresh and unlink actions are self-evident from the per-bank buttons. */
@@ -1221,9 +1221,12 @@ export const ADMIN_MONEY_SOURCES_SECTION_TITLE = 'Money sources'
 export const ADMIN_PAGE_TAB_HOUSEHOLD_LABEL = 'Household'
 export const ADMIN_PAGE_TABS_ARIA_LABEL = 'Admin page sections'
 export const ADMIN_ADD_MONEY_SOURCE_ACTION = 'Add money source'
-export const ADMIN_ADD_SOURCE_LINK_OPTION = 'Link a bank'
-export const ADMIN_ADD_SOURCE_MANUAL_OPTION = 'Enter an amount manually'
-export const ADMIN_ADD_SOURCE_CARD_OPTION = 'Add a credit card'
+// Linked accounts (banks AND credit cards) come through Teller — one flow.
+// Manual entry is the try-it / demo path: parallel wording so cash and card
+// read as the same secondary method, not a third way to link.
+export const ADMIN_ADD_SOURCE_LINK_OPTION = 'Link a bank or card'
+export const ADMIN_ADD_SOURCE_MANUAL_OPTION = 'Enter cash manually'
+export const ADMIN_ADD_SOURCE_CARD_OPTION = 'Enter a card balance manually'
 
 /** Per-row note on card accounts in Admin and the Bank tab. */
 export const ACCOUNT_CARD_OWED_SUFFIX = 'owed'
