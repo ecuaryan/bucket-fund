@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: deploy-supabase-production
@@ -47,3 +48,28 @@ jobs:
         run: supabase functions deploy
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      # The hosted schema may now be behind main; make the failure loud.
+      # Reuses one open issue per incident stream instead of piling up new ones.
+      - name: Notify on deploy failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          title="Deploy Supabase failed on main"
+          printf '%s\n' \
+            "Production Supabase deploy failed for \`$HEAD_SHA\`." \
+            "" \
+            "Run: $RUN_URL" \
+            "" \
+            "The hosted schema/functions may be behind \`main\`. Re-run the workflow after fixing; manual \`supabase link\` + \`db push\` is the emergency fallback (see CONTRIBUTING § Deploying backend changes)." \
+            > /tmp/issue-body.md
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+            --search "in:title \"$title\"" --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body-file /tmp/issue-body.md
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file /tmp/issue-body.md
+          fi

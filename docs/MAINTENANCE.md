@@ -148,7 +148,8 @@ npx supabase unlink
 ### Production deploy automation
 
 - [x] **CI/CD:** after green CI on `main`, `deploy-supabase.yml` runs `db push` + `functions deploy`
-- [ ] Optional: notification when **Deploy Supabase** fails on `main`
+- [x] Notification when **Deploy Supabase** fails on `main` — the workflow opens
+      (or comments on) a `Deploy Supabase failed on main` GitHub issue
 
 **Auto-bucket backend:** migrations `48`–`61` enable **pg_cron** on hosted Supabase.
 See [AUTO_ORGANIZE.md § Scheduler](./AUTO_ORGANIZE.md#scheduler-cost--scale).
