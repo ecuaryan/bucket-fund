@@ -84,7 +84,8 @@ Entry point for AI coding agents (and humans) working in this repo.
   `main`, **[Deploy Supabase](./.github/workflows/deploy-supabase.yml)** runs
   `supabase db push` after green CI — **do not** tell the user to run `db push`
   manually after merge. If the site looks ahead of the DB, check GitHub Actions
-  → **Deploy Supabase** or Supabase → **Database → Migrations**. Manual
+  → **Deploy Supabase** or Supabase → **Database → Migrations** (a failed
+  deploy also opens a `Deploy Supabase failed on main` issue). Manual
   `link` / `db push` is emergency fallback only ([CONTRIBUTING § Deploying backend changes](./CONTRIBUTING.md#deploying-backend-changes)).
 - **Auth sign-in routing.** Post-sign-out paths and email vs PIN preference
   live in [`src/lib/authNavigation.ts`](./src/lib/authNavigation.ts) and

@@ -132,7 +132,9 @@ Create a GitHub **environment** named `production` and add:
 | `SUPABASE_ACCESS_TOKEN` | [Supabase account tokens](https://supabase.com/dashboard/account/tokens) (CI/CD scope) |
 | `SUPABASE_PROJECT_REF` | Project Settings → General → Reference ID |
 
-If **Deploy Supabase** fails, the hosted DB or functions may lag the Vercel frontend.
+If **Deploy Supabase** fails, the hosted DB or functions may lag the Vercel
+frontend. The workflow opens (or comments on) a `Deploy Supabase failed on main`
+GitHub issue with the run link, so a failure is visible without checking Actions.
 
 Manual fallback:
 
@@ -148,7 +150,8 @@ npx supabase unlink
 ### Production deploy automation
 
 - [x] **CI/CD:** after green CI on `main`, `deploy-supabase.yml` runs `db push` + `functions deploy`
-- [ ] Optional: notification when **Deploy Supabase** fails on `main`
+- [x] Notification when **Deploy Supabase** fails on `main` — the workflow opens
+      (or comments on) a `Deploy Supabase failed on main` GitHub issue
 
 **Auto-bucket backend:** migrations `48`–`61` enable **pg_cron** on hosted Supabase.
 See [AUTO_ORGANIZE.md § Scheduler](./AUTO_ORGANIZE.md#scheduler-cost--scale).
