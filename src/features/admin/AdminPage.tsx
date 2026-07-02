@@ -640,7 +640,10 @@ export default function AdminPage() {
                       <p className="text-xs text-zinc-400">
                         {group.accounts.length} account
                         {group.accounts.length === 1 ? '' : 's'} ·{' '}
-                        {formatMoney(group.totalBalance)} · last refreshed{' '}
+                        {formatMoney(group.totalBalance)} ·{' '}
+                        {/* "Refreshed" means a bank pull; a manual row's
+                            timestamp is when the admin last set the amount. */}
+                        {group.isManual ? 'updated' : 'last refreshed'}{' '}
                         {formatLastSynced(group.lastSyncedAt)}
                       </p>
                     </div>
