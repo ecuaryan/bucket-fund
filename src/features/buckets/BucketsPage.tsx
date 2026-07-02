@@ -46,16 +46,7 @@ import OnboardingCoachCard from '@/features/buckets/OnboardingCoachCard'
 import FloatHero from '@/features/buckets/FloatHero'
 import SuggestedBucketChips from '@/features/buckets/SuggestedBucketChips'
 import { Sheet } from '@/components/ui/Sheet'
-import {
-  isCashAccount,
-  isCreditCardAccount,
-  isTellerAccount,
-} from '@/lib/accounts'
-import CardsNoticeSheet from '@/features/accounts/CardsNoticeSheet'
-import {
-  readCardsNoticeSeen,
-  writeCardsNoticeSeen,
-} from '@/lib/cardsNoticeStorage'
+import { isCashAccount, isTellerAccount } from '@/lib/accounts'
 import BucketsPageSkeleton from '@/components/BucketsPageSkeleton'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import { ClearableInput } from '@/components/ui/ClearableInput'
@@ -174,10 +165,6 @@ export default function BucketsPage() {
     () => searchParams.get('tab') === 'auto-bucket',
   )
   const [coachDismissed, setCoachDismissed] = useState(true)
-  // One-time "cards count against your number" acknowledgment for adults
-  // who didn't do the linking themselves (the Admin post-link sheet only
-  // shows to the admin who linked the card).
-  const [cardsNoticeOpen, setCardsNoticeOpen] = useState(false)
   const [movePreferredIntent, setMovePreferredIntent] = useState<
     MoveMoneyIntent | undefined
   >(undefined)
@@ -199,16 +186,6 @@ export default function BucketsPage() {
 
   const isAdmin = member?.role === 'admin'
   const isChild = member?.role === 'child'
-
-  // Card debt must never appear in the number silently. The Admin post-link
-  // sheet only reaches the adult who did the linking — this covers every
-  // other adult in the household (and marks the same per-member flag).
-  useEffect(() => {
-    if (!memberId || isChild) return
-    if (!balanceBreakdown || balanceBreakdown.cardDebt <= 0) return
-    if (readCardsNoticeSeen(memberId)) return
-    setCardsNoticeOpen(true)
-  }, [memberId, isChild, balanceBreakdown])
   // Everyone can see Auto-organize now: admins author the household pool, kids
   // author their own scope, shared members see the household read-only.
   const canSeeAutoOrganize = true
@@ -1018,19 +995,6 @@ export default function BucketsPage() {
       ) : null}
         </div>
       </BusyOverlay>
-
-      <CardsNoticeSheet
-        open={cardsNoticeOpen}
-        cards={accounts.filter(isCreditCardAccount).map((a) => ({
-          name: a.account_name ?? a.institution_name ?? 'Credit card',
-          balance: Number(a.current_balance),
-        }))}
-        totalDebt={balanceBreakdown.cardDebt}
-        onClose={() => {
-          if (memberId) writeCardsNoticeSeen(memberId)
-          setCardsNoticeOpen(false)
-        }}
-      />
 
       <MoveMoneyDialog
         open={moveBucketId !== null}

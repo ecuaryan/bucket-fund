@@ -18,10 +18,10 @@ type Props = {
 }
 
 /**
- * Names the Unbucketed drop when credit-card debt enters the equation —
- * right after a Teller link shares cards, or the first time an adult sees
- * pre-existing card debt counted. Truth is already applied; this sheet
- * makes sure the number never changes meaning silently.
+ * Names the Unbucketed drop right after a Teller link shares new cards.
+ * Truth is already applied by then; this sheet is feedback for the action
+ * just taken. The ongoing explanation lives under the hero number (the
+ * "owed on cards" subtext and the negative hint), not in a popup.
  */
 export default function CardsNoticeSheet({
   open,

@@ -47,6 +47,11 @@ export function isManualAccount(a: Pick<Account, 'source'>): boolean {
   return a.source === 'manual'
 }
 
+/** Human display for Teller subtypes, e.g. "credit_card" → "credit card". */
+export function accountTypeLabel(accountType: string | null): string {
+  return accountType ? accountType.replace(/_/g, ' ') : '—'
+}
+
 export function isTellerAccount(a: Pick<Account, 'source'>): boolean {
   return a.source === 'teller'
 }
