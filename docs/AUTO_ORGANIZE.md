@@ -69,14 +69,14 @@ different label for one manual move, not the feature name.
 
 ### Out (defer; schema may leave hooks)
 
-- Scheduled **Send to a kid** (`send_money` via Auto-bucket `send` kind; virtual kids only).
-- History filters / search (individual rows + Scheduled label is enough for v1).
+- Scheduled **Give to a kid** (`give_money` via a future Auto-bucket `give` kind; virtual kids only).
+- History free-text search (gives/takes + per-bucket filters shipped since; the Scheduled label covers Auto-bucket rows).
 - Skip-next-run (pause is sufficient).
 - End-by-date — runs until paused or deleted (“when I cancel”).
 - “Configured by [name]” on cards (neutral copy is fine).
 
 **Kid self-serve Auto-bucket rules are now shipped** (migration `00000000000076`) — see the
-status block and [Roles](#roles). Future: scheduled **Send to a kid** (`send_money` via a future
+status block and [Roles](#roles). Future: scheduled **Give to a kid** (`give_money` via a future
 kind). Rows use **`auto_organize_kind`**: `organize` | `top_up` | `save_off`.
 
 ---
@@ -203,7 +203,7 @@ Unified for **manual Set aside**, **Run now**, and **automatic runs** — one RP
 | --- | --- |
 | **Unbucketed → bucket** | Allow even if Unbucketed goes **negative** |
 | **Bucket → anything** | Block if `allocated_amount` &lt; amount (bucket cannot go negative) |
-| **`send_money`** | Keep existing insufficient-Unbucketed check (unchanged) |
+| **`give_money`** | Keep existing insufficient-Unbucketed check (unchanged) |
 
 ### Confirm sheet (intentional friction)
 

@@ -146,7 +146,7 @@ Every push to `main` and every pull request runs [`.github/workflows/ci.yml`](./
 | Layer | Catches |
 | ----- | ------- |
 | Lint + unit + build | TypeScript/React bugs, broken imports, bad copy in tests, PWA build failures |
-| Database RLS tests | Tenant isolation, child lockdown, `move_money` / `send_money` invariants, policy regressions |
+| Database RLS tests | Tenant isolation, child lockdown, `move_money` / `give_money` invariants, policy regressions |
 | E2E smoke | Auth routing, login → Buckets, bucket rename/delete UX against real local Supabase |
 
 **Speed without cutting corners:**
@@ -177,7 +177,7 @@ Local Supabase env: `source scripts/env-local.sh` (see [docs/MAINTENANCE.md](./d
 | Transaction visibility | `tests/db/transactions.test.ts` |
 | Auth helpers | `src/lib/*.test.ts` |
 | Login / home smoke | `tests/e2e/smoke.spec.ts` |
-| Significant UI/UX (Buckets, History, Send, Admin, shell) | Refresh PWA screenshots + README GIF — [docs/MAINTENANCE.md § Regenerating README / PWA assets](./docs/MAINTENANCE.md#regenerating-readme--pwa-assets) |
+| Significant UI/UX on captured surfaces | Refresh PWA screenshots + README GIF — surface list + commands in [docs/MAINTENANCE.md § Regenerating README / PWA assets](./docs/MAINTENANCE.md#regenerating-readme--pwa-assets) |
 
 ## Deploying backend changes
 

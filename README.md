@@ -93,6 +93,9 @@ supabase/
 | `teller-webhook` | Verify signature, refresh balances |
 | `check-invariant` | Ledger check stub (deferred) |
 
+Auth/member functions (PIN login, member management, WebAuthn passkeys) are
+omitted here — see `supabase/functions/` for the full list.
+
 ## Local development
 
 ```bash

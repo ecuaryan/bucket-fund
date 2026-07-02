@@ -120,7 +120,7 @@ If you're the kind of person who has ever looked at their bank account two days 
   adults). Do not say *sync* for bank balances — use **refresh** (see above).
 - **Set aside (manual):** moving Unbucketed → bucket may make Unbucketed **negative**.
   **Bucket → anything** still cannot exceed the bucket balance. Applies to all roles;
-  **`send_money`** keeps the insufficient-`float` guard. When a manual **Set aside**
+  **`give_money`** keeps the insufficient-`float` guard. When a manual **Set aside**
   (or a **Run now**) would cross Unbucketed from **≥ 0 to negative**, confirm with a
   consequential `Sheet` first; skip confirm if Unbucketed is already red; automatic
   Auto-bucket runs skip confirm.
@@ -155,7 +155,7 @@ and **`transactions`** only. Our server calls Teller **GET** endpoints for
 accounts and balances; webhooks refresh balances when activity posts. We do
 **not** use Teller payment initiation or any API that moves money at the bank.
 
-**`send_money` and `move_money` are virtual** — labels inside the app only.
+**`give_money` and `move_money` are virtual** — labels inside the app only.
 
 User-facing reassurance: `BANK_READ_ONLY_ASSURANCE` (Admin money-source copy),
 `ADMIN_LINKED_ACCOUNTS_INTRO`, `BUCKETS_LINK_BANK_*` in `brand.ts` — read-only;
@@ -208,7 +208,7 @@ in `move_money` means the Unbucketed pool.
 | Onboarding coach | `ONBOARDING_COACH_*`, `onboardingCoachStepBody()` |
 | Move money intents | `moveMoneyDialogCopy.ts` |
 | Product narrative (full text) | [Product narrative](#product-narrative) in this doc |
-| History sent-money filter | `HISTORY_FILTER_SENT_MONEY` |
+| History gives/takes filter | `HISTORY_FILTER_GIVES_AND_TAKES` |
 | History empty state | `HISTORY_EMPTY_*` |
 | PIN sign-in: empty roster | `pinNoMembersYet()` |
 | Admin gate (non-admin) | `adminLinkedAccountsMemberGate()` |

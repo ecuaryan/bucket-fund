@@ -59,15 +59,16 @@ Entry point for AI coding agents (and humans) working in this repo.
   `brand.ts` and schema/RPC names should mean the same thing (e.g. **Auto-bucket**
   → `auto_organize_*`); do not introduce parallel backend aliases. See
   [docs/AUTO_ORGANIZE.md § Naming](./docs/AUTO_ORGANIZE.md#naming).
-- **Money writes only via RPCs.** `move_money` and `send_money`; extend
+- **Money writes only via RPCs.** `move_money` and `give_money`; extend
   `tests/db/` when changing balance logic.
 - **Destructive / consequential UI:** confirm with `Sheet` + `brand.ts` copy when
   the action has real impact (money, access, hard-to-undo state)—not for trivial
   reversible edits. Never `window.confirm` (breaks in Cursor’s browser).
-- **Portfolio / PWA marketing assets:** significant UI/UX changes to Buckets,
-  History, Send, Admin, or the shell require refreshing install screenshots
+- **Portfolio / PWA marketing assets:** significant UI/UX changes to the
+  captured surfaces require refreshing install screenshots
   (`npm run pwa:screenshots`) and the README demo GIF (`npm run pwa:gifs`) in
-  the same PR when possible. See [docs/MAINTENANCE.md § Regenerating README / PWA assets](./docs/MAINTENANCE.md#regenerating-readme--pwa-assets).
+  the same PR when possible. The canonical surface list and commands live in
+  [docs/MAINTENANCE.md § Regenerating README / PWA assets](./docs/MAINTENANCE.md#regenerating-readme--pwa-assets).
 - **Ephemeral feedback:** use `toast` from `@/lib/toast` for action success/errors
   far from the user’s focus (toast sits below the top safe area app-wide); keep form
   validation inline. Short copy auto-dismisses after 7s; errors and long copy need
@@ -102,10 +103,10 @@ Entry point for AI coding agents (and humans) working in this repo.
 | Auth flows (login, PIN, biometric) | `src/features/auth/`               |
 | Buckets list + move flow        | `src/features/buckets/` |
 | Auto-bucket | `src/features/buckets/` + `src/lib/autoOrganize.ts`, `autoOrganizeCadence.ts`; [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md) |
-| Send money flow                 | `src/features/sends/` |
+| Give money flow                 | `src/features/give/` |
 | Hide amounts + Peek FAB         | `HideAmountsProvider`, `HideAmountsPeekFab` (fixed), `HideAmountsPeekSheetAnchor` in `Sheet`, `hideAmountsPeekLogic.ts` |
 | Transaction history             | `src/features/history/`               |
-| Account linking / Teller Connect | `src/features/admin/` (not `accounts/` yet) |
+| Account linking / Teller Connect | `src/features/admin/` (`accounts/` holds the read-only Bank activity view) |
 | Admin / family management       | `src/features/admin/`                 |
 | Supabase client / Teller helpers / invariant helper | `src/lib/` (`auth.tsx`, `buckets.ts`, `accounts.ts`, …) |
 | Shared React hooks              | `src/hooks/`                          |
@@ -123,8 +124,8 @@ Use the `@/` alias for absolute imports from `src/`.
   demo data only (`scripts/seed/`; see [docs/MAINTENANCE.md § Local database scenarios](./docs/MAINTENANCE.md#local-database-scenarios)). CI
   does not run seeds.
 - **`npm run test:db`** — database tests (needs `npm run db:start`): RLS in
-  `tests/db/rls.test.ts`, `move_money` in `move_money.test.ts`, `send_money`
-  in `send_money.test.ts`, transaction visibility in `transactions.test.ts`.
+  `tests/db/rls.test.ts`, `move_money` in `move_money.test.ts`, `give_money`
+  in `give_money.test.ts`, transaction visibility in `transactions.test.ts`.
 - **`npm run test:e2e`** — Playwright smoke (Docker + local Supabase).
 - **`npm run check:full`** — lint + unit + db tests + build (no e2e).
 - When changing RLS or money RPCs, extend the matching file under `tests/db/`.

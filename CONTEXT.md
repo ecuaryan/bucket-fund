@@ -105,7 +105,7 @@ UI labels: **Admin**, **Shared**, **Kid** (`memberRoles.ts`). DB/API values rema
 - Kids may have zero, one, or multiple linked checking/savings accounts (multiple supported).
 - **Two kid money models (do not mix on one kid):**
   - **Virtual-only** (no linked account): balance = net sends − bucket allocations. Card-less kids live here — spending is logged via **Send** (e.g. kid → shared balance when someone fronts a purchase). Birthday/earnings: kid hands cash over; shared balance credits them with a **shared → kid send**. Back every credit with real cash (deposit to a linked account or bump a **manual money source**) so shared Unbucketed does not drift red.
-  - **Linked** (Teller account assigned to the kid): balance = linked bank cash − bucket allocations. Debit-card spending auto-reflects via Teller. Money in/out happens at the **real bank** (transfers, allowance deposits) — **no virtual sends in or out** for that kid (`send_money` blocks both directions; Send UI omits linked kids and shows an explanation card). Admin shows a confirmation sheet before assigning a linked account to a kid (`ADMIN_ASSIGN_ACCOUNT_TO_KID_*` in `brand.ts`).
+  - **Linked** (Teller account assigned to the kid): balance = linked bank cash − bucket allocations. Debit-card spending auto-reflects via Teller. Money in/out happens at the **real bank** (transfers, allowance deposits) — **no virtual sends in or out** for that kid (`give_money` blocks both directions; the Give UI omits linked kids and shows an explanation card). Admin shows a confirmation sheet before assigning a linked account to a kid (`ADMIN_ASSIGN_ACCOUNT_TO_KID_*` in `brand.ts`).
 - Virtual siblings can still send to each other; linked ↔ anyone requires a real bank transfer.
 - The family as a whole must have at least one money source (linked bank or manual amount)
 - **Manual money sources:** admin-only, family-pool only (`owner_member_id` null), user-edited amounts (no auto-refresh). Coexist with linked banks; Buckets breakdown shows linked cash and manual cash separately when both are present.
@@ -164,7 +164,7 @@ system-error banner.
 - Every dollar spent has to come from somewhere — user decides which bucket absorbs it
 
 **Set aside (manual):** All roles may move Unbucketed → bucket even when Unbucketed would go
-red. **Bucket → anything** still requires enough in the source bucket. **`send_money`**
+red. **Bucket → anything** still requires enough in the source bucket. **`give_money`**
 unchanged. Manual **Set aside** that crosses Unbucketed from ≥ 0 to negative uses a confirm
 sheet; automatic **Auto-bucket** runs do not. See [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md).
 
@@ -196,7 +196,7 @@ sheet; automatic **Auto-bucket** runs do not. See [docs/AUTO_ORGANIZE.md](./docs
   the pool (digital "handing over cash" when someone fronts a purchase).
 - **Linked kids:** Send is disabled in both directions — spending is their debit card; transfers settle at the bank. UI hides linked kids from recipient lists and explains why.
 - Optional note; instant; logged with amount, sender, recipient, timestamp, note.
-- Enforced in UI (Send recipient list) and `send_money` RPC.
+- Enforced in UI (Give recipient list) and `give_money` RPC.
 
 **Teller sync**
 - Teller webhooks keep real balances updated in real time
@@ -250,12 +250,12 @@ Bank or manual pool balance changed; bucket labels did not. Buckets shows negati
 
 **2. System ledger gap (abnormal, operator-facing)**  
 Stored cash, allocations, and per-member math no longer form one consistent
-ledger (bug, migration mistake, bypass of `move_money` / `send_money`). Rare
+ledger (bug, migration mistake, bypass of `move_money` / `give_money`). Rare
 when all writes go through RPCs and Buckets uses one SQL definition. **Deferred**
 for family beta; revisit before charging strangers — automated check + operator
 alert (see `check-invariant` stub), not a duplicate of red Unbucketed.
 
-**Today:** Money writes only via `move_money` and `send_money`; database tests
+**Today:** Money writes only via `move_money` and `give_money`; database tests
 in `tests/db/`. Scaffolding for a family-wide checker exists but is not wired.
 
 ---
@@ -285,7 +285,7 @@ app uses several **on purpose** after review and DB tests (`tests/db/`). Do not
 | Lint | Finding | Status |
 |------|---------|--------|
 | **0010** | Security definer view (`transactions_client`) | **Fixed** in migration 57 — `security_invoker` view + `client_float_balance_*` helpers + column grants on `transactions` |
-| **0029** | Signed-in users can execute `SECURITY DEFINER` RPCs (`move_money`, `send_money`, `auth_*`, etc.) | **Accepted** — intentional client API; money writes only via RPCs; migration 56 revoked `anon` and internal helpers |
+| **0029** | Signed-in users can execute `SECURITY DEFINER` RPCs (`move_money`, `give_money`, `auth_*`, etc.) | **Accepted** — intentional client API; money writes only via RPCs; migration 56 revoked `anon` and internal helpers |
 | **0029** | `client_float_balance_*`, `transaction_visible_to_caller` | **Accepted** — needed for History redaction and RLS; visibility checks inside definer bodies |
 | **Auth** | Leaked password protection disabled | **Deferred** — Pro plan; enable in Dashboard when available (account-owner email/password only) |
 
@@ -436,14 +436,14 @@ spec: [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md).
 cron that day. **Paused** blocks both scheduled and manual runs until **Resume**.
 
 Kid **Auto-bucket rules** shipped (migration `76`, `owner_member_id` scope). Deferred after v1:
-scheduled **Send to a kid** (`send_money` via Auto-bucket `send` kind), bucket-row
+scheduled **Give to a kid** (`give_money` via a future Auto-bucket `give` kind), bucket-row
 “+$X in Auto-bucket” hints, editor review step before save, local seed scenario.
 
 ---
 
 ### Out of Scope (defer these)
 - Push notifications
-- Transaction history filters and search
+- Transaction history free-text search (the gives/takes and per-bucket filters shipped)
 - Super-admin / platform management UI
 - Automated operator ledger monitoring (family-wide invariant job, violation
   table, in-app admin integrity banner) — family beta first; add if this ships
@@ -611,9 +611,11 @@ bucket-my-money/
 │   │   ├── ui/             # Reusable primitives (e.g. PinInput)
 │   │   └── layout/         # Shell, nav, header (AppShell)
 │   ├── features/
-│   │   ├── auth/           # Login (email/password today; PIN + biometric planned)
+│   │   ├── auth/           # Login (email/password, family PIN, passkey/biometric)
 │   │   ├── buckets/        # Buckets tab (/) — route `/`, bucket list, move flow, CRUD
-│   │   ├── sends/          # Send money flow (SendPage + send_money RPC)
+│   │   ├── give/           # Give money flow (GivePage + give_money RPC)
+│   │   ├── kids/           # Kids tab — kid balances, give/take actions
+│   │   ├── accounts/       # Read-only Bank activity view
 │   │   ├── history/        # Transaction history
 │   │   ├── admin/          # Join code, members, linked accounts
 │   │   └── settings/       # PIN, biometric, and admin sign-in account cards
