@@ -21,6 +21,7 @@ function adultBreakdown(
     totalCash,
     bankCash,
     manualCash,
+    cardDebt: 0,
     bucketAllocated: 500,
     childrenSetAside: 50,
     children: [
@@ -107,6 +108,27 @@ describe('buildFloatLines', () => {
       'Cash (2 sources)',
       'Allocated to buckets',
     ])
+  })
+
+  it('subtracts credit cards between cash and allocations', () => {
+    const lines = buildFloatLines(
+      adultBreakdown({ cardDebt: 1200, children: [], childrenSetAside: 0 }),
+      {
+        isChild: false,
+        cashAccountsCount: 1,
+        bankAccountsCount: 1,
+        manualAccountsCount: 0,
+        childTotal: 0,
+      },
+    )
+    expect(lines.map((l) => l.label)).toEqual([
+      'Linked cash (1 account)',
+      'Credit cards',
+      'Allocated to buckets',
+    ])
+    const cardLine = lines[1]
+    expect(cardLine.amount).toBe(1200)
+    expect(cardLine.kind).toBe('subtract')
   })
 
   it('omits allocated line when bucketAllocated is zero', () => {
@@ -247,6 +269,36 @@ describe('formatFloatCashSubtext', () => {
       fmt,
     )
     expect(text).toBe('$3000.00 linked · $2000.00 manual')
+  })
+
+  it('appends the card clause when the household owes on cards', () => {
+    const text = formatFloatCashSubtext(
+      adultBreakdown({ totalCash: 5000, bankCash: 3000, manualCash: 2000, cardDebt: 1200 }),
+      {
+        isChild: false,
+        cashAccountsCount: 3,
+        bankAccountsCount: 2,
+        manualAccountsCount: 1,
+        childTotal: 0,
+      },
+      fmt,
+    )
+    expect(text).toBe('$3000.00 linked · $2000.00 manual · $1200.00 owed on cards')
+  })
+
+  it('appends the card clause to a single-source summary', () => {
+    const text = formatFloatCashSubtext(
+      adultBreakdown({ totalCash: 5000, bankCash: 5000, manualCash: 0, cardDebt: 850 }),
+      {
+        isChild: false,
+        cashAccountsCount: 2,
+        bankAccountsCount: 2,
+        manualAccountsCount: 0,
+        childTotal: 0,
+      },
+      fmt,
+    )
+    expect(text).toBe('$5000.00 across 2 money sources · $850.00 owed on cards')
   })
 
   it('formats child linked account subtext', () => {

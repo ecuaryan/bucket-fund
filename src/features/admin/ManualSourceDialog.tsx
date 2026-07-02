@@ -6,8 +6,15 @@ import { AmountLimitHint } from '@/components/AmountLimitHint'
 import {
   addManualAccount,
   updateManualAccount,
+  type ManualAccountKind,
 } from '@/lib/accounts'
 import {
+  MANUAL_CARD_AMOUNT_LABEL,
+  MANUAL_CARD_DEFAULT_LABEL,
+  MANUAL_CARD_DIALOG_BODY,
+  MANUAL_CARD_DIALOG_TITLE,
+  MANUAL_CARD_EDIT_DIALOG_TITLE,
+  MANUAL_CARD_LABEL_PLACEHOLDER,
   MANUAL_SOURCE_DEFAULT_LABEL,
   MANUAL_SOURCE_DIALOG_BODY,
   MANUAL_SOURCE_DIALOG_TITLE,
@@ -20,6 +27,8 @@ import { sanitizeAmountInput } from '@/lib/amountInput'
 type Props = {
   open: boolean
   mode: 'create' | 'edit'
+  /** 'card' tracks a credit-card balance (owed; counts against the household balance). */
+  kind?: ManualAccountKind
   accountId?: string
   initialLabel?: string
   initialAmount?: number
@@ -33,13 +42,18 @@ type Props = {
 export default function ManualSourceDialog({
   open,
   mode,
+  kind = 'cash',
   accountId,
-  initialLabel = MANUAL_SOURCE_DEFAULT_LABEL,
+  initialLabel,
   initialAmount,
   onClose,
   onSaved,
 }: Props) {
-  const [label, setLabel] = useState(initialLabel)
+  const isCard = kind === 'card'
+  const defaultLabel = isCard
+    ? MANUAL_CARD_DEFAULT_LABEL
+    : MANUAL_SOURCE_DEFAULT_LABEL
+  const [label, setLabel] = useState(initialLabel ?? defaultLabel)
   const [amountStr, setAmountStr] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -47,10 +61,13 @@ export default function ManualSourceDialog({
 
   useEffect(() => {
     if (!open) return
-    setLabel(initialLabel)
+    setLabel(initialLabel ?? defaultLabel)
     setAmountStr(
       mode === 'create'
-        ? String(MANUAL_SOURCE_SUGGESTED_AMOUNT)
+        ? // Never prefill debt — a suggested balance only makes sense for cash.
+          isCard
+          ? ''
+          : String(MANUAL_SOURCE_SUGGESTED_AMOUNT)
         : initialAmount !== undefined
           ? String(initialAmount)
           : '',
@@ -62,10 +79,15 @@ export default function ManualSourceDialog({
       el.focus()
       el.select()
     }, 0)
-  }, [open, mode, initialLabel, initialAmount])
+  }, [open, mode, initialLabel, initialAmount, defaultLabel, isCard])
 
-  const title =
-    mode === 'create' ? MANUAL_SOURCE_DIALOG_TITLE : 'Edit money source'
+  const title = isCard
+    ? mode === 'create'
+      ? MANUAL_CARD_DIALOG_TITLE
+      : MANUAL_CARD_EDIT_DIALOG_TITLE
+    : mode === 'create'
+      ? MANUAL_SOURCE_DIALOG_TITLE
+      : 'Edit money source'
 
   const amount = Number.parseFloat(amountStr)
   const amountValid =
@@ -85,7 +107,7 @@ export default function ManualSourceDialog({
     setError(null)
     try {
       if (mode === 'create') {
-        await addManualAccount(amount, trimmed)
+        await addManualAccount(amount, trimmed, kind)
       } else {
         if (!accountId) throw new Error('Missing account')
         await updateManualAccount(accountId, amount, trimmed)
@@ -117,7 +139,9 @@ export default function ManualSourceDialog({
         </button>
       </header>
       <form onSubmit={(e) => void onSubmit(e)} className="space-y-4">
-        <p className="text-sm text-zinc-400">{MANUAL_SOURCE_DIALOG_BODY}</p>
+        <p className="text-sm text-zinc-400">
+          {isCard ? MANUAL_CARD_DIALOG_BODY : MANUAL_SOURCE_DIALOG_BODY}
+        </p>
 
         <label className="block">
           <FieldLabel spacing="tight">Label</FieldLabel>
@@ -127,13 +151,19 @@ export default function ManualSourceDialog({
             value={label}
             maxLength={60}
             onValueChange={setLabel}
-            placeholder={MANUAL_SOURCE_LABEL_PLACEHOLDER}
+            placeholder={
+              isCard
+                ? MANUAL_CARD_LABEL_PLACEHOLDER
+                : MANUAL_SOURCE_LABEL_PLACEHOLDER
+            }
             inputClassName="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100"
           />
         </label>
 
         <label className="block">
-          <FieldLabel spacing="tight">Amount</FieldLabel>
+          <FieldLabel spacing="tight">
+            {isCard ? MANUAL_CARD_AMOUNT_LABEL : 'Amount'}
+          </FieldLabel>
           <ClearableInput
             ref={amountRef}
             wrapperClassName="mt-1"

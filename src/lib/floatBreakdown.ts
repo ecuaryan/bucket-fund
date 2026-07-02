@@ -1,7 +1,9 @@
 import {
+  BREAKDOWN_CARD_DEBT_LABEL,
   BREAKDOWN_CASH_LABEL,
   BREAKDOWN_LINKED_CASH_LABEL,
   BREAKDOWN_MANUAL_CASH_LABEL,
+  floatCardsSubtextClause,
   floatSourcesCountText,
 } from '@/lib/brand'
 import type { BucketsBalanceBreakdown } from '@/lib/availableBalance'
@@ -95,6 +97,15 @@ export function buildFloatLines(
     })
   }
 
+  if (breakdown.cardDebt > 0) {
+    lines.push({
+      key: 'card-debt',
+      label: BREAKDOWN_CARD_DEBT_LABEL,
+      amount: breakdown.cardDebt,
+      kind: 'subtract',
+    })
+  }
+
   if (breakdown.bucketAllocated > 0) {
     lines.push({
       key: 'allocated',
@@ -180,13 +191,18 @@ export function formatFloatCashSubtext(
 
   if (breakdown.totalCash <= 0) return null
 
+  const cardsClause =
+    breakdown.cardDebt > 0
+      ? ` ${floatCardsSubtextClause(formatMoney(breakdown.cardDebt))}`
+      : ''
+
   if (breakdown.bankCash > 0 && breakdown.manualCash > 0) {
-    return `${formatMoney(breakdown.bankCash)} linked · ${formatMoney(breakdown.manualCash)} manual`
+    return `${formatMoney(breakdown.bankCash)} linked · ${formatMoney(breakdown.manualCash)} manual${cardsClause}`
   }
 
   const summary = floatSummary(breakdown, opts)
   if (!summary) return null
-  return formatFloatSummary(summary, formatMoney)
+  return `${formatFloatSummary(summary, formatMoney)}${cardsClause}`
 }
 
 export function formatBucketsHeaderSubtitle(

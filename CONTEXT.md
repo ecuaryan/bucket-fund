@@ -18,7 +18,7 @@ The primary use case is: **open app → move money from one bucket to another �
 
 ### Product philosophy
 
-**Organize first.** The core job is **bucket budgeting**: label cash, see **Unbucketed**, move money between buckets in a few taps. That invariant (`total cash = buckets + Unbucketed` across the household) must stay rock solid. **Household features** (roles, linked kid accounts, Send to kids without a linked account) support multi-person use but are secondary — they must not add ledger layers that compete with bank truth or complicate the Buckets tab.
+**Organize first.** The core job is **bucket budgeting**: label cash, see **Unbucketed**, move money between buckets in a few taps. That invariant (`cash − credit card balances = buckets + Unbucketed` across the household) must stay rock solid. **Household features** (roles, linked kid accounts, Send to kids without a linked account) support multi-person use but are secondary — they must not add ledger layers that compete with bank truth or complicate the Buckets tab.
 
 **Intentional friction, minimal automation.** When you overspend, you should come in and consciously face the trade-off — moving money from a bucket back into **Unbucketed** — rather than having the app auto-fix or auto-rebalance. The at-a-glance view surfaces reality so you decide; balance refresh is user-initiated, not background polling. This is a clarity tool, not a transaction tracker: one small move when you spend keeps Unbucketed honest.
 
@@ -127,15 +127,16 @@ cash not in buckets. Code, SQL, RPC JSON, and DB columns use **`float`**
 (same pool; `NULL` bucket id in `move_money`). See [docs/BRAND.md § Naming](./docs/BRAND.md#naming-display-vs-code).
 
 **The invariant:**
-> Sum of all bucket allocations + sum of all unbucketed balances across every member = total cash from all money sources (linked bank balances + manual amounts).
+> Sum of all bucket allocations + sum of all unbucketed balances across every member = total cash from all money sources (linked bank balances + manual amounts) − credit card balances (linked or manual).
 
-Every dollar lives in exactly one place — either in a named bucket or in someone's unbucketed balance.
+Every dollar lives in exactly one place — either in a named bucket or in someone's unbucketed balance. Card debt is money already spoken for, so it comes off the top before anything is bucketed (see [docs/CREDIT_CARDS.md](./docs/CREDIT_CARDS.md)).
 
-Unbucketed is **derived** from linked cash, bucket allocations, sends, and role
-rules (`member_float` in SQL). When real bank cash drops but buckets
-do not (e.g. a credit card payment clears), Unbucketed goes **negative and red**
-— that is the intended “something needs rebalancing” signal, not a separate
-system-error banner.
+Unbucketed is **derived** from linked cash, card balances, bucket allocations,
+sends, and role rules (`member_float` in SQL). When cash drops or card debt
+rises but buckets do not (a debit purchase posts, a card swipe syncs),
+Unbucketed goes **negative and red** — that is the intended “something needs
+rebalancing” signal, not a separate system-error banner. Paying a linked card's
+statement nets to zero: cash and debt fall together.
 
 **Shared balance (admin + Shared role in the Buckets tab):**
 - **Unbucketed** (derived via `member_float()` in SQL) is one number for both: family cash minus
@@ -449,19 +450,17 @@ scheduled **Give to a kid** (`give_money` via a future Auto-bucket `give` kind),
   table, in-app admin integrity banner) — family beta first; add if this ships
   as a paid multi-tenant product
 
-### Credit cards & linked liabilities (decided — not yet implemented)
+### Credit cards & linked liabilities (shipped)
 
-**Decision (2026-07): integrate credit cards as liabilities.** Card balances
-will subtract from the household balance so the ledger identity becomes
+**Credit cards integrate as liabilities** (migration `79`): card balances
+subtract from the household balance, making the ledger identity
 **cash − credit card balances = bucket allocations + Unbucketed**. Cards only
-(no loans/mortgages), household-scoped (never assigned to a kid), manual card
-balances supported alongside Teller-linked ones, and one consequential confirm
-sheet at link time — then truth, even when it turns Unbucketed deep red.
-Full design and staged plan: [docs/CREDIT_CARDS.md](./docs/CREDIT_CARDS.md).
-
-Until it ships, current behavior stands: **cash accounts only** in
-unbucketed-cash math (`src/lib/accounts.ts`, `is_cash_account_type` in SQL);
-credit accounts may be stored in `accounts` if enrolled but are ignored.
+(no loans/mortgages), household-scoped (never assigned to a kid — enforced by
+a database trigger), manual card balances supported alongside Teller-linked
+ones, and one notice sheet when a link brings card debt in — then truth, even
+when it turns Unbucketed deep red. Card spending behaves like debit spending:
+the swipe dips Unbucketed and the user covers it from a bucket; paying the
+statement nets to zero. Design and rationale: [docs/CREDIT_CARDS.md](./docs/CREDIT_CARDS.md).
 
 ---
 

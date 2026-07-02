@@ -18,8 +18,8 @@ The payoff:
   you come in and consciously move money from a bucket back into Unbucketed;
   confronting the trade-off is the value, not a chore to automate away. The
   at-a-glance view surfaces reality so you *decide*; it does not auto-fix.
-- **Tradeoffs** — negative Unbucketed means labels and bank cash don't match yet — not
-  that income “came from” somewhere new.
+- **Tradeoffs** — negative Unbucketed means labels don't match your cash minus
+  card balances yet — not that income “came from” somewhere new.
 - **Organizing, not prescribing** — copy states what Unbucketed and buckets *are* and
   what the numbers mean. Avoid telling people *when* or *why* they should move money
   (no “before the charge clears”, “your bank already took this”, etc.). Factual
@@ -28,7 +28,8 @@ The payoff:
 - **Works alone or together** — one person with buckets, or a household sharing
   Unbucketed and optional member PINs.
 
-**Canonical tagline (`APP_TAGLINE`):** *Bank balance moved? Pick which bucket covers it.*
+**Canonical tagline (`APP_TAGLINE`):** *Balance moved? Pick which bucket covers it.*
+(“Balance,” not “bank balance” — a card swipe moves the number too.)
 
 ## Product narrative
 
@@ -55,9 +56,11 @@ Buckets are money you've deliberately set aside from Unbucketed for a specific p
 
 When you spend money, decide which bucket covers it — then move that amount back to Unbucketed.
 
-That's it. That single habit is what makes the system work. You swiped your card at the gas station — open the app, move money from your Gasoline bucket back to Unbucketed. Now Unbucketed reflects reality. When that charge hits your credit card and eventually clears your bank account, Unbucketed is ready for it.
+That's it. That single habit is what makes the system work. You swiped your card at the gas station — open the app, move money from your Gasoline bucket back to Unbucketed. Now Unbucketed reflects reality.
 
-If Unbucketed is green, you're living within your means. If it's red, your buckets have more in them than your actual bank balance supports — and you have a decision to make. Which bucket are you pulling from to get back to zero? That's the honest conversation the app forces you to have with yourself.
+Credit cards are part of the same truth. A linked card's balance counts against Unbucketed — money you owe was never really yours to bucket. So a card swipe shows up on its own as the balance syncs, and the habit is the same one: pick the bucket that covers it. When you pay the statement, cash and card debt fall together and Unbucketed doesn't move — you already accounted for that spending when it happened.
+
+If Unbucketed is green, you're living within your means. If it's red, your buckets and card balances add up to more than your cash supports — and you have a decision to make. Which bucket are you pulling from to get back to zero? That's the honest conversation the app forces you to have with yourself.
 
 ### What this isn't
 
@@ -83,6 +86,8 @@ If you're the kind of person who has ever looked at their bank account two days 
 - Say **money source** for anything that funds the household pool: a linked bank
   or a manual amount the admin enters (estimate, real balance, or try-it-out
   number). Prefer “Add a money source” over “link a bank” when both paths apply.
+  Credit cards are listed alongside money sources in Admin but are always
+  described as counting **against** the household balance — never as funding it.
 - DB role `member` → UI **Shared**; `child` → **Kid**; `admin` → **Admin**.
   See `src/lib/memberRoles.ts` and Admin strings in `brand.ts`.
 - **Household balance** (`HOUSEHOLD_BALANCE_LABEL` in `brand.ts`) is the
@@ -165,8 +170,8 @@ Do not promise “we never see transactions” if we later fetch transaction his
 today we mainly use the transactions product for balance sync webhooks.
 
 Link copy: **one or more accounts**; **cash account types** count toward
-Unbucketed (see `CASH_ACCOUNT_SUBTYPES` in `src/lib/accounts.ts`) — do not
-limit UI to “checking or savings” only.
+Unbucketed and **credit-card accounts count against it** (see
+`src/lib/accountTypes.ts`) — do not limit UI to “checking or savings” only.
 
 ## Ubiquitous language: Unbucketed
 
@@ -204,7 +209,12 @@ in `move_money` means the Unbucketed pool.
 | Buckets tab: kid Unbucketed hint | `bucketsKidFloatHint()` |
 | Unbucketed label (all UI) | `FLOAT_LABEL`, `FLOAT_LABEL_LOWER` |
 | Unbucketed over-bucketed hint | `floatOverbucketedHint()`, `FLOAT_NEGATIVE_HINT` |
-| Unbucketed hero subtitle | `FLOAT_HERO_SUBTITLE` |
+| Unbucketed short-with-cards hint | `floatShortWithCardsHint()` |
+| Unbucketed hero subtitle | `FLOAT_HERO_SUBTITLE`, `FLOAT_HERO_SUBTITLE_WITH_CARDS` |
+| Hero cards subtext clause | `floatCardsSubtextClause()` |
+| Credit-card surfaces (Admin/Bank) | `ACCOUNT_CARD_OWED_SUFFIX`, `ADMIN_CARD_COUNTS_AGAINST_NOTE`, `BREAKDOWN_CARD_DEBT_LABEL` |
+| Card linked notice | `LINKED_CARDS_NOTICE_*`, `linkedCardsNoticeBody()` |
+| Manual credit card forms | `MANUAL_CARD_*`, `ADMIN_ADD_SOURCE_CARD_OPTION` |
 | Onboarding coach | `ONBOARDING_COACH_*`, `onboardingCoachStepBody()` |
 | Move money intents | `moveMoneyDialogCopy.ts` |
 | Product narrative (full text) | [Product narrative](#product-narrative) in this doc |

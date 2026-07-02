@@ -4,7 +4,8 @@
  * The system-wide invariant (see CONTEXT.md "Balance Model"):
  *
  *   sum(bucket allocations) + sum(float balances across members)
- *     === sum(real Teller balances across all linked accounts)
+ *     === sum(cash balances, linked + manual)
+ *       − sum(credit card balances, linked + manual)
  *
  * User-facing “rebalance” signal is negative float on Buckets tab (see
  * CONTEXT.md § Data Integrity). Automated operator ledger checks are

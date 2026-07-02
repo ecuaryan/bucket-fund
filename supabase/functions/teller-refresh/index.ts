@@ -12,7 +12,10 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { publishableKey, secretKey } from '../_shared/keys.ts'
-import { isCashAccountType } from '../_shared/cashAccountTypes.ts'
+import {
+  isCashAccountType,
+  isCreditCardAccountType,
+} from '../_shared/cashAccountTypes.ts'
 import { shouldSkipRefresh } from '../_shared/refreshThrottle.ts'
 import { getBalance } from '../_shared/teller.ts'
 
@@ -151,7 +154,12 @@ Deno.serve(async (req: Request) => {
   let bankLastSyncedAt: string | null = null
 
   for (const account of accounts) {
-    if (!isCashAccountType(account.account_type) || !account.last_synced_at) {
+    // Cards refresh too — a card-only enrollment must still be throttled
+    // and report a sync time.
+    const counted =
+      isCashAccountType(account.account_type) ||
+      isCreditCardAccountType(account.account_type)
+    if (!counted || !account.last_synced_at) {
       continue
     }
     const ms = Date.parse(account.last_synced_at)
@@ -200,7 +208,10 @@ Deno.serve(async (req: Request) => {
       }
 
       accountsUpdated++
-      if (isCashAccountType(account.account_type)) {
+      if (
+        isCashAccountType(account.account_type) ||
+        isCreditCardAccountType(account.account_type)
+      ) {
         bankLastSyncedAt = maxIso(bankLastSyncedAt, nowIso)
       }
     } catch (err) {

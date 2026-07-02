@@ -195,11 +195,12 @@ export default function GivePage() {
     amountValid && available !== null && amount > available
   const overdraftMessage =
     overdraft && available !== null
-      ? `You can only give up to ${formatMoney(available)}.`
+      ? // Cards can pull the pool negative — "up to −$400" is nonsense.
+        `You can only give up to ${formatMoney(Math.max(0, available))}.`
       : null
   const giveAvailableHint =
     available !== null && !overdraft
-      ? `You have ${formatMoney(available)} available to give.`
+      ? `You have ${formatMoney(Math.max(0, available))} available to give.`
       : null
 
   async function onSubmit(e: FormEvent) {

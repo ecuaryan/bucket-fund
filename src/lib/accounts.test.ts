@@ -3,9 +3,11 @@ import {
   accountAssignmentChildId,
   bankAccountOwnerTag,
   isCashAccount,
+  isCreditCardAccount,
   isFamilyPoolAccount,
   isManualAccount,
   latestCashSyncAt,
+  sumCardDebt,
   sumCashBalance,
 } from '@/lib/accounts'
 import type { Database } from '@/types/database'
@@ -42,6 +44,39 @@ describe('isCashAccount', () => {
     expect(isCashAccount({ account_type: 'credit_card' })).toBe(false)
     expect(isCashAccount({ account_type: 'loan' })).toBe(false)
     expect(isCashAccount({ account_type: null })).toBe(false)
+  })
+})
+
+describe('isCreditCardAccount', () => {
+  it('recognizes credit_card in any case and nothing else', () => {
+    expect(isCreditCardAccount({ account_type: 'credit_card' })).toBe(true)
+    expect(isCreditCardAccount({ account_type: 'CREDIT_CARD' })).toBe(true)
+    expect(isCreditCardAccount({ account_type: 'checking' })).toBe(false)
+    expect(isCreditCardAccount({ account_type: 'loan' })).toBe(false)
+    expect(isCreditCardAccount({ account_type: null })).toBe(false)
+  })
+})
+
+describe('sumCardDebt', () => {
+  it('sums only credit-card balances, linked or manual', () => {
+    const total = sumCardDebt([
+      account({ current_balance: 100, account_type: 'checking' }),
+      account({ current_balance: 1200, account_type: 'credit_card' }),
+      account({
+        current_balance: 300,
+        account_type: 'credit_card',
+        source: 'manual',
+      }),
+      account({ current_balance: 999, account_type: 'loan' }),
+    ])
+    expect(total).toBe(1500)
+  })
+
+  it('lets a refund credit go negative (bank owes the household)', () => {
+    const total = sumCardDebt([
+      account({ current_balance: -45, account_type: 'credit_card' }),
+    ])
+    expect(total).toBe(-45)
   })
 })
 

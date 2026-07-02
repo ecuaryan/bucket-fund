@@ -1,3 +1,4 @@
+import { isCreditCardAccountType } from '@/lib/accountTypes'
 import type { Database } from '@/types/database'
 import type { TellerEnrollmentMeta } from '@/lib/teller'
 
@@ -7,6 +8,7 @@ export type InstitutionGroup = {
   groupKey: string
   institutionName: string | null
   accounts: Account[]
+  /** Cash minus card balances — a card's balance counts as owed, not held. */
   totalBalance: number
   lastSyncedAt: string | null
   /** Internal enrollment id used for Reconnect / busy state. */
@@ -26,15 +28,22 @@ type AccountSortRow = {
   id: string
   current_balance: number | string
   account_name: string | null
+  account_type: string | null
 }
 
-/** Balance high → low, then account name A–Z, then id for stability. */
+/** A card's balance is owed — it subtracts from the group total and sorts last. */
+function signedBalance(account: AccountSortRow): number {
+  const balance = Number(account.current_balance)
+  return isCreditCardAccountType(account.account_type) ? -balance : balance
+}
+
+/** Signed balance high → low (cards last), then account name A–Z, then id. */
 export function compareAccountsByBalanceThenName(
   a: AccountSortRow,
   b: AccountSortRow,
 ): number {
-  const balA = Number(a.current_balance)
-  const balB = Number(b.current_balance)
+  const balA = signedBalance(a)
+  const balB = signedBalance(b)
   if (balB !== balA) return balB - balA
   const byName = (a.account_name ?? '').localeCompare(b.account_name ?? '', undefined, {
     sensitivity: 'base',
@@ -131,7 +140,7 @@ export function groupAccountsByInstitution(
     let lastSyncedAt: string | null = null
     let totalBalance = 0
     for (const account of sorted) {
-      totalBalance += Number(account.current_balance)
+      totalBalance += signedBalance(account)
       if (
         account.last_synced_at &&
         (!lastSyncedAt || account.last_synced_at > lastSyncedAt)
@@ -158,7 +167,7 @@ export function groupAccountsByInstitution(
     let lastSyncedAt: string | null = null
     let totalBalance = 0
     for (const account of sorted) {
-      totalBalance += Number(account.current_balance)
+      totalBalance += signedBalance(account)
       if (
         account.last_synced_at &&
         (!lastSyncedAt || account.last_synced_at > lastSyncedAt)
@@ -185,7 +194,7 @@ export function groupAccountsByInstitution(
       institutionName: 'Unlinked',
       accounts: sortAccountsByBalanceThenName(tellerOrphans),
       totalBalance: tellerOrphans.reduce(
-        (sum, a) => sum + Number(a.current_balance),
+        (sum, a) => sum + signedBalance(a),
         0,
       ),
       lastSyncedAt: null,

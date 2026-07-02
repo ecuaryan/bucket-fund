@@ -16,6 +16,7 @@ import {
 import {
   accountAssignmentChildId,
   assignAccountOwner,
+  isCreditCardAccount,
   isTellerAccount,
 } from '@/lib/accounts'
 import type { Database } from '@/types/database'
@@ -52,7 +53,11 @@ export default function KidAccountAssignment({
   const [pendingAssign, setPendingAssign] = useState<PendingAssign | null>(null)
   const [confirmError, setConfirmError] = useState<string | null>(null)
 
-  const tellerAccounts = accounts.filter(isTellerAccount)
+  // Credit cards stay on the household balance — never assignable to a kid
+  // (the accounts trigger enforces the same rule at the database layer).
+  const tellerAccounts = accounts.filter(
+    (a) => isTellerAccount(a) && !isCreditCardAccount(a),
+  )
   const assigned = tellerAccounts.filter(
     (a) => accountAssignmentChildId(a, memberRolesById) === kidId,
   )

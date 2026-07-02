@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  ACCOUNT_CARD_OWED_SUFFIX,
   BANK_ACCOUNT_MEMBER_FALLBACK,
   BANK_ACCOUNT_SHARED_TAG,
 } from '@/lib/brand'
-import { bankAccountOwnerTag } from '@/lib/accounts'
+import { bankAccountOwnerTag, isCreditCardAccount } from '@/lib/accounts'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database'
@@ -108,9 +109,18 @@ export default function BankAccountsTab({
                   </p>
                 ) : null}
               </div>
-              <p className="shrink-0 text-sm font-medium tabular-nums text-zinc-200">
-                {formatMoney(Number(a.current_balance))}
-              </p>
+              {isCreditCardAccount(a) ? (
+                <p className="shrink-0 text-sm font-medium tabular-nums text-rose-300">
+                  {formatMoney(Number(a.current_balance))}{' '}
+                  <span className="text-xs font-normal text-rose-300/70">
+                    {ACCOUNT_CARD_OWED_SUFFIX}
+                  </span>
+                </p>
+              ) : (
+                <p className="shrink-0 text-sm font-medium tabular-nums text-zinc-200">
+                  {formatMoney(Number(a.current_balance))}
+                </p>
+              )}
             </div>
             <BankAccountActivity accountId={a.id} panelOpen={active} />
           </div>

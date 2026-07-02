@@ -47,7 +47,9 @@ Entry point for AI coding agents (and humans) working in this repo.
   If you touch RLS or `auth_family_id()`, re-read the SECURITY WARNING
   at the top of
   [supabase/migrations/00000000000000_initial_schema.sql](./supabase/migrations/00000000000000_initial_schema.sql).
-- **The ledger identity is the contract.** Cash (linked banks + manual money sources) = allocations +
+- **The ledger identity is the contract.** Cash (linked banks + manual money
+  sources) − credit card balances (linked or manual; see
+  [docs/CREDIT_CARDS.md](./docs/CREDIT_CARDS.md)) = allocations +
   the unbucketed pool, derived in SQL (`member_float()` — code keeps `float`).
   **User-facing label:** **Unbucketed** (`FLOAT_LABEL` in `src/lib/brand.ts`).
   **User signal for “rebalance”:** negative red Unbucketed in the Buckets tab — not a

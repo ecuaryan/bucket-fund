@@ -4,13 +4,21 @@ import { LoadErrorPanel } from '@/components/ui/LoadErrorPanel'
 import { formatLoadErrorMessage, withAuthLockRetry } from '@/lib/authLockError'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
-import { deleteManualAccount } from '@/lib/accounts'
 import {
+  deleteManualAccount,
+  isCreditCardAccount,
+  type ManualAccountKind,
+} from '@/lib/accounts'
+import {
+  ACCOUNT_CARD_OWED_SUFFIX,
   ADMIN_ADD_MONEY_SOURCE_ACTION,
+  ADMIN_ADD_SOURCE_CARD_OPTION,
   ADMIN_ADD_SOURCE_LINK_OPTION,
   ADMIN_ADD_SOURCE_MANUAL_OPTION,
+  ADMIN_CARD_COUNTS_AGAINST_NOTE,
   ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL,
   ADMIN_LINKED_ACCOUNTS_INTRO,
+  adminRemoveManualCardIntro,
   ADMIN_MONEY_SOURCES_INTRO,
   ADMIN_MANUAL_GROUP_TITLE,
   ADMIN_MONEY_SOURCES_SECTION_TITLE,
@@ -43,10 +51,13 @@ import {
   disconnectEnrollment,
   listTellerEnrollments,
   refreshBalances,
+  type LinkBankResult,
   type TellerEnrollmentMeta,
   useTellerConnect,
 } from '@/lib/teller'
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
+import CardsNoticeSheet from '@/features/accounts/CardsNoticeSheet'
+import { writeCardsNoticeSeen } from '@/lib/cardsNoticeStorage'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
 import MembersSection from '@/features/admin/MembersSection'
@@ -108,9 +119,20 @@ export default function AdminPage() {
   const [enrollmentsLoaded, setEnrollmentsLoaded] = useState(false)
   const [addSourceOpen, setAddSourceOpen] = useState(false)
   const [manualDialog, setManualDialog] = useState<
-    | { mode: 'create' }
-    | { mode: 'edit'; accountId: string; label: string; amount: number }
+    | { mode: 'create'; kind: ManualAccountKind }
+    | {
+        mode: 'edit'
+        kind: ManualAccountKind
+        accountId: string
+        label: string
+        amount: number
+      }
     | null
+  >(null)
+  // Cards that arrived in the last Teller link — the balance drop already
+  // happened (truth first); this sheet names it. Null = nothing to show.
+  const [linkedCardsNotice, setLinkedCardsNotice] = useState<
+    { cards: { name: string; balance: number }[]; totalDebt: number } | null
   >(null)
   const addSourceMenuRef = useRef<HTMLDivElement | null>(null)
   // Groups are expanded by default; this tracks the ones the user collapsed.
@@ -121,6 +143,8 @@ export default function AdminPage() {
   const [removeManualTarget, setRemoveManualTarget] = useState<{
     id: string
     label: string
+    kind: ManualAccountKind
+    balance: number
   } | null>(null)
   const [removingManual, setRemovingManual] = useState(false)
   const [removeManualError, setRemoveManualError] = useState<string | null>(null)
@@ -259,11 +283,32 @@ export default function AdminPage() {
     [groups],
   )
 
-  function afterLinkSuccess(count: number, verb: 'Linked' | 'Reconnected') {
+  function afterLinkSuccess(
+    result: LinkBankResult,
+    verb: 'Linked' | 'Reconnected',
+  ) {
+    const count = result.accounts.length
     if (count === 0) {
       toast.error(`${verb}, but no accounts came back. Try again.`)
     } else {
       toast.success(`${verb} ${count} account${count === 1 ? '' : 's'}.`)
+    }
+    // Cards count against the household balance the moment they land —
+    // name the drop instead of letting the hero quietly change. Only cards
+    // that are NEW to the family (not already in the pre-link account list)
+    // count: a re-link or reconnect of already-tracked cards changed nothing.
+    const priorIds = new Set((accounts ?? []).map((a) => a.id))
+    const cards = result.accounts
+      .filter((a) => isCreditCardAccount(a) && !priorIds.has(a.id))
+      .map((a) => ({
+        name: a.account_name ?? a.institution_name ?? 'Credit card',
+        balance: Number(a.current_balance),
+      }))
+    const totalDebt = cards.reduce((sum, c) => sum + c.balance, 0)
+    if (totalDebt > 0) {
+      setLinkedCardsNotice({ cards, totalDebt })
+      // One acknowledgment is enough — don't re-notify on the Buckets tab.
+      if (member) writeCardsNoticeSeen(member.id)
     }
     setAccountsSyncing(true)
     void Promise.all([loadAccounts(), loadEnrollments()]).finally(() =>
@@ -273,7 +318,7 @@ export default function AdminPage() {
 
   function startLinkBank() {
     teller.open({
-      onLinked: (result) => afterLinkSuccess(result.accounts.length, 'Linked'),
+      onLinked: (result) => afterLinkSuccess(result, 'Linked'),
       onError: (msg) => toast.error(msg),
     })
   }
@@ -301,7 +346,7 @@ export default function AdminPage() {
       {
         onLinked: (result) => {
           setReconnectingKey(null)
-          afterLinkSuccess(result.accounts.length, 'Reconnected')
+          afterLinkSuccess(result, 'Reconnected')
         },
         onError: (msg) => {
           setReconnectingKey(null)
@@ -328,9 +373,14 @@ export default function AdminPage() {
     }
   }
 
-  function requestRemoveManualSource(accountId: string, label: string) {
+  function requestRemoveManualSource(account: Account) {
     setRemoveManualError(null)
-    setRemoveManualTarget({ id: accountId, label })
+    setRemoveManualTarget({
+      id: account.id,
+      label: account.account_name ?? 'this source',
+      kind: isCreditCardAccount(account) ? 'card' : 'cash',
+      balance: Number(account.current_balance),
+    })
   }
 
   async function confirmRemoveManualSource() {
@@ -468,7 +518,7 @@ export default function AdminPage() {
                   className="block w-full whitespace-nowrap px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
                   onClick={() => {
                     setAddSourceOpen(false)
-                    setManualDialog({ mode: 'create' })
+                    setManualDialog({ mode: 'create', kind: 'cash' })
                   }}
                 >
                   {ADMIN_ADD_SOURCE_MANUAL_OPTION}
@@ -483,6 +533,16 @@ export default function AdminPage() {
                   }}
                 >
                   {teller.linking ? 'Linking…' : ADMIN_ADD_SOURCE_LINK_OPTION}
+                </button>
+                <button
+                  type="button"
+                  className="block w-full whitespace-nowrap px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
+                  onClick={() => {
+                    setAddSourceOpen(false)
+                    setManualDialog({ mode: 'create', kind: 'card' })
+                  }}
+                >
+                  {ADMIN_ADD_SOURCE_CARD_OPTION}
                 </button>
               </div>
             ) : null}
@@ -664,6 +724,11 @@ export default function AdminPage() {
                         <p className="text-xs text-zinc-400">
                           {a.account_type ?? '—'}
                         </p>
+                        {isCreditCardAccount(a) ? (
+                          <p className="text-xs text-rose-300/80">
+                            {ADMIN_CARD_COUNTS_AGAINST_NOTE}
+                          </p>
+                        ) : null}
                       </div>
                       <div className="flex shrink-0 items-center gap-3">
                         {group.isManual ? (
@@ -673,6 +738,9 @@ export default function AdminPage() {
                               onClick={() =>
                                 setManualDialog({
                                   mode: 'edit',
+                                  kind: isCreditCardAccount(a)
+                                    ? 'card'
+                                    : 'cash',
                                   accountId: a.id,
                                   label:
                                     a.account_name ??
@@ -687,21 +755,25 @@ export default function AdminPage() {
                             </button>
                             <button
                               type="button"
-                              onClick={() =>
-                                requestRemoveManualSource(
-                                  a.id,
-                                  a.account_name ?? 'this source',
-                                )
-                              }
+                              onClick={() => requestRemoveManualSource(a)}
                               className="rounded-lg border border-red-500/30 px-2 py-1 text-xs font-semibold text-red-300"
                             >
                               Remove
                             </button>
                           </>
                         ) : null}
-                        <p className="text-sm font-medium tabular-nums text-zinc-300">
-                          {formatMoney(Number(a.current_balance))}
-                        </p>
+                        {isCreditCardAccount(a) ? (
+                          <p className="text-sm font-medium tabular-nums text-rose-300">
+                            {formatMoney(Number(a.current_balance))}{' '}
+                            <span className="text-xs font-normal text-rose-300/70">
+                              {ACCOUNT_CARD_OWED_SUFFIX}
+                            </span>
+                          </p>
+                        ) : (
+                          <p className="text-sm font-medium tabular-nums text-zinc-300">
+                            {formatMoney(Number(a.current_balance))}
+                          </p>
+                        )}
                       </div>
                       </div>
                     </li>
@@ -751,6 +823,7 @@ export default function AdminPage() {
       <ManualSourceDialog
         open={manualDialog !== null}
         mode={manualDialog?.mode ?? 'create'}
+        kind={manualDialog?.kind ?? 'cash'}
         accountId={
           manualDialog?.mode === 'edit' ? manualDialog.accountId : undefined
         }
@@ -774,6 +847,13 @@ export default function AdminPage() {
             setAccountsSyncing(false)
           }
         }}
+      />
+
+      <CardsNoticeSheet
+        open={linkedCardsNotice !== null}
+        cards={linkedCardsNotice?.cards ?? []}
+        totalDebt={linkedCardsNotice?.totalDebt ?? 0}
+        onClose={() => setLinkedCardsNotice(null)}
       />
 
       <Sheet
@@ -861,7 +941,11 @@ export default function AdminPage() {
 
           <div className="space-y-4">
             <p className="text-sm text-zinc-400">
-              {ADMIN_REMOVE_MANUAL_SOURCE_INTRO}
+              {removeManualTarget.kind === 'card'
+                ? adminRemoveManualCardIntro(
+                    formatMoney(removeManualTarget.balance),
+                  )
+                : ADMIN_REMOVE_MANUAL_SOURCE_INTRO}
             </p>
 
             {removeManualError ? (

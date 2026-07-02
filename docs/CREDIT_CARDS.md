@@ -1,8 +1,10 @@
 # Credit cards as liabilities — design
 
-**Status: decided, not yet implemented.** This doc records the product
-decision deferred in [CONTEXT.md § Credit cards](../CONTEXT.md) and the
-implementation plan. Update this doc as stages ship.
+**Status: shipped** (migration `79`; stages 1–3 landed together in one PR,
+docs in the same PR). Remaining follow-up: refresh PWA screenshots + demo
+GIF (hero copy changed), and verify Teller's credit-card ledger-balance
+sign against a real sandbox payload — the code assumes positive = owed
+(see § Mechanics).
 
 ## Why
 
@@ -97,9 +99,12 @@ History snapshots (they record Unbucketed, which is simply net now).
   document it and note it in the linked-accounts intro copy; no blocking.
   We show the truth across what's linked.
 - **Refunds/credits** can produce a negative card balance (bank owes you);
-  that adds to Unbucketed under the same equation — correct, no special case.
+  that adds to Unbucketed under the same equation — correct, no special case
+  for linked cards. **Manual cards clamp at $0** (the RPC rejects negative
+  amounts and the form can't enter them) — enter 0 if the bank owes you;
+  simplicity over a rarely-used negative-entry UI.
 
-## Staged plan (one PR each)
+## Staged plan (shipped as one PR)
 
 1. **Sync + classification.** `is_credit_card_account_type` (SQL + TS +
    Deno mirror), card refresh in `teller-refresh`/webhook, sign

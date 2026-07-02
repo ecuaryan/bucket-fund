@@ -10,9 +10,11 @@
 
 Bucket My Money is a progressive web app for organizing cash into **buckets**
 — so you know what's actually available, not just what your bank shows. Use it
-solo or with a shared household: connect read-only bank accounts, set money aside
-from **Unbucketed**, and see where your money is at a glance. When the bank balance
-moves, pick which bucket covers it.
+solo or with a shared household: connect read-only bank accounts and credit
+cards, set money aside from **Unbucketed**, and see where your money is at a
+glance. Credit cards count against the number — what you see is cash minus card
+debt, so a swipe can't hide from your budget. When the balance moves, pick
+which bucket covers it.
 
 ## Demo
 
@@ -45,12 +47,14 @@ Regenerate after significant UI changes ([docs/MAINTENANCE.md § PWA assets](./d
 ## What it does
 
 - **Unbucketed + buckets** — cash not yet in a bucket lives in **Unbucketed**; buckets
-  are money you've set aside. The invariant is enforced in Postgres (`move_money`, `give_money`).
+  are money you've set aside. Credit card balances count against Unbucketed, so the
+  number is what you really have. The invariant is enforced and derived in Postgres
+  (`move_money`, `give_money`, `member_float`).
 - **Household roles** — admin, shared member, and kid views with RLS tenant isolation
   and PIN login for members.
 - **Move and give money** — set aside from Unbucketed, cover spends, give to kids; History
   with pagination and notes.
-- **Read-only bank link** — Teller Connect, webhooks, manual money sources for onboarding.
+- **Read-only bank link** — Teller Connect, webhooks, manual money sources and card balances for onboarding.
 - **Auto-bucket** — scheduled or on-demand rules to set aside into buckets (`pg_cron` on hosted).
 - **PWA** — offline fallback, service worker, install screenshots; session-scoped auth.
 - **Tests** — Vitest unit tests, database RLS/RPC tests, Playwright smoke e2e; CI on every PR.

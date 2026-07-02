@@ -13,3 +13,13 @@ export function isCashAccountType(accountType: string | null | undefined): boole
   if (!accountType) return false
   return CASH_ACCOUNT_SUBTYPES.has(accountType.toLowerCase())
 }
+
+/**
+ * Credit cards count against the household balance (docs/CREDIT_CARDS.md).
+ * Mirrors Postgres is_credit_card_account_type and src/lib/accountTypes.ts.
+ */
+export function isCreditCardAccountType(
+  accountType: string | null | undefined,
+): boolean {
+  return accountType?.toLowerCase() === 'credit_card'
+}

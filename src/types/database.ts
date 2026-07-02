@@ -877,7 +877,7 @@ export type Database = {
         Returns: string
       }
       add_manual_account: {
-        Args: { p_amount: number; p_label: string }
+        Args: { p_amount: number; p_label: string; p_kind?: string }
         Returns: string
       }
       auth_family_id: { Args: never; Returns: string }
