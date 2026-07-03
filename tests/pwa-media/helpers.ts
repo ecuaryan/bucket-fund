@@ -3,6 +3,7 @@ import {
   NAV_BUCKETS_LABEL,
   ONBOARDING_COACH_DISMISS_LABEL,
   ONBOARDING_COACH_TITLE,
+  TOAST_DISMISS_LABEL,
 } from '../../src/lib/brand'
 import { SEED_PASSWORD, seedAdminEmail } from '../../scripts/seed/constants'
 import {
@@ -93,6 +94,27 @@ export async function dismissOnboardingCoachIfVisible(page: Page) {
   }
 }
 
+/**
+ * Let the confirmation toast land, hold long enough for a viewer to read it,
+ * then clear it so it doesn't cover the next demo step. The toast fires only
+ * after the server move resolves, so wait for it to appear before holding —
+ * otherwise the hold elapses while the toast is still off-screen.
+ */
+export async function readAndDismissToast(page: Page) {
+  const toast = page.locator('.toast-panel')
+  const appeared = await toast
+    .waitFor({ state: 'visible', timeout: 5000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!appeared) return
+  await demoPause(page, DEMO_HOLD_MS)
+  await toast
+    .getByRole('button', { name: TOAST_DISMISS_LABEL, exact: true })
+    .click()
+  await expect(toast).not.toBeVisible()
+  await demoPause(page, DEMO_STEP_MS)
+}
+
 export function bucketListItem(page: Page, bucketName: string) {
   return page.getByRole('listitem').filter({ hasText: bucketName })
 }
@@ -128,7 +150,7 @@ export async function setAsideFromFloat(
   await demoPause(page, DEMO_STEP_MS)
   await page.getByRole('button', { name: /^Set aside/ }).click()
   await expect(page.getByLabel('Amount')).not.toBeVisible()
-  await demoPause(page, DEMO_HOLD_MS)
+  await readAndDismissToast(page)
 }
 
 export async function moveBucketUp(page: Page, bucketName: string) {
