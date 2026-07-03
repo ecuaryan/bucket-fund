@@ -2,9 +2,14 @@
 
 **Status: shipped** (migration `79`; stages 1–3 landed together in one PR,
 docs in the same PR). Remaining follow-up: refresh PWA screenshots + demo
-GIF (hero copy changed), and verify Teller's credit-card ledger-balance
-sign against a real sandbox payload — the code assumes positive = owed
-(see § Mechanics).
+GIF (hero copy changed).
+
+**Sign convention: verified.** Per Teller, an outstanding credit card
+balance comes back as a **positive** number in the ledger balance —
+matching the code's assumption (positive = owed; we store `balance.ledger`
+raw and subtract). Note: sandbox credit-card fixtures always report a
+$0.00 balance, so exercising the subtraction in dev means a manual card —
+same code paths, `is_credit_card_account_type` ignores `source`.
 
 ## Why
 
