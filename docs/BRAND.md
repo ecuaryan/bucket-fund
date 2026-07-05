@@ -157,15 +157,18 @@ Supabase Auth Site URL and Teller allowed origins use the same origin.
 
 Bucket My Money uses [Teller](https://teller.io) with Connect products **`balance`**
 and **`transactions`** only. Our server calls Teller **GET** endpoints for
-accounts and balances; webhooks refresh balances when activity posts. We do
-**not** use Teller payment initiation or any API that moves money at the bank.
+accounts and balances; webhooks refresh balances when activity posts, and a
+scheduled read-only sweep re-pulls balances on a cadence so they stay current in
+quiet periods. We do **not** use Teller payment initiation or any API that moves
+money at the bank.
 
 **`give_money` and `move_money` are virtual** — labels inside the app only.
 
 User-facing reassurance: `BANK_READ_ONLY_ASSURANCE` (Admin money-source copy),
 `ADMIN_LINKED_ACCOUNTS_INTRO`, `BUCKETS_LINK_BANK_*` in `brand.ts` — read-only;
 we read balances and cannot transfer, send, or withdraw money at the bank.
-Balance freshness uses **Refresh** (on-demand re-pull), not background polling.
+Balance freshness comes from webhooks, a scheduled read-only cadence sweep, and
+the on-demand **Refresh** button — all read-only balance pulls, never money movement.
 Do not promise “we never see transactions” if we later fetch transaction history;
 today we mainly use the transactions product for balance sync webhooks.
 
