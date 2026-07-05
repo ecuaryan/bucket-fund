@@ -144,8 +144,17 @@ Deno.serve(async (req: Request) => {
           }
         }
 
+        // Isolate each account: a single failing balance pull (e.g. a
+        // closed card returning 404) must not abort the rest of the batch.
         for (const tellerAccountId of tellerAccountIds) {
-          await refreshAccountBalance(tellerAccountId)
+          try {
+            await refreshAccountBalance(tellerAccountId)
+          } catch (err) {
+            console.error(
+              `Failed to refresh balance for account ${tellerAccountId}:`,
+              err,
+            )
+          }
         }
         break
       }

@@ -111,8 +111,11 @@ UI labels: **Admin**, **Shared**, **Kid** (`memberRoles.ts`). DB/API values rema
 - **Manual money sources:** admin-only, family-pool only (`owner_member_id` null), user-edited amounts (no auto-refresh). Coexist with linked banks; Buckets breakdown shows linked cash and manual cash separately when both are present.
 - Re-linking the same bank account (even when Teller issues a new `acc_…` id) preserves
   the prior child assignment and updates one row matched by institution + last four + type
-- Real balances are kept in sync via Teller webhooks (`transactions.processed` triggers a
-  live balance fetch) and on enroll/reconnect
+- Real balances are kept in sync three ways: Teller webhooks (`transactions.processed`
+  triggers a live balance fetch), a pg_cron **cadence sweep** (`teller-scheduled-refresh`
+  re-pulls any linked balance older than `SCHEDULED_REFRESH_CADENCE_HOURS`, default 6h —
+  Teller only guarantees a daily *poll* and only webhooks on *new* transactions), and on
+  enroll/reconnect. The manual Refresh button covers "I just moved money, update now."
 - **RLS:** kids see only accounts where `owner_member_id` is their member id; shared balance sees all family accounts
 - **Deferred (pre-SaaS polish):** per-account **Remove** via Teller `DELETE /accounts/:id`
   (drop one account without unlinking the whole bank). Confirm with Teller whether active
@@ -200,7 +203,9 @@ sheet; automatic **Auto-bucket** runs do not. See [docs/AUTO_ORGANIZE.md](./docs
 - Enforced in UI (Give recipient list) and `give_money` RPC.
 
 **Teller sync**
-- Teller webhooks keep real balances updated in real time
+- Teller webhooks refresh balances the moment new transactions post; a pg_cron cadence
+  sweep (`teller-scheduled-refresh`) keeps them fresh in quiet periods (Teller webhooks
+  fire only on new transactions, so webhooks alone go stale between them)
 - Supabase Realtime pushes balance and transaction updates to all open sessions instantly — no manual refresh needed
 
 ---
@@ -485,7 +490,7 @@ React PWA (Vercel — bucketmymoney.com)
     ↕
 Supabase (Auth + Postgres + Realtime + Edge Functions)
     ↕
-Teller API (webhooks → Edge Function → Supabase DB)
+Teller API (webhooks + pg_cron cadence sweep → Edge Function → Supabase DB)
 ```
 
 ### Deployment
@@ -630,6 +635,7 @@ bucket-my-money/
 │   │   ├── teller-enrollments-list/  # Admin enrollment metadata (Reconnect)
 │   │   ├── teller-disconnect/
 │   │   ├── teller-webhook/ # Webhook handler, balance updates
+│   │   ├── teller-scheduled-refresh/ # pg_cron cadence balance sweep
 │   │   └── check-invariant/# Ledger check stub (deferred until paid SaaS)
 │   └── migrations/         # SQL migrations
 ├── vite.config.ts
@@ -671,10 +677,22 @@ Implemented in `src/features/buckets/BucketsPage.tsx` and
 - On subsequent logins, biometric replaces PIN/password entry
 
 ### Teller webhook Edge Function
-- Verify Teller webhook signature
+- Verify Teller webhook signature (accept any of the `v1` signatures Teller sends —
+  it signs with every non-expired secret; reject timestamps older than 3 min)
 - On `transactions.processed`, fetch live balances for affected accounts and update
   `accounts.current_balance` (Unbucketed in the Buckets tab updates on next load / Realtime)
 - On `enrollment.disconnected`, mark the enrollment inactive
+
+### Scheduled balance refresh (cadence sweep)
+- `teller-scheduled-refresh` Edge Function, invoked by pg_cron every 10 min (migration 81)
+- Claims the stalest-due active enrollments in bounded batches (`claim_stale_enrollments`,
+  `FOR UPDATE SKIP LOCKED` so overlapping ticks never double-work), re-pulls balances older
+  than the cadence (`SCHEDULED_REFRESH_CADENCE_HOURS`, default 6h), writes
+  `current_balance` / `last_synced_at` per account
+- Needed because Teller only guarantees a daily *poll* and only webhooks on *new*
+  transactions; the sweep keeps balances fresh in quiet periods
+- Inert until `SCHEDULED_REFRESH_SECRET` + Vault `scheduled_refresh_url` /
+  `scheduled_refresh_secret` are set (see docs/MAINTENANCE.md)
 
 ### Supabase Realtime
 - Subscribe to balance and transaction changes scoped to the authenticated member's family

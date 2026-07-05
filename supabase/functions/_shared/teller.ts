@@ -191,10 +191,17 @@ export async function listTransactions(
 }
 
 // Webhook signatures: Teller signs every webhook with HMAC-SHA256
-// (header `Teller-Signature: t=<timestamp>,v1=<signature>`). The
-// signed message is `<timestamp>.<raw_body>`. Reject if the timestamp
-// is older than 5 minutes (replay protection) or the signature doesn't
-// match TELLER_SIGNING_SECRET.
+// (header `Teller-Signature: t=<timestamp>,v1=<sig>,v1=<sig>,...`). The
+// signed message is `<timestamp>.<raw_body>`.
+//
+// Teller signs each event with EVERY non-expired signing secret, so the
+// header can carry multiple `v1=` signatures — notably during a signing
+// secret rotation. We must accept the event if our computed HMAC matches
+// ANY of the provided `v1` values; checking only one (e.g. the last)
+// silently rejects valid webhooks the moment a second secret exists.
+//
+// Reject if the timestamp is older than 3 minutes (Teller's documented
+// replay window) or none of the signatures match TELLER_SIGNING_SECRET.
 export async function verifyWebhookSignature(
   rawBody: string,
   signatureHeader: string | null,
@@ -202,20 +209,22 @@ export async function verifyWebhookSignature(
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
   if (!signatureHeader) return { ok: false, reason: 'missing signature' }
 
-  const parts = Object.fromEntries(
-    signatureHeader.split(',').map((kv) => {
-      const [k, v] = kv.split('=')
-      return [k.trim(), v?.trim() ?? '']
-    }),
-  )
-  const timestamp = parts['t']
-  const provided = parts['v1']
-  if (!timestamp || !provided) {
+  let timestamp = ''
+  const provided: string[] = []
+  for (const part of signatureHeader.split(',')) {
+    const eq = part.indexOf('=')
+    if (eq === -1) continue
+    const k = part.slice(0, eq).trim()
+    const v = part.slice(eq + 1).trim()
+    if (k === 't') timestamp = v
+    else if (k === 'v1' && v) provided.push(v)
+  }
+  if (!timestamp || provided.length === 0) {
     return { ok: false, reason: 'malformed signature header' }
   }
 
   const ageSec = Math.abs(Date.now() / 1000 - Number(timestamp))
-  if (Number.isNaN(ageSec) || ageSec > 5 * 60) {
+  if (Number.isNaN(ageSec) || ageSec > 3 * 60) {
     return { ok: false, reason: 'stale or invalid timestamp' }
   }
 
@@ -236,7 +245,7 @@ export async function verifyWebhookSignature(
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('')
 
-  if (!timingSafeEqual(expected, provided)) {
+  if (!provided.some((sig) => timingSafeEqual(expected, sig))) {
     return { ok: false, reason: 'signature mismatch' }
   }
 

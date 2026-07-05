@@ -404,6 +404,10 @@ verify_jwt = true
 [functions.teller-webhook]
 verify_jwt = false
 
+# Invoked by pg_cron (net.http_post), authenticated by X-Cron-Secret, not a JWT.
+[functions.teller-scheduled-refresh]
+verify_jwt = false
+
 [functions.check-invariant]
 verify_jwt = true
 

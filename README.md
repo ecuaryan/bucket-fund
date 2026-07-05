@@ -85,7 +85,7 @@ public/
   screenshots/              install UI assets
   demos/                    README demo GIF
 supabase/
-  migrations/               SQL migrations (00000000000000 … 00000000000078)
+  migrations/               SQL migrations (00000000000000 … 00000000000081)
   functions/                Deno Edge Functions
 ```
 
@@ -94,8 +94,17 @@ supabase/
 | `teller-enroll` | Store enrollment + sync accounts |
 | `teller-enrollments-list` | List enrollments for Reconnect |
 | `teller-disconnect` | Revoke enrollment + delete local rows |
-| `teller-webhook` | Verify signature, refresh balances |
+| `teller-webhook` | Verify signature, refresh balances on new transactions |
+| `teller-scheduled-refresh` | pg_cron cadence sweep — keeps balances fresh in quiet periods |
 | `check-invariant` | Ledger check stub (deferred) |
+
+Balances stay current three ways: the **webhook** (instant, on posted transactions),
+the **manual refresh** button (on demand), and the **scheduled sweep**
+(`teller-scheduled-refresh`, every 10 min via pg_cron) which re-pulls any linked
+balance older than the cadence (`SCHEDULED_REFRESH_CADENCE_HOURS`, default 6h) —
+needed because Teller only guarantees a daily *poll*, and only webhooks you when it
+finds *new* transactions. One-time production setup in
+[docs/MAINTENANCE.md](./docs/MAINTENANCE.md).
 
 Auth/member functions (PIN login, member management, WebAuthn passkeys) are
 omitted here — see `supabase/functions/` for the full list.

@@ -145,6 +145,36 @@ npx supabase functions deploy
 npx supabase unlink
 ```
 
+### Scheduled balance refresh (one-time secrets)
+
+Migration `81` schedules a pg_cron sweep (`teller-scheduled-balance-refresh`,
+every 10 min) that pings the `teller-scheduled-refresh` Edge Function to re-pull
+any linked balance older than the cadence. It stays **inert** until you wire the
+shared secret — safe to deploy first, activate later.
+
+1. Pick a strong random secret (e.g. `openssl rand -hex 32`).
+2. Give the Edge Function the secret:
+
+   ```bash
+   npx supabase secrets set SCHEDULED_REFRESH_SECRET=<secret>
+   # optional tuning (defaults 6h / 50):
+   # npx supabase secrets set SCHEDULED_REFRESH_CADENCE_HOURS=6 SCHEDULED_REFRESH_BATCH=50
+   ```
+
+3. Give pg_cron the same secret + the function URL via Supabase Vault (SQL editor):
+
+   ```sql
+   select vault.create_secret(
+     'https://<project-ref>.supabase.co/functions/v1/teller-scheduled-refresh',
+     'scheduled_refresh_url');
+   select vault.create_secret('<secret>', 'scheduled_refresh_secret');
+   ```
+
+Verify: `select * from cron.job where jobname = 'teller-scheduled-balance-refresh';`
+and, after a tick, check recent `net._http_response` rows / the function's
+Invocations. Rotating the secret = update both the Edge Function secret and the
+`scheduled_refresh_secret` Vault entry.
+
 ## Security and production checklist
 
 ### Production deploy automation
