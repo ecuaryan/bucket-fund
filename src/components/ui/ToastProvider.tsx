@@ -80,6 +80,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           aria-live={item.type === 'error' ? 'assertive' : 'polite'}
         >
           <div
+            key={item.id}
             role={item.type === 'error' ? 'alert' : 'status'}
             className={
               'toast-panel pointer-events-auto flex w-full max-w-md items-start gap-2.5 rounded-xl px-3.5 py-3 text-sm shadow-2xl ring-2 backdrop-blur-md ' +
@@ -90,15 +91,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             }
           >
             <div className="min-w-0 flex-1">
-              <p className="font-medium leading-snug">{item.message}</p>
-              {item.detail?.map((line) => (
-                <p
-                  key={line}
-                  className="mt-1 text-xs tabular-nums leading-snug opacity-85"
-                >
-                  {line}
-                </p>
-              ))}
+              {/* With rich content the headline is redundant on screen but still
+                  announced — keep it sr-only so the live region reads the verb. */}
+              <p className={item.content ? 'sr-only' : 'font-medium leading-snug'}>
+                {item.message}
+              </p>
+              {item.content ? <div>{item.content}</div> : null}
             </div>
             <button
               type="button"

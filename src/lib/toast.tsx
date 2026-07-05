@@ -1,3 +1,4 @@
+import { type ReactNode } from 'react'
 import { toastDismissMode } from '@/lib/toastDismiss'
 
 type ToastType = 'success' | 'error'
@@ -5,8 +6,8 @@ type ToastType = 'success' | 'error'
 export type ToastPayload = {
   type: ToastType
   message: string
-  /** Optional glanceable lines under the message (e.g. balance trails). */
-  detail?: string[]
+  /** Optional rich content under the message (e.g. a transfer trail). */
+  content?: ReactNode
   dismiss: 'auto' | 'manual'
 }
 
@@ -20,14 +21,14 @@ export function registerToastPublisher(
 
 export const toast = {
   /**
-   * Detail lines are tabular glance data (balance trails), not prose — the
-   * auto/manual dismiss decision considers only the headline message.
+   * Optional content is glanceable data (e.g. a transfer trail), not prose —
+   * the auto/manual dismiss decision considers only the headline message.
    */
-  success(message: string, detail?: string[]) {
+  success(message: string, content?: ReactNode) {
     publishToast?.({
       type: 'success',
       message,
-      detail,
+      content,
       dismiss: toastDismissMode('success', message),
     })
   },

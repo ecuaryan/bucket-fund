@@ -192,6 +192,18 @@ html {
     .toast-panel-exit {
       animation: toast-out 160ms ease both;
     }
+
+    /* Money-move toast entrance: the amount springs into place, then the
+       destination balance pulses — the transfer reads as arriving, not just
+       appearing. Scoped to the success tone, so History stays still. */
+    .move-transfer-amount {
+      animation: move-transfer-amount-in 440ms cubic-bezier(0.34, 1.42, 0.5, 1)
+        150ms both;
+    }
+
+    .move-transfer-land {
+      animation: move-transfer-land 360ms ease 470ms both;
+    }
   }
 
   @keyframes toast-in {
@@ -213,6 +225,32 @@ html {
     to {
       opacity: 0;
       transform: translateY(-0.5rem);
+    }
+  }
+
+  @keyframes move-transfer-amount-in {
+    from {
+      opacity: 0;
+      transform: translateX(-18px) scale(0.7);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+  }
+
+  @keyframes move-transfer-land {
+    0% {
+      transform: none;
+      text-shadow: none;
+    }
+    35% {
+      transform: scale(1.16);
+      text-shadow: 0 0 12px rgb(52 211 153 / 0.65);
+    }
+    100% {
+      transform: none;
+      text-shadow: none;
     }
   }
 
