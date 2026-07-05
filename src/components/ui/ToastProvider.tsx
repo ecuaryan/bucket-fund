@@ -91,14 +91,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           >
             <div className="min-w-0 flex-1">
               <p className="font-medium leading-snug">{item.message}</p>
-              {item.detail?.map((line) => (
-                <p
-                  key={line}
-                  className="mt-1 text-xs tabular-nums leading-snug opacity-85"
-                >
-                  {line}
-                </p>
-              ))}
+              {item.content ? <div className="mt-2">{item.content}</div> : null}
             </div>
             <button
               type="button"

@@ -1,4 +1,5 @@
 import { FLOAT_ENDPOINT_KEY } from '@/features/buckets/moveMoneyDefaults'
+import { type HistoryBalanceSide } from '@/lib/historyBalanceSides'
 
 export type MoveMoneyIntent = 'setAside' | 'cover' | 'move'
 
@@ -64,8 +65,10 @@ type MoveMoneyToastEndpoint = {
 
 /**
  * Success confirmation after a move lands: what happened, plus the same
- * before → after balance trails History shows, so users don't have to open
- * History to double-check.
+ * source → amount → target transfer History renders, so the toast reads the
+ * same way as the activity feed. `sides` is always [source, target] so the
+ * balance flow stays left-to-right; a side with an unknown balance still
+ * shows its label but no trail.
  */
 export function moveMoneySuccessToast(args: {
   intent: MoveMoneyIntent
@@ -73,7 +76,7 @@ export function moveMoneySuccessToast(args: {
   from: MoveMoneyToastEndpoint
   to: MoveMoneyToastEndpoint
   formatMoney: (amount: number) => string
-}): { message: string; detail: string[] } {
+}): { message: string; sides: HistoryBalanceSide[] } {
   const { intent, amount, from, to, formatMoney } = args
   const amountFormatted = formatMoney(amount)
 
@@ -89,19 +92,22 @@ export function moveMoneySuccessToast(args: {
       message = `Moved ${amountFormatted} to ${to.label}.`
   }
 
-  const detail: string[] = []
-  if (from.balance !== null) {
-    detail.push(
-      `${from.label}: ${formatMoney(from.balance)} → ${formatMoney(from.balance - amount)}`,
-    )
-  }
-  if (to.balance !== null) {
-    detail.push(
-      `${to.label}: ${formatMoney(to.balance)} → ${formatMoney(to.balance + amount)}`,
-    )
-  }
+  const sides: HistoryBalanceSide[] = [
+    {
+      label: from.label,
+      delta: -amount,
+      before: from.balance,
+      after: from.balance === null ? null : from.balance - amount,
+    },
+    {
+      label: to.label,
+      delta: amount,
+      before: to.balance,
+      after: to.balance === null ? null : to.balance + amount,
+    },
+  ]
 
-  return { message, detail }
+  return { message, sides }
 }
 
 export function moveMoneyDialogSubmittingLabel(intent: MoveMoneyIntent): string {

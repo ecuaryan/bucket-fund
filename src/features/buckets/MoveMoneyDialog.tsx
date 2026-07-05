@@ -24,6 +24,7 @@ import {
   type MoveMoneyIntent,
 } from '@/lib/moveMoneyDialogCopy'
 import { toast } from '@/lib/toast'
+import { HistoryEntityTransfer } from '@/features/history/HistoryEntityTransfer'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
 import { sanitizeAmountInput } from '@/lib/amountInput'
@@ -172,7 +173,15 @@ export default function MoveMoneyDialog({
           to: toEndpoint,
           formatMoney,
         })
-        toast.success(confirmation.message, confirmation.detail)
+        toast.success(
+          confirmation.message,
+          <HistoryEntityTransfer
+            sides={confirmation.sides}
+            amount={amount}
+            formatMoney={formatMoney}
+            tone="success"
+          />,
+        )
       }
       setFloatConfirmOpen(false)
       onClose()

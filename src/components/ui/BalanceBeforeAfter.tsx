@@ -1,4 +1,5 @@
 import { balanceTrailArrowClass } from '@/lib/historyBalanceSides'
+import { type TransferTone } from '@/features/history/historyBalanceLayout'
 
 type BalanceBeforeAfterProps = {
   before: number
@@ -8,12 +9,20 @@ type BalanceBeforeAfterProps = {
   className?: string
   /** Default: before → after. Breakdown: before + change → after (run-now confirm). */
   variant?: 'trail' | 'breakdown'
+  /** Neutral zinc on the History surface, or retoned for the emerald success toast. */
+  tone?: TransferTone
 }
 
-function BalanceTrailArrow({ delta }: { delta: number }) {
+function BalanceTrailArrow({
+  delta,
+  tone,
+}: {
+  delta: number
+  tone: TransferTone
+}) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center ${balanceTrailArrowClass(delta)}`}
+      className={`inline-flex shrink-0 items-center ${balanceTrailArrowClass(delta, tone)}`}
       aria-hidden
     >
       <svg
@@ -40,12 +49,15 @@ export function BalanceBeforeAfter({
   align = 'right',
   className = '',
   variant = 'trail',
+  tone = 'surface',
 }: BalanceBeforeAfterProps) {
   const delta = after - before
   const changeLabel =
     delta >= 0
       ? `+ ${formatMoney(delta)}`
       : `− ${formatMoney(Math.abs(delta))}`
+  const beforeClass = tone === 'success' ? 'text-emerald-200/70' : 'text-zinc-500'
+  const afterClass = tone === 'success' ? 'text-emerald-50' : 'text-zinc-400'
 
   return (
     <p
@@ -55,16 +67,16 @@ export function BalanceBeforeAfter({
     >
       {variant === 'breakdown' ? (
         <>
-          <span className="text-zinc-500">{formatMoney(before)}</span>
-          <span className={balanceTrailArrowClass(delta)}>{changeLabel}</span>
-          <BalanceTrailArrow delta={delta} />
-          <span className="text-zinc-400">{formatMoney(after)}</span>
+          <span className={beforeClass}>{formatMoney(before)}</span>
+          <span className={balanceTrailArrowClass(delta, tone)}>{changeLabel}</span>
+          <BalanceTrailArrow delta={delta} tone={tone} />
+          <span className={afterClass}>{formatMoney(after)}</span>
         </>
       ) : (
         <>
-          <span className="text-zinc-500">{formatMoney(before)}</span>
-          <BalanceTrailArrow delta={delta} />
-          <span className="text-zinc-400">{formatMoney(after)}</span>
+          <span className={beforeClass}>{formatMoney(before)}</span>
+          <BalanceTrailArrow delta={delta} tone={tone} />
+          <span className={afterClass}>{formatMoney(after)}</span>
         </>
       )}
     </p>

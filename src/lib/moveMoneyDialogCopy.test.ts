@@ -72,7 +72,7 @@ describe('moveMoneySuccessToast', () => {
   const formatMoney = (amount: number) =>
     `$${amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`
 
-  it('confirms a set aside with both balance trails', () => {
+  it('confirms a set aside with source → target balance sides', () => {
     expect(
       moveMoneySuccessToast({
         intent: 'setAside',
@@ -83,9 +83,9 @@ describe('moveMoneySuccessToast', () => {
       }),
     ).toEqual({
       message: 'Set aside $50.00 in Groceries.',
-      detail: [
-        'Unbucketed: $300.00 → $250.00',
-        'Groceries: $120.00 → $170.00',
+      sides: [
+        { label: 'Unbucketed', delta: -50, before: 300, after: 250 },
+        { label: 'Groceries', delta: 50, before: 120, after: 170 },
       ],
     })
   })
@@ -101,7 +101,10 @@ describe('moveMoneySuccessToast', () => {
       }),
     ).toEqual({
       message: 'Unbucketed $25.00 from Gasoline.',
-      detail: ['Gasoline: $80.00 → $55.00', 'Unbucketed: $10.00 → $35.00'],
+      sides: [
+        { label: 'Gasoline', delta: -25, before: 80, after: 55 },
+        { label: 'Unbucketed', delta: 25, before: 10, after: 35 },
+      ],
     })
   })
 
@@ -116,14 +119,14 @@ describe('moveMoneySuccessToast', () => {
       }),
     ).toEqual({
       message: 'Moved $1,000.00 to Car repair.',
-      detail: [
-        'Vacation: $2,500.00 → $1,500.00',
-        'Car repair: $0.00 → $1,000.00',
+      sides: [
+        { label: 'Vacation', delta: -1000, before: 2500, after: 1500 },
+        { label: 'Car repair', delta: 1000, before: 0, after: 1000 },
       ],
     })
   })
 
-  it('skips the trail for a side with no known balance', () => {
+  it('keeps the source → target order but drops the trail for an unknown balance', () => {
     expect(
       moveMoneySuccessToast({
         intent: 'move',
@@ -131,7 +134,10 @@ describe('moveMoneySuccessToast', () => {
         from: { label: 'Vacation', balance: null },
         to: { label: 'Fun', balance: 20 },
         formatMoney,
-      }).detail,
-    ).toEqual(['Fun: $20.00 → $25.00'])
+      }).sides,
+    ).toEqual([
+      { label: 'Vacation', delta: -5, before: null, after: null },
+      { label: 'Fun', delta: 5, before: 20, after: 25 },
+    ])
   })
 })

@@ -3,6 +3,7 @@ import {
   HISTORY_FLOAT_LABEL,
   type HistoryBalanceTxRow,
 } from '@/lib/historyBalanceLine'
+import { type TransferTone } from '@/features/history/historyBalanceLayout'
 
 export type HistoryBalanceSide = {
   label: string
@@ -271,8 +272,16 @@ export function transferAmountAccentClass(accent: TransferAmountAccent): string 
   }
 }
 
-/** Rose when balance fell, emerald when it rose. */
-export function balanceTrailArrowClass(delta: number): string {
+/** Rose when balance fell, emerald when it rose. Brighter shades on the emerald toast. */
+export function balanceTrailArrowClass(
+  delta: number,
+  tone: TransferTone = 'surface',
+): string {
+  if (tone === 'success') {
+    if (delta < 0) return 'text-rose-300'
+    if (delta > 0) return 'text-emerald-300'
+    return 'text-emerald-200/70'
+  }
   if (delta < 0) return 'text-rose-400'
   if (delta > 0) return 'text-emerald-400'
   return 'text-zinc-500'
