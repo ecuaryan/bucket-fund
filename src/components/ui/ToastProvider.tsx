@@ -90,8 +90,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             }
           >
             <div className="min-w-0 flex-1">
-              <p className="font-medium leading-snug">{item.message}</p>
-              {item.content ? <div className="mt-2">{item.content}</div> : null}
+              {/* With rich content the headline is redundant on screen but still
+                  announced — keep it sr-only so the live region reads the verb. */}
+              <p className={item.content ? 'sr-only' : 'font-medium leading-snug'}>
+                {item.message}
+              </p>
+              {item.content ? <div>{item.content}</div> : null}
             </div>
             <button
               type="button"
