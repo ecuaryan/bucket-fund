@@ -57,7 +57,10 @@ export function BalanceBeforeAfter({
       ? `+ ${formatMoney(delta)}`
       : `− ${formatMoney(Math.abs(delta))}`
   const beforeClass = tone === 'success' ? 'text-emerald-200/70' : 'text-zinc-500'
-  const afterClass = tone === 'success' ? 'text-emerald-50' : 'text-zinc-400'
+  // On the success toast, the destination (right) balance pulses as the amount
+  // lands. The right column is the move target; History (surface) never pulses.
+  const landClass = tone === 'success' && align === 'right' ? 'move-transfer-land' : ''
+  const afterClass = `${tone === 'success' ? 'text-emerald-50' : 'text-zinc-400'} ${landClass}`.trim()
 
   return (
     <p

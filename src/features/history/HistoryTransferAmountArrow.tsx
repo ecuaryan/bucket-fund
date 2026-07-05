@@ -33,13 +33,15 @@ export function HistoryTransferAmountArrow({
   tone = 'surface',
 }: HistoryTransferAmountArrowProps) {
   const label = formatMoney(amount)
+  // Only the success (toast) tone springs in; History stays still.
+  const motion = tone === 'success' ? 'move-transfer-amount' : ''
 
   return (
     <span
       className={
         spanRows
-          ? `inline-flex h-6 w-auto min-w-[4.5rem] max-w-full items-center justify-center py-0 pl-2 pr-3.5 text-base leading-none ${arrowShape(tone)} ${transferAmountClass(tone)}`
-          : `inline-flex h-6 shrink-0 items-center py-0 pl-2 pr-3.5 text-base leading-none ${arrowShape(tone)} ${transferAmountClass(tone)}`
+          ? `inline-flex h-6 w-auto min-w-[4.5rem] max-w-full items-center justify-center py-0 pl-2 pr-3.5 text-base leading-none ${arrowShape(tone)} ${transferAmountClass(tone)} ${motion}`
+          : `inline-flex h-6 shrink-0 items-center py-0 pl-2 pr-3.5 text-base leading-none ${arrowShape(tone)} ${transferAmountClass(tone)} ${motion}`
       }
       role="img"
       aria-label={`Transfer ${label}`}

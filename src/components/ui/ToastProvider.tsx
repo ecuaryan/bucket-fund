@@ -80,6 +80,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           aria-live={item.type === 'error' ? 'assertive' : 'polite'}
         >
           <div
+            key={item.id}
             role={item.type === 'error' ? 'alert' : 'status'}
             className={
               'toast-panel pointer-events-auto flex w-full max-w-md items-start gap-2.5 rounded-xl px-3.5 py-3 text-sm shadow-2xl ring-2 backdrop-blur-md ' +
