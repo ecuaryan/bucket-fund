@@ -1,6 +1,19 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { TOAST_DISMISS_LABEL } from '@/lib/brand'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react'
+import {
+  TOAST_DISMISS_LABEL,
+  TOAST_PAUSE_LABEL,
+  TOAST_RESUME_LABEL,
+} from '@/lib/brand'
 import { TOAST_AUTO_DISMISS_MS, TOAST_EXIT_MS } from '@/lib/toastDismiss'
+import { pausableTimeout, type PausableTimeout } from '@/lib/pausableTimeout'
 import {
   registerToastPublisher,
   type ToastPayload,
@@ -13,49 +26,100 @@ type ToastState = {
   exiting: boolean
 }
 
+/** Past this fraction of the panel width (or the px floor), a swipe dismisses. */
+const SWIPE_DISMISS_FRACTION = 0.28
+const SWIPE_DISMISS_MIN_PX = 80
+/** Snap-back / fling-out transition; also how long the swiped panel lingers. */
+const SWIPE_SETTLE_MS = 220
+
+function PauseIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4" aria-hidden>
+      <rect x="4" y="3" width="3" height="10" rx="1" />
+      <rect x="9" y="3" width="3" height="10" rx="1" />
+    </svg>
+  )
+}
+
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4" aria-hidden>
+      <path d="M5 3.5v9a.5.5 0 0 0 .77.42l7-4.5a.5.5 0 0 0 0-.84l-7-4.5A.5.5 0 0 0 5 3.5Z" />
+    </svg>
+  )
+}
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<ToastState | null>(null)
   const idRef = useRef(0)
-  const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const timerRef = useRef<PausableTimeout | null>(null)
   const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const panelRef = useRef<HTMLDivElement | null>(null)
+
+  // Why the auto-dismiss is currently held. The countdown (and its progress
+  // bar) run only when none of these are set. Hovering gives mouse users a
+  // passive hold; the explicit button gives everyone (incl. touch) a sticky
+  // one; a swipe holds mid-drag.
+  const [userPaused, setUserPaused] = useState(false)
+  const [hovering, setHovering] = useState(false)
+
+  // Swipe-to-dismiss drag state.
+  const [dragDx, setDragDx] = useState(0)
+  const [dragging, setDragging] = useState(false)
+  const [settling, setSettling] = useState(false)
+  const dragStartXRef = useRef(0)
+  const [panelWidth, setPanelWidth] = useState(360)
+  const activePointerRef = useRef<number | null>(null)
+
+  const item = toast?.item ?? null
+  const isAuto = item?.dismiss === 'auto'
+  const paused = userPaused || hovering || dragging
 
   const clearTimers = useCallback(() => {
-    if (autoTimerRef.current) {
-      clearTimeout(autoTimerRef.current)
-      autoTimerRef.current = null
-    }
+    timerRef.current?.cancel()
+    timerRef.current = null
     if (exitTimerRef.current) {
       clearTimeout(exitTimerRef.current)
       exitTimerRef.current = null
     }
   }, [])
 
+  const remove = useCallback(() => {
+    setToast(null)
+    setDragDx(0)
+    setDragging(false)
+    setSettling(false)
+  }, [])
+
   const dismiss = useCallback(() => {
-    if (autoTimerRef.current) {
-      clearTimeout(autoTimerRef.current)
-      autoTimerRef.current = null
-    }
+    timerRef.current?.cancel()
+    timerRef.current = null
     setToast((current) => {
       if (!current || current.exiting) return current
       if (exitTimerRef.current) clearTimeout(exitTimerRef.current)
       exitTimerRef.current = setTimeout(() => {
-        setToast(null)
+        remove()
         exitTimerRef.current = null
       }, TOAST_EXIT_MS)
       return { ...current, exiting: true }
     })
-  }, [])
+  }, [remove])
 
   const show = useCallback(
     (next: ToastPayload) => {
       clearTimers()
+      setUserPaused(false)
+      setHovering(false)
+      setDragDx(0)
+      setDragging(false)
+      setSettling(false)
+      activePointerRef.current = null
       const id = ++idRef.current
       setToast({ item: { ...next, id }, exiting: false })
       if (next.dismiss === 'auto') {
-        autoTimerRef.current = setTimeout(() => {
-          autoTimerRef.current = null
-          dismiss()
-        }, TOAST_AUTO_DISMISS_MS)
+        const timer = pausableTimeout(TOAST_AUTO_DISMISS_MS, dismiss)
+        timerRef.current = timer
+        timer.resume() // no holds at first show
       }
     },
     [clearTimers, dismiss],
@@ -69,46 +133,150 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     }
   }, [show, clearTimers])
 
-  const item = toast?.item ?? null
+  // Keep the live countdown in lockstep with the progress bar's freeze state.
+  useEffect(() => {
+    const timer = timerRef.current
+    if (!timer) return
+    if (paused) timer.pause()
+    else timer.resume()
+  }, [paused])
+
+  // ----- swipe-to-dismiss -----
+  const flingOut = useCallback(
+    (direction: 1 | -1, width: number) => {
+      timerRef.current?.cancel()
+      timerRef.current = null
+      setSettling(true)
+      setDragDx(direction * (width + 140))
+      if (exitTimerRef.current) clearTimeout(exitTimerRef.current)
+      exitTimerRef.current = setTimeout(() => {
+        remove()
+        exitTimerRef.current = null
+      }, SWIPE_SETTLE_MS)
+    },
+    [remove],
+  )
+
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return
+    if ((e.target as HTMLElement).closest('button')) return
+    if (toast?.exiting || settling) return
+    activePointerRef.current = e.pointerId
+    dragStartXRef.current = e.clientX
+    setPanelWidth(e.currentTarget.offsetWidth)
+    setDragging(true)
+    setSettling(false)
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!dragging || e.pointerId !== activePointerRef.current) return
+    setDragDx(e.clientX - dragStartXRef.current)
+  }
+
+  const endDrag = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerId !== activePointerRef.current) return
+    activePointerRef.current = null
+    setDragging(false)
+    const dx = e.clientX - dragStartXRef.current
+    const width = e.currentTarget.offsetWidth
+    const threshold = Math.max(
+      SWIPE_DISMISS_MIN_PX,
+      width * SWIPE_DISMISS_FRACTION,
+    )
+    if (Math.abs(dx) > threshold) {
+      flingOut(dx > 0 ? 1 : -1, width)
+    } else {
+      setSettling(true)
+      setDragDx(0)
+      window.setTimeout(() => setSettling(false), SWIPE_SETTLE_MS)
+    }
+  }
+
+  if (!item) return <>{children}</>
+
+  const isError = item.type === 'error'
+  const dragOpacity = 1 - Math.min(1, Math.abs(dragDx) / (panelWidth * 0.9))
+  const dragActive = dragging || settling || dragDx !== 0
+  const dragStyle: CSSProperties | undefined = dragActive
+    ? {
+        transform: `translateX(${dragDx}px)`,
+        opacity: dragOpacity,
+        transition: settling
+          ? `transform ${SWIPE_SETTLE_MS}ms ease, opacity ${SWIPE_SETTLE_MS}ms ease`
+          : 'none',
+      }
+    : undefined
 
   return (
     <>
       {children}
-      {item ? (
+      <div
+        className="toast-viewport pointer-events-none fixed inset-x-0 z-[60] flex justify-center px-4"
+        aria-live={isError ? 'assertive' : 'polite'}
+      >
         <div
-          className="toast-viewport pointer-events-none fixed inset-x-0 z-[60] flex justify-center px-4"
-          aria-live={item.type === 'error' ? 'assertive' : 'polite'}
+          key={item.id}
+          ref={panelRef}
+          role={isError ? 'alert' : 'status'}
+          style={{ touchAction: 'pan-y', ...dragStyle }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onPointerEnter={(e) => e.pointerType === 'mouse' && setHovering(true)}
+          onPointerLeave={(e) => e.pointerType === 'mouse' && setHovering(false)}
+          className={
+            'toast-panel pointer-events-auto relative flex w-full max-w-md select-none items-start gap-2 rounded-xl px-3.5 py-3 text-sm shadow-2xl ring-2 backdrop-blur-md ' +
+            (isAuto ? 'pb-4 ' : '') +
+            (toast?.exiting ? 'toast-panel-exit ' : '') +
+            (isError
+              ? 'bg-red-950/88 text-red-50 ring-red-400/60'
+              : 'bg-emerald-950/88 text-emerald-50 ring-emerald-400/60')
+          }
         >
-          <div
-            key={item.id}
-            role={item.type === 'error' ? 'alert' : 'status'}
-            className={
-              'toast-panel pointer-events-auto flex w-full max-w-md items-start gap-2.5 rounded-xl px-3.5 py-3 text-sm shadow-2xl ring-2 backdrop-blur-md ' +
-              (toast?.exiting ? 'toast-panel-exit ' : '') +
-              (item.type === 'success'
-                ? 'bg-emerald-950/88 text-emerald-50 ring-emerald-400/60'
-                : 'bg-red-950/88 text-red-50 ring-red-400/60')
-            }
-          >
-            <div className="min-w-0 flex-1">
-              {/* With rich content the headline is redundant on screen but still
-                  announced — keep it sr-only so the live region reads the verb. */}
-              <p className={item.content ? 'sr-only' : 'font-medium leading-snug'}>
-                {item.message}
-              </p>
-              {item.content ? <div>{item.content}</div> : null}
-            </div>
+          <div className="min-w-0 flex-1">
+            {/* With rich content the headline is redundant on screen but still
+                announced — keep it sr-only so the live region reads the verb. */}
+            <p className={item.content ? 'sr-only' : 'font-medium leading-snug'}>
+              {item.message}
+            </p>
+            {item.content ? <div>{item.content}</div> : null}
+          </div>
+
+          {isAuto ? (
             <button
               type="button"
-              onClick={dismiss}
-              className="shrink-0 rounded p-0.5 text-lg leading-none text-zinc-400 transition hover:bg-white/10 hover:text-zinc-200"
-              aria-label={TOAST_DISMISS_LABEL}
+              onClick={() => setUserPaused((p) => !p)}
+              className="shrink-0 rounded p-1 leading-none text-zinc-400 transition hover:bg-white/10 hover:text-zinc-200"
+              aria-label={userPaused ? TOAST_RESUME_LABEL : TOAST_PAUSE_LABEL}
+              aria-pressed={userPaused}
             >
-              ×
+              {userPaused ? <PlayIcon /> : <PauseIcon />}
             </button>
-          </div>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={dismiss}
+            className="shrink-0 rounded p-0.5 text-lg leading-none text-zinc-400 transition hover:bg-white/10 hover:text-zinc-200"
+            aria-label={TOAST_DISMISS_LABEL}
+          >
+            ×
+          </button>
+
+          {isAuto ? (
+            <span
+              className="toast-progress absolute inset-x-3 bottom-1.5 h-0.5 origin-left rounded-full bg-emerald-300/60"
+              style={{
+                animationDuration: `${TOAST_AUTO_DISMISS_MS}ms`,
+                animationPlayState: paused ? 'paused' : 'running',
+              }}
+              aria-hidden
+            />
+          ) : null}
         </div>
-      ) : null}
+      </div>
     </>
   )
 }

@@ -370,6 +370,8 @@ export function manualSourceRemovedSuccess(label: string): string {
 }
 
 export const TOAST_DISMISS_LABEL = 'Dismiss'
+export const TOAST_PAUSE_LABEL = 'Pause auto-dismiss'
+export const TOAST_RESUME_LABEL = 'Resume auto-dismiss'
 
 export const HISTORY_NOTE_SAVED = 'Note saved.'
 

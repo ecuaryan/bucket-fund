@@ -228,6 +228,23 @@ html {
     }
   }
 
+  /* Auto-dismiss countdown bar. Functional feedback (how long is left), so it
+     animates regardless of the motion preference — its play state freezes with
+     the timer when the toast is hovered, focused, dragged, or paused. */
+  .toast-progress {
+    animation: toast-progress linear both;
+    transform-origin: left center;
+  }
+
+  @keyframes toast-progress {
+    from {
+      transform: scaleX(1);
+    }
+    to {
+      transform: scaleX(0);
+    }
+  }
+
   @keyframes move-transfer-amount-in {
     from {
       opacity: 0;
