@@ -17,6 +17,41 @@ export type BuildNavTabsArgs = {
   isAdmin: boolean
 }
 
+function sameNavFlags(a: BuildNavTabsArgs, b: BuildNavTabsArgs): boolean {
+  return (
+    a.showGiveNav === b.showGiveNav &&
+    a.showKidsNav === b.showKidsNav &&
+    a.isAdmin === b.isAdmin
+  )
+}
+
+/**
+ * The nav flags come from `auth.member`, which briefly resets to null during a
+ * session revalidation (applySession → memberLoading). That would collapse the
+ * tab set — dropping the Admin and Kids/Give tabs — and reshuffle the bar
+ * (Buckets jumps between centered and leading). These two helpers hold the last
+ * resolved flags across that blink so the tab bar stays put.
+ */
+
+/** The flags to actually render: the held set while revalidating, else current. */
+export function stableNavFlags(
+  current: BuildNavTabsArgs,
+  held: BuildNavTabsArgs,
+  revalidating: boolean,
+): BuildNavTabsArgs {
+  return revalidating ? held : current
+}
+
+/** The next held set: frozen while revalidating, otherwise tracks current. */
+export function nextHeldNavFlags(
+  held: BuildNavTabsArgs,
+  current: BuildNavTabsArgs,
+  revalidating: boolean,
+): BuildNavTabsArgs {
+  if (revalidating) return held
+  return sameNavFlags(held, current) ? held : current
+}
+
 /**
  * Order bottom-nav tabs: Buckets centered when odd count, leading when even (4).
  * Side tabs keep a stable priority — Kids/Give, History, then Settings, Admin.
