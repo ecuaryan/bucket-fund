@@ -145,6 +145,24 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, [paused])
 
   // ----- swipe-to-dismiss -----
+  // While OUR drag owns the gesture, consume the touchmove stream. Otherwise
+  // Chrome's native recognizer classifies a fast horizontal swipe as a fling
+  // and swallows the next tap (~200ms) as "stop the fling" — pointerdown/up
+  // fire but no click, so the first tap after a swipe-dismiss goes dead.
+  // Attached natively: React root touch listeners are passive, so a React
+  // onTouchMove could not preventDefault. Vertical scrolls never set
+  // draggingRef (the slop check is horizontal), so page scroll from the
+  // toast stays native.
+  useEffect(() => {
+    const panel = panelRef.current
+    if (!panel) return
+    const onTouchMove = (e: TouchEvent) => {
+      if (draggingRef.current) e.preventDefault()
+    }
+    panel.addEventListener('touchmove', onTouchMove, { passive: false })
+    return () => panel.removeEventListener('touchmove', onTouchMove)
+  }, [item?.id])
+
   const flingOut = useCallback(
     (direction: 1 | -1, width: number) => {
       timerRef.current?.cancel()
