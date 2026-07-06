@@ -77,6 +77,61 @@ describe('ToastProvider keeps children mounted across the toast lifecycle', () =
     expect(counters.appMounts).toBe(1)
   })
 
+  it('consumes touchmove only while a swipe drag is active', () => {
+    // Without this, Chrome classifies a fast swipe-dismiss as a native fling
+    // and swallows the next tap (~200ms) — pointerdown/up fire but no click.
+    const proto = Element.prototype as unknown as Record<string, unknown>
+    proto.setPointerCapture ??= () => {}
+    proto.releasePointerCapture ??= () => {}
+    proto.hasPointerCapture ??= () => false
+
+    act(() => {
+      root.render(
+        <ToastProvider>
+          <Sibling />
+          <FakeApp />
+        </ToastProvider>,
+      )
+    })
+    act(() => {
+      toast.success('Moved $5')
+    })
+    const panel = host.querySelector('.toast-panel')!
+
+    const firePointer = (type: string, x: number) => {
+      const ev = new Event(type, { bubbles: true, cancelable: true })
+      Object.assign(ev, {
+        pointerId: 1,
+        pointerType: 'touch',
+        button: 0,
+        clientX: x,
+        clientY: 0,
+      })
+      act(() => {
+        panel.dispatchEvent(ev)
+      })
+    }
+    const fireTouchMove = () => {
+      const ev = new Event('touchmove', { bubbles: true, cancelable: true })
+      act(() => {
+        panel.dispatchEvent(ev)
+      })
+      return ev.defaultPrevented
+    }
+
+    // Idle: vertical page scroll from the toast must stay native.
+    expect(fireTouchMove()).toBe(false)
+
+    // Horizontal drag past the slop: our gesture owns the touch stream.
+    firePointer('pointerdown', 100)
+    firePointer('pointermove', 140)
+    expect(fireTouchMove()).toBe(true)
+
+    // Drag released: back to native.
+    firePointer('pointerup', 140)
+    expect(fireTouchMove()).toBe(false)
+  })
+
   it('keeps children mounted across repeated toast cycles', () => {
     act(() => {
       root.render(
