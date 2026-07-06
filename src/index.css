@@ -185,8 +185,12 @@ html {
   }
 
   @media (prefers-reduced-motion: no-preference) {
+    /* `backwards`, not `both`: a forwards fill would keep the animation
+       owning `transform` after it ends, overriding the inline translateX the
+       swipe-to-dismiss drag sets. backwards still primes the from-state so
+       there is no entrance flash. */
     .toast-panel {
-      animation: toast-in 180ms ease both;
+      animation: toast-in 180ms ease backwards;
     }
 
     .toast-panel-exit {
