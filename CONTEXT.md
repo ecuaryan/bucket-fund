@@ -447,6 +447,21 @@ scheduled **Give to a kid** (`give_money` via a future Auto-bucket `give` kind),
 
 ---
 
+### Feature flags (shipped — plumbing only)
+
+**Owner-controlled, per-household feature flags** so the app owner can enable an
+in-progress feature for a **single household** without shipping it to everyone.
+Not an in-app admin toggle: the owner sets a row directly in Supabase (service
+role); the client only **reads** flags. Per household (`family_id`), **default
+off** (no row → registry default), so other households are unaffected. Table
+`feature_flags` (migration `82`): whole family may `SELECT`; no authenticated
+writes (mirrors `teller_events`). Registry + `useFeatureFlag` in
+`src/lib/featureFlags.ts` / `src/hooks/FeatureFlagsProvider.tsx`. The `bitcoin`
+flag is registered (off) but **not yet consumed** — it will gate future Bitcoin
+features for kids. Full spec: [docs/FEATURE_FLAGS.md](./docs/FEATURE_FLAGS.md).
+
+---
+
 ### Out of Scope (defer these)
 - Push notifications
 - Transaction history free-text search (the gives/takes and per-bucket filters shipped)

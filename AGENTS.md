@@ -24,6 +24,11 @@ Entry point for AI coding agents (and humans) working in this repo.
 7. **[docs/BRAND.md](./docs/BRAND.md)** — product voice, Unbucketed terminology,
    and the full **Product narrative** (word-for-word). User-facing strings live in
    `src/lib/brand.ts`.
+8. **[docs/FEATURE_FLAGS.md](./docs/FEATURE_FLAGS.md)** — **feature flags**:
+   owner-controlled, per-household, read-only in the client. How to add a flag
+   (registry in `src/lib/featureFlags.ts`), read one (`useFeatureFlag`), and
+   enable one for a household via Supabase. The `bitcoin` flag is registered but
+   not yet consumed.
 
 ## Operating principles for this codebase
 
