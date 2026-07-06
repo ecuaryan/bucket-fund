@@ -237,7 +237,8 @@ html {
      the timer when the toast is hovered, focused, dragged, or paused. */
   .toast-progress {
     animation: toast-progress linear both;
-    transform-origin: left center;
+    /* Anchored right: the bar drains from the left as time runs out. */
+    transform-origin: right center;
   }
 
   @keyframes toast-progress {

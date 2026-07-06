@@ -29,6 +29,8 @@ type ToastState = {
 /** Past this fraction of the panel width (or the px floor), a swipe dismisses. */
 const SWIPE_DISMISS_FRACTION = 0.28
 const SWIPE_DISMISS_MIN_PX = 80
+/** A press only becomes a drag past this much movement — a tap never captures. */
+const SWIPE_SLOP_PX = 6
 /** Snap-back / fling-out transition; also how long the swiped panel lingers. */
 const SWIPE_SETTLE_MS = 220
 
@@ -70,6 +72,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const dragStartXRef = useRef(0)
   const [panelWidth, setPanelWidth] = useState(360)
   const activePointerRef = useRef<number | null>(null)
+  const draggingRef = useRef(false)
 
   const item = toast?.item ?? null
   const isAuto = item?.dismiss === 'auto'
@@ -157,26 +160,39 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [remove],
   )
 
+  // A press only arms a potential drag; it does not capture the pointer or
+  // start dragging until the finger actually moves past the slop. This keeps a
+  // plain tap a plain tap — no pointer capture that could swallow the next tap.
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return
     if ((e.target as HTMLElement).closest('button')) return
     if (toast?.exiting || settling) return
     activePointerRef.current = e.pointerId
     dragStartXRef.current = e.clientX
+    draggingRef.current = false
     setPanelWidth(e.currentTarget.offsetWidth)
-    setDragging(true)
-    setSettling(false)
-    e.currentTarget.setPointerCapture(e.pointerId)
   }
 
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!dragging || e.pointerId !== activePointerRef.current) return
-    setDragDx(e.clientX - dragStartXRef.current)
+    if (e.pointerId !== activePointerRef.current) return
+    const dx = e.clientX - dragStartXRef.current
+    if (!draggingRef.current) {
+      if (Math.abs(dx) < SWIPE_SLOP_PX) return
+      draggingRef.current = true
+      setDragging(true)
+      e.currentTarget.setPointerCapture(e.pointerId)
+    }
+    setDragDx(dx)
   }
 
   const endDrag = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.pointerId !== activePointerRef.current) return
     activePointerRef.current = null
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    }
+    if (!draggingRef.current) return // never moved — it was a tap, leave it be
+    draggingRef.current = false
     setDragging(false)
     const dx = e.clientX - dragStartXRef.current
     const width = e.currentTarget.offsetWidth
@@ -267,7 +283,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
           {isAuto ? (
             <span
-              className="toast-progress absolute inset-x-3 bottom-1.5 h-0.5 origin-left rounded-full bg-emerald-300/60"
+              className="toast-progress absolute inset-x-3 bottom-1.5 h-0.5 origin-right rounded-full bg-emerald-300/60"
               style={{
                 animationDuration: `${TOAST_AUTO_DISMISS_MS}ms`,
                 animationPlayState: paused ? 'paused' : 'running',
