@@ -172,6 +172,36 @@ export async function insertBucket(
   return data.id
 }
 
+export async function enableFeatureFlag(
+  familyId: string,
+  key: string,
+): Promise<void> {
+  const svc = serviceClient()
+  const { error } = await svc
+    .from('feature_flags')
+    .upsert(
+      { family_id: familyId, key, enabled: true },
+      { onConflict: 'family_id,key' },
+    )
+  if (error) throw error
+}
+
+export async function insertBitcoinEntry(
+  svc: Db,
+  familyId: string,
+  childMemberId: string,
+  entry: { purchasedOn: string; usdAmount: number; btcAmount: number },
+): Promise<void> {
+  const { error } = await svc.from('bitcoin_entries').insert({
+    family_id: familyId,
+    child_member_id: childMemberId,
+    purchased_on: entry.purchasedOn,
+    usd_amount: entry.usdAmount,
+    btc_amount: entry.btcAmount,
+  })
+  if (error) throw error
+}
+
 export async function moveMoney(
   client: Db,
   args: {

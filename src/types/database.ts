@@ -281,6 +281,54 @@ export type Database = {
           },
         ]
       }
+      bitcoin_entries: {
+        Row: {
+          btc_amount: number
+          child_member_id: string
+          created_at: string
+          family_id: string
+          id: string
+          purchased_on: string
+          updated_at: string
+          usd_amount: number
+        }
+        Insert: {
+          btc_amount: number
+          child_member_id: string
+          created_at?: string
+          family_id: string
+          id?: string
+          purchased_on: string
+          updated_at?: string
+          usd_amount: number
+        }
+        Update: {
+          btc_amount?: number
+          child_member_id?: string
+          created_at?: string
+          family_id?: string
+          id?: string
+          purchased_on?: string
+          updated_at?: string
+          usd_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bitcoin_entries_child_member_id_fkey"
+            columns: ["child_member_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bitcoin_entries_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       buckets: {
         Row: {
           allocated_amount: number

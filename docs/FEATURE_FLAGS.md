@@ -5,8 +5,8 @@ them to everyone.
 
 **Status:** **Shipped (v1, plumbing only)** — migration `00000000000082`,
 `src/lib/featureFlags.ts` (registry), `src/hooks/FeatureFlagsProvider.tsx`.
-The inaugural `bitcoin` flag is registered (default **off**) but has **no
-consumer yet** — the Bitcoin features for kids will be the first thing to read it.
+The inaugural `bitcoin` flag is registered (default **off**) and now gates the
+Bitcoin tracking feature — see [BITCOIN.md](BITCOIN.md).
 
 **Related:** [CONTEXT.md](../CONTEXT.md), the `teller_events` read-only pattern,
 `src/hooks/GiveRecipientsProvider.tsx` (the provider it mirrors).

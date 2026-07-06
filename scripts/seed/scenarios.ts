@@ -19,7 +19,9 @@ import {
   addSeedTellerAccounts,
   assignAccountOwner,
   createSeedAdmin,
+  enableFeatureFlag,
   getJoinCode,
+  insertBitcoinEntry,
   insertBucket,
   moveMoney,
   giveMoney,
@@ -41,6 +43,7 @@ export const SCENARIO_IDS = [
   'many-buckets',
   'history',
   'shared-only',
+  'bitcoin',
   'golden',
   PWA_SCREENSHOT_SCENARIO_ID,
   PWA_DEMO_GIF_SCENARIO_ID,
@@ -108,6 +111,11 @@ export function listScenarios(): { id: SeedTarget; description: string }[] {
       description: 'Admin + shared member (PIN 0000), no kid — member sign-in and Send rules',
     },
     {
+      id: 'bitcoin',
+      description:
+        'Bitcoin flag on — kids with BTC entries (Kids-page section, kid Bitcoin tab)',
+    },
+    {
       id: 'golden',
       description:
         'R + S + 5 kids (PIN 0000), six linked bank accounts ($25k each), 30 emoji buckets',
@@ -155,6 +163,8 @@ export async function seedScenario(id: ScenarioId): Promise<SeedResult> {
       return seedHistory(id)
     case 'shared-only':
       return seedSharedOnly(id)
+    case 'bitcoin':
+      return seedBitcoin(id)
     case 'golden':
       return seedGolden(id)
     case PWA_SCREENSHOT_SCENARIO_ID:
@@ -542,6 +552,60 @@ async function seedPwaScreenshots(id: ScenarioId): Promise<SeedResult> {
       'Kids tab has both "No linked account" and "Linked accounts" sections populated.',
       'Kids and History tabs have sample activity for install screenshots.',
       `Sign in at /login as ${admin.adminEmail}, then run npm run pwa:screenshots.`,
+    ],
+  }
+}
+
+async function seedBitcoin(id: ScenarioId): Promise<SeedResult> {
+  const admin = await createSeedAdmin('Seed · Bitcoin', seedAdminEmail(id))
+  const sam = await addSeedMember(admin.familyId, 'member', 'Sam', id)
+  const adri = await addSeedMember(admin.familyId, 'child', 'Adri', id)
+  const ty = await addSeedMember(admin.familyId, 'child', 'Ty', id)
+  const zac = await addSeedMember(admin.familyId, 'child', 'Zac', id)
+  await setMemberPin(sam.memberId)
+  await setMemberPin(adri.memberId)
+  await setMemberPin(ty.memberId)
+  await setMemberPin(zac.memberId)
+
+  await enableFeatureFlag(admin.familyId, 'bitcoin')
+
+  // Spreadsheet-like history: Adri has a mix of gains and losses, Ty has a
+  // single buy, Zac has none (his Bitcoin tab must stay hidden).
+  const svc = serviceClient()
+  const adriEntries = [
+    { purchasedOn: '2024-11-24', usdAmount: 20, btcAmount: 0.00020134 },
+    { purchasedOn: '2025-04-06', usdAmount: 10, btcAmount: 0.00012743 },
+    { purchasedOn: '2025-11-07', usdAmount: 15, btcAmount: 0.00014373 },
+    { purchasedOn: '2026-06-05', usdAmount: 10, btcAmount: 0.00016801 },
+  ]
+  for (const entry of adriEntries) {
+    await insertBitcoinEntry(svc, admin.familyId, adri.memberId, entry)
+  }
+  await insertBitcoinEntry(svc, admin.familyId, ty.memberId, {
+    purchasedOn: '2025-11-14',
+    usdAmount: 10,
+    btcAmount: 0.00010371,
+  })
+
+  const joinCode = await getJoinCode(admin.familyId)
+  return {
+    scenario: id,
+    familyName: 'Seed · Bitcoin',
+    admin,
+    joinCode,
+    members: [sam, adri, ty, zac],
+    pinMembers: [
+      { name: sam.name, pin: SEED_PIN },
+      { name: adri.name, pin: SEED_PIN },
+      { name: ty.name, pin: SEED_PIN },
+      { name: zac.name, pin: SEED_PIN },
+    ],
+    notes: [
+      'Bitcoin feature flag is ON for this household.',
+      'Kids page shows the Bitcoin section (Adri: 4 entries, Ty: 1, Zac: none).',
+      'Sam (shared member, PIN 0000) sees the section read-only — no Add/Edit/Delete.',
+      'Family login as Adri or Ty (PIN 0000) → Bitcoin tab on Buckets; Zac has no tab.',
+      `Sign in at /login as ${admin.adminEmail}.`,
     ],
   }
 }
