@@ -541,6 +541,7 @@ export type Database = {
           institution_id: string | null
           institution_name: string | null
           last_synced_at: string | null
+          refresh_claimed_at: string | null
           status: string
         }
         Insert: {
@@ -552,6 +553,7 @@ export type Database = {
           institution_id?: string | null
           institution_name?: string | null
           last_synced_at?: string | null
+          refresh_claimed_at?: string | null
           status?: string
         }
         Update: {
@@ -563,6 +565,7 @@ export type Database = {
           institution_id?: string | null
           institution_name?: string | null
           last_synced_at?: string | null
+          refresh_claimed_at?: string | null
           status?: string
         }
         Relationships: [
@@ -894,6 +897,7 @@ export type Database = {
           p_float_member_id: string
           p_from_member_id: string
           p_note: string
+          p_owner_member_id: string
           p_to_bucket_id: string
         }
         Returns: string
@@ -907,12 +911,13 @@ export type Database = {
           p_from_bucket_id: string
           p_from_member_id: string
           p_note: string
+          p_owner_member_id: string
           p_to_bucket_id: string
         }
         Returns: string
       }
       add_manual_account: {
-        Args: { p_amount: number; p_label: string; p_kind?: string }
+        Args: { p_amount: number; p_kind?: string; p_label: string }
         Returns: string
       }
       auth_family_id: { Args: never; Returns: string }
@@ -975,6 +980,13 @@ export type Database = {
         Args: { p_bucket_id: string }
         Returns: boolean
       }
+      claim_stale_enrollments: {
+        Args: { p_claim_ttl: string; p_limit: number; p_stale_before: string }
+        Returns: {
+          access_token: string
+          id: string
+        }[]
+      }
       client_float_balance_after: {
         Args: { p_transaction_id: string }
         Returns: number
@@ -998,20 +1010,20 @@ export type Database = {
       get_float_balance: { Args: never; Returns: number }
       get_home_balance_breakdown: { Args: never; Returns: Json }
       get_home_page_data: { Args: never; Returns: Json }
-      login_roster: { Args: { p_code: string }; Returns: Json }
-      login_webauthn_options: {
-        Args: { p_family_id: string; p_member_id: string }
-        Returns: Json
-      }
-      member_login_methods: {
-        Args: { p_family_id: string; p_member_id: string }
-        Returns: Json
-      }
       give_money: {
         Args: { p_amount: number; p_note?: string; p_to_member_id: string }
         Returns: string
       }
       is_cash_account_type: { Args: { p_type: string }; Returns: boolean }
+      is_credit_card_account_type: {
+        Args: { p_type: string }
+        Returns: boolean
+      }
+      login_roster: { Args: { p_code: string }; Returns: Json }
+      login_webauthn_options: {
+        Args: { p_family_id: string; p_member_id: string }
+        Returns: Json
+      }
       member_child_virtual_balance: {
         Args: { p_child_member_id: string }
         Returns: number
@@ -1020,6 +1032,14 @@ export type Database = {
       member_has_linked_account: {
         Args: { p_member_id: string }
         Returns: boolean
+      }
+      member_login_methods: {
+        Args: { p_family_id: string; p_member_id: string }
+        Returns: Json
+      }
+      member_session_lookup: {
+        Args: { p_family_id: string; p_member_id: string }
+        Returns: Json
       }
       move_money: {
         Args: {
@@ -1061,6 +1081,7 @@ export type Database = {
         Args: { p_transaction_id: string }
         Returns: boolean
       }
+      trigger_scheduled_balance_refresh: { Args: never; Returns: undefined }
       update_manual_account: {
         Args: { p_account_id: string; p_amount: number; p_label: string }
         Returns: undefined
