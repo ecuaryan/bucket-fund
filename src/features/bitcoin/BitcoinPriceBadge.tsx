@@ -1,4 +1,5 @@
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
+import { formatMoney } from '@/lib/formatMoney'
 import { formatRelativeTime } from '@/lib/relativeTime'
 import type { BtcPriceState } from './useBtcPrice'
 
@@ -7,15 +8,16 @@ const BITCOIN_ORANGE = '#F7931A'
 /**
  * The live BTC-USD spot price, shown prominently to both the admin section
  * and the kid tab. Degrades to a quiet "unavailable" note — never an error
- * that could distract from the rest of the page.
+ * that could distract from the rest of the page. Uses the plain money
+ * formatter (not the hide-amounts one): the market price is public data,
+ * not household money.
  */
 export default function BitcoinPriceBadge({
   price,
   fetchedAt,
   status,
   refresh,
-  formatMoney,
-}: BtcPriceState & { formatMoney: (amount: number) => string }) {
+}: BtcPriceState) {
   return (
     <div
       className="inline-flex items-center gap-2 rounded-full bg-[#F7931A]/10 py-1 pl-3 pr-1 ring-1 ring-[#F7931A]/30"
