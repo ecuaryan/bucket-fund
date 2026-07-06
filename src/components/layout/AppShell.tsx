@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { BrandLogo } from '@/components/BrandLogo'
 import BottomNav from '@/components/layout/BottomNav'
@@ -16,7 +16,30 @@ import {
   useGiveRecipients,
 } from '@/hooks/GiveRecipientsProvider'
 import { NAV_CENTER_MAIN_PB, APP_CHROME_Z_INDEX } from '@/components/layout/navLayout'
-import { buildNavTabs } from '@/components/layout/navTabs'
+import {
+  buildNavTabs,
+  nextHeldNavFlags,
+  stableNavFlags,
+  type BuildNavTabsArgs,
+} from '@/components/layout/navTabs'
+
+/**
+ * Hold the last resolved nav flags while the member is briefly revalidating, so
+ * a session refresh doesn't collapse the tab set and reshuffle the bottom bar.
+ */
+function useStableNavFlags(
+  current: BuildNavTabsArgs,
+  revalidating: boolean,
+): BuildNavTabsArgs {
+  const { showGiveNav, showKidsNav, isAdmin } = current
+  const [held, setHeld] = useState(current)
+  useEffect(() => {
+    setHeld((prev) =>
+      nextHeldNavFlags(prev, { showGiveNav, showKidsNav, isAdmin }, revalidating),
+    )
+  }, [revalidating, showGiveNav, showKidsNav, isAdmin])
+  return stableNavFlags(current, held, revalidating)
+}
 
 export default function AppShell() {
   // Provider hoists the give-recipient roster so the nav here and the History
@@ -45,7 +68,14 @@ function AppShellLayout() {
     'You'
   const isAdmin = member?.role === 'admin'
   const { showGiveNav, showKidsNav } = useGiveRecipients()
-  const navTabs = buildNavTabs({ showGiveNav, showKidsNav, isAdmin })
+  // During a session revalidation the member resets to null for a beat
+  // (applySession → memberLoading); freeze the tabs so the bar doesn't flicker.
+  const revalidating = auth.status === 'signedIn' && auth.memberLoading
+  const navFlags = useStableNavFlags(
+    { showGiveNav, showKidsNav, isAdmin },
+    revalidating,
+  )
+  const navTabs = buildNavTabs(navFlags)
 
   async function onSignOut() {
     setSigningOut(true)
