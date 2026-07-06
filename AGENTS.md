@@ -37,9 +37,11 @@ Entry point for AI coding agents (and humans) working in this repo.
   [CONTRIBUTING.md § Bump version](./CONTRIBUTING.md#bump-packagejson-version-on-every-pr).
 - **PR title includes the shipping version** — `v1.1.21: Short description`,
   matching the semver bumped in that PR (see CONTRIBUTING § Bump version).
-- **Enable auto-merge when shipping** — after `gh pr create`, run
-  `gh pr merge --auto --squash --delete-branch` so merge happens when CI is green
-  (see CONTRIBUTING § Branch workflow).
+- **Do not enable auto-merge by default.** Open the PR and leave it for the repo
+  owner to review and merge — merging to `main` promotes to production (Vercel +
+  Deploy Supabase), so a human stays in the loop on every ship. Only run
+  `gh pr merge --auto --squash --delete-branch` if the owner explicitly asks for
+  it on that PR (see CONTRIBUTING § Branch workflow).
 - **Realtime:** prefer narrow filters and route-scoped channels; app-shell watches
   (e.g. member removal) are fine — channels share one websocket per session. See
   [CONTEXT.md § Supabase Realtime](./CONTEXT.md#supabase-realtime).
