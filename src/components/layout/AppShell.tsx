@@ -15,6 +15,7 @@ import {
   GiveRecipientsProvider,
   useGiveRecipients,
 } from '@/hooks/GiveRecipientsProvider'
+import { FeatureFlagsProvider } from '@/hooks/FeatureFlagsProvider'
 import { NAV_CENTER_MAIN_PB, APP_CHROME_Z_INDEX } from '@/components/layout/navLayout'
 import {
   buildNavTabs,
@@ -47,7 +48,9 @@ export default function AppShell() {
   // hook instance loading its own copy.
   return (
     <GiveRecipientsProvider>
-      <AppShellLayout />
+      <FeatureFlagsProvider>
+        <AppShellLayout />
+      </FeatureFlagsProvider>
     </GiveRecipientsProvider>
   )
 }
