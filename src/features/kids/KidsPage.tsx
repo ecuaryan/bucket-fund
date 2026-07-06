@@ -33,6 +33,8 @@ import { fetchLinkedChildMemberIds } from '@/lib/give'
 import { toast } from '@/lib/toast'
 import { supabase } from '@/lib/supabase'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
+import { useFeatureFlag } from '@/hooks/FeatureFlagsProvider'
+import BitcoinKidsSection from '@/features/bitcoin/BitcoinKidsSection'
 import { useHideAmounts, usePeekTarget } from '@/lib/HideAmountsProvider'
 import type { Database } from '@/types/database'
 
@@ -69,6 +71,7 @@ export default function KidsPage() {
   const isAdult =
     member?.role === 'admin' || member?.role === 'member'
   const isAdmin = member?.role === 'admin'
+  const bitcoinEnabled = useFeatureFlag('bitcoin')
 
   const loadData = useCallback(async () => {
     if (!memberId || !isAdult) return
@@ -301,6 +304,14 @@ export default function KidsPage() {
             </Link>
           </div>
         </section>
+      ) : null}
+
+      {bitcoinEnabled && familyId ? (
+        <BitcoinKidsSection
+          kids={children.map((child) => ({ id: child.id, name: child.name }))}
+          isAdmin={isAdmin}
+          familyId={familyId}
+        />
       ) : null}
 
       {returnKid ? (

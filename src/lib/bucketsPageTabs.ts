@@ -4,7 +4,7 @@ import {
   NAV_BUCKETS_LABEL,
 } from '@/lib/brand'
 
-export type BucketsPageTab = 'buckets' | 'auto-bucket' | 'bank'
+export type BucketsPageTab = 'buckets' | 'auto-bucket' | 'bank' | 'bitcoin'
 
 export const BUCKETS_PAGE_TAB_PARAM = 'tab'
 
@@ -22,6 +22,12 @@ const ACCOUNT_TAB_OPTION: BucketsPageTabOption = {
   value: 'bank',
   label: BUCKETS_PAGE_TAB_ACCOUNT_LABEL,
 }
+// Flag-gated Bitcoin feature (docs/BITCOIN.md); label stays feature-local
+// rather than in brand.ts so removing the feature touches nothing else.
+const BITCOIN_TAB_OPTION: BucketsPageTabOption = {
+  value: 'bitcoin',
+  label: 'Bitcoin',
+}
 
 /**
  * Build the visible tab list. "Buckets" is always first; the optional tabs are
@@ -31,10 +37,12 @@ const ACCOUNT_TAB_OPTION: BucketsPageTabOption = {
 export function bucketsPageTabOptions(opts: {
   showAutoOrganize: boolean
   showAccount: boolean
+  showBitcoin?: boolean
 }): BucketsPageTabOption[] {
   const options: BucketsPageTabOption[] = [BUCKETS_TAB_OPTION]
   if (opts.showAutoOrganize) options.push(AUTO_ORGANIZE_TAB_OPTION)
   if (opts.showAccount) options.push(ACCOUNT_TAB_OPTION)
+  if (opts.showBitcoin) options.push(BITCOIN_TAB_OPTION)
   return options
 }
 
@@ -43,17 +51,19 @@ export function parseBucketsPageTab(
 ): BucketsPageTab {
   if (raw === 'auto-bucket') return 'auto-bucket'
   if (raw === 'bank') return 'bank'
+  if (raw === 'bitcoin') return 'bitcoin'
   return 'buckets'
 }
 
 /** Coerce URL tab to one that is available (otherwise → buckets). */
 export function resolveBucketsPageTab(
   raw: string | null | undefined,
-  available: { autoOrganize: boolean; account: boolean },
+  available: { autoOrganize: boolean; account: boolean; bitcoin?: boolean },
 ): BucketsPageTab {
   const parsed = parseBucketsPageTab(raw)
   if (parsed === 'auto-bucket' && !available.autoOrganize) return 'buckets'
   if (parsed === 'bank' && !available.account) return 'buckets'
+  if (parsed === 'bitcoin' && !available.bitcoin) return 'buckets'
   return parsed
 }
 

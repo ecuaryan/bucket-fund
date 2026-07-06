@@ -23,6 +23,10 @@ describe('parseBucketsPageTab', () => {
   it('parses bank', () => {
     expect(parseBucketsPageTab('bank')).toBe('bank')
   })
+
+  it('parses bitcoin', () => {
+    expect(parseBucketsPageTab('bitcoin')).toBe('bitcoin')
+  })
 })
 
 describe('resolveBucketsPageTab', () => {
@@ -49,6 +53,29 @@ describe('resolveBucketsPageTab', () => {
       resolveBucketsPageTab('bank', { autoOrganize: false, account: true }),
     ).toBe('bank')
   })
+
+  it('falls back to buckets when bitcoin tab is unavailable or unspecified', () => {
+    expect(
+      resolveBucketsPageTab('bitcoin', {
+        autoOrganize: false,
+        account: false,
+        bitcoin: false,
+      }),
+    ).toBe('buckets')
+    expect(
+      resolveBucketsPageTab('bitcoin', { autoOrganize: false, account: false }),
+    ).toBe('buckets')
+  })
+
+  it('keeps bitcoin when available', () => {
+    expect(
+      resolveBucketsPageTab('bitcoin', {
+        autoOrganize: false,
+        account: false,
+        bitcoin: true,
+      }),
+    ).toBe('bitcoin')
+  })
 })
 
 describe('bucketsPageTabOptions', () => {
@@ -69,6 +96,20 @@ describe('bucketsPageTabOptions', () => {
   it('includes only the bank tab for a linked child', () => {
     const opts = bucketsPageTabOptions({ showAutoOrganize: false, showAccount: true })
     expect(opts.map((o) => o.value)).toEqual(['buckets', 'bank'])
+  })
+
+  it('appends bitcoin last when enabled', () => {
+    const opts = bucketsPageTabOptions({
+      showAutoOrganize: true,
+      showAccount: true,
+      showBitcoin: true,
+    })
+    expect(opts.map((o) => o.value)).toEqual([
+      'buckets',
+      'auto-bucket',
+      'bank',
+      'bitcoin',
+    ])
   })
 })
 

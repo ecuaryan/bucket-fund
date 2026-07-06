@@ -121,6 +121,9 @@ import {
   BUCKETS_PAGE_TABS_ARIA_LABEL,
 } from '@/lib/brand'
 import BankAccountsTab from '@/features/accounts/BankAccountsTab'
+import BitcoinTab from '@/features/bitcoin/BitcoinTab'
+import { fetchOwnBitcoinEntryCount } from '@/lib/bitcoinData'
+import { useFeatureFlag } from '@/hooks/FeatureFlagsProvider'
 
 type Bucket = Database['public']['Tables']['buckets']['Row']
 type Account = Database['public']['Tables']['accounts']['Row']
@@ -159,6 +162,9 @@ export default function BucketsPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [autoOrganizeRefreshToken, setAutoOrganizeRefreshToken] = useState(0)
   const [autoOrganizeTabAvailable, setAutoOrganizeTabAvailable] = useState<
+    boolean | null
+  >(null)
+  const [bitcoinTabAvailable, setBitcoinTabAvailable] = useState<
     boolean | null
   >(null)
   const [autoOrganizePanelMounted, setAutoOrganizePanelMounted] = useState(
@@ -202,14 +208,23 @@ export default function BucketsPage() {
   // the one assigned to them — so this is the right set for everyone.
   const bankAccounts = (accounts ?? []).filter(isTellerAccount)
   const showAccountTab = bankAccounts.length > 0
-  const showBucketsPageTabs = showAutoOrganizeTab || showAccountTab
+  // Flag-gated Bitcoin feature (docs/BITCOIN.md): a kid gets the tab only
+  // once they have at least one entry. Availability resolves async and must
+  // never delay the page — null just means "hidden for now".
+  const bitcoinEnabled = useFeatureFlag('bitcoin')
+  const showBitcoinTab =
+    bitcoinEnabled && isChild && bitcoinTabAvailable === true
+  const showBucketsPageTabs =
+    showAutoOrganizeTab || showAccountTab || showBitcoinTab
   const bucketsTabOptions = bucketsPageTabOptions({
     showAutoOrganize: showAutoOrganizeTab,
     showAccount: showAccountTab,
+    showBitcoin: showBitcoinTab,
   })
   const activeTab = resolveBucketsPageTab(searchParams.get('tab'), {
     autoOrganize: showAutoOrganizeTab,
     account: showAccountTab,
+    bitcoin: showBitcoinTab,
   })
   const canCreateBuckets = isAdmin || isChild
   const canManageStructure = isAdmin || isChild
@@ -392,6 +407,25 @@ export default function BucketsPage() {
   ])
 
   useEffect(() => {
+    if (!bitcoinEnabled || !isChild || !familyId) {
+      setBitcoinTabAvailable(null)
+      return
+    }
+    let cancelled = false
+    fetchOwnBitcoinEntryCount()
+      .then((count) => {
+        if (!cancelled) setBitcoinTabAvailable(count > 0)
+      })
+      .catch(() => {
+        // A failed probe just hides the tab — never an error on this page.
+        if (!cancelled) setBitcoinTabAvailable(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [bitcoinEnabled, isChild, familyId])
+
+  useEffect(() => {
     if (!isAutoOrganizeAuthor && autoOrganizeTabAvailable === null) return
     const urlTab = parseBucketsPageTab(searchParams.get('tab'))
     // Don't strip ?tab=bank while accounts are still loading — the Bank tab
@@ -400,7 +434,10 @@ export default function BucketsPage() {
     // the Bank tab instead of bouncing to Buckets.
     const tabUnavailable =
       (urlTab === 'auto-bucket' && !showAutoOrganizeTab) ||
-      (urlTab === 'bank' && accounts !== null && !showAccountTab)
+      (urlTab === 'bank' && accounts !== null && !showAccountTab) ||
+      // Only strip ?tab=bitcoin after the availability probe resolves — while
+      // it's pending (or the flag is off) the tab just renders as Buckets.
+      (urlTab === 'bitcoin' && bitcoinTabAvailable === false)
     if (tabUnavailable) {
       setSearchParams(
         (prev) => applyBucketsPageTabToSearchParams(prev, 'buckets'),
@@ -410,6 +447,7 @@ export default function BucketsPage() {
   }, [
     accounts,
     autoOrganizeTabAvailable,
+    bitcoinTabAvailable,
     isAutoOrganizeAuthor,
     searchParams,
     setSearchParams,
@@ -991,6 +1029,17 @@ export default function BucketsPage() {
               active={activeTab === 'bank'}
             />
           </section>
+        </div>
+      ) : null}
+
+      {showBitcoinTab ? (
+        <div
+          role="tabpanel"
+          id="segmented-panel-bitcoin"
+          aria-labelledby="segmented-tab-bitcoin"
+          hidden={activeTab !== 'bitcoin'}
+        >
+          <BitcoinTab />
         </div>
       ) : null}
         </div>
