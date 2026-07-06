@@ -55,16 +55,19 @@ describe('feature_flags: read access', () => {
   })
 })
 
+// Writes are owner-only: there is no authenticated INSERT/UPDATE/DELETE policy,
+// so RLS grants a client zero rows to write. The authoritative check is the
+// persisted DB state via the service role — an RLS-denied UPDATE/DELETE reports
+// no error and simply affects 0 rows (mirrors accounts.test.ts "member cannot
+// reassign"), so we assert the effect, not the error signal.
 describe('feature_flags: writes are owner-only (service role)', () => {
   it('an admin cannot insert a flag from the client', async () => {
     const family = await createAdminFamily('ff-admin-insert-deny')
     const admin = await userClient(family.adminEmail, family.adminPassword)
 
-    const { error } = await admin
+    await admin
       .from('feature_flags')
       .insert({ family_id: family.familyId, key: 'bitcoin', enabled: true })
-    // No INSERT grant/policy for authenticated → permission denied.
-    expect(error).not.toBeNull()
 
     const svc = serviceClient()
     const { data } = await svc
@@ -79,12 +82,11 @@ describe('feature_flags: writes are owner-only (service role)', () => {
     await seedFlag(family.familyId, 'bitcoin', false)
     const admin = await userClient(family.adminEmail, family.adminPassword)
 
-    const { error } = await admin
+    await admin
       .from('feature_flags')
       .update({ enabled: true })
       .eq('family_id', family.familyId)
       .eq('key', 'bitcoin')
-    expect(error).not.toBeNull()
 
     const svc = serviceClient()
     const { data: row } = await svc
@@ -102,12 +104,11 @@ describe('feature_flags: writes are owner-only (service role)', () => {
     await seedFlag(family.familyId, 'bitcoin', false)
 
     const memberClient = await userClient(member.email, member.password)
-    const { error } = await memberClient
+    await memberClient
       .from('feature_flags')
       .update({ enabled: true })
       .eq('family_id', family.familyId)
       .eq('key', 'bitcoin')
-    expect(error).not.toBeNull()
 
     const svc = serviceClient()
     const { data: row } = await svc
@@ -125,11 +126,7 @@ describe('feature_flags: writes are owner-only (service role)', () => {
     const flagId = await seedFlag(family.familyId, 'bitcoin', true)
 
     const childClient = await userClient(child.email, child.password)
-    const { error } = await childClient
-      .from('feature_flags')
-      .delete()
-      .eq('id', flagId)
-    expect(error).not.toBeNull()
+    await childClient.from('feature_flags').delete().eq('id', flagId)
 
     const svc = serviceClient()
     const { data: row } = await svc
