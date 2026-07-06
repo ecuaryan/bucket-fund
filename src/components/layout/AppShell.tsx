@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { BrandLogo } from '@/components/BrandLogo'
 import BottomNav from '@/components/layout/BottomNav'
@@ -67,7 +67,7 @@ function AppShellLayout() {
         : null) ??
     'You'
   const isAdmin = member?.role === 'admin'
-  const { showGiveNav, showKidsNav } = useGiveRecipients()
+  const { showGiveNav, showKidsNav, giveReady, childCount } = useGiveRecipients()
   // During a session revalidation the member resets to null for a beat
   // (applySession → memberLoading); freeze the tabs so the bar doesn't flicker.
   const revalidating = auth.status === 'signedIn' && auth.memberLoading
@@ -76,6 +76,20 @@ function AppShellLayout() {
     revalidating,
   )
   const navTabs = buildNavTabs(navFlags)
+
+  // TEMP diagnostic (visible only with ?navdebug=1) — remove before merge.
+  const navDebugInfo = {
+    role: member?.role ?? 'null',
+    load: auth.status === 'signedIn' ? auth.memberLoading : '-',
+    err: auth.status === 'signedIn' ? auth.memberError : '-',
+    ready: giveReady,
+    kids: childCount,
+    rawKids: showKidsNav,
+    rawGive: showGiveNav,
+    admin: isAdmin,
+    reval: revalidating,
+    tabs: navTabs.length,
+  }
 
   async function onSignOut() {
     setSigningOut(true)
@@ -132,6 +146,49 @@ function AppShellLayout() {
       </main>
 
       <BottomNav tabs={navTabs} />
+      <NavDebugOverlay info={navDebugInfo} />
+    </div>
+  )
+}
+
+// TEMP diagnostic overlay — records each distinct nav-state so a fast flicker is
+// still captured. Visible only with ?navdebug=1 (or localStorage navdebug=1).
+// Remove before merging to prod.
+function NavDebugOverlay({ info }: { info: Record<string, unknown> }) {
+  const enabled =
+    typeof window !== 'undefined' &&
+    (new URLSearchParams(window.location.search).has('navdebug') ||
+      window.localStorage.getItem('navdebug') === '1')
+  const [lines, setLines] = useState<string[]>([])
+  const lastRef = useRef('')
+  const nRef = useRef(0)
+  const sig = JSON.stringify(info)
+  useEffect(() => {
+    if (!enabled || sig === lastRef.current) return
+    lastRef.current = sig
+    nRef.current += 1
+    setLines((prev) => [...prev.slice(-13), `${nRef.current}. ${sig}`])
+  }, [enabled, sig])
+  if (!enabled) return null
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999,
+        background: 'rgba(0,0,0,0.92)',
+        color: '#7fe0a8',
+        font: '11px/1.4 ui-monospace, monospace',
+        padding: '8px 10px',
+        whiteSpace: 'pre-wrap',
+        maxHeight: '44vh',
+        overflow: 'auto',
+        borderTop: '1px solid #333',
+      }}
+    >
+      {'nav-debug · do a money-move, read the flips ↓\n' + lines.join('\n')}
     </div>
   )
 }
