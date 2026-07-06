@@ -12,12 +12,12 @@ import { subscribeHouseholdRosterRefresh } from '@/lib/householdRosterRefresh'
 import {
   filterGiveRecipients,
   isLinkedChild,
+  rosterAfterFailedLoad,
   shouldShowKidsNav,
   shouldShowGiveNav,
   type GiveRecipientMember,
 } from '@/lib/giveRecipients'
-import { fetchLinkedChildMemberIds } from '@/lib/give'
-import { supabase } from '@/lib/supabase'
+import { fetchGiveRoster } from '@/lib/give'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 
 export type GiveRecipientsValue = {
@@ -51,12 +51,19 @@ function useGiveRecipientsState(): GiveRecipientsValue {
       setLinkedChildIds(new Set())
       return
     }
-    const [membersRes, linkedIds] = await Promise.all([
-      supabase.from('family_members').select('id, name, role'),
-      fetchLinkedChildMemberIds(),
-    ])
-    setMembers(membersRes.error ? [] : (membersRes.data ?? []))
-    setLinkedChildIds(linkedIds)
+    try {
+      const roster = await fetchGiveRoster()
+      setMembers(roster.members)
+      setLinkedChildIds(roster.linkedChildIds)
+    } catch (err) {
+      // This refetch runs on every `accounts` Realtime event — a money-move
+      // fires one right as its confirmation toast shows. A transient failure
+      // here used to wipe the roster to [], which dropped the Kids/Give tab,
+      // reordered Buckets, and made the bottom-nav bubble jump. Keep the last
+      // good roster instead; the next event or roster refresh reconciles it.
+      console.error('Give-recipient roster refresh failed; keeping last roster', err)
+      setMembers(rosterAfterFailedLoad)
+    }
   }, [member?.id])
 
   useEffect(() => {

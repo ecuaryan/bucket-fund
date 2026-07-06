@@ -68,9 +68,12 @@ function AppShellLayout() {
     'You'
   const isAdmin = member?.role === 'admin'
   const { showGiveNav, showKidsNav } = useGiveRecipients()
-  // During a session revalidation the member resets to null for a beat
-  // (applySession → memberLoading); freeze the tabs so the bar doesn't flicker.
-  const revalidating = auth.status === 'signedIn' && auth.memberLoading
+  // Any blink where the signed-in member is briefly unresolved — revalidation
+  // (memberLoading), a transient lookup failure (memberError), or an absent
+  // beat between the two — must not collapse the tab set. Gate on the member
+  // being null rather than memberLoading alone so every unresolved state
+  // freezes the tabs, whichever flags accompany it.
+  const revalidating = auth.status === 'signedIn' && member === null
   const navFlags = useStableNavFlags(
     { showGiveNav, showKidsNav, isAdmin },
     revalidating,
