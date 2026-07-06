@@ -57,6 +57,9 @@ Regenerate after significant UI changes ([docs/MAINTENANCE.md § PWA assets](./d
 - **Read-only bank link** — Teller Connect, webhooks, manual money sources and card balances for onboarding.
 - **Auto-bucket** — scheduled or on-demand rules to set aside into buckets (`pg_cron` on hosted).
 - **PWA** — offline fallback, service worker, install screenshots; session-scoped auth.
+- **Feature flags** — owner-controlled, per-household flags gate experimental features
+  to a single family without shipping them to everyone; read-only in the client, zero
+  cost for households without a flag ([docs/FEATURE_FLAGS.md](./docs/FEATURE_FLAGS.md)).
 - **Tests** — Vitest unit tests, database RLS/RPC tests, Playwright smoke e2e; CI on every PR.
 
 Product truth and balance model: [CONTEXT.md](./CONTEXT.md).
@@ -85,7 +88,7 @@ public/
   screenshots/              install UI assets
   demos/                    README demo GIF
 supabase/
-  migrations/               SQL migrations (00000000000000 … 00000000000081)
+  migrations/               SQL migrations (sequential numeric prefixes)
   functions/                Deno Edge Functions
 ```
 
@@ -138,6 +141,7 @@ Full command list, seed scenarios, PWA asset regen, and security checklists:
 | [CONTEXT.md](./CONTEXT.md) | Product brief, balance model, schema, security |
 | [docs/BRAND.md](./docs/BRAND.md) | Voice, Unbucketed terminology, product narrative |
 | [docs/AUTO_ORGANIZE.md](./docs/AUTO_ORGANIZE.md) | Auto-bucket feature and cron |
+| [docs/FEATURE_FLAGS.md](./docs/FEATURE_FLAGS.md) | Owner-controlled per-household feature flags |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | Branch/PR workflow, CI, deploy sequence |
 | [AGENTS.md](./AGENTS.md) | Entry point for AI coding agents |
 | [docs/MAINTENANCE.md](./docs/MAINTENANCE.md) | Dev commands, seeds, TODOs, Teller/prod ops |
