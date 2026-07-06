@@ -30,6 +30,9 @@ vi.mock('@/lib/auth', () => ({
 
 import { supabase } from '@/lib/supabase'
 import { notifyHouseholdRosterChanged } from '@/lib/householdRosterRefresh'
+import { ToastProvider } from '@/components/ui/ToastProvider'
+import { toast } from '@/lib/toast'
+import { TOAST_AUTO_DISMISS_MS, TOAST_EXIT_MS } from '@/lib/toastDismiss'
 import {
   GiveRecipientsProvider,
   useGiveRecipients,
@@ -126,6 +129,46 @@ describe('GiveRecipientsProvider roster resilience', () => {
     expect(latest.current?.giveReady).toBe(true)
     expect(latest.current?.showKidsNav).toBe(false)
     expect(latest.current?.childCount).toBe(0)
+  })
+
+  it('keeps the roster through a toast show/dismiss cycle (no app remount)', async () => {
+    from.mockReturnValue(membersSelect({ data: roster }))
+    vi.useFakeTimers()
+    try {
+      await act(async () => {
+        root.render(
+          // Mirror main.tsx: ToastProvider with multiple children, the shape
+          // that used to remount the whole app on toast show/dismiss.
+          <ToastProvider>
+            <span />
+            <GiveRecipientsProvider>
+              <Probe />
+            </GiveRecipientsProvider>
+          </ToastProvider>,
+        )
+      })
+      expect(latest.current?.showKidsNav).toBe(true)
+      const fetchCount = from.mock.calls.length
+
+      await act(async () => {
+        toast.success('Moved $5')
+      })
+      expect(latest.current?.showKidsNav).toBe(true)
+
+      // Auto-dismiss: countdown, then exit animation.
+      await act(async () => {
+        vi.advanceTimersByTime(TOAST_AUTO_DISMISS_MS + 50)
+      })
+      await act(async () => {
+        vi.advanceTimersByTime(TOAST_EXIT_MS + 50)
+      })
+
+      expect(latest.current?.showKidsNav).toBe(true)
+      // No remount → the provider never had to reload the roster.
+      expect(from.mock.calls.length).toBe(fetchCount)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('applies a successful refetch (legit roster changes still land)', async () => {

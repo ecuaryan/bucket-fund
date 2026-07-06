@@ -209,9 +209,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  if (!item) return <>{children}</>
-
-  const isError = item.type === 'error'
+  const isError = item?.type === 'error'
   const dragOpacity = 1 - Math.min(1, Math.abs(dragDx) / (panelWidth * 0.9))
   const dragActive = dragging || settling || dragDx !== 0
   const dragStyle: CSSProperties | undefined = dragActive
@@ -224,75 +222,84 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       }
     : undefined
 
+  // One structurally-stable return path: `children` must keep the same slot
+  // whether or not a toast is showing. An early `return <>{children}</>` here
+  // put the children ARRAY (main.tsx passes several) in slot 0 without a
+  // toast but NESTED it under slot 0 with one — a fragment-vs-element type
+  // mismatch that made React unmount and remount the entire app tree on every
+  // toast show AND dismiss, wiping all app state (e.g. the bottom-nav roster,
+  // which collapsed the Kids tab for a beat whenever a toast dismissed).
   return (
     <>
       {children}
-      <div
-        className="toast-viewport pointer-events-none fixed inset-x-0 z-[60] flex justify-center px-4"
-        aria-live={isError ? 'assertive' : 'polite'}
-      >
+      {item ? (
         <div
-          key={item.id}
-          ref={panelRef}
-          role={isError ? 'alert' : 'status'}
-          style={{ touchAction: 'pan-y', ...dragStyle }}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
-          onPointerEnter={(e) => e.pointerType === 'mouse' && setHovering(true)}
-          onPointerLeave={(e) => e.pointerType === 'mouse' && setHovering(false)}
-          className={
-            'toast-panel pointer-events-auto relative flex w-full max-w-md select-none items-start gap-2 rounded-xl px-3.5 py-3 text-sm shadow-2xl ring-2 backdrop-blur-md ' +
-            (isAuto ? 'pb-4 ' : '') +
-            (toast?.exiting ? 'toast-panel-exit ' : '') +
-            (isError
-              ? 'bg-red-950/88 text-red-50 ring-red-400/60'
-              : 'bg-emerald-950/88 text-emerald-50 ring-emerald-400/60')
-          }
+          className="toast-viewport pointer-events-none fixed inset-x-0 z-[60] flex justify-center px-4"
+          aria-live={isError ? 'assertive' : 'polite'}
         >
-          <div className="min-w-0 flex-1">
-            {/* With rich content the headline is redundant on screen but still
-                announced — keep it sr-only so the live region reads the verb. */}
-            <p className={item.content ? 'sr-only' : 'font-medium leading-snug'}>
-              {item.message}
-            </p>
-            {item.content ? <div>{item.content}</div> : null}
-          </div>
-
-          {isAuto ? (
+          <div
+            key={item.id}
+            ref={panelRef}
+            role={isError ? 'alert' : 'status'}
+            style={{ touchAction: 'pan-y', ...dragStyle }}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+            onPointerEnter={(e) => e.pointerType === 'mouse' && setHovering(true)}
+            onPointerLeave={(e) => e.pointerType === 'mouse' && setHovering(false)}
+            className={
+              'toast-panel pointer-events-auto relative flex w-full max-w-md select-none items-start gap-2 rounded-xl px-3.5 py-3 text-sm shadow-2xl ring-2 backdrop-blur-md ' +
+              (isAuto ? 'pb-4 ' : '') +
+              (toast?.exiting ? 'toast-panel-exit ' : '') +
+              (isError
+                ? 'bg-red-950/88 text-red-50 ring-red-400/60'
+                : 'bg-emerald-950/88 text-emerald-50 ring-emerald-400/60')
+            }
+          >
+            <div className="min-w-0 flex-1">
+              {/* With rich content the headline is redundant on screen but still
+                  announced — keep it sr-only so the live region reads the verb. */}
+              <p className={item.content ? 'sr-only' : 'font-medium leading-snug'}>
+                {item.message}
+              </p>
+              {item.content ? <div>{item.content}</div> : null}
+            </div>
+  
+            {isAuto ? (
+              <button
+                type="button"
+                onClick={() => setUserPaused((p) => !p)}
+                className="shrink-0 rounded p-1 leading-none text-zinc-400 transition hover:bg-white/10 hover:text-zinc-200"
+                aria-label={userPaused ? TOAST_RESUME_LABEL : TOAST_PAUSE_LABEL}
+                aria-pressed={userPaused}
+              >
+                {userPaused ? <PlayIcon /> : <PauseIcon />}
+              </button>
+            ) : null}
+  
             <button
               type="button"
-              onClick={() => setUserPaused((p) => !p)}
-              className="shrink-0 rounded p-1 leading-none text-zinc-400 transition hover:bg-white/10 hover:text-zinc-200"
-              aria-label={userPaused ? TOAST_RESUME_LABEL : TOAST_PAUSE_LABEL}
-              aria-pressed={userPaused}
+              onClick={dismiss}
+              className="shrink-0 rounded p-0.5 text-lg leading-none text-zinc-400 transition hover:bg-white/10 hover:text-zinc-200"
+              aria-label={TOAST_DISMISS_LABEL}
             >
-              {userPaused ? <PlayIcon /> : <PauseIcon />}
+              ×
             </button>
-          ) : null}
-
-          <button
-            type="button"
-            onClick={dismiss}
-            className="shrink-0 rounded p-0.5 text-lg leading-none text-zinc-400 transition hover:bg-white/10 hover:text-zinc-200"
-            aria-label={TOAST_DISMISS_LABEL}
-          >
-            ×
-          </button>
-
-          {isAuto ? (
-            <span
-              className="toast-progress absolute inset-x-3 bottom-1.5 h-0.5 origin-right rounded-full bg-emerald-300/60"
-              style={{
-                animationDuration: `${TOAST_AUTO_DISMISS_MS}ms`,
-                animationPlayState: paused ? 'paused' : 'running',
-              }}
-              aria-hidden
-            />
-          ) : null}
+  
+            {isAuto ? (
+              <span
+                className="toast-progress absolute inset-x-3 bottom-1.5 h-0.5 origin-right rounded-full bg-emerald-300/60"
+                style={{
+                  animationDuration: `${TOAST_AUTO_DISMISS_MS}ms`,
+                  animationPlayState: paused ? 'paused' : 'running',
+                }}
+                aria-hidden
+              />
+            ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
     </>
   )
 }
