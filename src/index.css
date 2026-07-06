@@ -185,8 +185,12 @@ html {
   }
 
   @media (prefers-reduced-motion: no-preference) {
+    /* `backwards`, not `both`: a forwards fill would keep the animation
+       owning `transform` after it ends, overriding the inline translateX the
+       swipe-to-dismiss drag sets. backwards still primes the from-state so
+       there is no entrance flash. */
     .toast-panel {
-      animation: toast-in 180ms ease both;
+      animation: toast-in 180ms ease backwards;
     }
 
     .toast-panel-exit {
@@ -225,6 +229,24 @@ html {
     to {
       opacity: 0;
       transform: translateY(-0.5rem);
+    }
+  }
+
+  /* Auto-dismiss countdown bar. Functional feedback (how long is left), so it
+     animates regardless of the motion preference — its play state freezes with
+     the timer when the toast is hovered, focused, dragged, or paused. */
+  .toast-progress {
+    animation: toast-progress linear both;
+    /* Anchored right: the bar drains from the left as time runs out. */
+    transform-origin: right center;
+  }
+
+  @keyframes toast-progress {
+    from {
+      transform: scaleX(1);
+    }
+    to {
+      transform: scaleX(0);
     }
   }
 
