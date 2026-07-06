@@ -57,7 +57,7 @@ export default function BitcoinTab() {
             Your Bitcoin
           </h2>
           <div className="flex items-center gap-2">
-            <BitcoinPriceBadge {...priceState} formatMoney={formatMoney} />
+            <BitcoinPriceBadge {...priceState} />
             <BtcUnitToggle unit={btcUnit} onToggle={toggleBtcUnit} />
           </div>
         </div>

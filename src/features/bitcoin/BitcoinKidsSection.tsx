@@ -111,7 +111,7 @@ export default function BitcoinKidsSection({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-[#F7931A]">Bitcoin</h2>
           <div className="flex items-center gap-2">
-            <BitcoinPriceBadge {...priceState} formatMoney={formatMoney} />
+            <BitcoinPriceBadge {...priceState} />
             <BtcUnitToggle unit={btcUnit} onToggle={toggleBtcUnit} />
             {isAdmin ? (
               <button
