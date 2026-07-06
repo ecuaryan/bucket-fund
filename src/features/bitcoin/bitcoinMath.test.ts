@@ -40,6 +40,15 @@ describe('totalsForEntries', () => {
     expect(totals.gainLoss).toBe(-21.37)
   })
 
+  it('derives average cost basis per whole BTC, rounded to cents', () => {
+    // 45 spent / 0.0004725 held = 95,238.095… → 95,238.10 per BTC
+    expect(totalsForEntries(entries, PRICE).avgCostPerBtc).toBe(95238.1)
+  })
+
+  it('reports average cost even when the price is unavailable (price-independent)', () => {
+    expect(totalsForEntries(entries, null).avgCostPerBtc).toBe(95238.1)
+  })
+
   it('propagates null current value and gain/loss when price is unavailable', () => {
     const totals = totalsForEntries(entries, null)
     expect(totals.originalUsd).toBe(45)
@@ -62,6 +71,7 @@ describe('totalsForEntries', () => {
     expect(totalsForEntries([], PRICE)).toEqual({
       originalUsd: 0,
       btc: 0,
+      avgCostPerBtc: null,
       currentUsd: 0,
       gainLoss: 0,
     })

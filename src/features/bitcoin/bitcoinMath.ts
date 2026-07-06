@@ -16,6 +16,12 @@ export type BitcoinEntryAmounts = {
 export type BitcoinTotals = {
   originalUsd: number
   btc: number
+  /**
+   * Average cost basis per whole BTC (total spent ÷ BTC held), directly
+   * comparable to the live spot price. null when nothing is held (no
+   * divide-by-zero) — price-independent, so it's always present otherwise.
+   */
+  avgCostPerBtc: number | null
   /** null when the live price is unavailable */
   currentUsd: number | null
   /** null when the live price is unavailable */
@@ -59,8 +65,9 @@ export function totalsForEntries(
   )
   const sats = entries.reduce((sum, e) => sum + toSats(e.btc_amount), 0)
   const btc = sats / 1e8
+  const avgCostPerBtc = btc > 0 ? roundCents(originalUsd / btc) : null
   if (priceUsd === null) {
-    return { originalUsd, btc, currentUsd: null, gainLoss: null }
+    return { originalUsd, btc, avgCostPerBtc, currentUsd: null, gainLoss: null }
   }
   const currentUsd = roundCents(
     entries.reduce((sum, e) => sum + entryCurrentValue(e, priceUsd), 0),
@@ -68,6 +75,7 @@ export function totalsForEntries(
   return {
     originalUsd,
     btc,
+    avgCostPerBtc,
     currentUsd,
     gainLoss: roundCents(currentUsd - originalUsd),
   }

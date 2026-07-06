@@ -2,7 +2,9 @@
 
 Per-kid Bitcoin purchase tracking, the app version of a spreadsheet with one
 table per kid: each row is a buy (original USD, exact BTC amount, date), and
-current value / gain-loss derive from a live spot price.
+current value / gain-loss derive from a live spot price. Each rollup also
+shows the average cost basis per whole BTC (total spent ÷ BTC held), directly
+comparable to the live price so you can read gain/loss at a glance.
 
 Gated by the `bitcoin` feature flag (see [FEATURE_FLAGS.md](FEATURE_FLAGS.md))
 — off for every household unless the owner enables it in Supabase. Enable it
