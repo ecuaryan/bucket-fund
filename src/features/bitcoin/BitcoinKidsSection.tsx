@@ -36,7 +36,9 @@ export default function BitcoinKidsSection({
   isAdmin,
   familyId,
 }: BitcoinKidsSectionProps) {
-  const { hidden, formatMoney } = useHideAmounts()
+  const { hidden, peeking, formatMoney } = useHideAmounts()
+  // Mask BTC amounts the same way formatMoney does — Peek reveals them too.
+  const btcHidden = hidden && !peeking
   const auth = useAuth()
   const viewerMemberId =
     auth.status === 'signedIn' ? (auth.member?.id ?? null) : null
@@ -196,7 +198,7 @@ export default function BitcoinKidsSection({
                         <BtcAmount
                           amount={kidTotals.btc}
                           unit={btcUnit}
-                          hidden={hidden}
+                          hidden={btcHidden}
                         />
                       </span>
                     </span>
@@ -210,7 +212,7 @@ export default function BitcoinKidsSection({
                         price={price}
                         formatMoney={formatMoney}
                         btcUnit={btcUnit}
-                        btcHidden={hidden}
+                        btcHidden={btcHidden}
                         onEdit={
                           isAdmin
                             ? (entry) => setSheet({ entry })
@@ -250,7 +252,7 @@ export default function BitcoinKidsSection({
               <BtcAmount
                 amount={Number(confirmDelete.btc_amount)}
                 unit={btcUnit}
-                hidden={hidden}
+                hidden={btcHidden}
               />
               ) from{' '}
               {new Date(
