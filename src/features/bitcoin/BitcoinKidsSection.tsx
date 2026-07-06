@@ -200,6 +200,14 @@ export default function BitcoinKidsSection({
                           unit={btcUnit}
                           hidden={btcHidden}
                         />
+                        {kidTotals.avgCostPerBtc !== null ? (
+                          <>
+                            <span className="text-zinc-600"> · </span>
+                            avg {formatMoney(kidTotals.avgCostPerBtc)}/
+                            <span aria-hidden>₿</span>
+                            <span className="sr-only">BTC</span>
+                          </>
+                        ) : null}
                       </span>
                     </span>
                   )}

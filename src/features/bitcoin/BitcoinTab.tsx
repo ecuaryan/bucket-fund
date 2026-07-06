@@ -90,6 +90,14 @@ export default function BitcoinTab() {
               {formatMoney(totals.originalUsd)} cost
               <span className="text-zinc-600"> · </span>
               <BtcAmount amount={totals.btc} unit={btcUnit} hidden={btcHidden} />
+              {totals.avgCostPerBtc !== null ? (
+                <>
+                  <span className="text-zinc-600"> · </span>
+                  avg {formatMoney(totals.avgCostPerBtc)}/
+                  <span aria-hidden>₿</span>
+                  <span className="sr-only">BTC</span>
+                </>
+              ) : null}
             </p>
           </div>
         ) : null}
