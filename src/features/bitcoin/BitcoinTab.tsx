@@ -20,7 +20,9 @@ import BtcUnitToggle from './BtcUnitToggle'
  * and the kid has at least one entry.
  */
 export default function BitcoinTab() {
-  const { hidden, formatMoney } = useHideAmounts()
+  const { hidden, peeking, formatMoney } = useHideAmounts()
+  // Mask BTC amounts the same way formatMoney does — Peek reveals them too.
+  const btcHidden = hidden && !peeking
   const auth = useAuth()
   const viewerMemberId =
     auth.status === 'signedIn' ? (auth.member?.id ?? null) : null
@@ -87,7 +89,7 @@ export default function BitcoinTab() {
             <p className="text-[11px] tabular-nums text-zinc-500">
               {formatMoney(totals.originalUsd)} cost
               <span className="text-zinc-600"> · </span>
-              <BtcAmount amount={totals.btc} unit={btcUnit} hidden={hidden} />
+              <BtcAmount amount={totals.btc} unit={btcUnit} hidden={btcHidden} />
             </p>
           </div>
         ) : null}
@@ -118,7 +120,7 @@ export default function BitcoinTab() {
             price={price}
             formatMoney={formatMoney}
             btcUnit={btcUnit}
-            btcHidden={hidden}
+            btcHidden={btcHidden}
           />
         )}
       </div>
