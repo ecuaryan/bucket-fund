@@ -1,5 +1,6 @@
 import { isMissingDbFunctionError } from '@/lib/availableBalance'
 import { withAuthLockRetry } from '@/lib/authLockError'
+import type { GiveRecipientMember } from '@/lib/giveRecipients'
 import { supabase } from '@/lib/supabase'
 import { FLOAT_LABEL_LOWER } from '@/lib/brand'
 
@@ -21,6 +22,32 @@ export async function fetchLinkedChildMemberIds(): Promise<Set<string>> {
     const ids = (data ?? []) as string[]
     return new Set(ids)
   })
+}
+
+export type GiveRoster = {
+  members: GiveRecipientMember[]
+  linkedChildIds: Set<string>
+}
+
+/**
+ * Household roster + linked-child ids that drive the Kids/Give nav tab and the
+ * History give filter. Throws on any failure (after retrying auth-lock
+ * contention, the documented mobile transient — see authLockError.ts) instead
+ * of resolving to an empty roster: a transient error must never read as "this
+ * family has no kids", because that collapses the bottom-nav tab set.
+ */
+export async function fetchGiveRoster(): Promise<GiveRoster> {
+  const [members, linkedChildIds] = await Promise.all([
+    withAuthLockRetry(async () => {
+      const { data, error } = await supabase
+        .from('family_members')
+        .select('id, name, role')
+      if (error) throw new Error(error.message)
+      return (data ?? []) as GiveRecipientMember[]
+    }),
+    fetchLinkedChildMemberIds(),
+  ])
+  return { members, linkedChildIds }
 }
 
 export async function giveMoney(args: GiveMoneyArgs): Promise<string> {

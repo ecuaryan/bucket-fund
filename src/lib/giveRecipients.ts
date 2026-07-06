@@ -33,6 +33,21 @@ export function filterGiveRecipients(
   return others.filter((m) => !linkedChildIds.has(m.id))
 }
 
+/**
+ * Roster after a load attempt FAILS. A refetch runs on every `accounts`
+ * Realtime event — a money-move fires one right as its confirmation toast
+ * shows — so a transient failure (auth-lock contention, network blip) must
+ * keep the last good roster: wiping it to [] zeroes childCount, drops the
+ * Kids/Give tab, reorders Buckets, and makes the bottom-nav bubble jump.
+ * Only a roster that never loaded falls back to empty-but-ready, so pages
+ * gated on `giveReady` (History) still render after a failed first load.
+ */
+export function rosterAfterFailedLoad(
+  prev: GiveRecipientMember[] | null,
+): GiveRecipientMember[] {
+  return prev ?? []
+}
+
 /** Nav + route: adults with kids use the Kids tab instead of Give. */
 export function shouldShowKidsNav(callerRole: string, childCount: number): boolean {
   return (

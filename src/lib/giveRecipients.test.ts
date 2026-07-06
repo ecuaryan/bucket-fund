@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   filterGiveRecipients,
   isLinkedChild,
+  rosterAfterFailedLoad,
   shouldShowKidsNav,
   shouldShowGiveNav,
 } from '@/lib/giveRecipients'
@@ -53,6 +54,16 @@ describe('filterGiveRecipients', () => {
 
   it('solo admin has no recipients', () => {
     expect(filterGiveRecipients([roster[0]], 'a', 'admin')).toEqual([])
+  })
+})
+
+describe('rosterAfterFailedLoad', () => {
+  it('keeps the last good roster on a failed refetch (nav tabs must not drop)', () => {
+    expect(rosterAfterFailedLoad(roster)).toBe(roster)
+  })
+
+  it('falls back to empty-but-ready when the roster never loaded', () => {
+    expect(rosterAfterFailedLoad(null)).toEqual([])
   })
 })
 
