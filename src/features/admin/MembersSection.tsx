@@ -185,7 +185,12 @@ export default function MembersSection({
       await loadMembers()
       onRosterChanged?.()
     } catch (err) {
+      // Roll back the optimistic row, and restore the typed name (cleared
+      // optimistically above) so a transient failure doesn't force a retype —
+      // the user can just hit Add again. Keep whatever's in the field if they
+      // already started typing the next name.
       setMembers((prev) => prev?.filter((m) => m.id !== tempId) ?? prev)
+      setNewName((current) => (current.trim() ? current : name))
       toast.error(formatErrorMessage(err))
     } finally {
       setCreating(false)
