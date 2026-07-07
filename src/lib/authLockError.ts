@@ -4,6 +4,9 @@
  * with "Lock was stolen by another request" — transient, not a bad session.
  */
 
+import { NETWORK_ERROR_MESSAGE } from '@/lib/brand'
+import { isNetworkError } from '@/lib/errorMessage'
+
 export function isAuthLockContentionError(error: unknown): boolean {
   if (!error) return false
 
@@ -61,6 +64,9 @@ export function formatLoadErrorMessage(
 ): string {
   if (isAuthLockContentionError(error)) {
     return authLockContentionMessage()
+  }
+  if (isNetworkError(error)) {
+    return NETWORK_ERROR_MESSAGE
   }
   if (error instanceof Error) {
     return isAuthLockContentionError(error.message)

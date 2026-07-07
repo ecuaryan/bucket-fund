@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '@/lib/auth'
 import { formatLoadErrorMessage, withAuthLockRetry } from '@/lib/authLockError'
+import { formatErrorMessage } from '@/lib/errorMessage'
 import { supabase } from '@/lib/supabase'
 import { ClearableInput } from '@/components/ui/ClearableInput'
 import { FieldLabel } from '@/components/ui/FieldLabel'
@@ -185,7 +186,7 @@ export default function MembersSection({
       onRosterChanged?.()
     } catch (err) {
       setMembers((prev) => prev?.filter((m) => m.id !== tempId) ?? prev)
-      toast.error(err instanceof Error ? err.message : String(err))
+      toast.error(formatErrorMessage(err))
     } finally {
       setCreating(false)
       setRefreshing(false)
@@ -250,7 +251,7 @@ export default function MembersSection({
         setRefreshing(false)
       }
     } catch (err) {
-      setPinError(err instanceof Error ? err.message : String(err))
+      setPinError(formatErrorMessage(err))
     } finally {
       setSavingPin(false)
     }
@@ -289,7 +290,7 @@ export default function MembersSection({
       onRosterChanged?.()
     } catch (err) {
       setMembers(snapshot)
-      setRemoveError(err instanceof Error ? err.message : String(err))
+      setRemoveError(formatErrorMessage(err))
     } finally {
       setRemoving(false)
       setRefreshing(false)
@@ -316,7 +317,7 @@ export default function MembersSection({
         setRefreshing(false)
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err))
+      toast.error(formatErrorMessage(err))
     }
   }
 
@@ -366,7 +367,7 @@ export default function MembersSection({
       }
     } catch (err) {
       setMembers(snapshot)
-      toast.error(err instanceof Error ? err.message : String(err))
+      toast.error(formatErrorMessage(err))
     } finally {
       setRefreshing(false)
     }
