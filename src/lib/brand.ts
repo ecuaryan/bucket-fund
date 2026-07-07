@@ -65,6 +65,14 @@ export const LOGIN_ALREADY_HAVE_ACCOUNT = 'Already have an account?'
 export const BANK_READ_ONLY_ASSURANCE =
   "we read balances—we can't transfer, send, or withdraw money"
 
+/**
+ * Shown when a request fails because the connection dropped. Browsers surface
+ * opaque strings here ("Load failed" on iOS Safari, "Failed to fetch" on
+ * Chromium); this reassures a non-technical user that it's transient.
+ */
+export const NETWORK_ERROR_MESSAGE =
+  "Couldn't reach the server. This is usually a brief connection hiccup—try again."
+
 /** Shown when a stored session can no longer be refreshed (dead refresh token). */
 export const SESSION_EXPIRED_MESSAGE =
   'Your session expired. Please sign out and sign back in, then try again.'

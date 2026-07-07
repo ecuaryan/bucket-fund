@@ -23,6 +23,7 @@ import {
 } from '@/lib/brand'
 import { scrollFocusedIntoView } from '@/lib/keyboardViewport'
 import { sanitizeAmountInput } from '@/lib/amountInput'
+import { formatErrorMessage } from '@/lib/errorMessage'
 
 type Props = {
   open: boolean
@@ -115,7 +116,7 @@ export default function ManualSourceDialog({
       onClose()
       await onSaved({ label: trimmed, mode })
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(formatErrorMessage(err, 'Could not save. Please try again.'))
     } finally {
       setSubmitting(false)
     }

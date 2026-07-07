@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '@/lib/auth'
 import { formatLoadErrorMessage, withAuthLockRetry } from '@/lib/authLockError'
+import { formatErrorMessage } from '@/lib/errorMessage'
 import { supabase } from '@/lib/supabase'
 import { ClearableInput } from '@/components/ui/ClearableInput'
 import { FieldLabel } from '@/components/ui/FieldLabel'
@@ -184,8 +185,13 @@ export default function MembersSection({
       await loadMembers()
       onRosterChanged?.()
     } catch (err) {
+      // Roll back the optimistic row, and restore the typed name (cleared
+      // optimistically above) so a transient failure doesn't force a retype —
+      // the user can just hit Add again. Keep whatever's in the field if they
+      // already started typing the next name.
       setMembers((prev) => prev?.filter((m) => m.id !== tempId) ?? prev)
-      toast.error(err instanceof Error ? err.message : String(err))
+      setNewName((current) => (current.trim() ? current : name))
+      toast.error(formatErrorMessage(err))
     } finally {
       setCreating(false)
       setRefreshing(false)
@@ -250,7 +256,7 @@ export default function MembersSection({
         setRefreshing(false)
       }
     } catch (err) {
-      setPinError(err instanceof Error ? err.message : String(err))
+      setPinError(formatErrorMessage(err))
     } finally {
       setSavingPin(false)
     }
@@ -289,7 +295,7 @@ export default function MembersSection({
       onRosterChanged?.()
     } catch (err) {
       setMembers(snapshot)
-      setRemoveError(err instanceof Error ? err.message : String(err))
+      setRemoveError(formatErrorMessage(err))
     } finally {
       setRemoving(false)
       setRefreshing(false)
@@ -316,7 +322,7 @@ export default function MembersSection({
         setRefreshing(false)
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : String(err))
+      toast.error(formatErrorMessage(err))
     }
   }
 
@@ -366,7 +372,7 @@ export default function MembersSection({
       }
     } catch (err) {
       setMembers(snapshot)
-      toast.error(err instanceof Error ? err.message : String(err))
+      toast.error(formatErrorMessage(err))
     } finally {
       setRefreshing(false)
     }
