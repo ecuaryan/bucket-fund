@@ -3,6 +3,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { ScrollFade } from '@/components/ui/ScrollFade'
 import {
   BANK_ACTIVITY_EMPTY,
+  BANK_ACTIVITY_LOAD_ERROR,
   BANK_ACTIVITY_PENDING,
   BANK_ACTIVITY_RETRY,
   BANK_ACTIVITY_SCOPE,
@@ -10,6 +11,7 @@ import {
   BANK_ACTIVITY_TOGGLE_SHOW,
   LOADING_STATUS_LABEL,
 } from '@/lib/brand'
+import { formatErrorMessage } from '@/lib/errorMessage'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import { fetchBankTransactions, type BankTransactionRow } from '@/lib/teller'
 
@@ -45,7 +47,7 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
     } catch (e) {
       if (generation !== fetchGeneration.current) return
       setRows(null)
-      setError(e instanceof Error ? e.message : String(e))
+      setError(formatErrorMessage(e, BANK_ACTIVITY_LOAD_ERROR))
     } finally {
       if (generation === fetchGeneration.current) {
         setLoading(false)

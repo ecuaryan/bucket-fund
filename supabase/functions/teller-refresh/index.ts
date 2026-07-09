@@ -185,39 +185,57 @@ Deno.serve(async (req: Request) => {
   let accountsUpdated = 0
   const nowIso = new Date().toISOString()
 
-  for (const account of accounts) {
+  const refreshable = accounts.filter((account) => {
     const enrollment = enrollmentById.get(account.teller_enrollment_id ?? '')
-    if (!enrollment?.access_token || !account.teller_account_id) continue
+    return Boolean(enrollment?.access_token && account.teller_account_id)
+  })
 
-    try {
-      const balance = await getBalance(
-        enrollment.access_token,
-        account.teller_account_id,
-      )
-      const { error: updateError } = await admin
-        .from('accounts')
-        .update({
-          current_balance: Number(balance.ledger),
-          last_synced_at: nowIso,
-        })
-        .eq('id', account.id)
+  // Pull each account's balance from Teller in parallel. Sequential per-account
+  // round-trips were the main source of refresh latency for households with
+  // several accounts; Teller has no bulk balance endpoint, so we fan out. The
+  // server-side throttle above still guards against rapid repeat refreshes.
+  const results = await Promise.all(
+    refreshable.map(async (account) => {
+      const enrollment = enrollmentById.get(account.teller_enrollment_id ?? '')!
+      try {
+        const balance = await getBalance(
+          enrollment.access_token,
+          account.teller_account_id,
+        )
+        const { error: updateError } = await admin
+          .from('accounts')
+          .update({
+            current_balance: Number(balance.ledger),
+            last_synced_at: nowIso,
+          })
+          .eq('id', account.id)
 
-      if (updateError) {
-        errors.push(`${account.id}: ${updateError.message}`)
-        continue
+        if (updateError) {
+          return { account, error: `${account.id}: ${updateError.message}` }
+        }
+        return { account, error: null }
+      } catch (err) {
+        return {
+          account,
+          error: `${account.id}: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        }
       }
+    }),
+  )
 
-      accountsUpdated++
-      if (
-        isCashAccountType(account.account_type) ||
-        isCreditCardAccountType(account.account_type)
-      ) {
-        bankLastSyncedAt = maxIso(bankLastSyncedAt, nowIso)
-      }
-    } catch (err) {
-      errors.push(
-        `${account.id}: ${err instanceof Error ? err.message : String(err)}`,
-      )
+  for (const { account, error } of results) {
+    if (error) {
+      errors.push(error)
+      continue
+    }
+    accountsUpdated++
+    if (
+      isCashAccountType(account.account_type) ||
+      isCreditCardAccountType(account.account_type)
+    ) {
+      bankLastSyncedAt = maxIso(bankLastSyncedAt, nowIso)
     }
   }
 

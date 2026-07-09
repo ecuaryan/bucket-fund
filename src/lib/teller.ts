@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { SESSION_EXPIRED_MESSAGE } from '@/lib/brand'
+import { BANK_ACTIVITY_LOAD_ERROR, SESSION_EXPIRED_MESSAGE } from '@/lib/brand'
 import { getFreshAccessToken, refreshAccessToken } from '@/lib/sessionToken'
 import { resolveSupabasePublishableKey } from '@/lib/supabaseKeys'
 import { parseTellerEnvironment } from '@/lib/tellerEnvironment'
@@ -359,16 +359,20 @@ export async function fetchBankTransactions(
   > & { error?: string; details?: string }
 
   if (!res.ok) {
+    // Never surface the opaque status to the user (e.g. "…: 546", the edge
+    // runtime's worker-limit code, or a 502 from Teller). Keep the technical
+    // detail in the console for debugging and show friendly, actionable copy.
     const detail = body.details ? `: ${body.details}` : ''
-    const msg = body.error
+    const technical = body.error
       ? `${body.error}${detail}`
-      : `Failed to load bank activity: ${res.status}`
-    if (res.status === 503) {
+      : `bank activity request failed: ${res.status}`
+    console.warn(`[teller] ${technical}`)
+    if (res.status === 503 && import.meta.env.DEV) {
       throw new Error(
-        `${msg}. For local dev, run \`npm run functions:serve\` in a second terminal (needs \`supabase/functions/.env\`).`,
+        `${BANK_ACTIVITY_LOAD_ERROR} (Local dev: run \`npm run functions:serve\` in a second terminal with \`supabase/functions/.env\`.)`,
       )
     }
-    throw new Error(msg)
+    throw new Error(BANK_ACTIVITY_LOAD_ERROR)
   }
 
   return body as FetchBankTransactionsResult
