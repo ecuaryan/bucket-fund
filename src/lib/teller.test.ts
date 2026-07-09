@@ -59,7 +59,7 @@ describe('fetchBankTransactions error copy', () => {
     )
   })
 
-  it('throws BankLinkReconnectError when the link is expired (409 bank_link_reconnect)', async () => {
+  it('throws BankLinkReconnectError when the enrollment is disconnected (409 bank_link_reconnect)', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () =>
