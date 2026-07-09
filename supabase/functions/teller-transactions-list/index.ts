@@ -73,15 +73,8 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Invalid or expired token' }, 401)
   }
 
-  const { data: member } = await callerClient
-    .from('family_members')
-    .select('id, family_id, role')
-    .eq('user_id', user.id)
-    .maybeSingle()
-  if (!member) {
-    return jsonResponse({ error: 'No family membership found' }, 403)
-  }
-
+  // Parse the body up front so the membership and account lookups below can run
+  // concurrently — the account is fetched by id and family-scoped in code.
   let body: TransactionsRequest = {}
   try {
     const text = await req.text()
@@ -92,28 +85,50 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Invalid JSON body' }, 400)
   }
 
-  if (!body.accountId?.trim()) {
+  const accountId = body.accountId?.trim()
+  if (!accountId) {
     return jsonResponse({ error: 'accountId is required' }, 400)
   }
 
   const admin = createClient(supabaseUrl, secretKey())
 
-  const { data: account, error: accountError } = await admin
-    .from('accounts')
-    .select(
-      'id, family_id, owner_member_id, teller_account_id, teller_enrollment_id, source',
-    )
-    .eq('id', body.accountId.trim())
-    .eq('family_id', member.family_id)
-    .maybeSingle()
+  // This on-demand pull was dominated by serial round-trips before ever
+  // reaching Teller: membership, then account, then enrollment. Fetch the
+  // caller's membership and the target account (with its enrollment embedded
+  // via the teller_enrollment_id FK) concurrently, then authorize in code.
+  // The account is fetched by id alone; family isolation is enforced by the
+  // family_id check below, and a cross-family id returns the same 404 as a
+  // missing account, so nothing leaks between families.
+  const [memberResult, accountResult] = await Promise.all([
+    callerClient
+      .from('family_members')
+      .select('id, family_id, role')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    admin
+      .from('accounts')
+      .select(
+        'id, family_id, owner_member_id, teller_account_id, teller_enrollment_id, source, teller_enrollments ( id, family_id, access_token, status )',
+      )
+      .eq('id', accountId)
+      .maybeSingle(),
+  ])
 
-  if (accountError) {
+  const member = memberResult.data
+  if (!member) {
+    return jsonResponse({ error: 'No family membership found' }, 403)
+  }
+
+  if (accountResult.error) {
     return jsonResponse(
-      { error: 'Failed to load account', details: accountError.message },
+      { error: 'Failed to load account', details: accountResult.error.message },
       500,
     )
   }
-  if (!account) {
+  const account = accountResult.data
+  // Same 404 whether the account is missing or in another family — no existence
+  // leak across tenants.
+  if (!account || account.family_id !== member.family_id) {
     return jsonResponse({ error: 'Account not found in your family' }, 404)
   }
 
@@ -134,20 +149,18 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Account is missing Teller linkage' }, 400)
   }
 
-  const { data: enrollment, error: enrollmentError } = await admin
-    .from('teller_enrollments')
-    .select('id, access_token, status')
-    .eq('id', account.teller_enrollment_id)
-    .eq('family_id', member.family_id)
-    .maybeSingle()
-
-  if (enrollmentError) {
-    return jsonResponse(
-      { error: 'Failed to load enrollment', details: enrollmentError.message },
-      500,
-    )
-  }
-  if (!enrollment?.access_token || enrollment.status !== 'active') {
+  // Embedded to-one enrollment (PostgREST returns an object; normalise
+  // defensively in case a version yields a single-element array). The
+  // family_id match preserves the original per-family enrollment scoping.
+  const enrollment = Array.isArray(account.teller_enrollments)
+    ? account.teller_enrollments[0]
+    : account.teller_enrollments
+  if (
+    !enrollment ||
+    enrollment.family_id !== member.family_id ||
+    !enrollment.access_token ||
+    enrollment.status !== 'active'
+  ) {
     return jsonResponse({ error: 'Bank link is not active' }, 400)
   }
 
