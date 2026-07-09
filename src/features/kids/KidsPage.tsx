@@ -18,6 +18,7 @@ import {
   kidsTakeSuccessToast,
   KIDS_LINKED_ONLY_BODY,
   KIDS_LINKED_SECTION_TITLE,
+  REFRESH_BALANCES_ERROR,
   VIEW_RECENT_BANK_ACTIVITY,
   KIDS_PAGE_INTRO,
   KIDS_PAGE_TITLE,
@@ -25,8 +26,9 @@ import {
 } from '@/lib/brand'
 import { fetchHouseholdAdminName } from '@/lib/householdAdmin'
 import { subscribeHouseholdRosterRefresh } from '@/lib/householdRosterRefresh'
+import { formatErrorMessage } from '@/lib/errorMessage'
 import { formatRelativeTime } from '@/lib/relativeTime'
-import { refreshBalances } from '@/lib/teller'
+import { refreshBalances, refreshBalancesErrorMessage } from '@/lib/teller'
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
 import { buildKidsPageModel, type VirtualKidRow as VirtualKidRowData } from '@/lib/kidsPageModel'
 import { fetchLinkedChildMemberIds } from '@/lib/give'
@@ -182,10 +184,13 @@ export default function KidsPage() {
     setRefreshError(null)
     setSyncing(true)
     try {
-      await refreshBalances()
+      // refreshBalances resolves even when a bank errors (per-account failures
+      // come back in `errors`), so surface that instead of stopping silently.
+      const result = await refreshBalances()
+      setRefreshError(refreshBalancesErrorMessage(result))
       await loadData()
     } catch (e) {
-      setRefreshError(e instanceof Error ? e.message : String(e))
+      setRefreshError(formatErrorMessage(e, REFRESH_BALANCES_ERROR))
     } finally {
       setSyncing(false)
     }

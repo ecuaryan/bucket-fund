@@ -757,6 +757,15 @@ export function floatRefreshedLabel(relativeTime: string): string {
   return `Refreshed ${relativeTime}`
 }
 
+/**
+ * A balance refresh finished but one or more banks failed (e.g. Teller timed
+ * out). The refresh RPC returns 200 with an `errors` array rather than
+ * throwing, so this is shown when that array is non-empty — otherwise the
+ * spinner just stops with no feedback. Mirrors {@link BANK_ACTIVITY_LOAD_ERROR}.
+ */
+export const REFRESH_BALANCES_ERROR =
+  "Couldn't refresh your balances right now. Your bank or our sync may be busy—try again in a moment."
+
 // --- Auto-bucket (Buckets tab) ---
 // UI label is "Auto-bucket"; schema/RPCs keep `auto_organize*` (see docs).
 

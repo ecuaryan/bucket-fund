@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { BANK_ACTIVITY_LOAD_ERROR, SESSION_EXPIRED_MESSAGE } from '@/lib/brand'
+import {
+  BANK_ACTIVITY_LOAD_ERROR,
+  REFRESH_BALANCES_ERROR,
+  SESSION_EXPIRED_MESSAGE,
+} from '@/lib/brand'
 import { getFreshAccessToken, refreshAccessToken } from '@/lib/sessionToken'
 import { resolveSupabasePublishableKey } from '@/lib/supabaseKeys'
 import { parseTellerEnvironment } from '@/lib/tellerEnvironment'
@@ -351,6 +355,20 @@ export async function refreshBalances(
   }
 
   return body as RefreshBalancesResult
+}
+
+/**
+ * Friendly message when a balance refresh partially or fully failed, else null.
+ *
+ * `refreshBalances` resolves (HTTP 200) even when a bank errored — per-account
+ * failures are collected into `errors` rather than thrown. Callers must check
+ * this so a failed refresh isn't silently swallowed (the spinner stopping with
+ * no feedback). A throttled/skipped refresh has no errors and returns null.
+ */
+export function refreshBalancesErrorMessage(
+  result: RefreshBalancesResult,
+): string | null {
+  return result.errors.length > 0 ? REFRESH_BALANCES_ERROR : null
 }
 
 /**

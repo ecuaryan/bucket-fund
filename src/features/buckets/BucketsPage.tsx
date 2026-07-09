@@ -93,7 +93,7 @@ import { ReorderHintProvider } from '@/features/buckets/ReorderHintContext'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import { useFlipList } from '@/hooks/useFlipList'
 import { useHideAmounts, usePeekTarget } from '@/lib/HideAmountsProvider'
-import { refreshBalances } from '@/lib/teller'
+import { refreshBalances, refreshBalancesErrorMessage } from '@/lib/teller'
 import {
   formatBucketsHeaderSubtitle,
   formatFloatCashSubtext,
@@ -119,6 +119,7 @@ import {
 import {
   BUCKETS_PAGE_TAB_ACCOUNT_LABEL,
   BUCKETS_PAGE_TABS_ARIA_LABEL,
+  REFRESH_BALANCES_ERROR,
 } from '@/lib/brand'
 import BankAccountsTab from '@/features/accounts/BankAccountsTab'
 import BitcoinTab from '@/features/bitcoin/BitcoinTab'
@@ -543,10 +544,13 @@ export default function BucketsPage() {
     setRefreshError(null)
     setSyncing(true)
     try {
-      await refreshBalances()
+      // refreshBalances resolves even when a bank errors (per-account failures
+      // come back in `errors`), so surface that instead of stopping silently.
+      const result = await refreshBalances()
+      setRefreshError(refreshBalancesErrorMessage(result))
       await loadData()
     } catch (e) {
-      setRefreshError(e instanceof Error ? e.message : String(e))
+      setRefreshError(formatErrorMessage(e, REFRESH_BALANCES_ERROR))
     } finally {
       setSyncing(false)
     }
