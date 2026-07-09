@@ -10,7 +10,11 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { publishableKey, secretKey } from '../_shared/keys.ts'
-import { listTransactions } from '../_shared/teller.ts'
+import {
+  listTransactions,
+  TellerApiError,
+  TellerTimeoutError,
+} from '../_shared/teller.ts'
 
 const BANK_TRANSACTIONS_DAYS = 14
 const BANK_TRANSACTIONS_LIMIT = 50
@@ -161,7 +165,12 @@ Deno.serve(async (req: Request) => {
     !enrollment.access_token ||
     enrollment.status !== 'active'
   ) {
-    return jsonResponse({ error: 'Bank link is not active' }, 400)
+    // A retry will never fix an inactive link — the client must send the user
+    // to reconnect. `code` drives that distinct messaging.
+    return jsonResponse(
+      { error: 'Bank link needs reconnecting', code: 'bank_link_reconnect' },
+      409,
+    )
   }
 
   const endDate = isoDateOnly(new Date())
@@ -208,9 +217,25 @@ Deno.serve(async (req: Request) => {
       transactions,
     })
   } catch (err) {
+    // Teller rejected our credentials for this enrollment → the bank link needs
+    // reconnecting (re-auth at the bank), which a retry can't fix.
+    if (err instanceof TellerApiError && (err.status === 401 || err.status === 403)) {
+      return jsonResponse(
+        { error: 'Bank link needs reconnecting', code: 'bank_link_reconnect' },
+        409,
+      )
+    }
+    // We gave up waiting on Teller — fail fast rather than hang.
+    if (err instanceof TellerTimeoutError) {
+      return jsonResponse(
+        { error: 'Bank request timed out', code: 'bank_timeout', details: err.message },
+        504,
+      )
+    }
     return jsonResponse(
       {
         error: 'Failed to load transactions from bank',
+        code: 'bank_error',
         details: err instanceof Error ? err.message : String(err),
       },
       502,

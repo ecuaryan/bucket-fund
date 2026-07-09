@@ -105,6 +105,18 @@ export class SessionExpiredError extends Error {
   }
 }
 
+/**
+ * The bank link is expired/deauthorized — a retry won't help; it must be
+ * reconnected. Callers pick admin vs. member copy and show a reconnect CTA
+ * rather than the generic transient error.
+ */
+export class BankLinkReconnectError extends Error {
+  constructor() {
+    super('Bank link needs reconnecting')
+    this.name = 'BankLinkReconnectError'
+  }
+}
+
 async function authFetch(
   path: string,
   init?: RequestInit,
@@ -356,7 +368,7 @@ export async function fetchBankTransactions(
 
   const body = (await res.json().catch(() => ({}))) as Partial<
     FetchBankTransactionsResult
-  > & { error?: string; details?: string }
+  > & { error?: string; details?: string; code?: string }
 
   if (!res.ok) {
     // Never surface the opaque status to the user (e.g. "…: 546", the edge
@@ -367,6 +379,11 @@ export async function fetchBankTransactions(
       ? `${body.error}${detail}`
       : `bank activity request failed: ${res.status}`
     console.warn(`[teller] ${technical}`)
+    // An expired/deauthorized link is not "try again" — route it to a distinct
+    // reconnect flow.
+    if (body.code === 'bank_link_reconnect') {
+      throw new BankLinkReconnectError()
+    }
     if (res.status === 503 && import.meta.env.DEV) {
       throw new Error(
         `${BANK_ACTIVITY_LOAD_ERROR} (Local dev: run \`npm run functions:serve\` in a second terminal with \`supabase/functions/.env\`.)`,

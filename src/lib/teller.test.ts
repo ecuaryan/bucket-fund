@@ -10,7 +10,7 @@ vi.mock('@/lib/supabaseKeys', () => ({
   resolveSupabasePublishableKey: () => 'publishable-key',
 }))
 
-import { fetchBankTransactions } from '@/lib/teller'
+import { BankLinkReconnectError, fetchBankTransactions } from '@/lib/teller'
 
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
@@ -57,6 +57,38 @@ describe('fetchBankTransactions error copy', () => {
     await expect(fetchBankTransactions('acc_1')).rejects.toThrow(
       BANK_ACTIVITY_LOAD_ERROR,
     )
+  })
+
+  it('throws BankLinkReconnectError when the link is expired (409 bank_link_reconnect)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        jsonResponse(
+          { error: 'Bank link needs reconnecting', code: 'bank_link_reconnect' },
+          409,
+        ),
+      ),
+    )
+
+    await expect(fetchBankTransactions('acc_1')).rejects.toBeInstanceOf(
+      BankLinkReconnectError,
+    )
+  })
+
+  it('uses generic friendly copy for a Teller timeout (504 bank_timeout)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        jsonResponse(
+          { error: 'Bank request timed out', code: 'bank_timeout' },
+          504,
+        ),
+      ),
+    )
+
+    const err = await fetchBankTransactions('acc_1').catch((e) => e as Error)
+    expect(err).not.toBeInstanceOf(BankLinkReconnectError)
+    expect(err.message).toBe(BANK_ACTIVITY_LOAD_ERROR)
   })
 
   it('does not leak Teller error details (502) to the user', async () => {
