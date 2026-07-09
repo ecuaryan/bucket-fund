@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { BANK_ACTIVITY_LOAD_ERROR } from '@/lib/brand'
+import { BANK_ACTIVITY_LOAD_ERROR, REFRESH_BALANCES_ERROR } from '@/lib/brand'
 
 vi.mock('@/lib/sessionToken', () => ({
   getFreshAccessToken: vi.fn(async () => 'access-token'),
@@ -10,7 +10,56 @@ vi.mock('@/lib/supabaseKeys', () => ({
   resolveSupabasePublishableKey: () => 'publishable-key',
 }))
 
-import { BankLinkReconnectError, fetchBankTransactions } from '@/lib/teller'
+import {
+  BankLinkReconnectError,
+  fetchBankTransactions,
+  refreshBalancesErrorMessage,
+  type RefreshBalancesResult,
+} from '@/lib/teller'
+
+function refreshResult(
+  overrides: Partial<RefreshBalancesResult> = {},
+): RefreshBalancesResult {
+  return {
+    ok: true,
+    refreshed: false,
+    accountsUpdated: 0,
+    bankLastSyncedAt: null,
+    errors: [],
+    ...overrides,
+  }
+}
+
+describe('refreshBalancesErrorMessage', () => {
+  it('is null when no bank errored (success or throttled/skipped)', () => {
+    expect(refreshBalancesErrorMessage(refreshResult())).toBeNull()
+    expect(
+      refreshBalancesErrorMessage(
+        refreshResult({ refreshed: true, accountsUpdated: 3 }),
+      ),
+    ).toBeNull()
+  })
+
+  it('returns friendly copy when any bank errored — even on a 200 response', () => {
+    expect(
+      refreshBalancesErrorMessage(
+        refreshResult({ errors: ['acc_1: Teller /accounts/… timed out'] }),
+      ),
+    ).toBe(REFRESH_BALANCES_ERROR)
+  })
+
+  it('flags a partial failure (some updated, some errored)', () => {
+    expect(
+      refreshBalancesErrorMessage(
+        refreshResult({
+          refreshed: true,
+          accountsUpdated: 2,
+          errors: ['acc_3: Teller timed out'],
+        }),
+      ),
+    ).toBe(REFRESH_BALANCES_ERROR)
+  })
+})
 
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
