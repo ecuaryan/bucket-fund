@@ -766,6 +766,14 @@ export function floatRefreshedLabel(relativeTime: string): string {
 export const REFRESH_BALANCES_ERROR =
   "Couldn't refresh your balances right now. Your bank or our sync may be busy—try again in a moment."
 
+/**
+ * Shown when the pre-flight check says Teller is unreachable, so we decline to
+ * open Teller Connect (link / reconnect) rather than trap the user on Teller's
+ * full-screen 503. Names Teller's outage plainly — nothing the user can fix.
+ */
+export const TELLER_UNAVAILABLE_MESSAGE =
+  "Your bank connection service (Teller) is temporarily unavailable. Please try again in a little while."
+
 // --- Auto-bucket (Buckets tab) ---
 // UI label is "Auto-bucket"; schema/RPCs keep `auto_organize*` (see docs).
 

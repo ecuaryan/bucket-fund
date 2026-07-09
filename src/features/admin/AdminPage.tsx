@@ -40,6 +40,7 @@ import {
   manualSourceAddedSuccess,
   manualSourceRemovedSuccess,
   manualSourceUpdatedSuccess,
+  TELLER_UNAVAILABLE_MESSAGE,
   VIEW_RECENT_BANK_ACTIVITY,
 } from '@/lib/brand'
 import { toast } from '@/lib/toast'
@@ -49,6 +50,7 @@ import {
 } from '@/lib/adminLinkedAccounts'
 import { pickHouseholdAdminName } from '@/lib/householdAdmin'
 import {
+  checkTellerReachable,
   disconnectEnrollment,
   listTellerEnrollments,
   refreshBalances,
@@ -112,6 +114,9 @@ export default function AdminPage() {
   const [unlinkingKey, setUnlinkingKey] = useState<string | null>(null)
   const [reconnectingKey, setReconnectingKey] = useState<string | null>(null)
   const [refreshingKey, setRefreshingKey] = useState<string | null>(null)
+  // True while the pre-flight Teller reachability check runs before opening
+  // Teller Connect — used to avoid trapping the user on a full-screen 503.
+  const [preflightingTeller, setPreflightingTeller] = useState(false)
   const [accountsSyncing, setAccountsSyncing] = useState(false)
   const [enrollmentMeta, setEnrollmentMeta] = useState<
     Map<string, TellerEnrollmentMeta>
@@ -314,7 +319,17 @@ export default function AdminPage() {
     )
   }
 
-  function startLinkBank() {
+  async function startLinkBank() {
+    // Pre-flight: if Teller is down, opening Connect would drop the user on a
+    // full-screen 503 with no way back. Decline up front instead. Fails open —
+    // checkTellerReachable only returns false when Teller is affirmatively down.
+    setPreflightingTeller(true)
+    const reachable = await checkTellerReachable()
+    setPreflightingTeller(false)
+    if (!reachable) {
+      toast.error(TELLER_UNAVAILABLE_MESSAGE)
+      return
+    }
     teller.open({
       onLinked: (result) => afterLinkSuccess(result, 'Linked'),
       onError: (msg) => toast.error(msg),
@@ -334,12 +349,20 @@ export default function AdminPage() {
     startLinkBank()
   }
 
-  function onReconnect(group: InstitutionGroup) {
+  async function onReconnect(group: InstitutionGroup) {
     if (!group.tellerConnectEnrollmentId) {
       toast.error('Missing enrollment id for reconnect.')
       return
     }
     setReconnectingKey(group.groupKey)
+    // Pre-flight: don't open Connect into a Teller outage (full-screen 503 with
+    // no escape). Fails open — only bails when Teller is affirmatively down.
+    const reachable = await checkTellerReachable()
+    if (!reachable) {
+      setReconnectingKey(null)
+      toast.error(TELLER_UNAVAILABLE_MESSAGE)
+      return
+    }
     teller.open(
       {
         onLinked: (result) => {
@@ -480,11 +503,14 @@ export default function AdminPage() {
           (unlinkingKey !== null ||
             reconnectingKey !== null ||
             refreshingKey !== null ||
+            preflightingTeller ||
             accountsSyncing)
         }
         label={
-          reconnectingKey
-            ? 'Reconnecting…'
+          reconnectingKey || preflightingTeller
+            ? reconnectingKey
+              ? 'Reconnecting…'
+              : 'Checking bank connection…'
             : refreshingKey
               ? 'Refreshing balances…'
               : 'Updating accounts…'
@@ -504,7 +530,7 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={() => setAddSourceOpen((v) => !v)}
-              disabled={teller.linking}
+              disabled={teller.linking || preflightingTeller}
               className="rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {ADMIN_ADD_MONEY_SOURCE_ACTION}
@@ -513,7 +539,7 @@ export default function AdminPage() {
               <div className="absolute right-0 z-10 mt-1 w-max min-w-[12rem] overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-lg">
                 <button
                   type="button"
-                  disabled={!teller.ready || teller.linking}
+                  disabled={!teller.ready || teller.linking || preflightingTeller}
                   className="block w-full whitespace-nowrap px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
                   onClick={() => {
                     setAddSourceOpen(false)

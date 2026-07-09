@@ -12,6 +12,7 @@ vi.mock('@/lib/supabaseKeys', () => ({
 
 import {
   BankLinkReconnectError,
+  checkTellerReachable,
   fetchBankTransactions,
   refreshBalancesErrorMessage,
   type RefreshBalancesResult,
@@ -29,6 +30,50 @@ function refreshResult(
     ...overrides,
   }
 }
+
+describe('checkTellerReachable (fail-open)', () => {
+  beforeEach(() => {
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://project.supabase.co')
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
+  })
+
+  it('is true when the server reports Teller reachable', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse({ reachable: true }, 200)),
+    )
+    await expect(checkTellerReachable()).resolves.toBe(true)
+  })
+
+  it('is false only when the server affirmatively says unreachable', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse({ reachable: false }, 200)),
+    )
+    await expect(checkTellerReachable()).resolves.toBe(false)
+  })
+
+  it('fails open on a non-OK health response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse({ error: 'health check failed' }, 500)),
+    )
+    await expect(checkTellerReachable()).resolves.toBe(true)
+  })
+
+  it('fails open when the request itself throws', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch')
+      }),
+    )
+    await expect(checkTellerReachable()).resolves.toBe(true)
+  })
+})
 
 describe('refreshBalancesErrorMessage', () => {
   it('is null when no bank errored (success or throttled/skipped)', () => {
