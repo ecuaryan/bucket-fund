@@ -416,6 +416,16 @@ export const BANK_ACTIVITY_RETRY = 'Try again'
 export const BANK_ACTIVITY_EMPTY = 'No bank activity in the last 2 weeks.'
 export const BANK_ACTIVITY_PENDING = 'Pending'
 
+/**
+ * Bank activity failed to load for a reason other than a dropped connection —
+ * the bank/Teller returned an error, or our sync hit a temporary limit. Kept
+ * friendly and honest ("bank or our sync may be busy") instead of surfacing an
+ * opaque status like "Failed to load bank activity: 546". Dropped connections
+ * are handled separately by {@link NETWORK_ERROR_MESSAGE}.
+ */
+export const BANK_ACTIVITY_LOAD_ERROR =
+  "Couldn't load your bank activity right now. Your bank or our sync may be busy—try again in a moment."
+
 /** Accessible label for expand/collapse on a money-source group header. */
 export function adminMoneySourceGroupExpandLabel(
   expanded: boolean,
