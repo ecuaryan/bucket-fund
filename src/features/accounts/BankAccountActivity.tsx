@@ -1,19 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { ScrollFade } from '@/components/ui/ScrollFade'
 import {
   BANK_ACTIVITY_EMPTY,
   BANK_ACTIVITY_LOAD_ERROR,
   BANK_ACTIVITY_PENDING,
+  BANK_ACTIVITY_RECONNECT_ADMIN,
+  BANK_ACTIVITY_RECONNECT_CTA,
+  BANK_ACTIVITY_RECONNECT_MEMBER,
   BANK_ACTIVITY_RETRY,
   BANK_ACTIVITY_SCOPE,
   BANK_ACTIVITY_TOGGLE_HIDE,
   BANK_ACTIVITY_TOGGLE_SHOW,
   LOADING_STATUS_LABEL,
 } from '@/lib/brand'
+import { useAuth } from '@/lib/auth'
 import { formatErrorMessage } from '@/lib/errorMessage'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
-import { fetchBankTransactions, type BankTransactionRow } from '@/lib/teller'
+import {
+  BankLinkReconnectError,
+  fetchBankTransactions,
+  type BankTransactionRow,
+} from '@/lib/teller'
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   weekday: 'short',
@@ -29,17 +38,23 @@ type Props = {
 
 export default function BankAccountActivity({ accountId, panelOpen }: Props) {
   const { formatMoney } = useHideAmounts()
+  const { member } = useAuth()
+  const isAdmin = member?.role === 'admin'
   const [expanded, setExpanded] = useState(false)
   const [attempted, setAttempted] = useState(false)
   const [rows, setRows] = useState<BankTransactionRow[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // A reconnect error is terminal until the bank is re-linked — a retry can't
+  // fix it, so we swap the "Try again" button for a reconnect CTA.
+  const [needsReconnect, setNeedsReconnect] = useState(false)
   const fetchGeneration = useRef(0)
 
   const load = useCallback(async () => {
     const generation = ++fetchGeneration.current
     setLoading(true)
     setError(null)
+    setNeedsReconnect(false)
     try {
       const result = await fetchBankTransactions(accountId)
       if (generation !== fetchGeneration.current) return
@@ -47,13 +62,18 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
     } catch (e) {
       if (generation !== fetchGeneration.current) return
       setRows(null)
-      setError(formatErrorMessage(e, BANK_ACTIVITY_LOAD_ERROR))
+      if (e instanceof BankLinkReconnectError) {
+        setNeedsReconnect(true)
+        setError(isAdmin ? BANK_ACTIVITY_RECONNECT_ADMIN : BANK_ACTIVITY_RECONNECT_MEMBER)
+      } else {
+        setError(formatErrorMessage(e, BANK_ACTIVITY_LOAD_ERROR))
+      }
     } finally {
       if (generation === fetchGeneration.current) {
         setLoading(false)
       }
     }
-  }, [accountId])
+  }, [accountId, isAdmin])
 
   useEffect(() => {
     if (!panelOpen) {
@@ -61,6 +81,7 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
       setAttempted(false)
       setRows(null)
       setError(null)
+      setNeedsReconnect(false)
       setLoading(false)
       fetchGeneration.current++
     }
@@ -104,13 +125,24 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
           ) : error ? (
             <div className="space-y-2">
               <p className="text-xs text-red-300/90">{error}</p>
-              <button
-                type="button"
-                onClick={retry}
-                className="rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:bg-zinc-700"
-              >
-                {BANK_ACTIVITY_RETRY}
-              </button>
+              {needsReconnect ? (
+                isAdmin ? (
+                  <Link
+                    to="/admin"
+                    className="inline-block rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:bg-zinc-700"
+                  >
+                    {BANK_ACTIVITY_RECONNECT_CTA}
+                  </Link>
+                ) : null
+              ) : (
+                <button
+                  type="button"
+                  onClick={retry}
+                  className="rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:bg-zinc-700"
+                >
+                  {BANK_ACTIVITY_RETRY}
+                </button>
+              )}
             </div>
           ) : rows && rows.length > 0 ? (
             <ScrollFade className="max-h-52" scrollClassName="px-0.5">

@@ -421,10 +421,22 @@ export const BANK_ACTIVITY_PENDING = 'Pending'
  * the bank/Teller returned an error, or our sync hit a temporary limit. Kept
  * friendly and honest ("bank or our sync may be busy") instead of surfacing an
  * opaque status like "Failed to load bank activity: 546". Dropped connections
- * are handled separately by {@link NETWORK_ERROR_MESSAGE}.
+ * are handled separately by {@link NETWORK_ERROR_MESSAGE}; an expired bank link
+ * by {@link BANK_ACTIVITY_RECONNECT_ADMIN} / {@link BANK_ACTIVITY_RECONNECT_MEMBER}.
  */
 export const BANK_ACTIVITY_LOAD_ERROR =
   "Couldn't load your bank activity right now. Your bank or our sync may be busy—try again in a moment."
+
+/**
+ * The bank link is expired or deauthorized (Teller rejected our credentials).
+ * A retry can't fix it — the bank must be reconnected, which only an admin can
+ * do. Distinct from the transient {@link BANK_ACTIVITY_LOAD_ERROR}.
+ */
+export const BANK_ACTIVITY_RECONNECT_ADMIN =
+  'This bank needs reconnecting before its activity will load.'
+export const BANK_ACTIVITY_RECONNECT_MEMBER =
+  'This bank needs reconnecting. Ask your household admin to reconnect it in Admin.'
+export const BANK_ACTIVITY_RECONNECT_CTA = 'Reconnect in Admin'
 
 /** Accessible label for expand/collapse on a money-source group header. */
 export function adminMoneySourceGroupExpandLabel(

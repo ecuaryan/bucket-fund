@@ -15,6 +15,32 @@ import { parseTellerEnvironment } from './tellerEnvironment.ts'
 
 const TELLER_BASE = 'https://api.teller.io'
 
+// Teller occasionally hangs (its upstream bank is slow or unreachable). Without
+// a bound, the edge worker waits until the runtime kills it — which surfaces to
+// the client as an opaque 546 after *minutes* of spinning. Cap every call so we
+// fail fast with a clear, typed error instead.
+const TELLER_REQUEST_TIMEOUT_MS = 15_000
+
+/** Teller returned a non-2xx response. `status` lets callers branch (e.g. 401 → reconnect). */
+export class TellerApiError extends Error {
+  status: number
+  responseBody: string
+  constructor(status: number, statusText: string, body: string, path: string) {
+    super(`Teller ${path} failed: ${status} ${statusText} — ${body}`)
+    this.name = 'TellerApiError'
+    this.status = status
+    this.responseBody = body
+  }
+}
+
+/** Teller did not respond within {@link TELLER_REQUEST_TIMEOUT_MS}. */
+export class TellerTimeoutError extends Error {
+  constructor(path: string) {
+    super(`Teller ${path} timed out after ${TELLER_REQUEST_TIMEOUT_MS}ms`)
+    this.name = 'TellerTimeoutError'
+  }
+}
+
 type TellerEnv = {
   applicationId: string
   certificate: string
@@ -74,19 +100,33 @@ async function tellerFetch<T>(
       url.searchParams.set(key, String(value))
     }
   }
-  const res = await fetch(url.toString(), {
-    client,
-    headers: {
-      Authorization: `Basic ${auth}`,
-      Accept: 'application/json',
-    },
-  })
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), TELLER_REQUEST_TIMEOUT_MS)
+  let res: Response
+  try {
+    res = await fetch(url.toString(), {
+      client,
+      headers: {
+        Authorization: `Basic ${auth}`,
+        Accept: 'application/json',
+      },
+      signal: controller.signal,
+    })
+  } catch (err) {
+    // The AbortController fired: we gave up on Teller. Surface a typed timeout
+    // so callers can respond immediately instead of hanging until the worker
+    // is killed.
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new TellerTimeoutError(path)
+    }
+    throw err
+  } finally {
+    clearTimeout(timer)
+  }
 
   if (!res.ok) {
     const body = await res.text().catch(() => '<empty>')
-    throw new Error(
-      `Teller GET ${path} failed: ${res.status} ${res.statusText} — ${body}`,
-    )
+    throw new TellerApiError(res.status, res.statusText, body, path)
   }
 
   return (await res.json()) as T

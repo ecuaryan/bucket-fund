@@ -10,7 +10,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { publishableKey, secretKey } from '../_shared/keys.ts'
-import { listTransactions } from '../_shared/teller.ts'
+import { listTransactions, TellerTimeoutError } from '../_shared/teller.ts'
 
 const BANK_TRANSACTIONS_DAYS = 14
 const BANK_TRANSACTIONS_LIMIT = 50
@@ -161,7 +161,12 @@ Deno.serve(async (req: Request) => {
     !enrollment.access_token ||
     enrollment.status !== 'active'
   ) {
-    return jsonResponse({ error: 'Bank link is not active' }, 400)
+    // A retry will never fix an inactive link — the client must send the user
+    // to reconnect. `code` drives that distinct messaging.
+    return jsonResponse(
+      { error: 'Bank link needs reconnecting', code: 'bank_link_reconnect' },
+      409,
+    )
   }
 
   const endDate = isoDateOnly(new Date())
@@ -208,9 +213,23 @@ Deno.serve(async (req: Request) => {
       transactions,
     })
   } catch (err) {
+    // We gave up waiting on Teller — fail fast rather than hang.
+    if (err instanceof TellerTimeoutError) {
+      return jsonResponse(
+        { error: 'Bank request timed out', code: 'bank_timeout', details: err.message },
+        504,
+      )
+    }
+    // Every other live Teller failure — including a transient 401 during a
+    // Teller outage — is treated as retryable, NOT a reconnect. We only tell a
+    // user to reconnect when Teller has *definitively* disconnected the
+    // enrollment via the `enrollment.disconnected` webhook (which flips
+    // enrollment.status; handled by the inactive-link check above). This avoids
+    // crying "reconnect" on a Teller hiccup the user can't fix by re-linking.
     return jsonResponse(
       {
         error: 'Failed to load transactions from bank',
+        code: 'bank_error',
         details: err instanceof Error ? err.message : String(err),
       },
       502,
