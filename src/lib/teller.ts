@@ -358,6 +358,27 @@ export async function refreshBalances(
 }
 
 /**
+ * Best-effort check that Teller is reachable, used as a pre-flight before
+ * launching Teller Connect (link / reconnect) so we don't open the full-screen
+ * overlay into a Teller outage and trap the user on a raw 503.
+ *
+ * **Fails open**: returns `true` on any ambiguity (our own request failing, a
+ * non-OK response, a bad body). We only report `false` when the server
+ * affirmatively says Teller is unreachable — never blocking a legitimate
+ * reconnect because *our* health check hiccuped.
+ */
+export async function checkTellerReachable(): Promise<boolean> {
+  try {
+    const res = await authFetch('teller-health', { method: 'POST' })
+    if (!res.ok) return true
+    const body = (await res.json().catch(() => ({}))) as { reachable?: boolean }
+    return body.reachable !== false
+  } catch {
+    return true
+  }
+}
+
+/**
  * Friendly message when a balance refresh partially or fully failed, else null.
  *
  * `refreshBalances` resolves (HTTP 200) even when a bank errored — per-account
