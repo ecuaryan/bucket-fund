@@ -59,10 +59,11 @@ with `isLinkedAccount()` in `src/lib/accounts.ts`.
   (vs Teller's 60s) + on-demand Bank activity fetches with a 10-minute
   client-side cache per account.
 - **One connection can span several banks** (whatever the user connected on
-  the Bridge before minting the token). Admin still displays per-institution
-  groups, but Unlink operates on the whole connection — when other banks
-  share it, the confirm Sheet names them (`simpleFinUnlinkSharedConnectionWarning`).
-  Dropping a single bank happens on the Bridge site.
+  the Bridge before minting the token). Admin groups **by connection** — one
+  card, one Refresh, one Unlink, titled with the joined bank names
+  ("Ally Bank · Robinhood") and each row labelled with its own bank — so the
+  UI unit matches the only unit SimpleFIN can unlink. Dropping a single bank
+  happens on the Bridge site.
 - **No server-side revoke.** Unlink deletes local rows; the user must also
   delete the app's access on the Bridge site (the unlink Sheet says so).
 - **Reconnect** = new Setup Token (HTTP 402/403 from SimpleFIN marks the

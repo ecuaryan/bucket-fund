@@ -20,8 +20,13 @@ export type InstitutionGroup = {
   tellerConnectEnrollmentId: string | null
   /** All Teller enrollments backing this institution (for Unlink). */
   enrollmentIds: string[]
-  /** All SimpleFIN connections backing this institution (refresh/unlink). */
+  /** All SimpleFIN connections backing this group (refresh/unlink). */
   simplefinConnectionIds: string[]
+  /**
+   * True when one SimpleFIN connection covers several institutions — rows
+   * then show their own institution so the mix stays readable.
+   */
+  spansInstitutions: boolean
   /** Manual money sources (no bank link). */
   isManual: boolean
 }
@@ -117,9 +122,15 @@ function latestSyncedAt(accounts: Account[]): string | null {
 
 /**
  * Group accounts for the Admin Money sources list: manual sources first,
- * then one group per (provider, institution) — a Teller "Chase" and a
- * SimpleFIN "Chase" stay separate because their available actions differ —
- * then provider orphans (linked rows whose connection row is gone).
+ * then one group per linked unit, then provider orphans (linked rows whose
+ * connection row is gone).
+ *
+ * The grouping unit matches what Unlink actually removes: for Teller that
+ * is the institution (one enrollment per bank); for SimpleFIN it is the
+ * **connection** (one Setup Token can cover several banks — SimpleFIN has
+ * no per-bank revoke, so a per-bank card would promise an unlink scope we
+ * can't deliver). A multi-bank connection titles itself with the joined
+ * institution names.
  */
 export function groupAccountsByInstitution(
   accounts: Account[],
@@ -147,13 +158,17 @@ export function groupAccountsByInstitution(
       orphans.push(account)
       continue
     }
-    const institutionName =
-      account.institution_name ??
-      (provider === 'teller'
-        ? (enrollmentMeta.get(account.teller_enrollment_id as string)
-            ?.institutionName ?? null)
-        : null)
-    const key = `${provider}:${normalizeInstitutionKey(institutionName)}`
+    // Teller groups by institution (one enrollment per bank); SimpleFIN
+    // groups by connection, the unit Unlink actually removes.
+    const key =
+      provider === 'simplefin'
+        ? `simplefin:${account.simplefin_connection_id}`
+        : `teller:${normalizeInstitutionKey(
+            account.institution_name ??
+              enrollmentMeta.get(account.teller_enrollment_id as string)
+                ?.institutionName ??
+              null,
+          )}`
     const bucket = byProviderInstitution.get(key)
     if (bucket) bucket.accounts.push(account)
     else byProviderInstitution.set(key, { provider, accounts: [account] })
@@ -178,11 +193,22 @@ export function groupAccountsByInstitution(
     ]
     const primaryEnrollmentId = pickPrimaryEnrollmentId(sorted, enrollmentMeta)
     const primaryMeta = enrollmentMeta.get(primaryEnrollmentId)
+    // Distinct institutions in first-seen order; a multi-bank SimpleFIN
+    // connection reads "Ally Bank · Robinhood".
+    const institutionNames = [
+      ...new Set(
+        sorted
+          .map((a) => a.institution_name)
+          .filter((name): name is string => Boolean(name)),
+      ),
+    ]
 
     groups.push({
       groupKey,
       institutionName:
-        sorted[0]?.institution_name ?? primaryMeta?.institutionName ?? null,
+        institutionNames.length > 0
+          ? institutionNames.join(' · ')
+          : (primaryMeta?.institutionName ?? null),
       accounts: sorted,
       totalBalance: sorted.reduce((sum, a) => sum + signedBalance(a), 0),
       lastSyncedAt: latestSyncedAt(sorted),
@@ -191,6 +217,7 @@ export function groupAccountsByInstitution(
       tellerConnectEnrollmentId: primaryMeta?.enrollmentId ?? null,
       enrollmentIds,
       simplefinConnectionIds,
+      spansInstitutions: institutionNames.length > 1,
       isManual: false,
     })
   }
@@ -208,6 +235,7 @@ export function groupAccountsByInstitution(
       tellerConnectEnrollmentId: null,
       enrollmentIds: [],
       simplefinConnectionIds: [],
+      spansInstitutions: false,
       isManual: true,
     })
   }
@@ -224,6 +252,7 @@ export function groupAccountsByInstitution(
       tellerConnectEnrollmentId: null,
       enrollmentIds: [],
       simplefinConnectionIds: [],
+      spansInstitutions: false,
       isManual: false,
     })
   }

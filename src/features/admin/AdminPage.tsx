@@ -37,7 +37,6 @@ import {
   manualSourceUpdatedSuccess,
   SIMPLEFIN_UNLINK_REVOKE_NOTE,
   simpleFinImportedSuccess,
-  simpleFinUnlinkSharedConnectionWarning,
   TELLER_SUNSET_ADMIN_NOTE,
   VIEW_RECENT_BANK_ACTIVITY,
 } from '@/lib/brand'
@@ -315,22 +314,6 @@ export default function AdminPage() {
       setAccountsSyncing(false)
     }
   }
-
-  // Other institutions riding the same SimpleFIN connection(s) as the unlink
-  // target. Unlink removes the whole connection (SimpleFIN's only real unit),
-  // so the confirm sheet must name every bank that goes with it.
-  const unlinkSharedInstitutions = useMemo(() => {
-    if (!unlinkTarget || unlinkTarget.provider !== 'simplefin') return []
-    const targetIds = new Set(unlinkTarget.simplefinConnectionIds)
-    return groups
-      .filter(
-        (g) =>
-          g.provider === 'simplefin' &&
-          g.groupKey !== unlinkTarget.groupKey &&
-          g.simplefinConnectionIds.some((id) => targetIds.has(id)),
-      )
-      .map((g) => g.institutionName ?? 'another bank')
-  }, [unlinkTarget, groups])
 
   function requestUnlinkInstitution(group: InstitutionGroup) {
     if (
@@ -636,6 +619,11 @@ export default function AdminPage() {
                             "manual"/"credit_card" type line adds nothing. */}
                         {!group.isManual ? (
                           <p className="text-xs text-zinc-400">
+                            {/* A multi-bank connection card names each row's
+                                bank so the mix stays readable. */}
+                            {group.spansInstitutions && a.institution_name
+                              ? `${a.institution_name} · `
+                              : ''}
                             {accountTypeLabel(a.account_type)}
                           </p>
                         ) : null}
@@ -873,12 +861,6 @@ export default function AdminPage() {
                 unlinkTarget.accounts.length,
               )}
             </p>
-
-            {unlinkSharedInstitutions.length > 0 ? (
-              <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-200 ring-1 ring-amber-500/30">
-                {simpleFinUnlinkSharedConnectionWarning(unlinkSharedInstitutions)}
-              </p>
-            ) : null}
 
             {unlinkTarget.provider === 'simplefin' ? (
               <p className="text-sm text-zinc-400">

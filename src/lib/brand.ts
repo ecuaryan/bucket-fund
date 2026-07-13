@@ -1318,23 +1318,6 @@ export function simpleFinImportedSuccess(count: number): string {
 export const SIMPLEFIN_UNLINK_REVOKE_NOTE =
   'This removes the accounts from Bucket My Money. To fully revoke access, also delete this app from your SimpleFIN Bridge account.'
 
-/**
- * One Setup Token = one SimpleFIN connection, and a connection can span
- * several banks. Unlink operates on the connection (SimpleFIN's only real
- * unit), so when other banks share it, name the full blast radius before
- * the user commits.
- */
-export function simpleFinUnlinkSharedConnectionWarning(
-  otherInstitutions: string[],
-): string {
-  const names =
-    otherInstitutions.length <= 1
-      ? (otherInstitutions[0] ?? 'another bank')
-      : `${otherInstitutions.slice(0, -1).join(', ')} and ${otherInstitutions[otherInstitutions.length - 1]}`
-  const those = otherInstitutions.length === 1 ? 'that bank' : 'those banks'
-  return `This bank shares one SimpleFIN connection with ${names}, so unlinking removes ${those} too. To drop a single bank, remove it from the connection on the SimpleFIN Bridge site instead.`
-}
-
 // --- Teller (quiesced) ---
 // Teller withdrew its API product (July 2026). Teller-linked accounts stay
 // with frozen balances; live actions are hidden until a possible Teller v2.
