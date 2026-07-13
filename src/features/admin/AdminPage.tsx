@@ -589,7 +589,13 @@ export default function AdminPage() {
                     className="block w-full whitespace-nowrap px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
                     onClick={() => {
                       setAddSourceOpen(false)
-                      setPlaidSheetOpen(true)
+                      // The chooser sheet only earns its tap when a detached
+                      // Item offers a free re-add; otherwise straight to Link.
+                      if (detachedPlaidItems.length > 0) {
+                        setPlaidSheetOpen(true)
+                      } else {
+                        void startPlaidNewLink()
+                      }
                     }}
                   >
                     {ADMIN_ADD_SOURCE_PLAID_OPTION}

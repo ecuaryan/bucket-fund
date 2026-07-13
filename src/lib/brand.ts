@@ -1338,15 +1338,14 @@ export const SIMPLEFIN_UNLINK_REVOKE_NOTE =
 
 export const ADMIN_ADD_SOURCE_PLAID_OPTION = 'Connect with Plaid'
 
-export const PLAID_NEW_LINK_SHEET_TITLE = 'Connect a new bank with Plaid?'
+// Sheet appears only when detached Items exist — re-adding one of those is
+// instant and slot-free, so it's offered before opening Link for a new bank.
+export const PLAID_NEW_LINK_SHEET_TITLE = 'Connect with Plaid'
 export const PLAID_NEW_LINK_SHEET_INTRO =
-  'Plaid gives this app 10 bank connections for its lifetime—used slots never come back, even if you disconnect. Only continue for a bank that has never been connected with Plaid before.'
-export function plaidSlotWarning(): string {
-  return 'Connecting a new bank permanently uses one of the 10.'
-}
-export const PLAID_NEW_LINK_CONFIRM_ACTION = 'Connect new bank'
+  'Re-add a bank you’ve connected before, or connect a new one.'
+export const PLAID_NEW_LINK_CONFIRM_ACTION = 'Connect a new bank'
 export const PLAID_REATTACH_HINT =
-  'These banks are already connected to Plaid and can be re-added without using a slot:'
+  'Already connected to Plaid — re-add instantly:'
 export function plaidReattachAction(institutionName: string | null): string {
   return `Re-add ${institutionName ?? 'bank'}`
 }
