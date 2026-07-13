@@ -172,7 +172,7 @@ describe('return_from_child RPC', () => {
     expect(await getFloatBalance(admin)).toBe(160)
   })
 
-  it('rejects return from linked child', async () => {
+  it('rejects taking bank money from a linked child with no virtual credit', async () => {
     const family = await createAdminFamily('return-linked')
     const linkedChild = await addMember(family.familyId, 'child', 'Jordan')
     const svc = serviceClient()
@@ -193,7 +193,57 @@ describe('return_from_child RPC', () => {
     })
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(/settle through the bank/i)
+    expect(error?.message).toMatch(/virtual money/i)
+  })
+
+  it('takes a linked child’s virtual credit, capped at their net gives', async () => {
+    const family = await createAdminFamily('return-linked-credit')
+    const child = await addMember(family.familyId, 'child', 'Jordan')
+    const svc = serviceClient()
+
+    // Family pool cash so the give works while the kid is unlinked.
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 200,
+    })
+
+    // The double-count scenario: gives accumulate while the kid has no
+    // linked account, then a bank account gets assigned to them.
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    await giveMoney(admin, { toMemberId: child.memberId, amount: 30 })
+
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: child.memberId,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 30,
+      source: 'teller',
+    })
+
+    // Balance now double-counts: 30 linked cash + 30 net gives.
+    expect(await memberBalance(svc, child.memberId)).toBe(60)
+
+    // Taking beyond the virtual component is blocked — bank cash is not
+    // virtually takeable.
+    const { error: overError } = await admin.rpc('return_from_child', {
+      p_from_child_id: child.memberId,
+      p_amount: 30.01,
+    })
+    expect(overError).not.toBeNull()
+    expect(overError?.message).toMatch(/virtual money/i)
+
+    // Taking exactly the virtual component settles the double count.
+    const txId = await returnFromChild(admin, {
+      fromChildId: child.memberId,
+      amount: 30,
+      note: 'settle after re-linking',
+    })
+    expect(txId).toBeTruthy()
+    expect(await memberBalance(svc, child.memberId)).toBe(30)
   })
 
   it('rejects child caller', async () => {

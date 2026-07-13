@@ -255,6 +255,18 @@ export function kidsTakeSheetIntro(
   return `${kidName} has ${availableLabel} you can take back to shared ${FLOAT_LABEL_LOWER} cash. If some of it is set aside in their buckets, their ${FLOAT_LABEL_LOWER} goes negative and they choose which bucket covers it.`
 }
 
+/**
+ * Take sheet intro for a LINKED kid: only their virtual money (net gives)
+ * is takeable — typically leftovers from a stretch without a linked bank
+ * that would otherwise double-count once the real account is back.
+ */
+export function kidsTakeLinkedSheetIntro(
+  kidName: string,
+  availableLabel: string,
+): string {
+  return `${kidName} has ${availableLabel} of virtual money on top of their linked bank account. If that money is already in their real account, take it back so it isn't counted twice. Bank money itself moves at the bank.`
+}
+
 export function kidsTakeOverdraftMessage(availableLabel: string): string {
   return `You can only take up to ${availableLabel}.`
 }
@@ -579,6 +591,7 @@ export const ADMIN_ASSIGN_ACCOUNT_TO_KID_EFFECTS = [
   'Their balance follows this linked account (debit card spending updates automatically).',
   'Moving money in or out happens at the bank—transfers and deposits, not in the app.',
   'To let this kid give again, unassign all linked accounts.',
+  'If they already have virtual money in the app that\u2019s also sitting in this account, Take it back from the Kids page after assigning so it isn\u2019t counted twice.',
 ] as const
 
 export function adminAssignAccountToKidConfirm(kidName: string): string {

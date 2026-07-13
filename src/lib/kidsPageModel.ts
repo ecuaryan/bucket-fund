@@ -25,6 +25,8 @@ export type LinkedKidRow = {
   memberId: string
   name: string
   amount: number
+  /** Net gives — virtual money takeable even though the kid is linked. */
+  giveNet: number
   accounts: LinkedKidAccountRow[]
 }
 
@@ -56,6 +58,7 @@ export function buildKidsPageModel(args: {
         memberId: child.id,
         name: child.name,
         amount,
+        giveNet: balance?.giveNet ?? 0,
         accounts: ownedAccounts,
       })
     } else {
