@@ -88,7 +88,8 @@ UI labels: **Admin**, **Shared**, **Kid** (`memberRoles.ts`). DB/API values rema
 ---
 
 ### Accounts
-- **Money sources** are rows in `accounts`: **linked banks** (SimpleFIN today;
+- **Money sources** are rows in `accounts`: **linked banks** (SimpleFIN for
+  everyone; Plaid behind the `plaid` feature flag for the owner's household;
   quiesced Teller rows persist with frozen balances — see
   [docs/BANK_PROVIDERS.md](./docs/BANK_PROVIDERS.md)) and/or one or more
   **manual amounts** (admin-entered; no bank connection). They sum into the

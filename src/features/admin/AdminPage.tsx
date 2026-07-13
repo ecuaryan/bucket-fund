@@ -35,6 +35,11 @@ import {
   manualSourceAddedSuccess,
   manualSourceRemovedSuccess,
   manualSourceUpdatedSuccess,
+  ADMIN_ADD_SOURCE_PLAID_OPTION,
+  PLAID_RECONNECT_NEEDED_NOTE,
+  PLAID_RECONNECTED_SUCCESS,
+  PLAID_UNLINK_KEEPS_ITEM_NOTE,
+  plaidLinkedSuccess,
   SIMPLEFIN_UNLINK_REVOKE_NOTE,
   simpleFinImportedSuccess,
   TELLER_SUNSET_ADMIN_NOTE,
@@ -52,9 +57,22 @@ import {
   refreshSimpleFinBalances,
   type SimpleFinConfirmedAccount,
 } from '@/lib/simplefin'
+import {
+  completePlaidUpdateMode,
+  createPlaidLinkToken,
+  disconnectPlaidItem,
+  exchangePlaidPublicToken,
+  listPlaidItems,
+  refreshPlaidBalances,
+  usePlaidLink,
+  type PlaidItemMeta,
+  type PlaidLinkResult,
+} from '@/lib/plaid'
+import { useFeatureFlag } from '@/hooks/FeatureFlagsProvider'
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import SimpleFinConnectDialog from '@/features/admin/SimpleFinConnectDialog'
+import PlaidConnectSheet from '@/features/admin/PlaidConnectSheet'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
 import MembersSection from '@/features/admin/MembersSection'
 import AppVersionFooter from '@/components/AppVersionFooter'
@@ -106,6 +124,13 @@ export default function AdminPage() {
   const [accountsSyncing, setAccountsSyncing] = useState(false)
   const [addSourceOpen, setAddSourceOpen] = useState(false)
   const [simpleFinDialogOpen, setSimpleFinDialogOpen] = useState(false)
+  // Plaid is flag-gated (10 lifetime Items — owner's household only).
+  const plaidEnabled = useFeatureFlag('plaid')
+  const plaidLink = usePlaidLink()
+  const [plaidItems, setPlaidItems] = useState<PlaidItemMeta[]>([])
+  const [plaidSheetOpen, setPlaidSheetOpen] = useState(false)
+  const [plaidBusy, setPlaidBusy] = useState(false)
+  const [reconnectingKey, setReconnectingKey] = useState<string | null>(null)
   const [manualDialog, setManualDialog] = useState<
     | { mode: 'create'; kind: ManualAccountKind }
     | {
@@ -222,11 +247,26 @@ export default function AdminPage() {
     void loadMembers()
   }, [loadAccounts, loadMembers])
 
+  // Plaid Item metadata (institution names for detached Items, reconnect
+  // state). Best-effort: the page must not break if the flag flips off or
+  // the function is unreachable.
+  const loadPlaidItems = useCallback(async () => {
+    if (!plaidEnabled) return
+    try {
+      setPlaidItems(await listPlaidItems())
+    } catch (e) {
+      console.warn('[plaid] items list failed', e)
+    }
+  }, [plaidEnabled])
+
   useEffect(() => {
     if (!member) return
     void loadAccounts()
     void loadMembers()
-  }, [member, loadAccounts, loadMembers])
+    if (member.role === 'admin' && plaidEnabled) {
+      void loadPlaidItems()
+    }
+  }, [member, loadAccounts, loadMembers, loadPlaidItems, plaidEnabled])
 
   const memberRolesById = useMemo(
     () => new Map((members ?? []).map((m) => [m.id, m.role])),
@@ -245,12 +285,21 @@ export default function AdminPage() {
     () => new Map<string, TellerEnrollmentMeta>(),
     [],
   )
+  const plaidItemMeta = useMemo(
+    () => new Map(plaidItems.map((item) => [item.id, item])),
+    [plaidItems],
+  )
+  const detachedPlaidItems = useMemo(
+    () => plaidItems.filter((item) => item.status === 'detached'),
+    [plaidItems],
+  )
+
   const groups = useMemo(
     () =>
       accounts
-        ? groupAccountsByInstitution(accounts, emptyEnrollmentMeta)
+        ? groupAccountsByInstitution(accounts, emptyEnrollmentMeta, plaidItemMeta)
         : [],
-    [accounts, emptyEnrollmentMeta],
+    [accounts, emptyEnrollmentMeta, plaidItemMeta],
   )
 
   const hasLinkedBanks = useMemo(
@@ -272,17 +321,100 @@ export default function AdminPage() {
   }
 
   async function onRefresh(group: InstitutionGroup) {
-    if (group.simplefinConnectionIds.length === 0) return
     setRefreshingKey(group.groupKey)
     setAccountsSyncing(true)
     try {
-      await refreshSimpleFinBalances(group.simplefinConnectionIds)
+      if (group.provider === 'plaid' && group.plaidItemIds.length > 0) {
+        await refreshPlaidBalances(group.plaidItemIds)
+      } else if (group.simplefinConnectionIds.length > 0) {
+        await refreshSimpleFinBalances(group.simplefinConnectionIds)
+      }
       await loadAccounts()
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
     } finally {
       setRefreshingKey(null)
       setAccountsSyncing(false)
+    }
+  }
+
+  async function afterPlaidLinked(result: PlaidLinkResult) {
+    toast.success(plaidLinkedSuccess(result.accounts.length))
+    setAccountsSyncing(true)
+    try {
+      await Promise.all([loadAccounts(), loadPlaidItems()])
+    } finally {
+      setAccountsSyncing(false)
+    }
+  }
+
+  /** New Plaid link — the only action that consumes a lifetime Item. */
+  async function startPlaidNewLink() {
+    setPlaidBusy(true)
+    try {
+      const linkToken = await createPlaidLinkToken()
+      setPlaidSheetOpen(false)
+      plaidLink.open(linkToken, {
+        onSuccess: async (publicToken, metadata) => {
+          try {
+            const result = await exchangePlaidPublicToken(
+              publicToken,
+              metadata.institution ?? null,
+            )
+            await afterPlaidLinked(result)
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : String(e))
+          } finally {
+            setPlaidBusy(false)
+          }
+        },
+        onExit: () => setPlaidBusy(false),
+      })
+    } catch (e) {
+      setPlaidBusy(false)
+      toast.error(e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  /** Re-import a detached Item's accounts — no Link session, no slot. */
+  async function reattachPlaidItem(item: PlaidItemMeta) {
+    setPlaidSheetOpen(false)
+    setAccountsSyncing(true)
+    try {
+      const result = await completePlaidUpdateMode(item.id)
+      toast.success(plaidLinkedSuccess(result.accounts.length))
+      await Promise.all([loadAccounts(), loadPlaidItems()])
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      setAccountsSyncing(false)
+    }
+  }
+
+  /** Link update-mode repair for ITEM_LOGIN_REQUIRED — never uses a slot. */
+  async function reconnectPlaidGroup(group: InstitutionGroup) {
+    const itemId = group.plaidItemIds[0]
+    if (!itemId) return
+    setReconnectingKey(group.groupKey)
+    try {
+      const linkToken = await createPlaidLinkToken(itemId)
+      plaidLink.open(linkToken, {
+        onSuccess: async () => {
+          try {
+            await completePlaidUpdateMode(itemId)
+            toast.success(PLAID_RECONNECTED_SUCCESS)
+            await Promise.all([loadAccounts(), loadPlaidItems()])
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : String(e))
+          } finally {
+            setReconnectingKey(null)
+          }
+        },
+        onExit: () => setReconnectingKey(null),
+      })
+    } catch (e) {
+      setReconnectingKey(null)
+      toast.error(e instanceof Error ? e.message : String(e))
     }
   }
 
@@ -318,7 +450,8 @@ export default function AdminPage() {
   function requestUnlinkInstitution(group: InstitutionGroup) {
     if (
       group.enrollmentIds.length === 0 &&
-      group.simplefinConnectionIds.length === 0
+      group.simplefinConnectionIds.length === 0 &&
+      group.plaidItemIds.length === 0
     ) {
       return
     }
@@ -331,7 +464,13 @@ export default function AdminPage() {
     setUnlinkTarget(null)
     setUnlinkingKey(group.groupKey)
     try {
-      if (group.provider === 'simplefin') {
+      if (group.provider === 'plaid') {
+        for (const itemId of group.plaidItemIds) {
+          await disconnectPlaidItem(itemId)
+        }
+        toast.success(`Unlinked ${group.institutionName ?? 'bank'}.`)
+        void loadPlaidItems()
+      } else if (group.provider === 'simplefin') {
         for (const connectionId of group.simplefinConnectionIds) {
           await disconnectSimpleFinConnection(connectionId)
         }
@@ -443,6 +582,19 @@ export default function AdminPage() {
                 >
                   {ADMIN_ADD_SOURCE_LINK_OPTION}
                 </button>
+                {plaidEnabled ? (
+                  <button
+                    type="button"
+                    disabled={!plaidLink.ready || plaidLink.linking || plaidBusy}
+                    className="block w-full whitespace-nowrap px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
+                    onClick={() => {
+                      setAddSourceOpen(false)
+                      setPlaidSheetOpen(true)
+                    }}
+                  >
+                    {ADMIN_ADD_SOURCE_PLAID_OPTION}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="block w-full whitespace-nowrap px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
@@ -498,10 +650,14 @@ export default function AdminPage() {
             {groups.map((group) => {
               const expanded = !collapsedGroupKeys.has(group.groupKey)
               const accountsPanelId = `admin-group-${group.groupKey}-accounts`
-              // Only SimpleFIN connections have live actions; Teller groups
+              // SimpleFIN and Plaid groups have live actions; Teller groups
               // are quiesced (frozen balances, unlink only).
-              const canRefresh = group.simplefinConnectionIds.length > 0
+              const canRefresh =
+                group.simplefinConnectionIds.length > 0 ||
+                group.plaidItemIds.length > 0
               const canUnlink = group.provider !== null
+              const showPlaidReconnect =
+                group.provider === 'plaid' && group.plaidReconnectRequired
               return (
               <li
                 key={group.groupKey}
@@ -563,11 +719,29 @@ export default function AdminPage() {
                           busy={refreshingKey === group.groupKey}
                           disabled={
                             refreshingKey === group.groupKey ||
-                            unlinkingKey === group.groupKey
+                            unlinkingKey === group.groupKey ||
+                            reconnectingKey === group.groupKey
                           }
                           onClick={() => void onRefresh(group)}
                           className="text-zinc-400 hover:text-zinc-200"
                         />
+                      )}
+                      {showPlaidReconnect && (
+                        <button
+                          type="button"
+                          onClick={() => void reconnectPlaidGroup(group)}
+                          disabled={
+                            !plaidLink.ready ||
+                            reconnectingKey === group.groupKey ||
+                            unlinkingKey === group.groupKey ||
+                            refreshingKey === group.groupKey
+                          }
+                          className="rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {reconnectingKey === group.groupKey
+                            ? 'Reconnecting…'
+                            : 'Reconnect'}
+                        </button>
                       )}
                       <button
                         type="button"
@@ -588,6 +762,11 @@ export default function AdminPage() {
                 {group.provider === 'teller' ? (
                   <p className="border-b border-zinc-800 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
                     {TELLER_SUNSET_ADMIN_NOTE}
+                  </p>
+                ) : null}
+                {showPlaidReconnect ? (
+                  <p className="border-b border-zinc-800 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
+                    {PLAID_RECONNECT_NEEDED_NOTE}
                   </p>
                 ) : null}
                 {expanded ? (
@@ -758,6 +937,17 @@ export default function AdminPage() {
         onImported={afterSimpleFinImport}
       />
 
+      {plaidEnabled ? (
+        <PlaidConnectSheet
+          open={plaidSheetOpen}
+          busy={plaidBusy || plaidLink.linking}
+          detachedItems={detachedPlaidItems}
+          onClose={() => setPlaidSheetOpen(false)}
+          onConnectNew={() => void startPlaidNewLink()}
+          onReattach={(item) => void reattachPlaidItem(item)}
+        />
+      ) : null}
+
       {removeManualTarget ? (
         <Sheet
           open
@@ -865,6 +1055,12 @@ export default function AdminPage() {
             {unlinkTarget.provider === 'simplefin' ? (
               <p className="text-sm text-zinc-400">
                 {SIMPLEFIN_UNLINK_REVOKE_NOTE}
+              </p>
+            ) : null}
+
+            {unlinkTarget.provider === 'plaid' ? (
+              <p className="text-sm text-zinc-400">
+                {PLAID_UNLINK_KEEPS_ITEM_NOTE}
               </p>
             ) : null}
 

@@ -1,11 +1,12 @@
 import { isCreditCardAccountType } from '@/lib/accountTypes'
 import type { Database } from '@/types/database'
 import type { TellerEnrollmentMeta } from '@/lib/teller'
+import type { PlaidItemMeta } from '@/lib/plaid'
 
 type Account = Database['public']['Tables']['accounts']['Row']
 
 /** Linked provider behind a group; null for manual sources and orphans. */
-export type InstitutionGroupProvider = 'teller' | 'simplefin' | null
+export type InstitutionGroupProvider = 'teller' | 'simplefin' | 'plaid' | null
 
 export type InstitutionGroup = {
   groupKey: string
@@ -22,6 +23,10 @@ export type InstitutionGroup = {
   enrollmentIds: string[]
   /** All SimpleFIN connections backing this group (refresh/unlink). */
   simplefinConnectionIds: string[]
+  /** All Plaid Items backing this group (refresh/reconnect/unlink). */
+  plaidItemIds: string[]
+  /** Plaid: the Item needs a Link update-mode repair. */
+  plaidReconnectRequired: boolean
   /**
    * True when one SimpleFIN connection covers several institutions — rows
    * then show their own institution so the mix stays readable.
@@ -135,6 +140,7 @@ function latestSyncedAt(accounts: Account[]): string | null {
 export function groupAccountsByInstitution(
   accounts: Account[],
   enrollmentMeta: Map<string, TellerEnrollmentMeta>,
+  plaidItemMeta: Map<string, PlaidItemMeta> = new Map(),
 ): InstitutionGroup[] {
   const byProviderInstitution = new Map<
     string,
@@ -153,22 +159,27 @@ export function groupAccountsByInstitution(
         ? 'teller'
         : account.source === 'simplefin' && account.simplefin_connection_id
           ? 'simplefin'
-          : null
+          : account.source === 'plaid' && account.plaid_item_id
+            ? 'plaid'
+            : null
     if (!provider) {
       orphans.push(account)
       continue
     }
     // Teller groups by institution (one enrollment per bank); SimpleFIN
-    // groups by connection, the unit Unlink actually removes.
+    // groups by connection and Plaid by Item — the units Unlink actually
+    // operates on.
     const key =
       provider === 'simplefin'
         ? `simplefin:${account.simplefin_connection_id}`
-        : `teller:${normalizeInstitutionKey(
-            account.institution_name ??
-              enrollmentMeta.get(account.teller_enrollment_id as string)
-                ?.institutionName ??
-              null,
-          )}`
+        : provider === 'plaid'
+          ? `plaid:${account.plaid_item_id}`
+          : `teller:${normalizeInstitutionKey(
+              account.institution_name ??
+                enrollmentMeta.get(account.teller_enrollment_id as string)
+                  ?.institutionName ??
+                null,
+            )}`
     const bucket = byProviderInstitution.get(key)
     if (bucket) bucket.accounts.push(account)
     else byProviderInstitution.set(key, { provider, accounts: [account] })
@@ -191,8 +202,16 @@ export function groupAccountsByInstitution(
           .filter((id): id is string => Boolean(id)),
       ),
     ]
+    const plaidItemIds = [
+      ...new Set(
+        sorted
+          .map((a) => a.plaid_item_id)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ]
     const primaryEnrollmentId = pickPrimaryEnrollmentId(sorted, enrollmentMeta)
     const primaryMeta = enrollmentMeta.get(primaryEnrollmentId)
+    const primaryPlaidMeta = plaidItemMeta.get(plaidItemIds[0] ?? '')
     // Distinct institutions in first-seen order; a multi-bank SimpleFIN
     // connection reads "Ally Bank · Robinhood".
     const institutionNames = [
@@ -208,7 +227,9 @@ export function groupAccountsByInstitution(
       institutionName:
         institutionNames.length > 0
           ? institutionNames.join(' · ')
-          : (primaryMeta?.institutionName ?? null),
+          : (primaryMeta?.institutionName ??
+            primaryPlaidMeta?.institutionName ??
+            null),
       accounts: sorted,
       totalBalance: sorted.reduce((sum, a) => sum + signedBalance(a), 0),
       lastSyncedAt: latestSyncedAt(sorted),
@@ -217,6 +238,9 @@ export function groupAccountsByInstitution(
       tellerConnectEnrollmentId: primaryMeta?.enrollmentId ?? null,
       enrollmentIds,
       simplefinConnectionIds,
+      plaidItemIds,
+      plaidReconnectRequired:
+        primaryPlaidMeta?.status === 'reconnect_required',
       spansInstitutions: institutionNames.length > 1,
       isManual: false,
     })
@@ -235,6 +259,8 @@ export function groupAccountsByInstitution(
       tellerConnectEnrollmentId: null,
       enrollmentIds: [],
       simplefinConnectionIds: [],
+      plaidItemIds: [],
+      plaidReconnectRequired: false,
       spansInstitutions: false,
       isManual: true,
     })
@@ -252,6 +278,8 @@ export function groupAccountsByInstitution(
       tellerConnectEnrollmentId: null,
       enrollmentIds: [],
       simplefinConnectionIds: [],
+      plaidItemIds: [],
+      plaidReconnectRequired: false,
       spansInstitutions: false,
       isManual: false,
     })

@@ -82,6 +82,8 @@ export default function KidsPage() {
     member?.role === 'admin' || member?.role === 'member'
   const isAdmin = member?.role === 'admin'
   const bitcoinEnabled = useFeatureFlag('bitcoin')
+  // Plaid joins the global balance refresh only for flagged households.
+  const plaidEnabled = useFeatureFlag('plaid')
 
   const loadData = useCallback(async () => {
     if (!memberId || !isAdult) return
@@ -194,7 +196,7 @@ export default function KidsPage() {
     try {
       // refreshBalances resolves even when a bank errors (per-account failures
       // come back in `errors`), so surface that instead of stopping silently.
-      const result = await refreshAllBankBalances()
+      const result = await refreshAllBankBalances({ plaidEnabled })
       setRefreshError(refreshBalancesErrorMessage(result))
       await loadData()
     } catch (e) {

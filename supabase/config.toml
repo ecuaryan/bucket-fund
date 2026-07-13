@@ -427,6 +427,28 @@ verify_jwt = true
 [functions.simplefin-scheduled-refresh]
 verify_jwt = false
 
+[functions.plaid-link-token]
+verify_jwt = true
+
+[functions.plaid-exchange]
+verify_jwt = true
+
+[functions.plaid-refresh]
+verify_jwt = true
+
+[functions.plaid-transactions-list]
+verify_jwt = true
+
+[functions.plaid-disconnect]
+verify_jwt = true
+
+[functions.plaid-items-list]
+verify_jwt = true
+
+# Invoked by pg_cron (net.http_post), authenticated by X-Cron-Secret, not a JWT.
+[functions.plaid-scheduled-refresh]
+verify_jwt = false
+
 [functions.check-invariant]
 verify_jwt = true
 

@@ -1331,6 +1331,39 @@ export function simpleFinImportedSuccess(count: number): string {
 export const SIMPLEFIN_UNLINK_REVOKE_NOTE =
   'This removes the accounts from Bucket My Money. To fully revoke access, also delete this app from your SimpleFIN Bridge account.'
 
+// --- Plaid (flag-gated: owner's household only) ---
+// The Plaid team has 10 LIFETIME production Items (bank connections);
+// deleting one never frees its slot. Copy here exists to make every
+// slot-consuming action explicit and every slot-free action obvious.
+
+export const ADMIN_ADD_SOURCE_PLAID_OPTION = 'Connect with Plaid'
+
+export const PLAID_NEW_LINK_SHEET_TITLE = 'Connect a new bank with Plaid?'
+export const PLAID_NEW_LINK_SHEET_INTRO =
+  'Plaid gives this app 10 bank connections for its lifetime—used slots never come back, even if you disconnect. Only continue for a bank that has never been connected with Plaid before.'
+export function plaidSlotWarning(): string {
+  return 'Connecting a new bank permanently uses one of the 10.'
+}
+export const PLAID_NEW_LINK_CONFIRM_ACTION = 'Connect new bank'
+export const PLAID_REATTACH_HINT =
+  'These banks are already connected to Plaid and can be re-added without using a slot:'
+export function plaidReattachAction(institutionName: string | null): string {
+  return `Re-add ${institutionName ?? 'bank'}`
+}
+
+export function plaidLinkedSuccess(count: number): string {
+  return `Linked ${count} account${count === 1 ? '' : 's'} via Plaid.`
+}
+export const PLAID_RECONNECTED_SUCCESS = 'Bank reconnected.'
+
+/** Unlink confirm for a Plaid Item — detaches locally, keeps the slot. */
+export const PLAID_UNLINK_KEEPS_ITEM_NOTE =
+  'This removes the accounts from Bucket My Money but keeps the Plaid connection reserved, so re-adding this bank later won’t use another of the 10 lifetime slots.'
+
+/** Row/banner note when a Plaid Item needs a Link update-mode repair. */
+export const PLAID_RECONNECT_NEEDED_NOTE =
+  'This bank needs reconnecting. Reconnect repairs the existing connection—it never uses a new slot.'
+
 // --- Teller (quiesced) ---
 // Teller withdrew its API product (July 2026). Teller-linked accounts stay
 // with frozen balances; live actions are hidden until a possible Teller v2.

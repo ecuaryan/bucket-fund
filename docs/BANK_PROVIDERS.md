@@ -11,7 +11,7 @@ provider. Source of truth for provider status; product context lives in
 | **SimpleFIN** | `simplefin` | **Active** | The generally-available connector. The account holder subscribes to [SimpleFIN Bridge](https://beta-bridge.simplefin.org) directly ($1.50/mo or $15/yr, paid to SimpleFIN) and pastes a one-time Setup Token into Admin. |
 | **Teller** | `teller` | **Quiesced** | Teller withdrew its API product (July 2026). All Teller code, tables, and rows stay; balances are frozen at `last_synced_at`; live actions (link, reconnect, refresh, activity) are hidden. If Teller ships a v2, re-enabling is a small PR. |
 | Manual | `manual` | Active | Admin-entered cash/card amounts; not a bank link. |
-| Plaid | `plaid` | Reserved | Planned next: free-trial-tier connector behind the `plaid` feature flag (see the repo plan). The `source` check constraint already accepts it. |
+| **Plaid** | `plaid` | **Active (flag-gated)** | Free-trial-tier connector behind the `plaid` feature flag — owner's household only. The team has **10 LIFETIME production Items**; everything below § Plaid specifics exists to protect them. |
 
 ## Architecture: `accounts` is the neutral core
 
@@ -19,18 +19,20 @@ Every provider upserts into the same `accounts` table; the ledger identity
 (`member_float()`) never knows which provider a balance came from. Provider
 specifics live in three provider-namespaced places:
 
-1. **A credential table** — `teller_enrollments`, `simplefin_connections`
-   (one row per claimed Setup Token). RLS enabled with **zero policies** and
-   no grants to `authenticated`/`anon`: only Edge Functions using the service
-   role can touch bearer credentials. `tests/db/simplefin.test.ts` locks this
-   in.
-2. **Edge Functions** — `simplefin-claim`, `simplefin-accounts-confirm`,
-   `simplefin-refresh`, `simplefin-transactions-list`, `simplefin-disconnect`,
-   `simplefin-scheduled-refresh`, sharing pure helpers in
-   `supabase/functions/_shared/simplefin.ts`.
-3. **A client module** — `src/lib/simplefin.ts` (mirrors `src/lib/teller.ts`),
-   registered in the dispatch map `src/lib/bankProviders.ts`. Components call
-   the dispatch (`fetchBankTransactionsFor`, `refreshAllBankBalances`,
+1. **A credential table** — `teller_enrollments`, `simplefin_connections`,
+   `plaid_items`. RLS enabled with **zero policies** and no grants to
+   `authenticated`/`anon`: only Edge Functions using the service role can
+   touch bearer credentials. `tests/db/simplefin.test.ts` and
+   `tests/db/plaid.test.ts` lock this in.
+2. **Edge Functions** — `simplefin-*` (claim, accounts-confirm, refresh,
+   transactions-list, disconnect, scheduled-refresh) and `plaid-*`
+   (link-token, exchange, refresh, transactions-list, disconnect,
+   items-list, scheduled-refresh), sharing pure helpers in
+   `supabase/functions/_shared/<provider>.ts`.
+3. **A client module** — `src/lib/simplefin.ts` / `src/lib/plaid.ts`
+   (mirroring `src/lib/teller.ts`), registered in the dispatch map
+   `src/lib/bankProviders.ts`. Components call the dispatch
+   (`fetchBankTransactionsFor`, `refreshAllBankBalances`,
    `canFetchBankActivity`) — never a provider client directly.
 
 SQL that means "linked to a bank" says `source <> 'manual'`
@@ -69,13 +71,44 @@ with `isLinkedAccount()` in `src/lib/accounts.ts`.
 - **Reconnect** = new Setup Token (HTTP 402/403 from SimpleFIN marks the
   connection `disconnected` and stops the sweep from claiming it).
 
+## Plaid specifics
+
+- **Flag-gated end to end.** The client hides Plaid UI behind
+  `useFeatureFlag('plaid')`; the Edge Functions re-check via the service role
+  (`_shared/plaidFlag.ts`) — the flag is the only thing between other
+  households and the 10 lifetime Items.
+- **Item budget rules** (the team's trial tier: 10 lifetime production
+  Items; a deleted Item never refunds its slot):
+  - A **new link** (link token without an `itemId`) is the ONLY action that
+    can consume a slot. Admin's `PlaidConnectSheet` warns before it and
+    surfaces detached Items so a known bank is re-added for free.
+  - **Unlink detaches locally** (`plaid-disconnect`): accounts rows go, the
+    `plaid_items` row and access token stay (`status='detached'`).
+    `/item/remove` is never called.
+  - **Re-add a detached bank** = `plaid-exchange { itemId }` — re-imports
+    accounts straight from the retained token, no Link session at all.
+  - **Reconnect** (`ITEM_LOGIN_REQUIRED` → `status='reconnect_required'`) =
+    Link **update mode** (`plaid-link-token { itemId }`) — free.
+  - **Never call `/transactions/refresh`** — the only per-call-billed
+    transactions endpoint on paid plans. Activity uses `/transactions/get`.
+- **Auto-classified accounts**: Plaid types map onto the app vocabulary
+  (`mapPlaidAccountType` — depository→cash subtypes, credit→`credit_card`;
+  loans/investments keep a raw subtype and stay out of the cash pool), so
+  there is no manual confirm step. Card balances arrive positive-owed —
+  no sign flip (unlike SimpleFIN).
+- **Env**: `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV`
+  (`sandbox`/`production`) as Edge Function secrets. All development uses
+  sandbox (fake banks, no Item cost).
+
 ## Scheduled refresh (all providers)
 
 pg_cron job `scheduled-balance-refresh` (every 10 min) →
-`trigger_scheduled_balance_refresh()` → `net.http_post` to the provider sweep
-function, authenticated by `X-Cron-Secret`. Each sweep claims the stalest due
-connections via a service-role-only claim RPC
-(`claim_stale_simplefin_connections`) so overlapping ticks stay disjoint.
+`trigger_scheduled_balance_refresh()` → `net.http_post` to every configured
+provider sweep (Vault: `simplefin_scheduled_refresh_url`,
+`plaid_scheduled_refresh_url`), authenticated by `X-Cron-Secret`. Each sweep
+claims the stalest due connections via a service-role-only claim RPC
+(`claim_stale_simplefin_connections`, `claim_stale_plaid_items`) so
+overlapping ticks stay disjoint.
 Setup (Vault secrets, cadence env) lives in
 [MAINTENANCE.md § Scheduled balance refresh](./MAINTENANCE.md#scheduled-balance-refresh-production).
 The Teller sweep is no longer posted to (quiesced); its function and claim RPC
