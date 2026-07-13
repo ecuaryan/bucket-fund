@@ -26,16 +26,19 @@ Entry point for AI coding agents (and humans) working in this repo.
    `src/lib/brand.ts`.
 8. **[docs/BANK_PROVIDERS.md](./docs/BANK_PROVIDERS.md)** — **bank providers**:
    SimpleFIN is the active connector (user pays SimpleFIN Bridge directly);
+   Plaid is live behind the `plaid` feature flag (owner's household only —
+   10 lifetime trial Items, protected by detach/update-mode guardrails);
    Teller is quiesced (API withdrawn July 2026 — code/rows stay, balances
-   frozen); Plaid is reserved behind a future `plaid` flag. `accounts` is the
+   frozen). `accounts` is the
    provider-neutral core; per-provider credential tables are service-role
    only; client code goes through `src/lib/bankProviders.ts` dispatch. SQL/TS
    for "linked" is `source <> 'manual'` / `isLinkedAccount()`.
 9. **[docs/FEATURE_FLAGS.md](./docs/FEATURE_FLAGS.md)** — **feature flags**:
    owner-controlled, per-household, read-only in the client. How to add a flag
    (registry in `src/lib/featureFlags.ts`), read one (`useFeatureFlag`), and
-   enable one for a household via Supabase. The `bitcoin` flag is registered but
-   not yet consumed.
+   enable one for a household via Supabase. Live flags: `bitcoin` (Bitcoin
+   tracking) and `plaid` (Plaid connector — also re-checked server-side by the
+   Plaid Edge Functions).
 
 ## Operating principles for this codebase
 

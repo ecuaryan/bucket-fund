@@ -80,8 +80,14 @@ with `isLinkedAccount()` in `src/lib/accounts.ts`.
 - **Item budget rules** (the team's trial tier: 10 lifetime production
   Items; a deleted Item never refunds its slot):
   - A **new link** (link token without an `itemId`) is the ONLY action that
-    can consume a slot. Admin's `PlaidConnectSheet` warns before it and
-    surfaces detached Items so a known bank is re-added for free.
+    can consume a slot. Admin goes straight into Plaid Link; the
+    `PlaidConnectSheet` chooser appears only when detached Items exist, so a
+    known bank is re-added for free instead of re-linked.
+  - **Abandoned Link sessions still count**: for OAuth institutions the
+    connection registers once the bank login completes, even if the user
+    exits before the account-confirmation step. Never open Link without
+    intending to finish it (learned the hard way — two orphaned trial
+    connections).
   - **Unlink detaches locally** (`plaid-disconnect`): accounts rows go, the
     `plaid_items` row and access token stay (`status='detached'`).
     `/item/remove` is never called.
