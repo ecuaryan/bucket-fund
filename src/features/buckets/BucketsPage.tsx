@@ -214,6 +214,8 @@ export default function BucketsPage() {
   // once they have at least one entry. Availability resolves async and must
   // never delay the page — null just means "hidden for now".
   const bitcoinEnabled = useFeatureFlag('bitcoin')
+  // Plaid joins the global balance refresh only for flagged households.
+  const plaidEnabled = useFeatureFlag('plaid')
   const showBitcoinTab =
     bitcoinEnabled && isChild && bitcoinTabAvailable === true
   const showBucketsPageTabs =
@@ -547,7 +549,7 @@ export default function BucketsPage() {
     try {
       // refreshBalances resolves even when a bank errors (per-account failures
       // come back in `errors`), so surface that instead of stopping silently.
-      const result = await refreshAllBankBalances()
+      const result = await refreshAllBankBalances({ plaidEnabled })
       setRefreshError(refreshBalancesErrorMessage(result))
       await loadData()
     } catch (e) {

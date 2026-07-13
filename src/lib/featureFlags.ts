@@ -38,6 +38,13 @@ export const FEATURE_FLAG_REGISTRY = {
       'Gates the Bitcoin area (holdings view for kids and any future Bitcoin screens/nav). Off for every household unless the owner enables it in Supabase.',
     defaultEnabled: false,
   },
+  plaid: {
+    key: 'plaid',
+    label: 'Plaid',
+    description:
+      'Gates the Plaid bank connector (docs/BANK_PROVIDERS.md). The team has 10 LIFETIME production Items, so only the owner\u2019s household gets this; the Plaid Edge Functions re-check the flag server-side.',
+    defaultEnabled: false,
+  },
 } as const satisfies Record<string, FeatureFlagDefinition>
 
 export type FeatureFlagKey = keyof typeof FEATURE_FLAG_REGISTRY

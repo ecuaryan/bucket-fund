@@ -6,7 +6,11 @@ them to everyone.
 **Status:** **Shipped (v1, plumbing only)** — migration `00000000000082`,
 `src/lib/featureFlags.ts` (registry), `src/hooks/FeatureFlagsProvider.tsx`.
 The inaugural `bitcoin` flag is registered (default **off**) and now gates the
-Bitcoin tracking feature — see [BITCOIN.md](BITCOIN.md).
+Bitcoin tracking feature — see [BITCOIN.md](BITCOIN.md). The `plaid` flag
+(default **off**) gates the Plaid bank connector for the owner's household —
+UI via `useFeatureFlag('plaid')` AND re-checked server-side by every Plaid
+Edge Function (`_shared/plaidFlag.ts`), because the flag protects the team's
+10 lifetime Plaid Items — see [BANK_PROVIDERS.md](BANK_PROVIDERS.md).
 
 **Related:** [CONTEXT.md](../CONTEXT.md), the `teller_events` read-only pattern,
 `src/hooks/GiveRecipientsProvider.tsx` (the provider it mirrors).

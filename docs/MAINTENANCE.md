@@ -176,6 +176,18 @@ secret — safe to deploy first, activate later. Provider background in
    only the URL secret is new. The old `scheduled_refresh_url` entry is
    unused and can be deleted.)
 
+To add the Plaid sweep (flag-gated households only), also set:
+
+   ```bash
+   npx supabase secrets set PLAID_CLIENT_ID=<id> PLAID_SECRET=<secret> PLAID_ENV=production
+   ```
+
+   ```sql
+   select vault.create_secret(
+     'https://<project-ref>.supabase.co/functions/v1/plaid-scheduled-refresh',
+     'plaid_scheduled_refresh_url');
+   ```
+
 Verify: `select * from cron.job where jobname = 'scheduled-balance-refresh';`
 and, after a tick, check recent `net._http_response` rows / the function's
 Invocations. Rotating the secret = update both the Edge Function secret and the

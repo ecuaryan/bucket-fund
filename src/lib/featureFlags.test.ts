@@ -7,7 +7,7 @@ import {
 
 describe('registryDefaults', () => {
   it('returns every registry flag at its default', () => {
-    expect(registryDefaults()).toEqual({ bitcoin: false })
+    expect(registryDefaults()).toEqual({ bitcoin: false, plaid: false })
   })
 
   it('matches the registry defaultEnabled values', () => {
@@ -20,18 +20,20 @@ describe('registryDefaults', () => {
 
 describe('resolveFeatureFlags', () => {
   it('returns all defaults when there are no rows', () => {
-    expect(resolveFeatureFlags([])).toEqual({ bitcoin: false })
+    expect(resolveFeatureFlags([])).toEqual({ bitcoin: false, plaid: false })
   })
 
   it('a row with enabled:true overrides a default-off flag', () => {
     expect(resolveFeatureFlags([{ key: 'bitcoin', enabled: true }])).toEqual({
       bitcoin: true,
+      plaid: false,
     })
   })
 
   it('a row with enabled:false keeps a default-off flag off', () => {
     expect(resolveFeatureFlags([{ key: 'bitcoin', enabled: false }])).toEqual({
       bitcoin: false,
+      plaid: false,
     })
   })
 
@@ -40,7 +42,7 @@ describe('resolveFeatureFlags', () => {
       { key: 'bitcoin', enabled: true },
       { key: 'some_removed_flag', enabled: true },
     ])
-    expect(flags).toEqual({ bitcoin: true })
+    expect(flags).toEqual({ bitcoin: true, plaid: false })
     expect('some_removed_flag' in flags).toBe(false)
   })
 
@@ -48,6 +50,7 @@ describe('resolveFeatureFlags', () => {
     // No bitcoin row present → default (off).
     expect(resolveFeatureFlags([{ key: 'unknown', enabled: true }])).toEqual({
       bitcoin: false,
+      plaid: false,
     })
   })
 })

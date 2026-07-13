@@ -45,6 +45,8 @@ export type Database = {
           institution_name: string | null
           last_synced_at: string | null
           owner_member_id: string | null
+          plaid_account_id: string | null
+          plaid_item_id: string | null
           simplefin_account_id: string | null
           simplefin_connection_id: string | null
           source: string
@@ -61,6 +63,8 @@ export type Database = {
           institution_name?: string | null
           last_synced_at?: string | null
           owner_member_id?: string | null
+          plaid_account_id?: string | null
+          plaid_item_id?: string | null
           simplefin_account_id?: string | null
           simplefin_connection_id?: string | null
           source?: string
@@ -77,6 +81,8 @@ export type Database = {
           institution_name?: string | null
           last_synced_at?: string | null
           owner_member_id?: string | null
+          plaid_account_id?: string | null
+          plaid_item_id?: string | null
           simplefin_account_id?: string | null
           simplefin_connection_id?: string | null
           source?: string
@@ -96,6 +102,13 @@ export type Database = {
             columns: ["owner_member_id"]
             isOneToOne: false
             referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_plaid_item_id_fkey"
+            columns: ["plaid_item_id"]
+            isOneToOne: false
+            referencedRelation: "plaid_items"
             referencedColumns: ["id"]
           },
           {
@@ -588,6 +601,53 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plaid_items: {
+        Row: {
+          access_token: string
+          created_at: string
+          family_id: string
+          id: string
+          institution_id: string | null
+          institution_name: string | null
+          item_id: string
+          last_synced_at: string | null
+          refresh_claimed_at: string | null
+          status: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          family_id: string
+          id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          item_id: string
+          last_synced_at?: string | null
+          refresh_claimed_at?: string | null
+          status?: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          family_id?: string
+          id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          item_id?: string
+          last_synced_at?: string | null
+          refresh_claimed_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plaid_items_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
             referencedColumns: ["id"]
           },
         ]
@@ -1086,6 +1146,14 @@ export type Database = {
           id: string
         }[]
       }
+      claim_stale_plaid_items: {
+        Args: { p_claim_ttl: string; p_limit: number; p_stale_before: string }
+        Returns: {
+          access_token: string
+          family_id: string
+          id: string
+        }[]
+      }
       claim_stale_simplefin_connections: {
         Args: { p_claim_ttl: string; p_limit: number; p_stale_before: string }
         Returns: {
@@ -1130,6 +1198,10 @@ export type Database = {
       login_webauthn_options: {
         Args: { p_family_id: string; p_member_id: string }
         Returns: Json
+      }
+      member_child_give_net: {
+        Args: { p_child_member_id: string }
+        Returns: number
       }
       member_child_virtual_balance: {
         Args: { p_child_member_id: string }
