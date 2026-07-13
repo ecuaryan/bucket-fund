@@ -158,6 +158,39 @@ describe('plaid_items security posture', () => {
   })
 })
 
+describe('plaid_events security posture', () => {
+  it('is invisible to authenticated users (service-role audit log)', async () => {
+    const svc = serviceClient()
+    const family = await createAdminFamily('plaid-events-rls')
+    const { error: insertError } = await svc.from('plaid_events').insert({
+      family_id: family.familyId,
+      webhook_type: 'TRANSACTIONS',
+      webhook_code: 'DEFAULT_UPDATE',
+      payload: { item_id: 'item-x' },
+    })
+    expect(insertError).toBeNull()
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    const { data, error } = await admin.from('plaid_events').select('id')
+    if (error) {
+      expect(error.code).toBe('42501')
+    } else {
+      expect(data).toEqual([])
+    }
+  })
+
+  it('accepts events with no family (unknown item audit trail)', async () => {
+    const svc = serviceClient()
+    const { error } = await svc.from('plaid_events').insert({
+      family_id: null,
+      webhook_type: 'ITEM',
+      webhook_code: 'ERROR',
+      payload: { item_id: 'item-unknown' },
+    })
+    expect(error).toBeNull()
+  })
+})
+
 describe('linked-account predicates cover plaid', () => {
   it("counts a Plaid cash account in the breakdown's bank_cash", async () => {
     const family = await createAdminFamily('plaid-breakdown')

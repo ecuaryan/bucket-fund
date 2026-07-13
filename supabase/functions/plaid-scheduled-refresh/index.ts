@@ -23,7 +23,13 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { secretKey } from '../_shared/keys.ts'
 import { isCreditCardAccountType } from '../_shared/cashAccountTypes.ts'
-import { getBalances, isReconnectError, pickPlaidBalance } from '../_shared/plaid.ts'
+import {
+  getBalances,
+  isReconnectError,
+  pickPlaidBalance,
+  plaidWebhookUrl,
+  updateItemWebhook,
+} from '../_shared/plaid.ts'
 
 const CADENCE_HOURS = Number(Deno.env.get('SCHEDULED_REFRESH_CADENCE_HOURS') ?? '6')
 const BATCH = Number(Deno.env.get('SCHEDULED_REFRESH_BATCH') ?? '25')
@@ -97,6 +103,32 @@ Deno.serve(async (req: Request) => {
       break
     }
     if (!claimed || claimed.length === 0) break
+
+    // Self-heal webhook configuration: Items created before the webhook
+    // shipped (or before PLAID_WEBHOOK_URL was set) get pointed at the
+    // receiver the first time the sweep touches them. Unconfigured Items
+    // keep going stale, so the sweep always reaches them eventually.
+    const webhook = plaidWebhookUrl()
+    if (webhook) {
+      const { data: unconfigured } = await admin
+        .from('plaid_items')
+        .select('id, access_token')
+        .in('id', claimed.map((i: { id: string }) => i.id))
+        .is('webhook_configured_at', null)
+      for (const item of unconfigured ?? []) {
+        try {
+          await updateItemWebhook(item.access_token, webhook)
+          await admin
+            .from('plaid_items')
+            .update({ webhook_configured_at: new Date().toISOString() })
+            .eq('id', item.id)
+        } catch (err) {
+          errors.push(
+            `webhook-config ${item.id}: ${err instanceof Error ? err.message : String(err)}`,
+          )
+        }
+      }
+    }
 
     const { data: accounts, error: accountsError } = await admin
       .from('accounts')

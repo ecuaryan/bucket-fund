@@ -188,6 +188,14 @@ To add the Plaid sweep (flag-gated households only), also set:
      'plaid_scheduled_refresh_url');
    ```
 
+   For push-fresh balances (Plaid webhooks), also set the receiver URL —
+   webhooks stay off until this exists; existing Items self-configure on
+   their next sweep tick:
+
+   ```bash
+   npx supabase secrets set PLAID_WEBHOOK_URL=https://<project-ref>.supabase.co/functions/v1/plaid-webhook
+   ```
+
 Verify: `select * from cron.job where jobname = 'scheduled-balance-refresh';`
 and, after a tick, check recent `net._http_response` rows / the function's
 Invocations. Rotating the secret = update both the Edge Function secret and the

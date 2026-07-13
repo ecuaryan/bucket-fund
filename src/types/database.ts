@@ -605,6 +605,51 @@ export type Database = {
           },
         ]
       }
+      plaid_events: {
+        Row: {
+          created_at: string
+          family_id: string | null
+          id: string
+          payload: Json
+          plaid_item_id: string | null
+          webhook_code: string
+          webhook_type: string
+        }
+        Insert: {
+          created_at?: string
+          family_id?: string | null
+          id?: string
+          payload: Json
+          plaid_item_id?: string | null
+          webhook_code: string
+          webhook_type: string
+        }
+        Update: {
+          created_at?: string
+          family_id?: string | null
+          id?: string
+          payload?: Json
+          plaid_item_id?: string | null
+          webhook_code?: string
+          webhook_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plaid_events_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plaid_events_plaid_item_id_fkey"
+            columns: ["plaid_item_id"]
+            isOneToOne: false
+            referencedRelation: "plaid_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plaid_items: {
         Row: {
           access_token: string
@@ -617,6 +662,7 @@ export type Database = {
           last_synced_at: string | null
           refresh_claimed_at: string | null
           status: string
+          webhook_configured_at: string | null
         }
         Insert: {
           access_token: string
@@ -629,6 +675,7 @@ export type Database = {
           last_synced_at?: string | null
           refresh_claimed_at?: string | null
           status?: string
+          webhook_configured_at?: string | null
         }
         Update: {
           access_token?: string
@@ -641,6 +688,7 @@ export type Database = {
           last_synced_at?: string | null
           refresh_claimed_at?: string | null
           status?: string
+          webhook_configured_at?: string | null
         }
         Relationships: [
           {
