@@ -198,6 +198,11 @@ export function pickPlaidBalance(balances: {
 
 export type LinkTokenResult = { link_token: string }
 
+/** Webhook receiver URL, when configured (PLAID_WEBHOOK_URL secret). */
+export function plaidWebhookUrl(): string | null {
+  return Deno.env.get('PLAID_WEBHOOK_URL')?.trim() || null
+}
+
 /**
  * Create a Link token. With accessToken set this is UPDATE MODE — it
  * repairs the existing Item and never consumes a slot. Without it, the
@@ -213,6 +218,10 @@ export async function createLinkToken(args: {
     country_codes: ['US'],
     language: 'en',
   }
+  const webhook = plaidWebhookUrl()
+  if (webhook) {
+    body.webhook = webhook
+  }
   if (args.accessToken) {
     body.access_token = args.accessToken
   } else {
@@ -220,6 +229,17 @@ export async function createLinkToken(args: {
   }
   const result = await plaidPost<LinkTokenResult>('/link/token/create', body)
   return result.link_token
+}
+
+/** Point an existing Item's webhooks at our receiver (self-heal path). */
+export async function updateItemWebhook(
+  accessToken: string,
+  webhook: string,
+): Promise<void> {
+  await plaidPost('/item/webhook/update', {
+    access_token: accessToken,
+    webhook,
+  })
 }
 
 export async function exchangePublicToken(
@@ -272,4 +292,148 @@ export async function getTransactions(
     },
   )
   return result.transactions ?? []
+}
+
+// ---------------------------------------------------------------------
+// Webhook classification (mirrored in src/lib/plaidParse.ts — keep in
+// sync) and signature verification.
+// ---------------------------------------------------------------------
+
+export type PlaidWebhookAction = 'refresh' | 'reconnect' | 'ignore'
+
+/**
+ * What a webhook means for us. Transaction activity → re-pull the Item's
+ * balances now instead of waiting for the sweep. Item trouble → flip
+ * reconnect_required so Admin shows the (free, update-mode) Reconnect
+ * before anyone notices stale numbers. Everything else is audit-only.
+ */
+export function classifyPlaidWebhook(
+  webhookType: string,
+  webhookCode: string,
+  errorCode?: string | null,
+): PlaidWebhookAction {
+  const type = (webhookType ?? '').toUpperCase()
+  const code = (webhookCode ?? '').toUpperCase()
+  if (type === 'TRANSACTIONS') {
+    // Any transactions signal implies the bank has fresher data.
+    return 'refresh'
+  }
+  if (type === 'ITEM') {
+    if (code === 'ERROR') {
+      const err = (errorCode ?? '').toUpperCase()
+      return err === 'ITEM_LOGIN_REQUIRED' ||
+        err === 'ACCESS_NOT_GRANTED' ||
+        err === 'ITEM_LOCKED'
+        ? 'reconnect'
+        : 'ignore'
+    }
+    if (code === 'PENDING_EXPIRATION' || code === 'PENDING_DISCONNECT') {
+      return 'reconnect'
+    }
+    if (code === 'LOGIN_REPAIRED') {
+      // The user fixed it at the bank — resume normal syncing.
+      return 'refresh'
+    }
+  }
+  return 'ignore'
+}
+
+function base64UrlToBytes(value: string): Uint8Array {
+  const padded = value.replace(/-/g, '+').replace(/_/g, '/')
+  const binary = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4))
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(value),
+  )
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+// Verification keys barely rotate; cache per key id for the worker's life.
+const verificationKeyCache = new Map<string, CryptoKey>()
+
+async function getVerificationKey(keyId: string): Promise<CryptoKey> {
+  const cached = verificationKeyCache.get(keyId)
+  if (cached) return cached
+  const result = await plaidPost<{ key: Record<string, unknown> }>(
+    '/webhook_verification_key/get',
+    { key_id: keyId },
+  )
+  const key = await crypto.subtle.importKey(
+    'jwk',
+    result.key,
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    false,
+    ['verify'],
+  )
+  verificationKeyCache.set(keyId, key)
+  return key
+}
+
+/**
+ * Verify a Plaid webhook: the Plaid-Verification header is an ES256 JWT
+ * whose payload carries a SHA-256 of the raw request body. Verifying the
+ * signature (against Plaid's published key) plus the body hash plus a
+ * freshness window proves the payload came from Plaid, unmodified.
+ */
+export async function verifyPlaidWebhook(
+  rawBody: string,
+  verificationJwt: string | null,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  if (!verificationJwt) return { ok: false, reason: 'missing verification header' }
+
+  const parts = verificationJwt.split('.')
+  if (parts.length !== 3) return { ok: false, reason: 'malformed JWT' }
+  const [headerB64, payloadB64, signatureB64] = parts
+
+  let header: { alg?: string; kid?: string }
+  let payload: { iat?: number; request_body_sha256?: string }
+  try {
+    header = JSON.parse(new TextDecoder().decode(base64UrlToBytes(headerB64)))
+    payload = JSON.parse(new TextDecoder().decode(base64UrlToBytes(payloadB64)))
+  } catch {
+    return { ok: false, reason: 'undecodable JWT' }
+  }
+
+  if (header.alg !== 'ES256' || !header.kid) {
+    return { ok: false, reason: 'unexpected JWT algorithm' }
+  }
+
+  // 5-minute freshness window (Plaid's documented guidance).
+  const ageSec = Math.abs(Date.now() / 1000 - Number(payload.iat ?? 0))
+  if (Number.isNaN(ageSec) || ageSec > 5 * 60) {
+    return { ok: false, reason: 'stale or invalid timestamp' }
+  }
+
+  let key: CryptoKey
+  try {
+    key = await getVerificationKey(header.kid)
+  } catch (err) {
+    return {
+      ok: false,
+      reason: `verification key fetch failed: ${err instanceof Error ? err.message : String(err)}`,
+    }
+  }
+
+  const valid = await crypto.subtle.verify(
+    { name: 'ECDSA', hash: 'SHA-256' },
+    key,
+    base64UrlToBytes(signatureB64),
+    new TextEncoder().encode(`${headerB64}.${payloadB64}`),
+  )
+  if (!valid) return { ok: false, reason: 'signature mismatch' }
+
+  const bodyHash = await sha256Hex(rawBody)
+  if (bodyHash !== payload.request_body_sha256) {
+    return { ok: false, reason: 'body hash mismatch' }
+  }
+
+  return { ok: true }
 }

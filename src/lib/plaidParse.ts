@@ -43,3 +43,41 @@ export function pickPlaidBalance(balances: {
   }
   return value
 }
+
+export type PlaidWebhookAction = 'refresh' | 'reconnect' | 'ignore'
+
+/**
+ * What a Plaid webhook means for us (mirrors _shared/plaid.ts — keep in
+ * sync). Transaction activity → re-pull the Item's balances now. Item
+ * trouble → surface the free update-mode Reconnect proactively.
+ */
+export function classifyPlaidWebhook(
+  webhookType: string,
+  webhookCode: string,
+  errorCode?: string | null,
+): PlaidWebhookAction {
+  const type = (webhookType ?? '').toUpperCase()
+  const code = (webhookCode ?? '').toUpperCase()
+  if (type === 'TRANSACTIONS') {
+    // Any transactions signal implies the bank has fresher data.
+    return 'refresh'
+  }
+  if (type === 'ITEM') {
+    if (code === 'ERROR') {
+      const err = (errorCode ?? '').toUpperCase()
+      return err === 'ITEM_LOGIN_REQUIRED' ||
+        err === 'ACCESS_NOT_GRANTED' ||
+        err === 'ITEM_LOCKED'
+        ? 'reconnect'
+        : 'ignore'
+    }
+    if (code === 'PENDING_EXPIRATION' || code === 'PENDING_DISCONNECT') {
+      return 'reconnect'
+    }
+    if (code === 'LOGIN_REPAIRED') {
+      // The user fixed it at the bank — resume normal syncing.
+      return 'refresh'
+    }
+  }
+  return 'ignore'
+}

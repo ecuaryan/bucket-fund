@@ -449,6 +449,11 @@ verify_jwt = true
 [functions.plaid-scheduled-refresh]
 verify_jwt = false
 
+# Called by Plaid (no Supabase JWT); authenticated via the Plaid-Verification
+# ES256 JWT + body hash (verifyPlaidWebhook).
+[functions.plaid-webhook]
+verify_jwt = false
+
 [functions.check-invariant]
 verify_jwt = true
 

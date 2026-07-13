@@ -31,6 +31,7 @@ import {
   mapPlaidAccountType,
   pickPlaidBalance,
   PlaidTimeoutError,
+  plaidWebhookUrl,
   type PlaidAccount,
 } from '../_shared/plaid.ts'
 
@@ -139,6 +140,8 @@ Deno.serve(async (req: Request) => {
           institution_id: body.institution?.institution_id ?? null,
           status: 'active',
           last_synced_at: new Date().toISOString(),
+          // New links carry the webhook URL in their link token.
+          webhook_configured_at: plaidWebhookUrl() ? new Date().toISOString() : null,
         },
         { onConflict: 'family_id,item_id' },
       )

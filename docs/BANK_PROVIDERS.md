@@ -27,7 +27,7 @@ specifics live in three provider-namespaced places:
 2. **Edge Functions** — `simplefin-*` (claim, accounts-confirm, refresh,
    transactions-list, disconnect, scheduled-refresh) and `plaid-*`
    (link-token, exchange, refresh, transactions-list, disconnect,
-   items-list, scheduled-refresh), sharing pure helpers in
+   items-list, scheduled-refresh, webhook), sharing pure helpers in
    `supabase/functions/_shared/<provider>.ts`.
 3. **A client module** — `src/lib/simplefin.ts` / `src/lib/plaid.ts`
    (mirroring `src/lib/teller.ts`), registered in the dispatch map
@@ -102,9 +102,21 @@ with `isLinkedAccount()` in `src/lib/accounts.ts`.
   loans/investments keep a raw subtype and stay out of the cash pool), so
   there is no manual confirm step. Card balances arrive positive-owed —
   no sign flip (unlike SimpleFIN).
+- **Webhooks (free — delivery infrastructure, not a billed product):**
+  `plaid-webhook` verifies every request via the `Plaid-Verification`
+  ES256 JWT + body hash, logs it to `plaid_events` (service-role-only
+  audit table), then acts: transaction events re-pull the Item's balances
+  immediately (freshness between sweep ticks); login-shaped Item errors
+  and pending expirations flip `reconnect_required` proactively. New
+  Items get the receiver URL via their link token; pre-existing Items are
+  configured self-healingly by the sweep (`/item/webhook/update`,
+  stamped in `plaid_items.webhook_configured_at`). The 6h sweep remains
+  the quiet-period safety net.
 - **Env**: `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV`
-  (`sandbox`/`production`) as Edge Function secrets. All development uses
-  sandbox (fake banks, no Item cost).
+  (`sandbox`/`production`), and optionally `PLAID_WEBHOOK_URL` (the
+  deployed `plaid-webhook` function URL — webhooks are off until set) as
+  Edge Function secrets. All development uses sandbox (fake banks, no
+  Item cost).
 
 ## Scheduled refresh (all providers)
 
