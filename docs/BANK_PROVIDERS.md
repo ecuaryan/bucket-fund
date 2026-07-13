@@ -84,7 +84,10 @@ remain for a possible revival.
 ## Adding a provider
 
 1. Migration: widen nothing (source check already covers planned providers) or
-   add the new source value; add a credential table (RLS on, zero policies)
+   add the new source value; add a credential table (RLS on, zero policies,
+   **plus an explicit `grant select, insert, update, delete … to service_role`**
+   — the hosted project does NOT auto-grant on raw-SQL tables, local Docker
+   does, so a missing grant only fails in prod; see migrations 4 and 86)
    and `accounts.<provider>_account_id` / `<provider>_connection_id` columns;
    add a `claim_stale_<provider>_*` RPC and wire it into the sweep trigger.
 2. Edge Functions namespaced `<provider>-*`, sharing `_shared/<provider>.ts`.
