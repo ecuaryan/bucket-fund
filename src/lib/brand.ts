@@ -252,7 +252,7 @@ export function kidsTakeSheetIntro(
   kidName: string,
   availableLabel: string,
 ): string {
-  return `${kidName} has ${availableLabel} available to take back to shared ${FLOAT_LABEL_LOWER} cash.`
+  return `${kidName} has ${availableLabel} you can take back to shared ${FLOAT_LABEL_LOWER} cash. If some of it is set aside in their buckets, their ${FLOAT_LABEL_LOWER} goes negative and they choose which bucket covers it.`
 }
 
 export function kidsTakeOverdraftMessage(availableLabel: string): string {

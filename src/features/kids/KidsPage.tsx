@@ -324,7 +324,7 @@ export default function KidsPage() {
         <ReturnKidSheet
           kidId={returnKid.memberId}
           kidName={returnKid.name}
-          available={returnKid.availableFloat}
+          available={returnKid.amount}
           open
           formatMoney={formatMoney}
           onClose={() => setReturnKid(null)}

@@ -14,7 +14,9 @@ export function VirtualKidRow({
   onGive,
   onTake,
 }: VirtualKidRowProps) {
-  const canTake = kid.availableFloat > 0
+  // Take caps at the kid's TOTAL balance — bucket labels don't shield money
+  // from an adult Take (the kid rebalances afterwards; see migration 85).
+  const canTake = kid.amount > 0
 
   return (
     <li className="flex items-center justify-between gap-3 px-4 py-3">
