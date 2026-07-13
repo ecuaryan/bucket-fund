@@ -24,7 +24,14 @@ Entry point for AI coding agents (and humans) working in this repo.
 7. **[docs/BRAND.md](./docs/BRAND.md)** — product voice, Unbucketed terminology,
    and the full **Product narrative** (word-for-word). User-facing strings live in
    `src/lib/brand.ts`.
-8. **[docs/FEATURE_FLAGS.md](./docs/FEATURE_FLAGS.md)** — **feature flags**:
+8. **[docs/BANK_PROVIDERS.md](./docs/BANK_PROVIDERS.md)** — **bank providers**:
+   SimpleFIN is the active connector (user pays SimpleFIN Bridge directly);
+   Teller is quiesced (API withdrawn July 2026 — code/rows stay, balances
+   frozen); Plaid is reserved behind a future `plaid` flag. `accounts` is the
+   provider-neutral core; per-provider credential tables are service-role
+   only; client code goes through `src/lib/bankProviders.ts` dispatch. SQL/TS
+   for "linked" is `source <> 'manual'` / `isLinkedAccount()`.
+9. **[docs/FEATURE_FLAGS.md](./docs/FEATURE_FLAGS.md)** — **feature flags**:
    owner-controlled, per-household, read-only in the client. How to add a flag
    (registry in `src/lib/featureFlags.ts`), read one (`useFeatureFlag`), and
    enable one for a household via Supabase. The `bitcoin` flag is registered but
@@ -115,7 +122,7 @@ Entry point for AI coding agents (and humans) working in this repo.
 | Give money flow                 | `src/features/give/` |
 | Hide amounts + Peek FAB         | `HideAmountsProvider`, `HideAmountsPeekFab` (fixed), `HideAmountsPeekSheetAnchor` in `Sheet`, `hideAmountsPeekLogic.ts` |
 | Transaction history             | `src/features/history/`               |
-| Account linking / Teller Connect | `src/features/admin/` (`accounts/` holds the read-only Bank activity view) |
+| Account linking (SimpleFIN; quiesced Teller) | `src/features/admin/` (`accounts/` holds the read-only Bank activity view); provider dispatch in `src/lib/bankProviders.ts`; [docs/BANK_PROVIDERS.md](./docs/BANK_PROVIDERS.md) |
 | Admin / family management       | `src/features/admin/`                 |
 | Supabase client / Teller helpers / invariant helper | `src/lib/` (`auth.tsx`, `buckets.ts`, `accounts.ts`, …) |
 | Shared React hooks              | `src/hooks/`                          |
@@ -134,7 +141,8 @@ Use the `@/` alias for absolute imports from `src/`.
   does not run seeds.
 - **`npm run test:db`** — database tests (needs `npm run db:start`): RLS in
   `tests/db/rls.test.ts`, `move_money` in `move_money.test.ts`, `give_money`
-  in `give_money.test.ts`, transaction visibility in `transactions.test.ts`.
+  in `give_money.test.ts`, transaction visibility in `transactions.test.ts`,
+  SimpleFIN credential lockdown in `simplefin.test.ts`.
 - **`npm run test:e2e`** — Playwright smoke (Docker + local Supabase).
 - **`npm run check:full`** — lint + unit + db tests + build (no e2e).
 - When changing RLS or money RPCs, extend the matching file under `tests/db/`.

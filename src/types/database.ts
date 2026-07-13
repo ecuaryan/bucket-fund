@@ -45,6 +45,8 @@ export type Database = {
           institution_name: string | null
           last_synced_at: string | null
           owner_member_id: string | null
+          simplefin_account_id: string | null
+          simplefin_connection_id: string | null
           source: string
           teller_account_id: string | null
           teller_enrollment_id: string | null
@@ -59,6 +61,8 @@ export type Database = {
           institution_name?: string | null
           last_synced_at?: string | null
           owner_member_id?: string | null
+          simplefin_account_id?: string | null
+          simplefin_connection_id?: string | null
           source?: string
           teller_account_id?: string | null
           teller_enrollment_id?: string | null
@@ -73,6 +77,8 @@ export type Database = {
           institution_name?: string | null
           last_synced_at?: string | null
           owner_member_id?: string | null
+          simplefin_account_id?: string | null
+          simplefin_connection_id?: string | null
           source?: string
           teller_account_id?: string | null
           teller_enrollment_id?: string | null
@@ -90,6 +96,13 @@ export type Database = {
             columns: ["owner_member_id"]
             isOneToOne: false
             referencedRelation: "family_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_simplefin_connection_id_fkey"
+            columns: ["simplefin_connection_id"]
+            isOneToOne: false
+            referencedRelation: "simplefin_connections"
             referencedColumns: ["id"]
           },
           {
@@ -579,6 +592,44 @@ export type Database = {
           },
         ]
       }
+      simplefin_connections: {
+        Row: {
+          access_url: string
+          created_at: string
+          family_id: string
+          id: string
+          last_synced_at: string | null
+          refresh_claimed_at: string | null
+          status: string
+        }
+        Insert: {
+          access_url: string
+          created_at?: string
+          family_id: string
+          id?: string
+          last_synced_at?: string | null
+          refresh_claimed_at?: string | null
+          status?: string
+        }
+        Update: {
+          access_url?: string
+          created_at?: string
+          family_id?: string
+          id?: string
+          last_synced_at?: string | null
+          refresh_claimed_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simplefin_connections_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teller_enrollments: {
         Row: {
           access_token: string
@@ -1032,6 +1083,14 @@ export type Database = {
         Args: { p_claim_ttl: string; p_limit: number; p_stale_before: string }
         Returns: {
           access_token: string
+          id: string
+        }[]
+      }
+      claim_stale_simplefin_connections: {
+        Args: { p_claim_ttl: string; p_limit: number; p_stale_before: string }
+        Returns: {
+          access_url: string
+          family_id: string
           id: string
         }[]
       }

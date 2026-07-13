@@ -13,7 +13,7 @@ import BankAccountActivity from '@/features/accounts/BankAccountActivity'
 type Account = Database['public']['Tables']['accounts']['Row']
 
 type Props = {
-  /** Teller accounts visible to the viewer (already RLS-scoped per role). */
+  /** Linked bank accounts visible to the viewer (already RLS-scoped per role). */
   accounts: Account[]
   viewerMemberId: string | null
   /** True when the Bank tab is the active tab (drives the activity fetch). */
@@ -122,7 +122,11 @@ export default function BankAccountsTab({
                 </p>
               )}
             </div>
-            <BankAccountActivity accountId={a.id} panelOpen={active} />
+            <BankAccountActivity
+              accountId={a.id}
+              source={a.source}
+              panelOpen={active}
+            />
           </div>
         )
       })}

@@ -408,6 +408,25 @@ verify_jwt = false
 [functions.teller-scheduled-refresh]
 verify_jwt = false
 
+[functions.simplefin-claim]
+verify_jwt = true
+
+[functions.simplefin-accounts-confirm]
+verify_jwt = true
+
+[functions.simplefin-refresh]
+verify_jwt = true
+
+[functions.simplefin-transactions-list]
+verify_jwt = true
+
+[functions.simplefin-disconnect]
+verify_jwt = true
+
+# Invoked by pg_cron (net.http_post), authenticated by X-Cron-Secret, not a JWT.
+[functions.simplefin-scheduled-refresh]
+verify_jwt = false
+
 [functions.check-invariant]
 verify_jwt = true
 

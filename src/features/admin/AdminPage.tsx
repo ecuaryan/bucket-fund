@@ -24,11 +24,6 @@ import {
   ADMIN_MANUAL_GROUP_TITLE,
   ADMIN_MONEY_SOURCES_SECTION_TITLE,
   ADMIN_PAGE_TABS_ARIA_LABEL,
-  ADMIN_LINK_BANK_CONFIRM_ACTION,
-  ADMIN_LINK_BANK_CONFIRM_EFFECTS,
-  ADMIN_LINK_BANK_CONFIRM_SHEET_INTRO,
-  ADMIN_LINK_BANK_CONFIRM_SHEET_TITLE,
-  ADMIN_LINK_BANK_CONFIRM_WHAT_TO_KNOW,
   ADMIN_REMOVE_MANUAL_SOURCE_CONFIRM,
   ADMIN_REMOVE_MANUAL_SOURCE_INTRO,
   ADMIN_UNLINK_INSTITUTION_CONFIRM,
@@ -40,7 +35,9 @@ import {
   manualSourceAddedSuccess,
   manualSourceRemovedSuccess,
   manualSourceUpdatedSuccess,
-  TELLER_UNAVAILABLE_MESSAGE,
+  SIMPLEFIN_UNLINK_REVOKE_NOTE,
+  simpleFinImportedSuccess,
+  TELLER_SUNSET_ADMIN_NOTE,
   VIEW_RECENT_BANK_ACTIVITY,
 } from '@/lib/brand'
 import { toast } from '@/lib/toast'
@@ -49,18 +46,15 @@ import {
   type InstitutionGroup,
 } from '@/lib/adminLinkedAccounts'
 import { pickHouseholdAdminName } from '@/lib/householdAdmin'
+import { disconnectEnrollment, type TellerEnrollmentMeta } from '@/lib/teller'
 import {
-  checkTellerReachable,
-  disconnectEnrollment,
-  listTellerEnrollments,
-  refreshBalances,
-  type LinkBankResult,
-  type TellerEnrollmentMeta,
-  useTellerConnect,
-} from '@/lib/teller'
+  disconnectSimpleFinConnection,
+  refreshSimpleFinBalances,
+  type SimpleFinConfirmedAccount,
+} from '@/lib/simplefin'
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
-import CardsNoticeSheet from '@/features/accounts/CardsNoticeSheet'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
+import SimpleFinConnectDialog from '@/features/admin/SimpleFinConnectDialog'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
 import MembersSection from '@/features/admin/MembersSection'
 import AppVersionFooter from '@/components/AppVersionFooter'
@@ -103,26 +97,15 @@ export default function AdminPage() {
   const { formatMoney } = useHideAmounts()
   const auth = useAuth()
   const member = auth.status === 'signedIn' ? auth.member : null
-  const teller = useTellerConnect()
 
   const [accounts, setAccounts] = useState<Account[] | null>(null)
   const [members, setMembers] = useState<FamilyMemberRow[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [enrollmentLoadError, setEnrollmentLoadError] = useState<string | null>(
-    null,
-  )
   const [unlinkingKey, setUnlinkingKey] = useState<string | null>(null)
-  const [reconnectingKey, setReconnectingKey] = useState<string | null>(null)
   const [refreshingKey, setRefreshingKey] = useState<string | null>(null)
-  // True while the pre-flight Teller reachability check runs before opening
-  // Teller Connect — used to avoid trapping the user on a full-screen 503.
-  const [preflightingTeller, setPreflightingTeller] = useState(false)
   const [accountsSyncing, setAccountsSyncing] = useState(false)
-  const [enrollmentMeta, setEnrollmentMeta] = useState<
-    Map<string, TellerEnrollmentMeta>
-  >(new Map())
-  const [enrollmentsLoaded, setEnrollmentsLoaded] = useState(false)
   const [addSourceOpen, setAddSourceOpen] = useState(false)
+  const [simpleFinDialogOpen, setSimpleFinDialogOpen] = useState(false)
   const [manualDialog, setManualDialog] = useState<
     | { mode: 'create'; kind: ManualAccountKind }
     | {
@@ -134,17 +117,11 @@ export default function AdminPage() {
       }
     | null
   >(null)
-  // Cards that arrived in the last Teller link — the balance drop already
-  // happened (truth first); this sheet names it. Null = nothing to show.
-  const [linkedCardsNotice, setLinkedCardsNotice] = useState<
-    { cards: { name: string; balance: number }[]; totalDebt: number } | null
-  >(null)
   const addSourceMenuRef = useRef<HTMLDivElement | null>(null)
   // Groups are expanded by default; this tracks the ones the user collapsed.
   const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<Set<string>>(
     () => new Set(),
   )
-  const [linkBankConfirmOpen, setLinkBankConfirmOpen] = useState(false)
   const [removeManualTarget, setRemoveManualTarget] = useState<{
     id: string
     label: string
@@ -245,27 +222,11 @@ export default function AdminPage() {
     void loadMembers()
   }, [loadAccounts, loadMembers])
 
-  const loadEnrollments = useCallback(async () => {
-    setEnrollmentLoadError(null)
-    setEnrollmentsLoaded(false)
-    try {
-      const enrollments = await listTellerEnrollments()
-      setEnrollmentMeta(new Map(enrollments.map((e) => [e.id, e])))
-    } catch (e) {
-      setEnrollmentLoadError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setEnrollmentsLoaded(true)
-    }
-  }, [])
-
   useEffect(() => {
     if (!member) return
     void loadAccounts()
     void loadMembers()
-    if (member.role === 'admin') {
-      void loadEnrollments()
-    }
-  }, [member, loadAccounts, loadMembers, loadEnrollments])
+  }, [member, loadAccounts, loadMembers])
 
   const memberRolesById = useMemo(
     () => new Map((members ?? []).map((m) => [m.id, m.role])),
@@ -277,115 +238,46 @@ export default function AdminPage() {
     [members],
   )
 
+  // Teller enrollment metadata used to feed institution-name fallbacks and
+  // Connect reconnect ids. Teller is quiesced (its API shut down), so the
+  // grouping runs on account rows alone.
+  const emptyEnrollmentMeta = useMemo(
+    () => new Map<string, TellerEnrollmentMeta>(),
+    [],
+  )
   const groups = useMemo(
     () =>
-      accounts ? groupAccountsByInstitution(accounts, enrollmentMeta) : [],
-    [accounts, enrollmentMeta],
+      accounts
+        ? groupAccountsByInstitution(accounts, emptyEnrollmentMeta)
+        : [],
+    [accounts, emptyEnrollmentMeta],
   )
 
   const hasLinkedBanks = useMemo(
-    () => groups.some((group) => group.enrollmentIds.length > 0),
+    () => groups.some((group) => group.provider !== null),
     [groups],
   )
 
-  function afterLinkSuccess(
-    result: LinkBankResult,
-    verb: 'Linked' | 'Reconnected',
-  ) {
-    const count = result.accounts.length
-    if (count === 0) {
-      toast.error(`${verb}, but no accounts came back. Try again.`)
-    } else {
-      toast.success(`${verb} ${count} account${count === 1 ? '' : 's'}.`)
-    }
-    // Cards count against the household balance the moment they land —
-    // name the drop instead of letting the hero quietly change. Only cards
-    // that are NEW to the family (not already in the pre-link account list)
-    // count: a re-link or reconnect of already-tracked cards changed nothing.
-    const priorIds = new Set((accounts ?? []).map((a) => a.id))
-    const cards = result.accounts
-      .filter((a) => isCreditCardAccount(a) && !priorIds.has(a.id))
-      .map((a) => ({
-        name: a.account_name ?? a.institution_name ?? 'Credit card',
-        balance: Number(a.current_balance),
-      }))
-    const totalDebt = cards.reduce((sum, c) => sum + c.balance, 0)
-    if (totalDebt > 0) {
-      setLinkedCardsNotice({ cards, totalDebt })
-    }
+  async function afterSimpleFinImport(imported: SimpleFinConfirmedAccount[]) {
+    // No cards notice here (unlike the old Teller link flow): the admin just
+    // classified each account cash vs card in the confirm step, so a card's
+    // effect on the balance was named before it landed.
+    toast.success(simpleFinImportedSuccess(imported.length))
     setAccountsSyncing(true)
-    void Promise.all([loadAccounts(), loadEnrollments()]).finally(() =>
-      setAccountsSyncing(false),
-    )
-  }
-
-  async function startLinkBank() {
-    // Pre-flight: if Teller is down, opening Connect would drop the user on a
-    // full-screen 503 with no way back. Decline up front instead. Fails open —
-    // checkTellerReachable only returns false when Teller is affirmatively down.
-    setPreflightingTeller(true)
-    const reachable = await checkTellerReachable()
-    setPreflightingTeller(false)
-    if (!reachable) {
-      toast.error(TELLER_UNAVAILABLE_MESSAGE)
-      return
+    try {
+      await loadAccounts()
+    } finally {
+      setAccountsSyncing(false)
     }
-    teller.open({
-      onLinked: (result) => afterLinkSuccess(result, 'Linked'),
-      onError: (msg) => toast.error(msg),
-    })
-  }
-
-  function requestLinkBank() {
-    if (hasLinkedBanks) {
-      setLinkBankConfirmOpen(true)
-      return
-    }
-    startLinkBank()
-  }
-
-  function confirmLinkBank() {
-    setLinkBankConfirmOpen(false)
-    startLinkBank()
-  }
-
-  async function onReconnect(group: InstitutionGroup) {
-    if (!group.tellerConnectEnrollmentId) {
-      toast.error('Missing enrollment id for reconnect.')
-      return
-    }
-    setReconnectingKey(group.groupKey)
-    // Pre-flight: don't open Connect into a Teller outage (full-screen 503 with
-    // no escape). Fails open — only bails when Teller is affirmatively down.
-    const reachable = await checkTellerReachable()
-    if (!reachable) {
-      setReconnectingKey(null)
-      toast.error(TELLER_UNAVAILABLE_MESSAGE)
-      return
-    }
-    teller.open(
-      {
-        onLinked: (result) => {
-          setReconnectingKey(null)
-          afterLinkSuccess(result, 'Reconnected')
-        },
-        onError: (msg) => {
-          setReconnectingKey(null)
-          toast.error(msg)
-        },
-        onExit: () => setReconnectingKey(null),
-      },
-      { enrollmentId: group.tellerConnectEnrollmentId },
-    )
   }
 
   async function onRefresh(group: InstitutionGroup) {
-    if (group.enrollmentIds.length === 0) return
+    if (group.simplefinConnectionIds.length === 0) return
     setRefreshingKey(group.groupKey)
     setAccountsSyncing(true)
     try {
-      await refreshBalances(group.enrollmentIds)
-      await Promise.all([loadAccounts(), loadEnrollments()])
+      await refreshSimpleFinBalances(group.simplefinConnectionIds)
+      await loadAccounts()
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
     } finally {
@@ -424,31 +316,46 @@ export default function AdminPage() {
   }
 
   function requestUnlinkInstitution(group: InstitutionGroup) {
-    if (group.enrollmentIds.length === 0) return
+    if (
+      group.enrollmentIds.length === 0 &&
+      group.simplefinConnectionIds.length === 0
+    ) {
+      return
+    }
     setUnlinkTarget(group)
   }
 
   async function confirmUnlinkInstitution() {
-    if (!unlinkTarget || unlinkTarget.enrollmentIds.length === 0) return
+    if (!unlinkTarget) return
     const group = unlinkTarget
     setUnlinkTarget(null)
     setUnlinkingKey(group.groupKey)
     try {
-      let lastResult: Awaited<ReturnType<typeof disconnectEnrollment>> | null =
-        null
-      for (const enrollmentId of group.enrollmentIds) {
-        lastResult = await disconnectEnrollment(enrollmentId)
-      }
-      if (lastResult?.tellerDisconnected) {
-        toast.success(`Unlinked ${group.institutionName ?? 'bank'} cleanly.`)
+      if (group.provider === 'simplefin') {
+        for (const connectionId of group.simplefinConnectionIds) {
+          await disconnectSimpleFinConnection(connectionId)
+        }
+        toast.success(`Unlinked ${group.institutionName ?? 'bank'}.`)
       } else {
-        toast.error(
-          `Unlinked locally, but Teller-side disconnect may have failed: ${lastResult?.tellerError ?? 'unknown'}. You may want to remove this app from your bank's connected-apps list.`,
-        )
+        // Teller is quiesced: the edge function still deletes the local rows
+        // and best-effort-notifies Teller (which is likely gone).
+        let lastResult: Awaited<
+          ReturnType<typeof disconnectEnrollment>
+        > | null = null
+        for (const enrollmentId of group.enrollmentIds) {
+          lastResult = await disconnectEnrollment(enrollmentId)
+        }
+        if (lastResult?.tellerDisconnected) {
+          toast.success(`Unlinked ${group.institutionName ?? 'bank'} cleanly.`)
+        } else {
+          toast.success(
+            `Unlinked ${group.institutionName ?? 'bank'} locally. Teller has shut down, so there was nothing to disconnect on their side.`,
+          )
+        }
       }
       setAccountsSyncing(true)
       try {
-        await Promise.all([loadAccounts(), loadEnrollments()])
+        await loadAccounts()
       } finally {
         setAccountsSyncing(false)
       }
@@ -499,21 +406,11 @@ export default function AdminPage() {
       <BusyOverlay
         busy={
           manualDialog === null &&
-          !teller.linking &&
-          (unlinkingKey !== null ||
-            reconnectingKey !== null ||
-            refreshingKey !== null ||
-            preflightingTeller ||
-            accountsSyncing)
+          !simpleFinDialogOpen &&
+          (unlinkingKey !== null || refreshingKey !== null || accountsSyncing)
         }
         label={
-          reconnectingKey || preflightingTeller
-            ? reconnectingKey
-              ? 'Reconnecting…'
-              : 'Checking bank connection…'
-            : refreshingKey
-              ? 'Refreshing balances…'
-              : 'Updating accounts…'
+          refreshingKey ? 'Refreshing balances…' : 'Updating accounts…'
         }
       >
       <section aria-label="Money sources">
@@ -530,7 +427,6 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={() => setAddSourceOpen((v) => !v)}
-              disabled={teller.linking || preflightingTeller}
               className="rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {ADMIN_ADD_MONEY_SOURCE_ACTION}
@@ -539,14 +435,13 @@ export default function AdminPage() {
               <div className="absolute right-0 z-10 mt-1 w-max min-w-[12rem] overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-lg">
                 <button
                   type="button"
-                  disabled={!teller.ready || teller.linking || preflightingTeller}
-                  className="block w-full whitespace-nowrap px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
+                  className="block w-full whitespace-nowrap px-3 py-2 text-left text-sm text-zinc-200 hover:bg-zinc-800"
                   onClick={() => {
                     setAddSourceOpen(false)
-                    requestLinkBank()
+                    setSimpleFinDialogOpen(true)
                   }}
                 >
-                  {teller.linking ? 'Linking…' : ADMIN_ADD_SOURCE_LINK_OPTION}
+                  {ADMIN_ADD_SOURCE_LINK_OPTION}
                 </button>
                 <button
                   type="button"
@@ -579,13 +474,6 @@ export default function AdminPage() {
           </p>
         )}
 
-        {enrollmentLoadError && (
-          <p className="mb-3 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-200 ring-1 ring-amber-500/30">
-            Could not load bank connection details ({enrollmentLoadError}). Linked
-            accounts still appear below; Reconnect may be unavailable until this
-            clears.
-          </p>
-        )}
         {loadError ? (
           <LoadErrorPanel
             title="Could not load money sources"
@@ -610,16 +498,10 @@ export default function AdminPage() {
             {groups.map((group) => {
               const expanded = !collapsedGroupKeys.has(group.groupKey)
               const accountsPanelId = `admin-group-${group.groupKey}-accounts`
-              // Keep the Reconnect button mounted while enrollment metadata
-              // loads so its space is reserved, then fade it in once we know
-              // the link is reconnectable — snapping it in grabs attention.
-              const reconnectReady = Boolean(group.tellerConnectEnrollmentId)
-              const reconnectBusy =
-                !teller.ready ||
-                teller.linking ||
-                unlinkingKey === group.groupKey ||
-                reconnectingKey === group.groupKey ||
-                refreshingKey === group.groupKey
+              // Only SimpleFIN connections have live actions; Teller groups
+              // are quiesced (frozen balances, unlink only).
+              const canRefresh = group.simplefinConnectionIds.length > 0
+              const canUnlink = group.provider !== null
               return (
               <li
                 key={group.groupKey}
@@ -674,38 +556,18 @@ export default function AdminPage() {
                       </p>
                     </div>
                   </button>
-                  {group.enrollmentIds.length > 0 && (
+                  {canUnlink && (
                     <div className="flex shrink-0 items-center gap-2">
-                      <RefreshIconButton
-                        busy={refreshingKey === group.groupKey}
-                        disabled={
-                          refreshingKey === group.groupKey ||
-                          teller.linking ||
-                          unlinkingKey === group.groupKey ||
-                          reconnectingKey === group.groupKey
-                        }
-                        onClick={() => void onRefresh(group)}
-                        className="text-zinc-400 hover:text-zinc-200"
-                      />
-                      {(reconnectReady || !enrollmentsLoaded) && (
-                        <button
-                          type="button"
-                          onClick={() => onReconnect(group)}
-                          disabled={!reconnectReady || reconnectBusy}
-                          aria-hidden={!reconnectReady}
-                          tabIndex={reconnectReady ? 0 : -1}
-                          className={`rounded-lg border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition duration-300 motion-reduce:transition-none hover:bg-zinc-700 disabled:cursor-not-allowed ${
-                            !reconnectReady
-                              ? 'pointer-events-none opacity-0'
-                              : reconnectBusy
-                                ? 'opacity-50'
-                                : 'opacity-100'
-                          }`}
-                        >
-                          {reconnectingKey === group.groupKey
-                            ? 'Reconnecting…'
-                            : 'Reconnect'}
-                        </button>
+                      {canRefresh && (
+                        <RefreshIconButton
+                          busy={refreshingKey === group.groupKey}
+                          disabled={
+                            refreshingKey === group.groupKey ||
+                            unlinkingKey === group.groupKey
+                          }
+                          onClick={() => void onRefresh(group)}
+                          className="text-zinc-400 hover:text-zinc-200"
+                        />
                       )}
                       <button
                         type="button"
@@ -723,6 +585,11 @@ export default function AdminPage() {
                     </div>
                   )}
                 </header>
+                {group.provider === 'teller' ? (
+                  <p className="border-b border-zinc-800 bg-amber-500/5 px-4 py-2 text-xs text-amber-200/90">
+                    {TELLER_SUNSET_ADMIN_NOTE}
+                  </p>
+                ) : null}
                 {expanded ? (
                 <ul
                   id={accountsPanelId}
@@ -752,6 +619,11 @@ export default function AdminPage() {
                             "manual"/"credit_card" type line adds nothing. */}
                         {!group.isManual ? (
                           <p className="text-xs text-zinc-400">
+                            {/* A multi-bank connection card names each row's
+                                bank so the mix stays readable. */}
+                            {group.spansInstitutions && a.institution_name
+                              ? `${a.institution_name} · `
+                              : ''}
                             {accountTypeLabel(a.account_type)}
                           </p>
                         ) : null}
@@ -880,66 +752,11 @@ export default function AdminPage() {
         }}
       />
 
-      <CardsNoticeSheet
-        open={linkedCardsNotice !== null}
-        cards={linkedCardsNotice?.cards ?? []}
-        totalDebt={linkedCardsNotice?.totalDebt ?? 0}
-        onClose={() => setLinkedCardsNotice(null)}
+      <SimpleFinConnectDialog
+        open={simpleFinDialogOpen}
+        onClose={() => setSimpleFinDialogOpen(false)}
+        onImported={afterSimpleFinImport}
       />
-
-      <Sheet
-        open={linkBankConfirmOpen}
-        onClose={() => setLinkBankConfirmOpen(false)}
-        aria-label={ADMIN_LINK_BANK_CONFIRM_SHEET_TITLE}
-      >
-        <header className="mb-4 flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold text-zinc-300">
-            {ADMIN_LINK_BANK_CONFIRM_SHEET_TITLE}
-          </h2>
-          <button
-            type="button"
-            onClick={() => setLinkBankConfirmOpen(false)}
-            className="rounded p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-300"
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </header>
-
-        <div className="space-y-4">
-          <p className="text-sm text-zinc-400">
-            {ADMIN_LINK_BANK_CONFIRM_SHEET_INTRO}
-          </p>
-
-          <div>
-            <h3 className="text-sm font-medium text-zinc-300">
-              {ADMIN_LINK_BANK_CONFIRM_WHAT_TO_KNOW}
-            </h3>
-            <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-zinc-400">
-              {ADMIN_LINK_BANK_CONFIRM_EFFECTS.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="flex gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() => setLinkBankConfirmOpen(false)}
-              className="flex-1 rounded-lg border border-zinc-700 py-2 text-sm text-zinc-400"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={confirmLinkBank}
-              className="flex-1 rounded-lg bg-amber-500 py-2 text-sm font-semibold text-black transition hover:bg-amber-400"
-            >
-              {ADMIN_LINK_BANK_CONFIRM_ACTION}
-            </button>
-          </div>
-        </div>
-      </Sheet>
 
       {removeManualTarget ? (
         <Sheet
@@ -1044,6 +861,12 @@ export default function AdminPage() {
                 unlinkTarget.accounts.length,
               )}
             </p>
+
+            {unlinkTarget.provider === 'simplefin' ? (
+              <p className="text-sm text-zinc-400">
+                {SIMPLEFIN_UNLINK_REVOKE_NOTE}
+              </p>
+            ) : null}
 
             <div className="flex gap-2 pt-1">
               <button

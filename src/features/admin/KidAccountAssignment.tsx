@@ -17,7 +17,7 @@ import {
   accountAssignmentChildId,
   assignAccountOwner,
   isCreditCardAccount,
-  isTellerAccount,
+  isLinkedAccount,
 } from '@/lib/accounts'
 import type { Database } from '@/types/database'
 
@@ -55,13 +55,13 @@ export default function KidAccountAssignment({
 
   // Credit cards stay on the household balance — never assignable to a kid
   // (the accounts trigger enforces the same rule at the database layer).
-  const tellerAccounts = accounts.filter(
-    (a) => isTellerAccount(a) && !isCreditCardAccount(a),
+  const linkedAccountsPool = accounts.filter(
+    (a) => isLinkedAccount(a) && !isCreditCardAccount(a),
   )
-  const assigned = tellerAccounts.filter(
+  const assigned = linkedAccountsPool.filter(
     (a) => accountAssignmentChildId(a, memberRolesById) === kidId,
   )
-  const assignablePool = tellerAccounts.filter((a) => {
+  const assignablePool = linkedAccountsPool.filter((a) => {
     const childId = accountAssignmentChildId(a, memberRolesById)
     return childId === null
   })
@@ -94,7 +94,7 @@ export default function KidAccountAssignment({
   }
 
   function onPickAccount(accountId: string) {
-    const account = tellerAccounts.find((a) => a.id === accountId)
+    const account = linkedAccountsPool.find((a) => a.id === accountId)
     if (!account) return
     setConfirmError(null)
     setPendingAssign({
@@ -103,7 +103,7 @@ export default function KidAccountAssignment({
     })
   }
 
-  if (tellerAccounts.length === 0) {
+  if (linkedAccountsPool.length === 0) {
     return (
       <p className="mt-2 text-xs text-zinc-500">
         No linked accounts yet. Link a bank in Money sources first.

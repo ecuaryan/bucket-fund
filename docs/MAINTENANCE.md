@@ -145,32 +145,38 @@ npx supabase functions deploy
 npx supabase unlink
 ```
 
-### Scheduled balance refresh (one-time secrets)
+### Scheduled balance refresh (production)
 
-Migration `81` schedules a pg_cron sweep (`teller-scheduled-balance-refresh`,
-every 10 min) that pings the `teller-scheduled-refresh` Edge Function to re-pull
-any linked balance older than the cadence. It stays **inert** until you wire the
-shared secret — safe to deploy first, activate later.
+Migration `84` schedules a pg_cron sweep (`scheduled-balance-refresh`, every
+10 min; renamed from migration 81's `teller-scheduled-balance-refresh`) that
+pings the `simplefin-scheduled-refresh` Edge Function to re-pull any linked
+balance older than the cadence. It stays **inert** until you wire the shared
+secret — safe to deploy first, activate later. Provider background in
+[BANK_PROVIDERS.md](./BANK_PROVIDERS.md).
 
 1. Pick a strong random secret (e.g. `openssl rand -hex 32`).
 2. Give the Edge Function the secret:
 
    ```bash
    npx supabase secrets set SCHEDULED_REFRESH_SECRET=<secret>
-   # optional tuning (defaults 6h / 50):
-   # npx supabase secrets set SCHEDULED_REFRESH_CADENCE_HOURS=6 SCHEDULED_REFRESH_BATCH=50
+   # optional tuning (defaults 6h / 25):
+   # npx supabase secrets set SCHEDULED_REFRESH_CADENCE_HOURS=6 SCHEDULED_REFRESH_BATCH=25
    ```
 
 3. Give pg_cron the same secret + the function URL via Supabase Vault (SQL editor):
 
    ```sql
    select vault.create_secret(
-     'https://<project-ref>.supabase.co/functions/v1/teller-scheduled-refresh',
-     'scheduled_refresh_url');
+     'https://<project-ref>.supabase.co/functions/v1/simplefin-scheduled-refresh',
+     'simplefin_scheduled_refresh_url');
    select vault.create_secret('<secret>', 'scheduled_refresh_secret');
    ```
 
-Verify: `select * from cron.job where jobname = 'teller-scheduled-balance-refresh';`
+   (An existing `scheduled_refresh_secret` from the Teller era carries over —
+   only the URL secret is new. The old `scheduled_refresh_url` entry is
+   unused and can be deleted.)
+
+Verify: `select * from cron.job where jobname = 'scheduled-balance-refresh';`
 and, after a tick, check recent `net._http_response` rows / the function's
 Invocations. Rotating the secret = update both the Edge Function secret and the
 `scheduled_refresh_secret` Vault entry.
@@ -186,7 +192,7 @@ Invocations. Rotating the secret = update both the Edge Function secret and the
 **Auto-bucket backend:** migrations `48`–`61` enable **pg_cron** on hosted Supabase.
 See [AUTO_ORGANIZE.md § Scheduler](./AUTO_ORGANIZE.md#scheduler-cost--scale).
 
-### Before connecting real Teller data
+### Before connecting real bank data
 
 These items are **SECURITY-CRITICAL** before other families or a public paid launch.
 
@@ -194,7 +200,8 @@ These items are **SECURITY-CRITICAL** before other families or a public paid lau
 - [x] Multi-family RLS audit — `tests/db/rls.test.ts`, `move_money.test.ts`, `transactions.test.ts`
 - [x] `auth_family_id()` with `SECURITY DEFINER` + empty `search_path`
 - [x] Teller webhook signature verification in `supabase/functions/teller-webhook/`
-- [ ] **Rotate the Teller application certificate + private key** — values from early scaffolding should be rotated before trusting production bank credentials. Update `supabase/functions/.env` and `supabase secrets set`.
+- [x] SimpleFIN Access URLs locked to the service role — `simplefin_connections` has RLS on, zero policies (`tests/db/simplefin.test.ts`)
+- [ ] ~~Rotate the Teller application certificate + private key~~ — moot while Teller is quiesced ([BANK_PROVIDERS.md](./BANK_PROVIDERS.md)); revisit only if a Teller v2 ships.
 
 To turn PEM files into single-line `\n`-escaped env values:
 

@@ -93,7 +93,7 @@ describe('return_from_child RPC', () => {
     expect(await memberBalance(svc, child.memberId)).toBe(25)
   })
 
-  it('rejects return when kid float is in buckets', async () => {
+  it('takes past bucket labels — the kid rebalances, they cannot veto a Take', async () => {
     const family = await createAdminFamily('return-bucketed')
     const child = await addMember(family.familyId, 'child', 'Alex')
     const svc = serviceClient()
@@ -109,6 +109,7 @@ describe('return_from_child RPC', () => {
     const admin = await userClient(family.adminEmail, family.adminPassword)
     await giveMoney(admin, { toMemberId: child.memberId, amount: 75 })
 
+    // Kid moves everything into a bucket; their own Unbucketed is 0.
     const kidBucket = await insertBucket(
       svc,
       family.familyId,
@@ -124,14 +125,51 @@ describe('return_from_child RPC', () => {
 
     expect(await memberBalance(svc, child.memberId)).toBe(0)
 
+    // Take succeeds anyway: the cap is the kid's TOTAL balance, not their
+    // Unbucketed. Their bucket labels stay put and their Unbucketed goes
+    // negative — the red signal to rebalance, same as an adult overspend.
+    const txId = await returnFromChild(admin, {
+      fromChildId: child.memberId,
+      amount: 10,
+    })
+    expect(txId).toBeTruthy()
+
+    expect(await getFloatBalance(admin)).toBe(135)
+    expect(await memberBalance(svc, child.memberId)).toBe(-10)
+    const { data: bucket } = await svc
+      .from('buckets')
+      .select('allocated_amount')
+      .eq('id', kidBucket)
+      .single()
+    expect(Number(bucket?.allocated_amount)).toBe(75)
+  })
+
+  it('rejects a take larger than the kid’s total balance', async () => {
+    const family = await createAdminFamily('return-over-balance')
+    const child = await addMember(family.familyId, 'child', 'Alex')
+    const svc = serviceClient()
+
+    await svc.from('accounts').insert({
+      family_id: family.familyId,
+      owner_member_id: null,
+      teller_account_id: `test-${crypto.randomUUID()}`,
+      account_type: 'checking',
+      current_balance: 200,
+    })
+
+    const admin = await userClient(family.adminEmail, family.adminPassword)
+    await giveMoney(admin, { toMemberId: child.memberId, amount: 40 })
+
+    // Taking more than the kid has would flip their balance negative — a
+    // debt the model doesn't have.
     const { error } = await admin.rpc('return_from_child', {
       p_from_child_id: child.memberId,
-      p_amount: 10,
+      p_amount: 40.01,
     })
 
     expect(error).not.toBeNull()
-    expect(error?.message).toMatch(/insufficient float/i)
-    expect(await getFloatBalance(admin)).toBe(125)
+    expect(error?.message).toMatch(/exceeds the child/i)
+    expect(await getFloatBalance(admin)).toBe(160)
   })
 
   it('rejects return from linked child', async () => {

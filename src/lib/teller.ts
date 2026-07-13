@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
+import { BANK_ACTIVITY_LOAD_ERROR } from '@/lib/brand'
+import { authFetch } from '@/lib/edgeApi'
 import {
-  BANK_ACTIVITY_LOAD_ERROR,
-  REFRESH_BALANCES_ERROR,
-  SESSION_EXPIRED_MESSAGE,
-} from '@/lib/brand'
-import { getFreshAccessToken, refreshAccessToken } from '@/lib/sessionToken'
-import { resolveSupabasePublishableKey } from '@/lib/supabaseKeys'
+  BankLinkReconnectError,
+  type FetchBankTransactionsResult,
+  type RefreshBalancesResult,
+} from '@/lib/bankLink'
 import { parseTellerEnvironment } from '@/lib/tellerEnvironment'
 
 const TELLER_CONNECT_SRC = 'https://cdn.teller.io/connect/connect.js'
@@ -99,62 +99,6 @@ export type TellerEnrollmentMeta = {
 export type TellerConnectOpenOptions = {
   /** Teller enr_… id — opens Connect in update/reconnect mode. */
   enrollmentId?: string
-}
-
-/** Thrown when the session can't be refreshed; surfaced to the user verbatim. */
-export class SessionExpiredError extends Error {
-  constructor() {
-    super(SESSION_EXPIRED_MESSAGE)
-    this.name = 'SessionExpiredError'
-  }
-}
-
-/**
- * The bank link is expired/deauthorized — a retry won't help; it must be
- * reconnected. Callers pick admin vs. member copy and show a reconnect CTA
- * rather than the generic transient error.
- */
-export class BankLinkReconnectError extends Error {
-  constructor() {
-    super('Bank link needs reconnecting')
-    this.name = 'BankLinkReconnectError'
-  }
-}
-
-async function authFetch(
-  path: string,
-  init?: RequestInit,
-): Promise<Response> {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-  const publishableKey = resolveSupabasePublishableKey(import.meta.env)
-  if (!supabaseUrl) {
-    throw new Error('Missing VITE_SUPABASE_URL')
-  }
-
-  const accessToken = await getFreshAccessToken()
-  if (!accessToken) throw new SessionExpiredError()
-
-  const send = (token: string) =>
-    fetch(`${supabaseUrl}/functions/v1/${path}`, {
-      ...init,
-      headers: {
-        apikey: publishableKey,
-        Authorization: `Bearer ${token}`,
-        ...(init?.headers ?? {}),
-      },
-    })
-
-  const res = await send(accessToken)
-  // A 401 means the token was rejected despite looking fresh (clock skew, a
-  // revoked token, etc.). Force one refresh and retry before giving up.
-  if (res.status !== 401) return res
-
-  const retryToken = await refreshAccessToken()
-  if (!retryToken) throw new SessionExpiredError()
-
-  const retryRes = await send(retryToken)
-  if (retryRes.status === 401) throw new SessionExpiredError()
-  return retryRes
 }
 
 async function postEnrollment(
@@ -294,33 +238,6 @@ export type DisconnectResult = {
   tellerError: string | null
 }
 
-export type RefreshBalancesResult = {
-  ok: true
-  refreshed: boolean
-  accountsUpdated: number
-  bankLastSyncedAt: string | null
-  errors: string[]
-}
-
-export type BankTransactionRow = {
-  id: string
-  date: string
-  amount: number
-  description: string
-  label: string
-  status: 'posted' | 'pending'
-  type: string
-  category: string | null
-}
-
-export type FetchBankTransactionsResult = {
-  ok: true
-  startDate: string
-  endDate: string
-  limit: number
-  transactions: BankTransactionRow[]
-}
-
 /**
  * Re-pull balances from the bank for the caller's family. Any signed-in
  * family member may call this; server-side throttling applies. Optional
@@ -376,20 +293,6 @@ export async function checkTellerReachable(): Promise<boolean> {
   } catch {
     return true
   }
-}
-
-/**
- * Friendly message when a balance refresh partially or fully failed, else null.
- *
- * `refreshBalances` resolves (HTTP 200) even when a bank errored — per-account
- * failures are collected into `errors` rather than thrown. Callers must check
- * this so a failed refresh isn't silently swallowed (the spinner stopping with
- * no feedback). A throttled/skipped refresh has no errors and returns null.
- */
-export function refreshBalancesErrorMessage(
-  result: RefreshBalancesResult,
-): string | null {
-  return result.errors.length > 0 ? REFRESH_BALANCES_ERROR : null
 }
 
 /**
