@@ -51,10 +51,18 @@ with `isLinkedAccount()` in `src/lib/accounts.ts`.
 - **Sign convention.** SimpleFIN reports liabilities negative; the app stores
   card balances positive-owed. `normalizeBalance()` flips the sign
   (mirrored in `src/lib/simplefinParse.ts` + `_shared/simplefin.ts`).
-- **Request budget.** The Bridge asks for ≲24 requests/day per connection.
-  One request refreshes a whole connection, so: scheduled sweep at a 6h
+- **Request budget.** The Bridge asks for ≲24 requests/day per connection
+  (a soft budget, not a meter — no per-request charge, but abusive polling
+  can get an app blocked, and upstream data only refreshes ~daily). One
+  request refreshes a whole connection, so: scheduled sweep at a 6h
   staleness cadence (~4/day) + a 30-minute server throttle on manual refresh
-  (vs Teller's 60s) + on-demand Bank activity fetches.
+  (vs Teller's 60s) + on-demand Bank activity fetches with a 10-minute
+  client-side cache per account.
+- **One connection can span several banks** (whatever the user connected on
+  the Bridge before minting the token). Admin still displays per-institution
+  groups, but Unlink operates on the whole connection — when other banks
+  share it, the confirm Sheet names them (`simpleFinUnlinkSharedConnectionWarning`).
+  Dropping a single bank happens on the Bridge site.
 - **No server-side revoke.** Unlink deletes local rows; the user must also
   delete the app's access on the Bridge site (the unlink Sheet says so).
 - **Reconnect** = new Setup Token (HTTP 402/403 from SimpleFIN marks the

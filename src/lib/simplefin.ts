@@ -148,13 +148,30 @@ export async function refreshSimpleFinBalances(
   return body as RefreshBalancesResult
 }
 
+// Session cache for activity pulls. Every fetch counts against SimpleFIN's
+// ~24 requests/day-per-connection budget, and its upstream data refreshes
+// about daily — so re-opening the same account's activity within a few
+// minutes should not re-spend a request. Errors are never cached (retry
+// really retries).
+const TRANSACTIONS_CACHE_TTL_MS = 10 * 60_000
+const transactionsCache = new Map<
+  string,
+  { at: number; result: FetchBankTransactionsResult }
+>()
+
 /**
  * Recent bank transactions for a SimpleFIN-linked account. Fetches the
- * last two weeks on demand, capped at 50 rows — not stored locally.
+ * last two weeks on demand, capped at 50 rows — not stored locally, but
+ * cached in memory for {@link TRANSACTIONS_CACHE_TTL_MS} per account.
  */
 export async function fetchSimpleFinTransactions(
   accountId: string,
 ): Promise<FetchBankTransactionsResult> {
+  const cached = transactionsCache.get(accountId)
+  if (cached && Date.now() - cached.at < TRANSACTIONS_CACHE_TTL_MS) {
+    return cached.result
+  }
+
   const res = await authFetch('simplefin-transactions-list', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -173,7 +190,9 @@ export async function fetchSimpleFinTransactions(
     }
     throw new Error(BANK_ACTIVITY_LOAD_ERROR + devHint(res))
   }
-  return body as FetchBankTransactionsResult
+  const result = body as FetchBankTransactionsResult
+  transactionsCache.set(accountId, { at: Date.now(), result })
+  return result
 }
 
 /**

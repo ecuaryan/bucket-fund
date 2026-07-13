@@ -1318,6 +1318,23 @@ export function simpleFinImportedSuccess(count: number): string {
 export const SIMPLEFIN_UNLINK_REVOKE_NOTE =
   'This removes the accounts from Bucket My Money. To fully revoke access, also delete this app from your SimpleFIN Bridge account.'
 
+/**
+ * One Setup Token = one SimpleFIN connection, and a connection can span
+ * several banks. Unlink operates on the connection (SimpleFIN's only real
+ * unit), so when other banks share it, name the full blast radius before
+ * the user commits.
+ */
+export function simpleFinUnlinkSharedConnectionWarning(
+  otherInstitutions: string[],
+): string {
+  const names =
+    otherInstitutions.length <= 1
+      ? (otherInstitutions[0] ?? 'another bank')
+      : `${otherInstitutions.slice(0, -1).join(', ')} and ${otherInstitutions[otherInstitutions.length - 1]}`
+  const those = otherInstitutions.length === 1 ? 'that bank' : 'those banks'
+  return `This bank shares one SimpleFIN connection with ${names}, so unlinking removes ${those} too. To drop a single bank, remove it from the connection on the SimpleFIN Bridge site instead.`
+}
+
 // --- Teller (quiesced) ---
 // Teller withdrew its API product (July 2026). Teller-linked accounts stay
 // with frozen balances; live actions are hidden until a possible Teller v2.
@@ -1330,15 +1347,6 @@ export const TELLER_SUNSET_ACTIVITY_NOTE =
 export const ACCOUNT_CARD_OWED_SUFFIX = 'owed'
 export const ADMIN_CARD_COUNTS_AGAINST_NOTE =
   'Counts against your household balance'
-
-// Post-link notice when a Teller enrollment shared credit cards: the
-// balance drop already happened (truth first) — this sheet names it.
-export const LINKED_CARDS_NOTICE_TITLE = 'Credit card linked'
-export const LINKED_CARDS_NOTICE_TITLE_PLURAL = 'Credit cards linked'
-export function linkedCardsNoticeBody(cardDebtLabel: string): string {
-  return `A card balance is money you owe, so ${FLOAT_LABEL} just went down by ${cardDebtLabel}. Card spending works like bank spending—pick the bucket that covers it.`
-}
-export const LINKED_CARDS_NOTICE_CONFIRM = 'Got it'
 
 export const BREAKDOWN_CASH_LABEL = 'Cash'
 export const BREAKDOWN_LINKED_CASH_LABEL = 'Linked cash'

@@ -37,6 +37,7 @@ import {
   manualSourceUpdatedSuccess,
   SIMPLEFIN_UNLINK_REVOKE_NOTE,
   simpleFinImportedSuccess,
+  simpleFinUnlinkSharedConnectionWarning,
   TELLER_SUNSET_ADMIN_NOTE,
   VIEW_RECENT_BANK_ACTIVITY,
 } from '@/lib/brand'
@@ -53,7 +54,6 @@ import {
   type SimpleFinConfirmedAccount,
 } from '@/lib/simplefin'
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
-import CardsNoticeSheet from '@/features/accounts/CardsNoticeSheet'
 import ManualSourceDialog from '@/features/admin/ManualSourceDialog'
 import SimpleFinConnectDialog from '@/features/admin/SimpleFinConnectDialog'
 import FamilyJoinSection from '@/features/admin/FamilyJoinSection'
@@ -117,11 +117,6 @@ export default function AdminPage() {
         amount: number
       }
     | null
-  >(null)
-  // Cards that arrived in the last bank link — the balance drop already
-  // happened (truth first); this sheet names it. Null = nothing to show.
-  const [linkedCardsNotice, setLinkedCardsNotice] = useState<
-    { cards: { name: string; balance: number }[]; totalDebt: number } | null
   >(null)
   const addSourceMenuRef = useRef<HTMLDivElement | null>(null)
   // Groups are expanded by default; this tracks the ones the user collapsed.
@@ -265,22 +260,10 @@ export default function AdminPage() {
   )
 
   async function afterSimpleFinImport(imported: SimpleFinConfirmedAccount[]) {
+    // No cards notice here (unlike the old Teller link flow): the admin just
+    // classified each account cash vs card in the confirm step, so a card's
+    // effect on the balance was named before it landed.
     toast.success(simpleFinImportedSuccess(imported.length))
-    // Cards count against the household balance the moment they land —
-    // name the drop instead of letting the hero quietly change. Only cards
-    // that are NEW to the family (not already in the pre-import list) count:
-    // re-confirming already-tracked cards changed nothing.
-    const priorIds = new Set((accounts ?? []).map((a) => a.id))
-    const cards = imported
-      .filter((a) => isCreditCardAccount(a) && !priorIds.has(a.id))
-      .map((a) => ({
-        name: a.account_name ?? a.institution_name ?? 'Credit card',
-        balance: Number(a.current_balance),
-      }))
-    const totalDebt = cards.reduce((sum, c) => sum + c.balance, 0)
-    if (totalDebt > 0) {
-      setLinkedCardsNotice({ cards, totalDebt })
-    }
     setAccountsSyncing(true)
     try {
       await loadAccounts()
@@ -332,6 +315,22 @@ export default function AdminPage() {
       setAccountsSyncing(false)
     }
   }
+
+  // Other institutions riding the same SimpleFIN connection(s) as the unlink
+  // target. Unlink removes the whole connection (SimpleFIN's only real unit),
+  // so the confirm sheet must name every bank that goes with it.
+  const unlinkSharedInstitutions = useMemo(() => {
+    if (!unlinkTarget || unlinkTarget.provider !== 'simplefin') return []
+    const targetIds = new Set(unlinkTarget.simplefinConnectionIds)
+    return groups
+      .filter(
+        (g) =>
+          g.provider === 'simplefin' &&
+          g.groupKey !== unlinkTarget.groupKey &&
+          g.simplefinConnectionIds.some((id) => targetIds.has(id)),
+      )
+      .map((g) => g.institutionName ?? 'another bank')
+  }, [unlinkTarget, groups])
 
   function requestUnlinkInstitution(group: InstitutionGroup) {
     if (
@@ -765,13 +764,6 @@ export default function AdminPage() {
         }}
       />
 
-      <CardsNoticeSheet
-        open={linkedCardsNotice !== null}
-        cards={linkedCardsNotice?.cards ?? []}
-        totalDebt={linkedCardsNotice?.totalDebt ?? 0}
-        onClose={() => setLinkedCardsNotice(null)}
-      />
-
       <SimpleFinConnectDialog
         open={simpleFinDialogOpen}
         onClose={() => setSimpleFinDialogOpen(false)}
@@ -881,6 +873,12 @@ export default function AdminPage() {
                 unlinkTarget.accounts.length,
               )}
             </p>
+
+            {unlinkSharedInstitutions.length > 0 ? (
+              <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-200 ring-1 ring-amber-500/30">
+                {simpleFinUnlinkSharedConnectionWarning(unlinkSharedInstitutions)}
+              </p>
+            ) : null}
 
             {unlinkTarget.provider === 'simplefin' ? (
               <p className="text-sm text-zinc-400">
