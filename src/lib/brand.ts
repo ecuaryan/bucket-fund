@@ -421,8 +421,6 @@ export const ADMIN_LINKED_ACCOUNTS_EMPTY_DETAIL =
 export const BANK_ACCOUNT_SHARED_TAG = 'Shared'
 /** Fallback tag when an assigned member's name is unknown. */
 export const BANK_ACCOUNT_MEMBER_FALLBACK = 'Family member'
-export const BANK_ACTIVITY_TOGGLE_SHOW = 'Show recent activity'
-export const BANK_ACTIVITY_TOGGLE_HIDE = 'Hide recent activity'
 export const BANK_ACTIVITY_SCOPE = 'Last 2 weeks · up to 50 transactions'
 export const BANK_ACTIVITY_RETRY = 'Try again'
 export const BANK_ACTIVITY_EMPTY = 'No bank activity in the last 2 weeks.'

@@ -11,8 +11,6 @@ import {
   BANK_ACTIVITY_RECONNECT_MEMBER,
   BANK_ACTIVITY_RETRY,
   BANK_ACTIVITY_SCOPE,
-  BANK_ACTIVITY_TOGGLE_HIDE,
-  BANK_ACTIVITY_TOGGLE_SHOW,
   LOADING_STATUS_LABEL,
   TELLER_SUNSET_ACTIVITY_NOTE,
 } from '@/lib/brand'
@@ -38,6 +36,8 @@ type Props = {
   accountId: string
   /** accounts.source — picks the provider (or the quiesced-Teller notice). */
   source: string
+  /** Controlled by the parent row (tapping the row toggles activity). */
+  open: boolean
   /** When false, collapse and discard cached rows. */
   panelOpen: boolean
 }
@@ -45,12 +45,12 @@ type Props = {
 export default function BankAccountActivity({
   accountId,
   source,
+  open,
   panelOpen,
 }: Props) {
   const { formatMoney } = useHideAmounts()
   const { member } = useAuth()
   const isAdmin = member?.role === 'admin'
-  const [expanded, setExpanded] = useState(false)
   const [attempted, setAttempted] = useState(false)
   const [rows, setRows] = useState<BankTransactionRow[] | null>(null)
   const [loading, setLoading] = useState(false)
@@ -87,7 +87,6 @@ export default function BankAccountActivity({
 
   useEffect(() => {
     if (!panelOpen) {
-      setExpanded(false)
       setAttempted(false)
       setRows(null)
       setError(null)
@@ -99,13 +98,14 @@ export default function BankAccountActivity({
 
   // Fetch only after the user opens this account's activity — opening the Bank
   // tab must not fire a bank call for every account at once. Quiesced
-  // providers (Teller) never fetch; they render a notice instead.
+  // providers (Teller) never fetch; they render a notice instead. State is
+  // kept across collapse/expand so reopening doesn't refetch.
   useEffect(() => {
     if (!canFetchBankActivity(source)) return
-    if (!expanded || attempted || loading) return
+    if (!open || attempted || loading) return
     setAttempted(true)
     void load()
-  }, [expanded, attempted, loading, load, source])
+  }, [open, attempted, loading, load, source])
 
   function retry() {
     setAttempted(false)
@@ -113,21 +113,16 @@ export default function BankAccountActivity({
     setRows(null)
   }
 
+  if (!open) return null
+
   return (
     <div className="mt-2 rounded-xl bg-zinc-950/50 px-3 py-2 ring-1 ring-inset ring-zinc-800/60">
-      <button
-        type="button"
-        onClick={() => setExpanded((prev) => !prev)}
-        className="text-xs font-semibold text-emerald-400/90 transition hover:text-emerald-300"
-      >
-        {expanded ? BANK_ACTIVITY_TOGGLE_HIDE : BANK_ACTIVITY_TOGGLE_SHOW}
-      </button>
-      {expanded && !canFetchBankActivity(source) ? (
-        <div className="mt-2 space-y-2">
+      {!canFetchBankActivity(source) ? (
+        <div className="space-y-2">
           <p className="text-xs text-zinc-500">{TELLER_SUNSET_ACTIVITY_NOTE}</p>
         </div>
-      ) : expanded ? (
-        <div className="mt-2 space-y-2">
+      ) : (
+        <div className="space-y-2">
           <p className="text-xs text-zinc-500">{BANK_ACTIVITY_SCOPE}</p>
           {loading ? (
             <div
@@ -196,7 +191,7 @@ export default function BankAccountActivity({
             <p className="text-xs text-zinc-500">{BANK_ACTIVITY_EMPTY}</p>
           ) : null}
         </div>
-      ) : null}
+      )}
     </div>
   )
 }
