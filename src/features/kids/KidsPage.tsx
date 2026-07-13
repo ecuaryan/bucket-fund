@@ -67,7 +67,14 @@ export default function KidsPage() {
   )
   const [loadError, setLoadError] = useState<string | null>(null)
   const [fundKid, setFundKid] = useState<VirtualKidRowData | null>(null)
-  const [returnKid, setReturnKid] = useState<VirtualKidRowData | null>(null)
+  // Take target: virtual kids cap at their total balance; linked kids cap
+  // at their virtual component (net gives) — bank cash moves at the bank.
+  const [returnKid, setReturnKid] = useState<{
+    memberId: string
+    name: string
+    cap: number
+    linked: boolean
+  } | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [refreshError, setRefreshError] = useState<string | null>(null)
 
@@ -176,8 +183,8 @@ export default function KidsPage() {
     void loadData()
   }
 
-  function handleTakeSuccess(kid: VirtualKidRowData, amount: number) {
-    toast.success(kidsTakeSuccessToast(formatMoney(amount), kid.name))
+  function handleTakeSuccess(kidName: string, amount: number) {
+    toast.success(kidsTakeSuccessToast(formatMoney(amount), kidName))
     void loadData()
   }
 
@@ -250,7 +257,14 @@ export default function KidsPage() {
                 kid={kid}
                 formatMoney={formatMoney}
                 onGive={() => setFundKid(kid)}
-                onTake={() => setReturnKid(kid)}
+                onTake={() =>
+                  setReturnKid({
+                    memberId: kid.memberId,
+                    name: kid.name,
+                    cap: kid.amount,
+                    linked: false,
+                  })
+                }
               />
             ))}
           </ul>
@@ -298,6 +312,14 @@ export default function KidsPage() {
                 key={kid.memberId}
                 kid={kid}
                 formatMoney={formatMoney}
+                onTake={() =>
+                  setReturnKid({
+                    memberId: kid.memberId,
+                    name: kid.name,
+                    cap: kid.giveNet,
+                    linked: true,
+                  })
+                }
               />
             ))}
           </ul>
@@ -324,12 +346,13 @@ export default function KidsPage() {
         <ReturnKidSheet
           kidId={returnKid.memberId}
           kidName={returnKid.name}
-          available={returnKid.amount}
+          available={returnKid.cap}
+          linkedKid={returnKid.linked}
           open
           formatMoney={formatMoney}
           onClose={() => setReturnKid(null)}
           onSuccess={(amount) => {
-            handleTakeSuccess(returnKid, amount)
+            handleTakeSuccess(returnKid.name, amount)
             setReturnKid(null)
           }}
         />

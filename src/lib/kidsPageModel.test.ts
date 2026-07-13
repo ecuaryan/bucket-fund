@@ -30,5 +30,21 @@ describe('buildKidsPageModel', () => {
     expect(linkedKids).toHaveLength(1)
     expect(linkedKids[0]?.name).toBe('Kaycee')
     expect(linkedKids[0]?.accounts[0]?.label).toBe('Kaycee ....4143')
+    expect(linkedKids[0]?.giveNet).toBe(0)
+  })
+
+  it('carries a linked kid’s virtual credit (net gives) for the Take flow', () => {
+    const { linkedKids } = buildKidsPageModel({
+      children: [{ id: 'l1', name: 'Kaycee' }],
+      childBalances: [
+        // Gives accumulated while unlinked, then a bank account came back:
+        // amount double-counts until the adult takes the giveNet back.
+        { memberId: 'l1', name: 'Kaycee', amount: 160.7, giveNet: 30 },
+      ],
+      linkedChildIds: new Set(['l1']),
+      accounts: [],
+    })
+
+    expect(linkedKids[0]?.giveNet).toBe(30)
   })
 })

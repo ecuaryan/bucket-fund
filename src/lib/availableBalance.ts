@@ -21,6 +21,8 @@ export type ChildSetAsideLine = {
   amount: number
   /** Recallable Unbucketed for virtual kids (adult breakdown only). */
   availableFloat?: number
+  /** Net gives — a linked kid's takeable virtual component (adult breakdown only). */
+  giveNet?: number
 }
 
 export type BucketsBalanceBreakdown = {
@@ -66,6 +68,8 @@ function parseChildLines(raw: unknown): ChildSetAsideLine[] {
         row.available_float !== undefined
           ? Number(row.available_float ?? 0)
           : undefined,
+      giveNet:
+        row.give_net !== undefined ? Number(row.give_net ?? 0) : undefined,
     })
   }
   return lines

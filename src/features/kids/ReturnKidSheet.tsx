@@ -8,6 +8,7 @@ import {
   KIDS_TAKE_FAILED,
   KIDS_TAKE_SUBMITTING,
   kidsTakeAvailableHint,
+  kidsTakeLinkedSheetIntro,
   kidsTakeOverdraftMessage,
   kidsTakeSheetIntro,
   kidsTakeSheetTitle,
@@ -21,6 +22,8 @@ type ReturnKidSheetProps = {
   kidId: string
   kidName: string
   available: number
+  /** Linked kid: only their virtual money (net gives) is takeable. */
+  linkedKid?: boolean
   open: boolean
   formatMoney: (amount: number) => string
   onClose: () => void
@@ -31,6 +34,7 @@ export default function ReturnKidSheet({
   kidId,
   kidName,
   available,
+  linkedKid = false,
   open,
   formatMoney,
   onClose,
@@ -115,7 +119,9 @@ export default function ReturnKidSheet({
         </header>
 
         <p className="text-sm text-zinc-400">
-          {kidsTakeSheetIntro(kidName, availableLabel)}
+          {linkedKid
+            ? kidsTakeLinkedSheetIntro(kidName, availableLabel)
+            : kidsTakeSheetIntro(kidName, availableLabel)}
         </p>
 
         <label className="block">
