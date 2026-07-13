@@ -1270,12 +1270,61 @@ export const ADMIN_MONEY_SOURCES_SECTION_TITLE = 'Money sources'
 export const ADMIN_PAGE_TAB_HOUSEHOLD_LABEL = 'Household'
 export const ADMIN_PAGE_TABS_ARIA_LABEL = 'Admin page sections'
 export const ADMIN_ADD_MONEY_SOURCE_ACTION = 'Add money source'
-// Linked accounts (banks AND credit cards) come through Teller — one flow.
+// Linked accounts (banks AND credit cards) come through SimpleFIN — one flow.
 // Manual entry is the try-it / demo path: parallel wording so cash and card
 // read as the same secondary method, not a third way to link.
 export const ADMIN_ADD_SOURCE_LINK_OPTION = 'Link a bank or card'
 export const ADMIN_ADD_SOURCE_MANUAL_OPTION = 'Enter cash manually'
 export const ADMIN_ADD_SOURCE_CARD_OPTION = 'Enter a card balance manually'
+
+// --- SimpleFIN (linked banks) ---
+// SimpleFIN Bridge is the bank-data provider since Teller shut down. The
+// user subscribes to SimpleFIN directly and pastes a one-time Setup Token;
+// there is no Connect-style modal.
+
+export const SIMPLEFIN_BRIDGE_URL = 'https://beta-bridge.simplefin.org'
+
+export const SIMPLEFIN_CONNECT_SHEET_TITLE = 'Connect a bank with SimpleFIN'
+export const SIMPLEFIN_CONNECT_SHEET_INTRO =
+  'SimpleFIN is a read-only bank connection you control. Sign up at SimpleFIN Bridge (about $1.50/month, paid to SimpleFIN), connect your banks there, then create a Setup Token for Bucket My Money and paste it below.'
+export const SIMPLEFIN_BRIDGE_LINK_LABEL = 'Open SimpleFIN Bridge'
+export const SIMPLEFIN_TOKEN_FIELD_LABEL = 'Setup Token'
+export const SIMPLEFIN_TOKEN_PLACEHOLDER = 'Paste your one-time Setup Token'
+export const SIMPLEFIN_TOKEN_INVALID_HINT =
+  "That doesn't look like a SimpleFIN Setup Token. Copy the whole token from the Bridge site and paste it again."
+export const SIMPLEFIN_CONNECT_ACTION = 'Connect'
+export const SIMPLEFIN_CONNECTING_LABEL = 'Connecting…'
+
+export const SIMPLEFIN_CONFIRM_SHEET_TITLE = 'Choose accounts to import'
+export const SIMPLEFIN_CONFIRM_SHEET_INTRO =
+  'Pick which accounts to bring in, and mark each one as cash or a credit card—card balances count against your household balance.'
+export const SIMPLEFIN_CONFIRM_KIND_CASH = 'Cash'
+export const SIMPLEFIN_CONFIRM_KIND_CARD = 'Credit card'
+export const SIMPLEFIN_CONFIRM_IMPORT_ACTION = 'Import selected'
+export const SIMPLEFIN_CONFIRM_IMPORTING_LABEL = 'Importing…'
+export const SIMPLEFIN_CONFIRM_EMPTY =
+  'SimpleFIN returned no accounts. Connect your bank on the Bridge site first, then create a new Setup Token.'
+
+export const SIMPLEFIN_INVALID_TOKEN_ERROR =
+  "That Setup Token didn't work. Tokens are single-use—create a fresh one on the SimpleFIN Bridge site and try again."
+export const SIMPLEFIN_CLAIM_REJECTED_ERROR =
+  'SimpleFIN rejected the Setup Token. Tokens are single-use—create a fresh one on the Bridge site and try again.'
+
+export function simpleFinImportedSuccess(count: number): string {
+  return `Imported ${count} account${count === 1 ? '' : 's'} from SimpleFIN.`
+}
+
+/** Unlink confirm for a SimpleFIN connection — no server-side revoke exists. */
+export const SIMPLEFIN_UNLINK_REVOKE_NOTE =
+  'This removes the accounts from Bucket My Money. To fully revoke access, also delete this app from your SimpleFIN Bridge account.'
+
+// --- Teller (quiesced) ---
+// Teller withdrew its API product (July 2026). Teller-linked accounts stay
+// with frozen balances; live actions are hidden until a possible Teller v2.
+export const TELLER_SUNSET_ADMIN_NOTE =
+  'Teller (this bank connection service) shut down, so this balance no longer refreshes. Unlink it and reconnect the bank with SimpleFIN, or keep it as a frozen snapshot.'
+export const TELLER_SUNSET_ACTIVITY_NOTE =
+  'This account was linked through Teller, which shut down—recent activity is unavailable. An admin can reconnect the bank with SimpleFIN.'
 
 /** Per-row note on card accounts in Admin and the Bank tab. */
 export const ACCOUNT_CARD_OWED_SUFFIX = 'owed'

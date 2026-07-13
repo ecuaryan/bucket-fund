@@ -9,10 +9,10 @@ This document contains the full product brief, technical stack, architecture dec
 **Production URL:** https://bucketmymoney.com — custom domain on Vercel. The legacy
 `bucket-fund.vercel.app` hostname 308-redirects to the apex domain.
 
-**Registrar / DNS:** Cloudflare → Vercel (A + CNAME). Supabase Auth Site URL and
-Teller allowed origins should use `https://bucketmymoney.com`.
+**Registrar / DNS:** Cloudflare → Vercel (A + CNAME). Supabase Auth Site URL
+should use `https://bucketmymoney.com`.
 
-Bucket My Money is a **bank-agnostic virtual bucket budgeting PWA** for **you alone or a shared household**. It sits on top of real bank accounts (read via Teller API) and helps you **organize** your cash into buckets for an at-a-glance view: label what is reserved, see **Unbucketed** (cash not in buckets — the running balance paydays and bills flow through), and when the bank balance moves, decide which bucket covers it (negative Unbucketed → move money from buckets on purpose). Brand voice and naming notes live in [docs/BRAND.md](./docs/BRAND.md); user-facing strings in `src/lib/brand.ts` (`FLOAT_LABEL` is `'Unbucketed'`, `APP_TAGLINE`, login copy). Full product narrative (word-for-word): [docs/BRAND.md § Product narrative](./docs/BRAND.md#product-narrative).
+Bucket My Money is a **bank-agnostic virtual bucket budgeting PWA** for **you alone or a shared household**. It sits on top of real bank accounts (read via SimpleFIN; see [docs/BANK_PROVIDERS.md](./docs/BANK_PROVIDERS.md)) and helps you **organize** your cash into buckets for an at-a-glance view: label what is reserved, see **Unbucketed** (cash not in buckets — the running balance paydays and bills flow through), and when the bank balance moves, decide which bucket covers it (negative Unbucketed → move money from buckets on purpose). Brand voice and naming notes live in [docs/BRAND.md](./docs/BRAND.md); user-facing strings in `src/lib/brand.ts` (`FLOAT_LABEL` is `'Unbucketed'`, `APP_TAGLINE`, login copy). Full product narrative (word-for-word): [docs/BRAND.md § Product narrative](./docs/BRAND.md#product-narrative).
 
 The primary use case is: **open app → move money from one bucket to another → done. Target: 4 taps from a cold open.**
 
@@ -50,7 +50,7 @@ UI labels: **Admin**, **Shared**, **Kid** (`memberRoles.ts`). DB/API values rema
 
 **Admin** (`admin`)
 - Full control
-- Links/unlinks bank accounts via Teller
+- Links/unlinks bank accounts via SimpleFIN
 - Creates and deletes buckets for the family pool
 - Manages household members (add/remove people, assign roles, set PINs) and assigns linked accounts to kids
 - Funds kids via Send; sees all family sends and shared-pool history
@@ -88,38 +88,39 @@ UI labels: **Admin**, **Shared**, **Kid** (`memberRoles.ts`). DB/API values rema
 ---
 
 ### Accounts
-- **Money sources** are rows in `accounts`: a **linked bank** (Teller) and/or one or more **manual amounts** (admin-entered; no bank connection). They sum into the family cash pool.
+- **Money sources** are rows in `accounts`: **linked banks** (SimpleFIN today;
+  quiesced Teller rows persist with frozen balances — see
+  [docs/BANK_PROVIDERS.md](./docs/BANK_PROVIDERS.md)) and/or one or more
+  **manual amounts** (admin-entered; no bank connection). They sum into the
+  family cash pool.
 - Only the **admin** links or unlinks banks and adds/edits/removes manual sources (**Admin → Money sources**).
-- **Link bank** adds a new institution (new Teller enrollment). Select every account
-  you want to share at that bank in the Connect flow.
-- **Reconnect** on an existing bank card opens Teller Connect in update mode for that
-  enrollment — use when credentials expire, Teller reports the enrollment disconnected,
-  or you need a fresh balance pull. It does **not** reliably show an account picker on
-  an already-healthy link; do not use it to add or remove accounts.
-- **Change which accounts** at a bank are linked: **Unlink** the bank, then **Link bank**
-  again and select the full set you want. Child account assignments reset (new account rows).
-- Do not use **Link bank** for a bank already linked (Admin warns; UI groups by institution).
+- **Link a bank (SimpleFIN):** the admin subscribes at SimpleFIN Bridge (paid to
+  SimpleFIN directly), connects banks there, creates a one-time **Setup Token**,
+  and pastes it into Admin. A confirm step picks which discovered accounts to
+  import and marks each **cash vs card** (SimpleFIN doesn't classify types).
+- **Reconnect** = a fresh Setup Token (SimpleFIN has no update-mode modal). A
+  connection that SimpleFIN rejects (402/403) is marked `disconnected` and stops
+  refreshing until re-linked.
+- **Change which accounts** are shared: manage the connection on the Bridge
+  site, then unlink and re-import in Admin (or re-run the confirm step).
 - **New links** default to the **family pool** (`accounts.owner_member_id` null). The admin may
   assign an account to a **kid** only (many accounts can belong to one kid). People on the
   shared balance (admin and Shared role) share the family pool in the Buckets tab — assigning to a spouse is not in v1 UI.
 - Kids may have zero, one, or multiple linked checking/savings accounts (multiple supported).
 - **Two kid money models (do not mix on one kid):**
   - **Virtual-only** (no linked account): balance = net sends − bucket allocations. Card-less kids live here — spending is logged via **Send** (e.g. kid → shared balance when someone fronts a purchase). Birthday/earnings: kid hands cash over; shared balance credits them with a **shared → kid send**. Back every credit with real cash (deposit to a linked account or bump a **manual money source**) so shared Unbucketed does not drift red.
-  - **Linked** (Teller account assigned to the kid): balance = linked bank cash − bucket allocations. Debit-card spending auto-reflects via Teller. Money in/out happens at the **real bank** (transfers, allowance deposits) — **no virtual sends in or out** for that kid (`give_money` blocks both directions; the Give UI omits linked kids and shows an explanation card). Admin shows a confirmation sheet before assigning a linked account to a kid (`ADMIN_ASSIGN_ACCOUNT_TO_KID_*` in `brand.ts`).
+  - **Linked** (bank account assigned to the kid): balance = linked bank cash − bucket allocations. Debit-card spending auto-reflects via the bank sync. Money in/out happens at the **real bank** (transfers, allowance deposits) — **no virtual sends in or out** for that kid (`give_money` blocks both directions; the Give UI omits linked kids and shows an explanation card). Admin shows a confirmation sheet before assigning a linked account to a kid (`ADMIN_ASSIGN_ACCOUNT_TO_KID_*` in `brand.ts`).
 - Virtual siblings can still send to each other; linked ↔ anyone requires a real bank transfer.
 - The family as a whole must have at least one money source (linked bank or manual amount)
 - **Manual money sources:** admin-only, family-pool only (`owner_member_id` null), user-edited amounts (no auto-refresh). Coexist with linked banks; Buckets breakdown shows linked cash and manual cash separately when both are present.
-- Re-linking the same bank account (even when Teller issues a new `acc_…` id) preserves
-  the prior child assignment and updates one row matched by institution + last four + type
-- Real balances are kept in sync three ways: Teller webhooks (`transactions.processed`
-  triggers a live balance fetch), a pg_cron **cadence sweep** (`teller-scheduled-refresh`
-  re-pulls any linked balance older than `SCHEDULED_REFRESH_CADENCE_HOURS`, default 6h —
-  Teller only guarantees a daily *poll* and only webhooks on *new* transactions), and on
-  enroll/reconnect. The manual Refresh button covers "I just moved money, update now."
+- Re-importing the same SimpleFIN account updates one row (unique on
+  `family_id` + `simplefin_account_id`), preserving the prior child assignment.
+- Real balances are kept in sync two ways: a pg_cron **cadence sweep**
+  (`simplefin-scheduled-refresh` re-pulls any linked balance older than
+  `SCHEDULED_REFRESH_CADENCE_HOURS`, default 6h — SimpleFIN has no webhooks),
+  and the manual Refresh button ("I just moved money, update now"), throttled
+  server-side at 30 min to respect SimpleFIN's ~24 requests/day budget.
 - **RLS:** kids see only accounts where `owner_member_id` is their member id; shared balance sees all family accounts
-- **Deferred (pre-SaaS polish):** per-account **Remove** via Teller `DELETE /accounts/:id`
-  (drop one account without unlinking the whole bank). Confirm with Teller whether active
-  enrollments can grant additional accounts without a full unlink/relink.
 
 ---
 
@@ -158,10 +159,10 @@ statement nets to zero: cash and debt fall together.
   then unbucketed cash — without exposing other members’ balances
 
 **Members with their own linked accounts (future / optional):**
-- Per-person Teller balances may exist in the schema; Buckets still presents the
+- Per-person linked balances may exist in the schema; Buckets still presents the
   shared adult pool for admin/member roles. See `member_float` in SQL.
 
-**When a bank transaction hits via Teller webhook:**
+**When a bank sync lands a new balance:**
 - Real balance updates automatically
 - Unbucketed adjusts with it
 - Buckets are untouched until the user deliberately moves money
@@ -202,10 +203,10 @@ sheet; automatic **Auto-bucket** runs do not. See [docs/AUTO_ORGANIZE.md](./docs
 - Optional note; instant; logged with amount, sender, recipient, timestamp, note.
 - Enforced in UI (Give recipient list) and `give_money` RPC.
 
-**Teller sync**
-- Teller webhooks refresh balances the moment new transactions post; a pg_cron cadence
-  sweep (`teller-scheduled-refresh`) keeps them fresh in quiet periods (Teller webhooks
-  fire only on new transactions, so webhooks alone go stale between them)
+**Bank sync (SimpleFIN)**
+- A pg_cron cadence sweep (`simplefin-scheduled-refresh`) re-pulls any linked balance
+  older than 6h (SimpleFIN has no webhooks); the manual Refresh button covers
+  "I just moved money" (30-min server throttle)
 - Supabase Realtime pushes balance and transaction updates to all open sessions instantly — no manual refresh needed
 
 ---
@@ -476,7 +477,7 @@ features for kids. Full spec: [docs/FEATURE_FLAGS.md](./docs/FEATURE_FLAGS.md).
 subtract from the household balance, making the ledger identity
 **cash − credit card balances = bucket allocations + Unbucketed**. Cards only
 (no loans/mortgages), household-scoped (never assigned to a kid — enforced by
-a database trigger), manual card balances supported alongside Teller-linked
+a database trigger), manual card balances supported alongside bank-linked
 ones, and one notice sheet when a link brings card debt in — then truth, even
 when it turns Unbucketed deep red. Card spending behaves like debit spending:
 the swipe dips Unbucketed and the user covers it from a bucket; paying the
@@ -492,7 +493,7 @@ statement nets to zero. Design and rationale: [docs/CREDIT_CARDS.md](./docs/CRED
 | Language | TypeScript | Non-negotiable for financial logic integrity |
 | Styling | Tailwind CSS | Fast, consistent |
 | Backend / DB | Supabase | Auth + Postgres + Realtime + Edge Functions, free tier |
-| Bank sync | Teller API | Read-only, webhook support |
+| Bank sync | SimpleFIN Bridge | Read-only; user-paid subscription; Teller quiesced (see docs/BANK_PROVIDERS.md) |
 | Hosting | Vercel (free tier) | Production: [bucketmymoney.com](https://bucketmymoney.com); `vercel.json` rewrites all routes to `index.html` for SPA deep links |
 | PWA | vite-plugin-pwa | Service worker, installable, offline fallback |
 | Auth | Supabase Auth + PIN + WebAuthn | Covers all member types and device scenarios |
@@ -505,7 +506,7 @@ React PWA (Vercel — bucketmymoney.com)
     ↕
 Supabase (Auth + Postgres + Realtime + Edge Functions)
     ↕
-Teller API (webhooks + pg_cron cadence sweep → Edge Function → Supabase DB)
+SimpleFIN Bridge (pg_cron cadence sweep → Edge Function → Supabase DB)
 ```
 
 ### Deployment
@@ -528,7 +529,7 @@ Teller API (webhooks + pg_cron cadence sweep → Edge Function → Supabase DB)
 | Supabase DB | 500MB storage |
 | Supabase Realtime | 200 concurrent connections |
 | Supabase Edge Functions | 500k invocations/month |
-| Teller | Free sandbox; per-connection fee in production |
+| SimpleFIN Bridge | User-paid ($1.50/mo or $15/yr per account holder, direct to SimpleFIN) |
 
 ---
 
@@ -560,7 +561,9 @@ accounts (
   id uuid primary key,
   family_id uuid references families,
   owner_member_id uuid references family_members nullable, -- null = family pool
-  teller_account_id text,
+  source text, -- 'teller' | 'manual' | 'simplefin' | 'plaid'
+  teller_account_id text,      -- + teller_enrollment_id (quiesced provider)
+  simplefin_account_id text,   -- + simplefin_connection_id
   institution_name text,
   account_name text,
   account_type text,
@@ -636,7 +639,9 @@ bucket-my-money/
 │   ├── lib/
 │   │   ├── supabase.ts     # Supabase client
 │   │   ├── auth.tsx        # Auth context + Realtime JWT sync
-│   │   ├── teller.ts       # Teller Connect client helpers
+│   │   ├── bankProviders.ts# Provider dispatch (docs/BANK_PROVIDERS.md)
+│   │   ├── simplefin.ts    # SimpleFIN client helpers
+│   │   ├── teller.ts       # Teller Connect client helpers (quiesced)
 │   │   ├── buckets.ts      # move_money RPC + bucket CRUD helpers
 │   │   ├── accounts.ts     # Cash filtering, assignAccountOwner (family ↔ child)
 │   │   └── invariant.ts    # Client-side invariant helper (optimistic UI only)
@@ -646,11 +651,13 @@ bucket-my-money/
 │   └── main.tsx
 ├── supabase/
 │   ├── functions/          # Edge Functions
-│   │   ├── teller-enroll/  # Process Connect enrollment, sync accounts
-│   │   ├── teller-enrollments-list/  # Admin enrollment metadata (Reconnect)
-│   │   ├── teller-disconnect/
-│   │   ├── teller-webhook/ # Webhook handler, balance updates
-│   │   ├── teller-scheduled-refresh/ # pg_cron cadence balance sweep
+│   │   ├── simplefin-claim/            # Claim Setup Token → store Access URL
+│   │   ├── simplefin-accounts-confirm/ # Import + classify chosen accounts
+│   │   ├── simplefin-refresh/          # On-demand balances (30-min throttle)
+│   │   ├── simplefin-transactions-list/# Bank activity window (not persisted)
+│   │   ├── simplefin-disconnect/
+│   │   ├── simplefin-scheduled-refresh/# pg_cron cadence balance sweep
+│   │   ├── teller-*/       # Quiesced Teller functions (kept for a v2)
 │   │   └── check-invariant/# Ledger check stub (deferred until paid SaaS)
 │   └── migrations/         # SQL migrations
 ├── vite.config.ts
@@ -691,7 +698,7 @@ Implemented in `src/features/buckets/BucketsPage.tsx` and
 - Store public key credential per member per device
 - On subsequent logins, biometric replaces PIN/password entry
 
-### Teller webhook Edge Function
+### Teller webhook Edge Function (quiesced)
 - Verify Teller webhook signature (accept any of the `v1` signatures Teller sends —
   it signs with every non-expired secret; reject timestamps older than 3 min)
 - On `transactions.processed`, fetch live balances for affected accounts and update
@@ -699,19 +706,21 @@ Implemented in `src/features/buckets/BucketsPage.tsx` and
 - On `enrollment.disconnected`, mark the enrollment inactive
 
 ### Scheduled balance refresh (cadence sweep)
-- `teller-scheduled-refresh` Edge Function, invoked by pg_cron every 10 min (migration 81)
-- Claims the stalest-due active enrollments in bounded batches (`claim_stale_enrollments`,
-  `FOR UPDATE SKIP LOCKED` so overlapping ticks never double-work), re-pulls balances older
-  than the cadence (`SCHEDULED_REFRESH_CADENCE_HOURS`, default 6h), writes
+- `simplefin-scheduled-refresh` Edge Function, invoked by pg_cron every 10 min
+  (migration 84; pattern established in migration 81 for Teller)
+- Claims the stalest-due active connections in bounded batches
+  (`claim_stale_simplefin_connections`, `FOR UPDATE SKIP LOCKED` so overlapping
+  ticks never double-work), re-pulls balances older than the cadence
+  (`SCHEDULED_REFRESH_CADENCE_HOURS`, default 6h), writes
   `current_balance` / `last_synced_at` per account
-- Needed because Teller only guarantees a daily *poll* and only webhooks on *new*
-  transactions; the sweep keeps balances fresh in quiet periods
-- Inert until `SCHEDULED_REFRESH_SECRET` + Vault `scheduled_refresh_url` /
+- Needed because SimpleFIN has no webhooks; the sweep keeps balances fresh, and
+  one request covers a whole connection (respecting the ~24 req/day budget)
+- Inert until `SCHEDULED_REFRESH_SECRET` + Vault `simplefin_scheduled_refresh_url` /
   `scheduled_refresh_secret` are set (see docs/MAINTENANCE.md)
 
 ### Supabase Realtime
 - Subscribe to balance and transaction changes scoped to the authenticated member's family
-- UI updates instantly when any family member makes a move or a Teller sync fires
+- UI updates instantly when any family member makes a move or a bank sync fires
 - **App shell (always on):** `useMemberRemovalWatch` — `DELETE` on the signed-in
   member's own `family_members` row so removed users sign out immediately (one
   narrow channel on the existing session websocket — not a second connection).
@@ -759,6 +768,6 @@ Use this to kick off the build:
 VITE_SUPABASE_URL=
 VITE_SUPABASE_PUBLISHABLE_KEY=
 VITE_SUPABASE_ANON_KEY=
-VITE_TELLER_APPLICATION_ID=
+VITE_TELLER_APPLICATION_ID=   # quiesced Teller provider (docs/BANK_PROVIDERS.md)
 TELLER_SIGNING_SECRET=        # Edge Function only, never exposed to client
 ```

@@ -12,11 +12,10 @@ vi.mock('@/lib/supabaseKeys', () => ({
 
 import {
   BankLinkReconnectError,
-  checkTellerReachable,
-  fetchBankTransactions,
   refreshBalancesErrorMessage,
   type RefreshBalancesResult,
-} from '@/lib/teller'
+} from '@/lib/bankLink'
+import { checkTellerReachable, fetchBankTransactions } from '@/lib/teller'
 
 function refreshResult(
   overrides: Partial<RefreshBalancesResult> = {},

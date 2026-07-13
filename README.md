@@ -54,7 +54,7 @@ Regenerate after significant UI changes ([docs/MAINTENANCE.md § PWA assets](./d
   and PIN login for members.
 - **Move and give money** — set aside from Unbucketed, cover spends, give to kids; History
   with pagination and notes.
-- **Read-only bank link** — Teller Connect, webhooks, manual money sources and card balances for onboarding.
+- **Read-only bank link** — SimpleFIN Bridge (user-controlled, read-only), manual money sources and card balances for onboarding; provider-swappable design ([docs/BANK_PROVIDERS.md](./docs/BANK_PROVIDERS.md)).
 - **Auto-bucket** — scheduled or on-demand rules to set aside into buckets (`pg_cron` on hosted).
 - **PWA** — offline fallback, service worker, install screenshots; session-scoped auth.
 - **Feature flags** — owner-controlled, per-household flags gate experimental features
@@ -71,7 +71,7 @@ Product truth and balance model: [CONTEXT.md](./CONTEXT.md).
 - `vite-plugin-pwa` (manifest + service worker)
 - React Router 7
 - Supabase (Auth, Postgres, Realtime, Edge Functions)
-- Teller API (read-only bank connection)
+- SimpleFIN Bridge (read-only bank connection; Teller quiesced — [docs/BANK_PROVIDERS.md](./docs/BANK_PROVIDERS.md))
 
 ## Architecture
 
@@ -94,19 +94,20 @@ supabase/
 
 | Edge Function | Purpose |
 | ------------- | ------- |
-| `teller-enroll` | Store enrollment + sync accounts |
-| `teller-enrollments-list` | List enrollments for Reconnect |
-| `teller-disconnect` | Revoke enrollment + delete local rows |
-| `teller-webhook` | Verify signature, refresh balances on new transactions |
-| `teller-scheduled-refresh` | pg_cron cadence sweep — keeps balances fresh in quiet periods |
+| `simplefin-claim` | Claim a one-time Setup Token, store the Access URL (service-role only) |
+| `simplefin-accounts-confirm` | Import the chosen accounts, classified cash vs card |
+| `simplefin-refresh` | On-demand balance re-pull (30-min server throttle) |
+| `simplefin-transactions-list` | Recent bank activity window (fetched on demand, not persisted) |
+| `simplefin-disconnect` | Remove a connection + its local accounts |
+| `simplefin-scheduled-refresh` | pg_cron cadence sweep — keeps balances fresh |
+| `teller-*` | Quiesced Teller provider, kept for a possible v2 ([docs/BANK_PROVIDERS.md](./docs/BANK_PROVIDERS.md)) |
 | `check-invariant` | Ledger check stub (deferred) |
 
-Balances stay current three ways: the **webhook** (instant, on posted transactions),
-the **manual refresh** button (on demand), and the **scheduled sweep**
-(`teller-scheduled-refresh`, every 10 min via pg_cron) which re-pulls any linked
-balance older than the cadence (`SCHEDULED_REFRESH_CADENCE_HOURS`, default 6h) —
-needed because Teller only guarantees a daily *poll*, and only webhooks you when it
-finds *new* transactions. One-time production setup in
+Balances stay current two ways: the **manual refresh** button (on demand, 30-min
+throttle) and the **scheduled sweep** (`simplefin-scheduled-refresh`, every 10 min
+via pg_cron) which re-pulls any linked balance older than the cadence
+(`SCHEDULED_REFRESH_CADENCE_HOURS`, default 6h) — SimpleFIN has no webhooks, and
+its ~24 requests/day budget shapes both. One-time production setup in
 [docs/MAINTENANCE.md](./docs/MAINTENANCE.md).
 
 Auth/member functions (PIN login, member management, WebAuthn passkeys) are

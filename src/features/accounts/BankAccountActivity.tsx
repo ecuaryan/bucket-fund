@@ -14,15 +14,19 @@ import {
   BANK_ACTIVITY_TOGGLE_HIDE,
   BANK_ACTIVITY_TOGGLE_SHOW,
   LOADING_STATUS_LABEL,
+  TELLER_SUNSET_ACTIVITY_NOTE,
 } from '@/lib/brand'
 import { useAuth } from '@/lib/auth'
 import { formatErrorMessage } from '@/lib/errorMessage'
 import { useHideAmounts } from '@/lib/HideAmountsProvider'
 import {
   BankLinkReconnectError,
-  fetchBankTransactions,
   type BankTransactionRow,
-} from '@/lib/teller'
+} from '@/lib/bankLink'
+import {
+  canFetchBankActivity,
+  fetchBankTransactionsFor,
+} from '@/lib/bankProviders'
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   weekday: 'short',
@@ -32,11 +36,17 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 
 type Props = {
   accountId: string
+  /** accounts.source — picks the provider (or the quiesced-Teller notice). */
+  source: string
   /** When false, collapse and discard cached rows. */
   panelOpen: boolean
 }
 
-export default function BankAccountActivity({ accountId, panelOpen }: Props) {
+export default function BankAccountActivity({
+  accountId,
+  source,
+  panelOpen,
+}: Props) {
   const { formatMoney } = useHideAmounts()
   const { member } = useAuth()
   const isAdmin = member?.role === 'admin'
@@ -56,7 +66,7 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
     setError(null)
     setNeedsReconnect(false)
     try {
-      const result = await fetchBankTransactions(accountId)
+      const result = await fetchBankTransactionsFor(source, accountId)
       if (generation !== fetchGeneration.current) return
       setRows(result.transactions)
     } catch (e) {
@@ -73,7 +83,7 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
         setLoading(false)
       }
     }
-  }, [accountId, isAdmin])
+  }, [accountId, source, isAdmin])
 
   useEffect(() => {
     if (!panelOpen) {
@@ -88,12 +98,14 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
   }, [panelOpen])
 
   // Fetch only after the user opens this account's activity — opening the Bank
-  // tab must not fire a Teller call for every account at once.
+  // tab must not fire a bank call for every account at once. Quiesced
+  // providers (Teller) never fetch; they render a notice instead.
   useEffect(() => {
+    if (!canFetchBankActivity(source)) return
     if (!expanded || attempted || loading) return
     setAttempted(true)
     void load()
-  }, [expanded, attempted, loading, load])
+  }, [expanded, attempted, loading, load, source])
 
   function retry() {
     setAttempted(false)
@@ -110,7 +122,11 @@ export default function BankAccountActivity({ accountId, panelOpen }: Props) {
       >
         {expanded ? BANK_ACTIVITY_TOGGLE_HIDE : BANK_ACTIVITY_TOGGLE_SHOW}
       </button>
-      {expanded ? (
+      {expanded && !canFetchBankActivity(source) ? (
+        <div className="mt-2 space-y-2">
+          <p className="text-xs text-zinc-500">{TELLER_SUNSET_ACTIVITY_NOTE}</p>
+        </div>
+      ) : expanded ? (
         <div className="mt-2 space-y-2">
           <p className="text-xs text-zinc-500">{BANK_ACTIVITY_SCOPE}</p>
           {loading ? (

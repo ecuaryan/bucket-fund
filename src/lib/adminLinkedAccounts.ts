@@ -4,6 +4,9 @@ import type { TellerEnrollmentMeta } from '@/lib/teller'
 
 type Account = Database['public']['Tables']['accounts']['Row']
 
+/** Linked provider behind a group; null for manual sources and orphans. */
+export type InstitutionGroupProvider = 'teller' | 'simplefin' | null
+
 export type InstitutionGroup = {
   groupKey: string
   institutionName: string | null
@@ -11,12 +14,15 @@ export type InstitutionGroup = {
   /** Cash minus card balances — a card's balance counts as owed, not held. */
   totalBalance: number
   lastSyncedAt: string | null
-  /** Internal enrollment id used for Reconnect / busy state. */
+  provider: InstitutionGroupProvider
+  /** Internal enrollment id used for busy state (Teller groups). */
   primaryEnrollmentId: string
   tellerConnectEnrollmentId: string | null
-  /** All enrollments backing this institution (for Unlink). */
+  /** All Teller enrollments backing this institution (for Unlink). */
   enrollmentIds: string[]
-  /** Manual money sources (no Teller enrollment). */
+  /** All SimpleFIN connections backing this institution (refresh/unlink). */
+  simplefinConnectionIds: string[]
+  /** Manual money sources (no bank link). */
   isManual: boolean
 }
 
@@ -99,12 +105,31 @@ function pickPrimaryEnrollmentId(
   return primaryId
 }
 
+function latestSyncedAt(accounts: Account[]): string | null {
+  let latest: string | null = null
+  for (const account of accounts) {
+    if (account.last_synced_at && (!latest || account.last_synced_at > latest)) {
+      latest = account.last_synced_at
+    }
+  }
+  return latest
+}
+
+/**
+ * Group accounts for the Admin Money sources list: manual sources first,
+ * then one group per (provider, institution) — a Teller "Chase" and a
+ * SimpleFIN "Chase" stay separate because their available actions differ —
+ * then provider orphans (linked rows whose connection row is gone).
+ */
 export function groupAccountsByInstitution(
   accounts: Account[],
   enrollmentMeta: Map<string, TellerEnrollmentMeta>,
 ): InstitutionGroup[] {
-  const byInstitution = new Map<string, Account[]>()
-  const tellerOrphans: Account[] = []
+  const byProviderInstitution = new Map<
+    string,
+    { provider: Exclude<InstitutionGroupProvider, null>; accounts: Account[] }
+  >()
+  const orphans: Account[] = []
   const manualAccounts: Account[] = []
 
   for (const account of accounts) {
@@ -112,22 +137,31 @@ export function groupAccountsByInstitution(
       manualAccounts.push(account)
       continue
     }
-    if (!account.teller_enrollment_id) {
-      tellerOrphans.push(account)
+    const provider: InstitutionGroupProvider =
+      account.source === 'teller' && account.teller_enrollment_id
+        ? 'teller'
+        : account.source === 'simplefin' && account.simplefin_connection_id
+          ? 'simplefin'
+          : null
+    if (!provider) {
+      orphans.push(account)
       continue
     }
-    const meta = enrollmentMeta.get(account.teller_enrollment_id)
     const institutionName =
-      account.institution_name ?? meta?.institutionName ?? null
-    const key = normalizeInstitutionKey(institutionName)
-    const bucket = byInstitution.get(key)
-    if (bucket) bucket.push(account)
-    else byInstitution.set(key, [account])
+      account.institution_name ??
+      (provider === 'teller'
+        ? (enrollmentMeta.get(account.teller_enrollment_id as string)
+            ?.institutionName ?? null)
+        : null)
+    const key = `${provider}:${normalizeInstitutionKey(institutionName)}`
+    const bucket = byProviderInstitution.get(key)
+    if (bucket) bucket.accounts.push(account)
+    else byProviderInstitution.set(key, { provider, accounts: [account] })
   }
 
   const groups: InstitutionGroup[] = []
-  for (const [groupKey, institutionAccounts] of byInstitution) {
-    const sorted = sortAccountsByBalanceThenName(institutionAccounts)
+  for (const [groupKey, entry] of byProviderInstitution) {
+    const sorted = sortAccountsByBalanceThenName(entry.accounts)
     const enrollmentIds = [
       ...new Set(
         sorted
@@ -135,72 +169,61 @@ export function groupAccountsByInstitution(
           .filter((id): id is string => Boolean(id)),
       ),
     ]
+    const simplefinConnectionIds = [
+      ...new Set(
+        sorted
+          .map((a) => a.simplefin_connection_id)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ]
     const primaryEnrollmentId = pickPrimaryEnrollmentId(sorted, enrollmentMeta)
     const primaryMeta = enrollmentMeta.get(primaryEnrollmentId)
-    let lastSyncedAt: string | null = null
-    let totalBalance = 0
-    for (const account of sorted) {
-      totalBalance += signedBalance(account)
-      if (
-        account.last_synced_at &&
-        (!lastSyncedAt || account.last_synced_at > lastSyncedAt)
-      ) {
-        lastSyncedAt = account.last_synced_at
-      }
-    }
 
     groups.push({
       groupKey,
-      institutionName: sorted[0]?.institution_name ?? primaryMeta?.institutionName ?? null,
+      institutionName:
+        sorted[0]?.institution_name ?? primaryMeta?.institutionName ?? null,
       accounts: sorted,
-      totalBalance,
-      lastSyncedAt,
+      totalBalance: sorted.reduce((sum, a) => sum + signedBalance(a), 0),
+      lastSyncedAt: latestSyncedAt(sorted),
+      provider: entry.provider,
       primaryEnrollmentId,
       tellerConnectEnrollmentId: primaryMeta?.enrollmentId ?? null,
       enrollmentIds,
+      simplefinConnectionIds,
       isManual: false,
     })
   }
 
   if (manualAccounts.length > 0) {
     const sorted = sortAccountsByBalanceThenName(manualAccounts)
-    let lastSyncedAt: string | null = null
-    let totalBalance = 0
-    for (const account of sorted) {
-      totalBalance += signedBalance(account)
-      if (
-        account.last_synced_at &&
-        (!lastSyncedAt || account.last_synced_at > lastSyncedAt)
-      ) {
-        lastSyncedAt = account.last_synced_at
-      }
-    }
     groups.unshift({
       groupKey: 'manual',
       institutionName: null,
       accounts: sorted,
-      totalBalance,
-      lastSyncedAt,
+      totalBalance: sorted.reduce((sum, a) => sum + signedBalance(a), 0),
+      lastSyncedAt: latestSyncedAt(sorted),
+      provider: null,
       primaryEnrollmentId: '',
       tellerConnectEnrollmentId: null,
       enrollmentIds: [],
+      simplefinConnectionIds: [],
       isManual: true,
     })
   }
 
-  if (tellerOrphans.length > 0) {
+  if (orphans.length > 0) {
     groups.push({
       groupKey: 'unlinked',
       institutionName: 'Unlinked',
-      accounts: sortAccountsByBalanceThenName(tellerOrphans),
-      totalBalance: tellerOrphans.reduce(
-        (sum, a) => sum + signedBalance(a),
-        0,
-      ),
+      accounts: sortAccountsByBalanceThenName(orphans),
+      totalBalance: orphans.reduce((sum, a) => sum + signedBalance(a), 0),
       lastSyncedAt: null,
+      provider: null,
       primaryEnrollmentId: '',
       tellerConnectEnrollmentId: null,
       enrollmentIds: [],
+      simplefinConnectionIds: [],
       isManual: false,
     })
   }

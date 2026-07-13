@@ -56,7 +56,7 @@ import {
 } from '@/lib/memberName'
 import { toast } from '@/lib/toast'
 import KidAccountAssignment from '@/features/admin/KidAccountAssignment'
-import { accountAssignmentChildId, isTellerAccount } from '@/lib/accounts'
+import { accountAssignmentChildId, isLinkedAccount } from '@/lib/accounts'
 import type { Database } from '@/types/database'
 
 type LinkedAccount = Database['public']['Tables']['accounts']['Row']
@@ -516,7 +516,7 @@ export default function MembersSection({
               linkedAccounts != null &&
               linkedAccounts.some(
                 (a) =>
-                  isTellerAccount(a) &&
+                  isLinkedAccount(a) &&
                   accountAssignmentChildId(a, memberRolesById) === m.id,
               )
 

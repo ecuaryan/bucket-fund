@@ -57,6 +57,15 @@ export function isTellerAccount(a: Pick<Account, 'source'>): boolean {
 }
 
 /**
+ * Linked to a bank via any provider (Teller, SimpleFIN, …) — as opposed
+ * to a manually entered amount. Mirrors the SQL predicate
+ * `source <> 'manual'` (member_has_linked_account, breakdown bank_cash).
+ */
+export function isLinkedAccount(a: Pick<Account, 'source'>): boolean {
+  return a.source !== 'manual'
+}
+
+/**
  * How to tag a linked account on the Bank tab so a shared/family account is
  * visually distinct from a kid's personal account.
  * - `shared`: family-pool (or legacy adult-owned) — labelled "Shared".

@@ -46,7 +46,7 @@ import OnboardingCoachCard from '@/features/buckets/OnboardingCoachCard'
 import FloatHero from '@/features/buckets/FloatHero'
 import SuggestedBucketChips from '@/features/buckets/SuggestedBucketChips'
 import { Sheet } from '@/components/ui/Sheet'
-import { isCashAccount, isTellerAccount } from '@/lib/accounts'
+import { isCashAccount, isLinkedAccount } from '@/lib/accounts'
 import BucketsPageSkeleton from '@/components/BucketsPageSkeleton'
 import { BusyOverlay } from '@/components/ui/BusyOverlay'
 import { ClearableInput } from '@/components/ui/ClearableInput'
@@ -93,7 +93,8 @@ import { ReorderHintProvider } from '@/features/buckets/ReorderHintContext'
 import { usePostgresChanges } from '@/hooks/usePostgresChanges'
 import { useFlipList } from '@/hooks/useFlipList'
 import { useHideAmounts, usePeekTarget } from '@/lib/HideAmountsProvider'
-import { refreshBalances, refreshBalancesErrorMessage } from '@/lib/teller'
+import { refreshAllBankBalances } from '@/lib/bankProviders'
+import { refreshBalancesErrorMessage } from '@/lib/bankLink'
 import {
   formatBucketsHeaderSubtitle,
   formatFloatCashSubtext,
@@ -207,7 +208,7 @@ export default function BucketsPage() {
   // Linked bank accounts visible to the viewer. RLS already scopes `accounts`
   // per role: adults (admin/member) get every family account, a child gets only
   // the one assigned to them — so this is the right set for everyone.
-  const bankAccounts = (accounts ?? []).filter(isTellerAccount)
+  const bankAccounts = (accounts ?? []).filter(isLinkedAccount)
   const showAccountTab = bankAccounts.length > 0
   // Flag-gated Bitcoin feature (docs/BITCOIN.md): a kid gets the tab only
   // once they have at least one entry. Availability resolves async and must
@@ -546,7 +547,7 @@ export default function BucketsPage() {
     try {
       // refreshBalances resolves even when a bank errors (per-account failures
       // come back in `errors`), so surface that instead of stopping silently.
-      const result = await refreshBalances()
+      const result = await refreshAllBankBalances()
       setRefreshError(refreshBalancesErrorMessage(result))
       await loadData()
     } catch (e) {
@@ -747,13 +748,13 @@ export default function BucketsPage() {
   // including children, who can't read the accounts table — sees the same value.
   const bankSyncedLabel = formatRelativeTime(balanceBreakdown.bankLastSyncedAt)
   // A child can refresh only their OWN linked bank — never the family-wide
-  // sync state. `hasLinkedBank` is authoritative (owns a Teller account)
+  // sync state. `hasLinkedBank` is authoritative (owns a linked account)
   // regardless of balance or whether it has synced yet, so virtual kids stay
   // hidden and a freshly-linked kid at $0 still gets the control.
-  // Any Teller account counts — a card-only family still needs the refresh
+  // Any linked account counts — a card-only family still needs the refresh
   // control so card debt doesn't go stale with no affordance.
   const canRefreshBalances =
-    (isAdult && hasMoneySources && accounts.some(isTellerAccount)) ||
+    (isAdult && hasMoneySources && accounts.some(isLinkedAccount)) ||
     (isChild && balanceBreakdown.hasLinkedBank)
 
   const breakdownOpts = {

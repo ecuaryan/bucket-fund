@@ -28,7 +28,8 @@ import { fetchHouseholdAdminName } from '@/lib/householdAdmin'
 import { subscribeHouseholdRosterRefresh } from '@/lib/householdRosterRefresh'
 import { formatErrorMessage } from '@/lib/errorMessage'
 import { formatRelativeTime } from '@/lib/relativeTime'
-import { refreshBalances, refreshBalancesErrorMessage } from '@/lib/teller'
+import { refreshAllBankBalances } from '@/lib/bankProviders'
+import { refreshBalancesErrorMessage } from '@/lib/bankLink'
 import RefreshIconButton from '@/components/ui/RefreshIconButton'
 import { buildKidsPageModel, type VirtualKidRow as VirtualKidRowData } from '@/lib/kidsPageModel'
 import { fetchLinkedChildMemberIds } from '@/lib/give'
@@ -186,7 +187,7 @@ export default function KidsPage() {
     try {
       // refreshBalances resolves even when a bank errors (per-account failures
       // come back in `errors`), so surface that instead of stopping silently.
-      const result = await refreshBalances()
+      const result = await refreshAllBankBalances()
       setRefreshError(refreshBalancesErrorMessage(result))
       await loadData()
     } catch (e) {
