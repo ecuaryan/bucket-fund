@@ -98,6 +98,7 @@ export type MonthlyPresetId =
   | 'first-and-fifteenth'
   | 'first-and-sixteenth'
   | 'second-and-sixteenth'
+  | 'seventh-and-twenty-second'
   | 'fifteenth-and-last'
   | 'sixteenth-and-last'
   | 'once'
@@ -110,6 +111,11 @@ export const AUTO_ORGANIZE_TWICE_MONTHLY_PRESETS: {
   { id: 'first-and-fifteenth', label: '1st & 15th', daysOfMonth: [1, 15] },
   { id: 'second-and-sixteenth', label: '2nd & 16th', daysOfMonth: [2, 16] },
   { id: 'first-and-sixteenth', label: '1st & 16th', daysOfMonth: [1, 16] },
+  {
+    id: 'seventh-and-twenty-second',
+    label: '7th & 22nd',
+    daysOfMonth: [7, 22],
+  },
   { id: 'fifteenth-and-last', label: '15th & last day', daysOfMonth: [15, 0] },
   {
     id: 'sixteenth-and-last',
