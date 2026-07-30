@@ -61,6 +61,7 @@ describe('AUTO_ORGANIZE_TWICE_MONTHLY_PRESETS', () => {
       '1st & 15th',
       '2nd & 16th',
       '1st & 16th',
+      '7th & 22nd',
       '15th & last day',
       '16th & last day',
     ])
@@ -86,6 +87,7 @@ describe('monthlyScheduleFromDays', () => {
 describe('twiceMonthlyPresetFromDays', () => {
   it('maps saved days to preset ids', () => {
     expect(twiceMonthlyPresetFromDays([1, 16])).toBe('first-and-sixteenth')
+    expect(twiceMonthlyPresetFromDays([7, 22])).toBe('seventh-and-twenty-second')
     expect(twiceMonthlyPresetFromDays([16, 0])).toBe('sixteenth-and-last')
   })
 })

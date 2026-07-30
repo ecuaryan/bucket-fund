@@ -152,7 +152,7 @@ weekday).
 - **Once a month** → one day picker (**1st–28th** or **Last day of month**)
 - **Twice a month** → fixed presets for typical pay schedules:
   **1st & 15th**, **2nd & 16th**, **1st & 16th** (pay on the 15th, organize the next
-  day while keeping the 1st), **15th & last day**, **16th & last day**
+  day while keeping the 1st), **7th & 22nd**, **15th & last day**, **16th & last day**
 - **Every 2 weeks** (interval) → biweekly / every-other-Friday when anchored to a
   Friday start date
 
